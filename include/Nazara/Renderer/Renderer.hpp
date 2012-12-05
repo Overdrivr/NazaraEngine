@@ -18,6 +18,7 @@
 class NzColor;
 class NzContext;
 class NzIndexBuffer;
+class NzMaterial;
 class NzRenderTarget;
 class NzShader;
 class NzVertexBuffer;
@@ -29,6 +30,8 @@ class NAZARA_API NzRenderer
 		NzRenderer() = delete;
 		~NzRenderer() = delete;
 
+		static void ApplyMaterial(const NzMaterial* material);
+
 		static void Clear(unsigned long flags = nzRendererClear_Color | nzRendererClear_Depth);
 
 		static void DrawIndexedPrimitives(nzPrimitiveType primitive, unsigned int firstIndex, unsigned int indexCount);
@@ -36,7 +39,7 @@ class NAZARA_API NzRenderer
 
 		static void Enable(nzRendererParameter parameter, bool enable);
 
-		float GetLineWidth();
+		static float GetLineWidth();
 		//static NzMatrix4f GetMatrix(nzMatrixCombination combination);
 		static NzMatrix4f GetMatrix(nzMatrixType type);
 		static unsigned int GetMaxAnisotropyLevel();
@@ -51,13 +54,15 @@ class NAZARA_API NzRenderer
 
 		static bool Initialize();
 
+		static bool IsEnabled(nzRendererParameter parameter);
 		static bool IsInitialized();
 
-		static void SetBlendFunc(nzBlendFunc src, nzBlendFunc dest);
+		static void SetBlendFunc(nzBlendFunc srcBlend, nzBlendFunc destBlend);
 		static void SetClearColor(const NzColor& color);
 		static void SetClearColor(nzUInt8 r, nzUInt8 g, nzUInt8 b, nzUInt8 a = 255);
 		static void SetClearDepth(double depth);
 		static void SetClearStencil(unsigned int value);
+		static void SetDepthFunc(nzRendererComparison compareFunc);
 		static void SetFaceCulling(nzFaceCulling cullingMode);
 		static void SetFaceFilling(nzFaceFilling fillingMode);
 		static bool SetIndexBuffer(const NzIndexBuffer* indexBuffer);
@@ -73,7 +78,6 @@ class NAZARA_API NzRenderer
 		static void SetStencilZFailOperation(nzStencilOperation zfailOperation);
 		static bool SetTarget(NzRenderTarget* target);
 		static bool SetVertexBuffer(const NzVertexBuffer* vertexBuffer);
-		static bool SetVertexDeclaration(const NzVertexDeclaration* vertexDeclaration);
 		static void SetViewport(const NzRectui& viewport);
 
 		static void Uninitialize();
@@ -81,7 +85,7 @@ class NAZARA_API NzRenderer
 	private:
 		static bool EnsureStateUpdate();
 
-		static unsigned int s_moduleReferenceCouter;
+		static unsigned int s_moduleReferenceCounter;
 };
 
 #endif // NAZARA_RENDERER_HPP

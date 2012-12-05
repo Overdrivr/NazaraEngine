@@ -3,7 +3,7 @@
 /*
 	Nazara Engine - Core module
 
-	Copyright (C) 2012 Jérôme "Lynix" Leclercq (Lynix680@gmail.com)
+	Copyright (C) 2012 JÃ©rÃ´me "Lynix" Leclercq (Lynix680@gmail.com)
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy of
 	this software and associated documentation files (the "Software"), to deal in
@@ -26,6 +26,9 @@
 
 #pragma once
 
+#ifndef NAZARA_GLOBAL_CORE_HPP
+#define NAZARA_GLOBAL_CORE_HPP
+
 #include <Nazara/Core/ByteArray.hpp>
 #include <Nazara/Core/Clock.hpp>
 #include <Nazara/Core/Color.hpp>
@@ -40,6 +43,7 @@
 #include <Nazara/Core/File.hpp>
 #include <Nazara/Core/Format.hpp>
 #include <Nazara/Core/Functor.hpp>
+#include <Nazara/Core/HardwareInfo.hpp>
 #include <Nazara/Core/Hash.hpp>
 #include <Nazara/Core/Hashable.hpp>
 #include <Nazara/Core/HashDigest.hpp>
@@ -55,8 +59,12 @@
 #include <Nazara/Core/ResourceListener.hpp>
 #include <Nazara/Core/ResourceLoader.hpp>
 #include <Nazara/Core/Semaphore.hpp>
+#include <Nazara/Core/Stream.hpp>
 #include <Nazara/Core/String.hpp>
 #include <Nazara/Core/StringStream.hpp>
+#include <Nazara/Core/TaskScheduler.hpp>
 #include <Nazara/Core/Thread.hpp>
 #include <Nazara/Core/Tuple.hpp>
 #include <Nazara/Core/Unicode.hpp>
+
+#endif // NAZARA_GLOBAL_CORE_HPP

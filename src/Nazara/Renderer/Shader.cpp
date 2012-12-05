@@ -17,14 +17,6 @@
 NzShader::NzShader(nzShaderLanguage language)
 {
 	Create(language);
-
-	#ifdef NAZARA_DEBUG
-	if (!m_impl)
-	{
-		NazaraError("Failed to create shader");
-		throw std::runtime_error("Constructor failed");
-	}
-	#endif
 }
 
 NzShader::~NzShader()
@@ -325,6 +317,25 @@ bool NzShader::SendBoolean(int location, bool value)
 	#endif
 
 	return m_impl->SendBoolean(location, value);
+}
+
+bool NzShader::SendColor(int location, const NzColor& color)
+{
+	#if NAZARA_RENDERER_SAFE
+	if (!m_impl)
+	{
+		NazaraError("Shader not created");
+		return false;
+	}
+
+	if (location == -1)
+	{
+		NazaraError("Invalid location");
+		return false;
+	}
+	#endif
+
+	return m_impl->SendColor(location, color);
 }
 
 bool NzShader::SendDouble(int location, double value)

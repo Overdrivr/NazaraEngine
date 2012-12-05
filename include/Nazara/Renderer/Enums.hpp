@@ -87,8 +87,8 @@ enum nzRendererCap
 
 enum nzRendererClearFlags
 {
-	nzRendererClear_Color = 0x01,
-	nzRendererClear_Depth = 0x02,
+	nzRendererClear_Color   = 0x01,
+	nzRendererClear_Depth   = 0x02,
 	nzRendererClear_Stencil = 0x04
 };
 
@@ -158,7 +158,9 @@ enum nzTextureFilter
 	nzTextureFilter_Nearest,
 	nzTextureFilter_Trilinear,
 
-	nzTextureFilter_Max = nzTextureFilter_Trilinear
+	nzTextureFilter_Default,
+
+	nzTextureFilter_Max = nzTextureFilter_Default
 };
 
 enum nzTextureWrap

@@ -9,10 +9,13 @@
 #include <Nazara/Core/Log.hpp>
 #include <Nazara/Renderer/Config.hpp>
 #include <Nazara/Renderer/Context.hpp>
+#include <Nazara/Renderer/DebugDrawer.hpp>
 #include <Nazara/Renderer/HardwareBuffer.hpp>
+#include <Nazara/Renderer/Material.hpp>
 #include <Nazara/Renderer/RenderTarget.hpp>
 #include <Nazara/Renderer/Shader.hpp>
 #include <Nazara/Renderer/ShaderImpl.hpp>
+#include <Nazara/Renderer/Loaders/Texture.hpp>
 #include <Nazara/Utility/BufferImpl.hpp>
 #include <Nazara/Utility/IndexBuffer.hpp>
 #include <Nazara/Utility/Utility.hpp>
@@ -47,6 +50,11 @@ namespace
 	NzMatrix4f s_matrix[totalMatrixCount];
 	int s_matrixLocation[totalMatrixCount];
 	bool s_matrixUpdated[totalMatrixCount];
+	nzBlendFunc s_srcBlend;
+	nzBlendFunc s_dstBlend;
+	nzFaceCulling s_faceCulling;
+	nzFaceFilling s_faceFilling;
+	nzRendererComparison s_depthFunc;
 	nzRendererComparison s_stencilCompare;
 	nzStencilOperation s_stencilFail;
 	nzStencilOperation s_stencilPass;
@@ -65,6 +73,57 @@ namespace
 	unsigned int s_maxRenderTarget;
 	unsigned int s_maxTextureUnit;
 	unsigned int s_stencilReference;
+}
+
+void NzRenderer::ApplyMaterial(const NzMaterial* material)
+{
+	///FIXME: Bouger vers Material::Apply ?
+	#if NAZARA_RENDERER_SAFE
+	if (!material)
+	{
+		NazaraError("Invalid material");
+		return;
+	}
+	#endif
+
+	NzShader* shader = s_shader;
+
+	int ambientColorLocation = shader->GetUniformLocation("ambientColor");
+	int diffuseColorLocation = shader->GetUniformLocation("diffuseColor");
+	int diffuseMapLocation = shader->GetUniformLocation("diffuseMap");
+	int shininessLocation = shader->GetUniformLocation("shininess");
+	int specularColorLocation = shader->GetUniformLocation("specularColor");
+	int specularMapLocation = shader->GetUniformLocation("specularMap");
+
+	if (ambientColorLocation != -1)
+		shader->SendColor(ambientColorLocation, material->GetAmbientColor());
+
+	if (diffuseColorLocation != -1)
+		shader->SendColor(diffuseColorLocation, material->GetDiffuseColor());
+
+	if (diffuseMapLocation != -1)
+		shader->SendTexture(diffuseMapLocation, material->GetDiffuseMap());
+
+	if (shininessLocation != -1)
+		shader->SendFloat(shininessLocation, material->GetShininess());
+
+	if (specularColorLocation != -1)
+		shader->SendColor(ambientColorLocation, material->GetSpecularColor());
+
+	if (specularMapLocation != -1)
+		shader->SendTexture(specularMapLocation, material->GetSpecularMap());
+
+	if (material->IsAlphaBlendingEnabled())
+	{
+		Enable(nzRendererParameter_Blend, true);
+		SetBlendFunc(material->GetSrcBlend(), material->GetDstBlend());
+	}
+	else
+		Enable(nzRendererParameter_Blend, false);
+
+	Enable(nzRendererParameter_DepthTest, material->IsZTestEnabled());
+	Enable(nzRendererParameter_DepthWrite, material->IsZWriteEnabled());
+	SetDepthFunc(material->GetZTestCompare());
 }
 
 void NzRenderer::Clear(unsigned long flags)
@@ -102,6 +161,12 @@ void NzRenderer::DrawIndexedPrimitives(nzPrimitiveType primitive, unsigned int f
 		NazaraError("No active context");
 		return;
 	}
+
+	if (primitive > nzPrimitiveType_Max)
+	{
+		NazaraError("Primitive type out of enum");
+		return;
+	}
 	#endif
 
 	#if NAZARA_RENDERER_SAFE
@@ -122,29 +187,20 @@ void NzRenderer::DrawIndexedPrimitives(nzPrimitiveType primitive, unsigned int f
 		glDrawArrays(NzOpenGL::PrimitiveType[primitive], s_indexBuffer->GetStartIndex(), s_indexBuffer->GetIndexCount());
 	else
 	{
-		nzUInt8 indexSize = s_indexBuffer->GetIndexSize();
-
 		GLenum type;
-		switch (indexSize)
+		const nzUInt8* ptr = reinterpret_cast<const nzUInt8*>(s_indexBuffer->GetPointer());
+		if (s_indexBuffer->HasLargeIndices())
 		{
-			case 1:
-				type = GL_UNSIGNED_BYTE;
-				break;
-
-			case 2:
-				type = GL_UNSIGNED_SHORT;
-				break;
-
-			case 4:
-				type = GL_UNSIGNED_INT;
-				break;
-
-			default:
-				NazaraError("Invalid index size (" + NzString::Number(indexSize) + ')');
-				return;
+			ptr += firstIndex*sizeof(nzUInt32);
+			type = GL_UNSIGNED_INT;
+		}
+		else
+		{
+			ptr += firstIndex*sizeof(nzUInt16);
+			type = GL_UNSIGNED_SHORT;
 		}
 
-		glDrawElements(NzOpenGL::PrimitiveType[primitive], indexCount, type, reinterpret_cast<const nzUInt8*>(s_indexBuffer->GetPointer()) + firstIndex*indexSize);
+		glDrawElements(NzOpenGL::PrimitiveType[primitive], indexCount, type, ptr);
 	}
 }
 
@@ -154,6 +210,12 @@ void NzRenderer::DrawPrimitives(nzPrimitiveType primitive, unsigned int firstVer
 	if (NzContext::GetCurrent() == nullptr)
 	{
 		NazaraError("No active context");
+		return;
+	}
+
+	if (primitive > nzPrimitiveType_Max)
+	{
+		NazaraError("Primitive type out of enum");
 		return;
 	}
 	#endif
@@ -173,6 +235,12 @@ void NzRenderer::Enable(nzRendererParameter parameter, bool enable)
 	if (NzContext::GetCurrent() == nullptr)
 	{
 		NazaraError("No active context");
+		return;
+	}
+
+	if (parameter > nzRendererParameter_Max)
+	{
+		NazaraError("Renderer parameter out of enum");
 		return;
 	}
 	#endif
@@ -199,6 +267,14 @@ void NzRenderer::Enable(nzRendererParameter parameter, bool enable)
 
 float NzRenderer::GetLineWidth()
 {
+	#ifdef NAZARA_DEBUG
+	if (NzContext::GetCurrent() == nullptr)
+	{
+		NazaraError("No active context");
+		return 0.f;
+	}
+	#endif
+
 	float lineWidth;
 	glGetFloatv(GL_LINE_WIDTH, &lineWidth);
 
@@ -240,6 +316,14 @@ NzMatrix4f NzRenderer::GetMatrix(nzMatrixCombination combination)
 */
 NzMatrix4f NzRenderer::GetMatrix(nzMatrixType type)
 {
+	#ifdef NAZARA_DEBUG
+	if (type > nzMatrixType_Max)
+	{
+		NazaraError("Matrix type out of enum");
+		return NzMatrix4f();
+	}
+	#endif
+
 	return s_matrix[type];
 }
 
@@ -260,6 +344,14 @@ unsigned int NzRenderer::GetMaxTextureUnits()
 
 float NzRenderer::GetPointSize()
 {
+	#ifdef NAZARA_DEBUG
+	if (NzContext::GetCurrent() == nullptr)
+	{
+		NazaraError("No active context");
+		return 0.f;
+	}
+	#endif
+
 	float pointSize;
 	glGetFloatv(GL_POINT_SIZE, &pointSize);
 
@@ -294,12 +386,20 @@ NzRectui NzRenderer::GetViewport()
 
 bool NzRenderer::HasCapability(nzRendererCap capability)
 {
+	#ifdef NAZARA_DEBUG
+	if (capability > nzRendererCap_Max)
+	{
+		NazaraError("Renderer capability out of enum");
+		return false;
+	}
+	#endif
+
 	return s_capabilities[capability];
 }
 
 bool NzRenderer::Initialize()
 {
-	if (s_moduleReferenceCouter++ != 0)
+	if (s_moduleReferenceCounter++ != 0)
 		return true; // Déjà initialisé
 
 	// Initialisation des dépendances
@@ -325,8 +425,12 @@ bool NzRenderer::Initialize()
 		s_matrixUpdated[i] = false;
 	}
 
+	s_dstBlend = nzBlendFunc_Zero;
+	s_faceCulling = nzFaceCulling_Back;
+	s_faceFilling = nzFaceFilling_Fill;
 	s_indexBuffer = nullptr;
 	s_shader = nullptr;
+	s_srcBlend = nzBlendFunc_One;
 	s_stencilCompare = nzRendererComparison_Always;
 	s_stencilFail = nzStencilOperation_Keep;
 	s_stencilFuncUpdated = true;
@@ -393,17 +497,64 @@ bool NzRenderer::Initialize()
 
 	NzBuffer::SetBufferFunction(nzBufferStorage_Hardware, HardwareBufferFunction);
 
+	#ifdef NAZARA_DEBUG
+	if (!NzDebugDrawer::Initialize())
+		NazaraWarning("Failed to initialize debug drawer");
+	#endif
+
+	// Loaders
+	NzLoaders_Texture_Register();
+
 	NazaraNotice("Initialized: Renderer module");
 
 	return true;
 }
 
-bool NzRenderer::IsInitialized()
+bool NzRenderer::IsEnabled(nzRendererParameter parameter)
 {
-	return s_moduleReferenceCouter != 0;
+	#ifdef NAZARA_DEBUG
+	if (NzContext::GetCurrent() == nullptr)
+	{
+		NazaraError("No active context");
+		return false;
+	}
+
+	if (parameter > nzRendererParameter_Max)
+	{
+		NazaraError("Renderer parameter out of enum");
+		return false;
+	}
+	#endif
+
+	switch (parameter)
+	{
+		case nzRendererParameter_ColorWrite:
+		{
+			GLboolean enabled;
+			glGetBooleanv(GL_COLOR_WRITEMASK, &enabled);
+
+			return enabled;
+		}
+
+		case nzRendererParameter_DepthWrite:
+		{
+			GLboolean enabled;
+			glGetBooleanv(GL_DEPTH_WRITEMASK, &enabled);
+
+			return enabled;
+		}
+
+		default:
+			return glIsEnabled(NzOpenGL::RendererParameter[parameter]);
+	}
 }
 
-void NzRenderer::SetBlendFunc(nzBlendFunc src, nzBlendFunc dest)
+bool NzRenderer::IsInitialized()
+{
+	return s_moduleReferenceCounter != 0;
+}
+
+void NzRenderer::SetBlendFunc(nzBlendFunc srcBlend, nzBlendFunc destBlend)
 {
 	#ifdef NAZARA_DEBUG
 	if (NzContext::GetCurrent() == nullptr)
@@ -413,7 +564,12 @@ void NzRenderer::SetBlendFunc(nzBlendFunc src, nzBlendFunc dest)
 	}
 	#endif
 
-	glBlendFunc(NzOpenGL::BlendFunc[src], NzOpenGL::BlendFunc[dest]);
+	if (s_srcBlend != srcBlend || s_dstBlend != destBlend)
+	{
+		glBlendFunc(NzOpenGL::BlendFunc[srcBlend], NzOpenGL::BlendFunc[destBlend]);
+		s_srcBlend = srcBlend;
+		s_dstBlend = destBlend;
+	}
 }
 
 void NzRenderer::SetClearColor(const NzColor& color)
@@ -468,6 +624,23 @@ void NzRenderer::SetClearStencil(unsigned int value)
 	glClearStencil(value);
 }
 
+void NzRenderer::SetDepthFunc(nzRendererComparison compareFunc)
+{
+	#ifdef NAZARA_DEBUG
+	if (NzContext::GetCurrent() == nullptr)
+	{
+		NazaraError("No active context");
+		return;
+	}
+	#endif
+
+	if (s_depthFunc != compareFunc)
+	{
+		glDepthFunc(NzOpenGL::RendererComparison[compareFunc]);
+		s_depthFunc = compareFunc;
+	}
+}
+
 void NzRenderer::SetFaceCulling(nzFaceCulling cullingMode)
 {
 	#ifdef NAZARA_DEBUG
@@ -478,7 +651,11 @@ void NzRenderer::SetFaceCulling(nzFaceCulling cullingMode)
 	}
 	#endif
 
-	glCullFace(NzOpenGL::FaceCulling[cullingMode]);
+	if (s_faceCulling != cullingMode)
+	{
+		glCullFace(NzOpenGL::FaceCulling[cullingMode]);
+		s_faceCulling = cullingMode;
+	}
 }
 
 void NzRenderer::SetFaceFilling(nzFaceFilling fillingMode)
@@ -491,7 +668,11 @@ void NzRenderer::SetFaceFilling(nzFaceFilling fillingMode)
 	}
 	#endif
 
-	glPolygonMode(GL_FRONT_AND_BACK, NzOpenGL::FaceFilling[fillingMode]);
+	if (s_faceFilling != fillingMode)
+	{
+		glPolygonMode(GL_FRONT_AND_BACK, NzOpenGL::FaceFilling[fillingMode]);
+		s_faceFilling = fillingMode;
+	}
 }
 
 bool NzRenderer::SetIndexBuffer(const NzIndexBuffer* indexBuffer)
@@ -515,6 +696,14 @@ bool NzRenderer::SetIndexBuffer(const NzIndexBuffer* indexBuffer)
 
 void NzRenderer::SetLineWidth(float width)
 {
+	#ifdef NAZARA_DEBUG
+	if (NzContext::GetCurrent() == nullptr)
+	{
+		NazaraError("No active context");
+		return;
+	}
+	#endif
+
 	#if NAZARA_RENDERER_SAFE
 	if (width <= 0.f)
 	{
@@ -528,6 +717,14 @@ void NzRenderer::SetLineWidth(float width)
 
 void NzRenderer::SetMatrix(nzMatrixType type, const NzMatrix4f& matrix)
 {
+	#ifdef NAZARA_DEBUG
+	if (type > nzMatrixType_Max)
+	{
+		NazaraError("Matrix type out of enum");
+		return;
+	}
+	#endif
+
 	s_matrix[type] = matrix;
 
 	// Invalidation des combinaisons
@@ -545,6 +742,14 @@ void NzRenderer::SetMatrix(nzMatrixType type, const NzMatrix4f& matrix)
 
 void NzRenderer::SetPointSize(float size)
 {
+	#ifdef NAZARA_DEBUG
+	if (NzContext::GetCurrent() == nullptr)
+	{
+		NazaraError("No active context");
+		return;
+	}
+	#endif
+
 	#if NAZARA_RENDERER_SAFE
 	if (size <= 0.f)
 	{
@@ -593,7 +798,7 @@ bool NzRenderer::SetShader(NzShader* shader)
 		s_matrixLocation[nzMatrixCombination_WorldView] = shader->GetUniformLocation("WorldViewMatrix");
 		s_matrixLocation[nzMatrixCombination_WorldViewProj] = shader->GetUniformLocation("WorldViewProjMatrix");
 
-		///FIXME: Peut VRAIMENT être optimisé
+		///FIXME: Peut être optimisé
 		for (unsigned int i = 0; i < totalMatrixCount; ++i)
 			s_matrixUpdated[i] = false;
 	}
@@ -605,6 +810,14 @@ bool NzRenderer::SetShader(NzShader* shader)
 
 void NzRenderer::SetStencilCompareFunction(nzRendererComparison compareFunc)
 {
+	#ifdef NAZARA_DEBUG
+	if (compareFunc > nzRendererComparison_Max)
+	{
+		NazaraError("Renderer comparison out of enum");
+		return;
+	}
+	#endif
+
 	if (compareFunc != s_stencilCompare)
 	{
 		s_stencilCompare = compareFunc;
@@ -614,6 +827,14 @@ void NzRenderer::SetStencilCompareFunction(nzRendererComparison compareFunc)
 
 void NzRenderer::SetStencilFailOperation(nzStencilOperation failOperation)
 {
+	#ifdef NAZARA_DEBUG
+	if (failOperation > nzStencilOperation_Max)
+	{
+		NazaraError("Stencil fail operation out of enum");
+		return;
+	}
+	#endif
+
 	if (failOperation != s_stencilFail)
 	{
 		s_stencilFail = failOperation;
@@ -632,6 +853,14 @@ void NzRenderer::SetStencilMask(nzUInt32 mask)
 
 void NzRenderer::SetStencilPassOperation(nzStencilOperation passOperation)
 {
+	#ifdef NAZARA_DEBUG
+	if (passOperation > nzStencilOperation_Max)
+	{
+		NazaraError("Stencil pass operation out of enum");
+		return;
+	}
+	#endif
+
 	if (passOperation != s_stencilPass)
 	{
 		s_stencilPass = passOperation;
@@ -650,6 +879,14 @@ void NzRenderer::SetStencilReferenceValue(unsigned int refValue)
 
 void NzRenderer::SetStencilZFailOperation(nzStencilOperation zfailOperation)
 {
+	#ifdef NAZARA_DEBUG
+	if (zfailOperation > nzStencilOperation_Max)
+	{
+		NazaraError("Stencil zfail operation out of enum");
+		return;
+	}
+	#endif
+
 	if (zfailOperation != s_stencilZFail)
 	{
 		s_stencilZFail = zfailOperation;
@@ -705,17 +942,11 @@ bool NzRenderer::SetVertexBuffer(const NzVertexBuffer* vertexBuffer)
 	if (s_vertexBuffer != vertexBuffer)
 	{
 		s_vertexBuffer = vertexBuffer;
-		s_vaoUpdated = false;
-	}
 
-	return true;
-}
+		const NzVertexDeclaration* vertexDeclaration = s_vertexBuffer->GetVertexDeclaration();
+		if (s_vertexDeclaration != vertexDeclaration)
+			s_vertexDeclaration = vertexDeclaration;
 
-bool NzRenderer::SetVertexDeclaration(const NzVertexDeclaration* vertexDeclaration)
-{
-	if (s_vertexDeclaration != vertexDeclaration)
-	{
-		s_vertexDeclaration = vertexDeclaration;
 		s_vaoUpdated = false;
 	}
 
@@ -755,8 +986,15 @@ void NzRenderer::SetViewport(const NzRectui& viewport)
 
 void NzRenderer::Uninitialize()
 {
-	if (--s_moduleReferenceCouter != 0)
+	if (--s_moduleReferenceCounter != 0)
 		return; // Encore utilisé
+
+	// Loaders
+	NzLoaders_Texture_Unregister();
+
+	#ifdef NAZARA_DEBUG
+	NzDebugDrawer::Uninitialize();
+	#endif
 
 	// Libération du module
 	NzContext::EnsureContext();
@@ -812,7 +1050,8 @@ bool NzRenderer::EnsureStateUpdate()
 	// Cas spéciaux car il faut recalculer la matrice
 	if (!s_matrixUpdated[nzMatrixCombination_ViewProj])
 	{
-		s_matrix[nzMatrixCombination_ViewProj] = s_matrix[nzMatrixType_View] * s_matrix[nzMatrixType_Projection];
+		s_matrix[nzMatrixCombination_ViewProj] = s_matrix[nzMatrixType_View];
+		s_matrix[nzMatrixCombination_ViewProj].Concatenate(s_matrix[nzMatrixType_Projection]);
 
 		shaderImpl->SendMatrix(s_matrixLocation[nzMatrixCombination_ViewProj], s_matrix[nzMatrixCombination_ViewProj]);
 		s_matrixUpdated[nzMatrixCombination_ViewProj] = true;
@@ -820,7 +1059,8 @@ bool NzRenderer::EnsureStateUpdate()
 
 	if (!s_matrixUpdated[nzMatrixCombination_WorldView])
 	{
-		s_matrix[nzMatrixCombination_WorldView] = NzMatrix4f::ConcatenateAffine(s_matrix[nzMatrixType_World], s_matrix[nzMatrixType_View]);
+		s_matrix[nzMatrixCombination_WorldView] = s_matrix[nzMatrixType_World];
+		s_matrix[nzMatrixCombination_WorldView].ConcatenateAffine(s_matrix[nzMatrixType_View]);
 
 		shaderImpl->SendMatrix(s_matrixLocation[nzMatrixCombination_WorldView], s_matrix[nzMatrixCombination_WorldView]);
 		s_matrixUpdated[nzMatrixCombination_WorldView] = true;
@@ -828,7 +1068,8 @@ bool NzRenderer::EnsureStateUpdate()
 
 	if (!s_matrixUpdated[nzMatrixCombination_WorldViewProj])
 	{
-		s_matrix[nzMatrixCombination_WorldViewProj] = s_matrix[nzMatrixCombination_WorldView] * s_matrix[nzMatrixType_Projection];
+		s_matrix[nzMatrixCombination_WorldViewProj] = s_matrix[nzMatrixCombination_WorldView];
+		s_matrix[nzMatrixCombination_WorldViewProj].Concatenate(s_matrix[nzMatrixType_Projection]);
 
 		shaderImpl->SendMatrix(s_matrixLocation[nzMatrixCombination_WorldViewProj], s_matrix[nzMatrixCombination_WorldViewProj]);
 		s_matrixUpdated[nzMatrixCombination_WorldViewProj] = true;
@@ -913,11 +1154,11 @@ bool NzRenderer::EnsureStateUpdate()
 
 					glEnableVertexAttribArray(NzOpenGL::AttributeIndex[i]);
 					glVertexAttribPointer(NzOpenGL::AttributeIndex[i],
-										  NzVertexDeclaration::GetElementCount(element->type),
-										  NzOpenGL::ElementType[element->type],
-										  (element->type == nzElementType_Color) ? GL_TRUE : GL_FALSE,
-										  stride,
-										  &buffer[element->offset]);
+					                      NzVertexDeclaration::GetElementCount(element->type),
+					                      NzOpenGL::ElementType[element->type],
+					                      (element->type == nzElementType_Color) ? GL_TRUE : GL_FALSE,
+					                      stride,
+					                      &buffer[element->offset]);
 				}
 				else
 					glDisableVertexAttribArray(NzOpenGL::AttributeIndex[i]);
@@ -946,4 +1187,4 @@ bool NzRenderer::EnsureStateUpdate()
 	return true;
 }
 
-unsigned int NzRenderer::s_moduleReferenceCouter = 0;
+unsigned int NzRenderer::s_moduleReferenceCounter = 0;

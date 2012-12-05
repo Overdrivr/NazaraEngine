@@ -253,13 +253,14 @@ namespace NzOpenGL
 			glDrawBuffer = reinterpret_cast<PFNGLDRAWBUFFERPROC>(LoadEntry("glDrawBuffer"));
 			glDrawBuffers = reinterpret_cast<PFNGLDRAWBUFFERSPROC>(LoadEntry("glDrawBuffers"));
 			glDrawElements = reinterpret_cast<PFNGLDRAWELEMENTSPROC>(LoadEntry("glDrawElements"));
-			glFlush = reinterpret_cast<PFNGLFLUSHPROC>(LoadEntry("glFlush"));
 			glEnable = reinterpret_cast<PFNGLENABLEPROC>(LoadEntry("glEnable"));
 			glEnableVertexAttribArray = reinterpret_cast<PFNGLENABLEVERTEXATTRIBARRAYPROC>(LoadEntry("glEnableVertexAttribArray"));
 			glEndQuery = reinterpret_cast<PFNGLENDQUERYPROC>(LoadEntry("glEndQuery"));
+			glFlush = reinterpret_cast<PFNGLFLUSHPROC>(LoadEntry("glFlush"));
 			glGenBuffers = reinterpret_cast<PFNGLGENBUFFERSPROC>(LoadEntry("glGenBuffers"));
 			glGenQueries = reinterpret_cast<PFNGLGENQUERIESPROC>(LoadEntry("glGenQueries"));
 			glGenTextures = reinterpret_cast<PFNGLGENTEXTURESPROC>(LoadEntry("glGenTextures"));
+			glGetBooleanv = reinterpret_cast<PFNGLGETBOOLEANVPROC>(LoadEntry("glGetBooleanv"));
 			glGetBufferParameteriv = reinterpret_cast<PFNGLGETBUFFERPARAMETERIVPROC>(LoadEntry("glGetBufferParameteriv"));
 			glGetError = reinterpret_cast<PFNGLGETERRORPROC>(LoadEntry("glGetError"));
 			glGetFloatv = reinterpret_cast<PFNGLGETFLOATVPROC>(LoadEntry("glGetFloatv"));
@@ -278,6 +279,7 @@ namespace NzOpenGL
 			glGetTexParameterfv = reinterpret_cast<PFNGLGETTEXPARAMETERFVPROC>(LoadEntry("glGetTexParameterfv"));
 			glGetTexParameteriv = reinterpret_cast<PFNGLGETTEXPARAMETERIVPROC>(LoadEntry("glGetTexParameteriv"));
 			glGetUniformLocation = reinterpret_cast<PFNGLGETUNIFORMLOCATIONPROC>(LoadEntry("glGetUniformLocation"));
+			glIsEnabled = reinterpret_cast<PFNGLISENABLEDPROC>(LoadEntry("glIsEnabled"));
 			glLineWidth = reinterpret_cast<PFNGLLINEWIDTHPROC>(LoadEntry("glLineWidth"));
 			glLinkProgram = reinterpret_cast<PFNGLLINKPROGRAMPROC>(LoadEntry("glLinkProgram"));
 			glMapBuffer = reinterpret_cast<PFNGLMAPBUFFERPROC>(LoadEntry("glMapBuffer"));
@@ -445,27 +447,53 @@ namespace NzOpenGL
 		// PixelBufferObject
 		openGLextensions[nzOpenGLExtension_PixelBufferObject] = (openGLversion >= 210 || IsSupported("GL_ARB_pixel_buffer_object"));
 
+		// SamplerObjects
+		if (openGLversion >= 430 || (openGLversion < 400 && openGLversion >= 330) || IsSupported("GL_ARB_sampler_objects"))
+		{
+			try
+			{
+				glBindSampler = reinterpret_cast<PFNGLBINDSAMPLERPROC>(LoadEntry("glBindSampler"));
+				glDeleteSamplers = reinterpret_cast<PFNGLDELETESAMPLERSPROC>(LoadEntry("glDeleteSamplers"));
+				glGenSamplers = reinterpret_cast<PFNGLGENSAMPLERSPROC>(LoadEntry("glGenSamplers"));
+				glSamplerParameterf = reinterpret_cast<PFNGLSAMPLERPARAMETERFPROC>(LoadEntry("glSamplerParameterf"));
+				glSamplerParameteri = reinterpret_cast<PFNGLSAMPLERPARAMETERIPROC>(LoadEntry("glSamplerParameteri"));
+
+				openGLextensions[nzOpenGLExtension_SamplerObjects] = true;
+			}
+			catch (const std::exception& e)
+			{
+				NazaraWarning("Failed to load ARB_sampler_objects: (" + NzString(e.what()) + ")");
+			}
+		}
+
 		// SeparateShaderObjects
 		if (openGLversion >= 400 || IsSupported("GL_ARB_separate_shader_objects"))
 		{
-			glProgramUniform1f = reinterpret_cast<PFNGLPROGRAMUNIFORM1FPROC>(LoadEntry("glProgramUniform1f"));
-			glProgramUniform1i = reinterpret_cast<PFNGLPROGRAMUNIFORM1IPROC>(LoadEntry("glProgramUniform1i"));
-			glProgramUniform2fv = reinterpret_cast<PFNGLPROGRAMUNIFORM2FVPROC>(LoadEntry("glProgramUniform2fv"));
-			glProgramUniform3fv = reinterpret_cast<PFNGLPROGRAMUNIFORM3FVPROC>(LoadEntry("glProgramUniform3fv"));
-			glProgramUniform4fv = reinterpret_cast<PFNGLPROGRAMUNIFORM4FVPROC>(LoadEntry("glProgramUniform4fv"));
-			glProgramUniformMatrix4fv = reinterpret_cast<PFNGLPROGRAMUNIFORMMATRIX4FVPROC>(LoadEntry("glProgramUniformMatrix4fv"));
-
-			// Si ARB_gpu_shader_fp64 est supporté, alors cette extension donne également accès aux fonctions utilisant des double
-			if (openGLextensions[nzOpenGLExtension_FP64])
+			try
 			{
-				glProgramUniform1d = reinterpret_cast<PFNGLPROGRAMUNIFORM1DPROC>(LoadEntry("glProgramUniform1d"));
-				glProgramUniform2dv = reinterpret_cast<PFNGLPROGRAMUNIFORM2DVPROC>(LoadEntry("glProgramUniform2dv"));
-				glProgramUniform3dv = reinterpret_cast<PFNGLPROGRAMUNIFORM3DVPROC>(LoadEntry("glProgramUniform3dv"));
-				glProgramUniform4dv = reinterpret_cast<PFNGLPROGRAMUNIFORM4DVPROC>(LoadEntry("glProgramUniform4dv"));
-				glProgramUniformMatrix4dv = reinterpret_cast<PFNGLPROGRAMUNIFORMMATRIX4DVPROC>(LoadEntry("glProgramUniformMatrix4dv"));
-			}
+				glProgramUniform1f = reinterpret_cast<PFNGLPROGRAMUNIFORM1FPROC>(LoadEntry("glProgramUniform1f"));
+				glProgramUniform1i = reinterpret_cast<PFNGLPROGRAMUNIFORM1IPROC>(LoadEntry("glProgramUniform1i"));
+				glProgramUniform2fv = reinterpret_cast<PFNGLPROGRAMUNIFORM2FVPROC>(LoadEntry("glProgramUniform2fv"));
+				glProgramUniform3fv = reinterpret_cast<PFNGLPROGRAMUNIFORM3FVPROC>(LoadEntry("glProgramUniform3fv"));
+				glProgramUniform4fv = reinterpret_cast<PFNGLPROGRAMUNIFORM4FVPROC>(LoadEntry("glProgramUniform4fv"));
+				glProgramUniformMatrix4fv = reinterpret_cast<PFNGLPROGRAMUNIFORMMATRIX4FVPROC>(LoadEntry("glProgramUniformMatrix4fv"));
 
-			openGLextensions[nzOpenGLExtension_SeparateShaderObjects] = true;
+				// Si ARB_gpu_shader_fp64 est supporté, alors cette extension donne également accès aux fonctions utilisant des double
+				if (openGLextensions[nzOpenGLExtension_FP64])
+				{
+					glProgramUniform1d = reinterpret_cast<PFNGLPROGRAMUNIFORM1DPROC>(LoadEntry("glProgramUniform1d"));
+					glProgramUniform2dv = reinterpret_cast<PFNGLPROGRAMUNIFORM2DVPROC>(LoadEntry("glProgramUniform2dv"));
+					glProgramUniform3dv = reinterpret_cast<PFNGLPROGRAMUNIFORM3DVPROC>(LoadEntry("glProgramUniform3dv"));
+					glProgramUniform4dv = reinterpret_cast<PFNGLPROGRAMUNIFORM4DVPROC>(LoadEntry("glProgramUniform4dv"));
+					glProgramUniformMatrix4dv = reinterpret_cast<PFNGLPROGRAMUNIFORMMATRIX4DVPROC>(LoadEntry("glProgramUniformMatrix4dv"));
+				}
+
+				openGLextensions[nzOpenGLExtension_SeparateShaderObjects] = true;
+			}
+			catch (const std::exception& e)
+			{
+				NazaraWarning("Failed to load ARB_separate_shader_objects: (" + NzString(e.what()) + ")");
+			}
 		}
 
 		// TextureArray
@@ -884,6 +912,7 @@ PFNGLBINDBUFFERPROC               glBindBuffer               = nullptr;
 PFNGLBINDFRAMEBUFFERPROC          glBindFramebuffer          = nullptr;
 PFNGLBINDFRAGDATALOCATIONPROC     glBindFragDataLocation     = nullptr;
 PFNGLBINDRENDERBUFFERPROC         glBindRenderbuffer         = nullptr;
+PFNGLBINDSAMPLERPROC              glBindSampler              = nullptr;
 PFNGLBINDTEXTUREPROC              glBindTexture              = nullptr;
 PFNGLBINDVERTEXARRAYPROC          glBindVertexArray          = nullptr;
 PFNGLBLENDFUNCPROC                glBlendFunc                = nullptr;
@@ -908,6 +937,7 @@ PFNGLDELETEFRAMEBUFFERSPROC       glDeleteFramebuffers       = nullptr;
 PFNGLDELETEPROGRAMPROC            glDeleteProgram            = nullptr;
 PFNGLDELETEQUERIESPROC            glDeleteQueries            = nullptr;
 PFNGLDELETERENDERBUFFERSPROC      glDeleteRenderbuffers      = nullptr;
+PFNGLDELETESAMPLERSPROC           glDeleteSamplers           = nullptr;
 PFNGLDELETESHADERPROC             glDeleteShader             = nullptr;
 PFNGLDELETETEXTURESPROC           glDeleteTextures           = nullptr;
 PFNGLDELETEVERTEXARRAYSPROC       glDeleteVertexArrays       = nullptr;
@@ -919,6 +949,8 @@ PFNGLDRAWARRAYSPROC               glDrawArrays               = nullptr;
 PFNGLDRAWBUFFERPROC               glDrawBuffer               = nullptr;
 PFNGLDRAWBUFFERSPROC              glDrawBuffers              = nullptr;
 PFNGLDRAWELEMENTSPROC             glDrawElements             = nullptr;
+PFNGLENABLEPROC                   glEnable                   = nullptr;
+PFNGLENABLEVERTEXATTRIBARRAYPROC  glEnableVertexAttribArray  = nullptr;
 PFNGLENDQUERYPROC                 glEndQuery                 = nullptr;
 PFNGLFLUSHPROC                    glFlush                    = nullptr;
 PFNGLFRAMEBUFFERRENDERBUFFERPROC  glFramebufferRenderbuffer  = nullptr;
@@ -927,15 +959,15 @@ PFNGLFRAMEBUFFERTEXTURE1DPROC     glFramebufferTexture1D     = nullptr;
 PFNGLFRAMEBUFFERTEXTURE2DPROC     glFramebufferTexture2D     = nullptr;
 PFNGLFRAMEBUFFERTEXTURE3DPROC     glFramebufferTexture3D     = nullptr;
 PFNGLFRAMEBUFFERTEXTURELAYERPROC  glFramebufferTextureLayer  = nullptr;
-PFNGLENABLEPROC                   glEnable                   = nullptr;
-PFNGLENABLEVERTEXATTRIBARRAYPROC  glEnableVertexAttribArray  = nullptr;
 PFNGLGENERATEMIPMAPPROC           glGenerateMipmap           = nullptr;
 PFNGLGENBUFFERSPROC               glGenBuffers               = nullptr;
 PFNGLGENFRAMEBUFFERSPROC          glGenFramebuffers          = nullptr;
 PFNGLGENRENDERBUFFERSPROC         glGenRenderbuffers         = nullptr;
 PFNGLGENQUERIESPROC               glGenQueries               = nullptr;
+PFNGLGENSAMPLERSPROC              glGenSamplers              = nullptr;
 PFNGLGENTEXTURESPROC              glGenTextures              = nullptr;
 PFNGLGENVERTEXARRAYSPROC          glGenVertexArrays          = nullptr;
+PFNGLGETBOOLEANVPROC              glGetBooleanv              = nullptr;
 PFNGLGETBUFFERPARAMETERIVPROC     glGetBufferParameteriv     = nullptr;
 PFNGLGETDEBUGMESSAGELOGPROC       glGetDebugMessageLog       = nullptr;
 PFNGLGETERRORPROC                 glGetError                 = nullptr;
@@ -957,6 +989,7 @@ PFNGLGETTEXLEVELPARAMETERIVPROC   glGetTexLevelParameteriv   = nullptr;
 PFNGLGETTEXPARAMETERFVPROC        glGetTexParameterfv        = nullptr;
 PFNGLGETTEXPARAMETERIVPROC        glGetTexParameteriv        = nullptr;
 PFNGLGETUNIFORMLOCATIONPROC       glGetUniformLocation       = nullptr;
+PFNGLISENABLEDPROC                glIsEnabled                = nullptr;
 PFNGLLINEWIDTHPROC                glLineWidth                = nullptr;
 PFNGLLINKPROGRAMPROC              glLinkProgram              = nullptr;
 PFNGLMAPBUFFERPROC                glMapBuffer                = nullptr;
@@ -977,6 +1010,8 @@ PFNGLPROGRAMUNIFORMMATRIX4DVPROC  glProgramUniformMatrix4dv  = nullptr;
 PFNGLPROGRAMUNIFORMMATRIX4FVPROC  glProgramUniformMatrix4fv  = nullptr;
 PFNGLREADPIXELSPROC               glReadPixels               = nullptr;
 PFNGLRENDERBUFFERSTORAGEPROC      glRenderbufferStorage      = nullptr;
+PFNGLSAMPLERPARAMETERFPROC        glSamplerParameterf        = nullptr;
+PFNGLSAMPLERPARAMETERIPROC        glSamplerParameteri        = nullptr;
 PFNGLSCISSORPROC                  glScissor                  = nullptr;
 PFNGLSHADERSOURCEPROC             glShaderSource             = nullptr;
 PFNGLSTENCILFUNCPROC              glStencilFunc              = nullptr;

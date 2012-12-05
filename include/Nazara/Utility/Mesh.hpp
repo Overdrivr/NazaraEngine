@@ -13,23 +13,25 @@
 #include <Nazara/Core/ResourceListener.hpp>
 #include <Nazara/Core/ResourceLoader.hpp>
 #include <Nazara/Core/String.hpp>
-#include <Nazara/Utility/Animation.hpp>
 #include <Nazara/Utility/AxisAlignedBox.hpp>
+#include <Nazara/Utility/Skeleton.hpp>
 #include <Nazara/Utility/SubMesh.hpp>
+#include <Nazara/Utility/VertexStruct.hpp>
 
-class NzVertexDeclaration;
-
-struct NzMeshParams
+struct NAZARA_API NzMeshParams
 {
-	NzAnimationParams animation;
-	//const NzVertexDeclaration* declaration = nullptr;
+	NzMeshParams(); // Vérifie que le storage indiqué un peu plus bas est supporté
+
 	nzBufferStorage storage = nzBufferStorage_Hardware;
-	bool loadAnimations = true;
+	bool animated = true;
 
 	bool IsValid() const;
 };
 
+class NzAnimation;
 class NzMesh;
+
+typedef NzVertexStruct_XYZ_Normal_UV_Tangent NzMeshVertex;
 
 using NzMeshLoader = NzResourceLoader<NzMesh, NzMeshParams>;
 
@@ -43,21 +45,24 @@ class NAZARA_API NzMesh : public NzResource, NzResourceListener
 		NzMesh() = default;
 		~NzMesh();
 
-		bool AddSkin(const NzString& skin, bool setDefault = false);
 		bool AddSubMesh(NzSubMesh* subMesh);
 		bool AddSubMesh(const NzString& identifier, NzSubMesh* subMesh);
 
-		void Animate(unsigned int frameA, unsigned int frameB, float interpolation);
+		void Animate(const NzAnimation* animation, unsigned int frameA, unsigned int frameB, float interpolation) const;
 
-		bool Create(nzAnimationType type);
+		bool CreateKeyframe();
+		bool CreateSkeletal(unsigned int jointCount);
+		bool CreateStatic();
 		void Destroy();
 
 		const NzAxisAlignedBox& GetAABB() const;
-		const NzAnimation* GetAnimation() const;
+		NzString GetAnimation() const;
 		nzAnimationType GetAnimationType() const;
-		unsigned int GetFrameCount() const;
-		NzString GetSkin(unsigned int index = 0) const;
-		unsigned int GetSkinCount() const;
+		unsigned int GetJointCount() const;
+		NzString GetMaterial(unsigned int index) const;
+		unsigned int GetMaterialCount() const;
+		NzSkeleton* GetSkeleton();
+		const NzSkeleton* GetSkeleton() const;
 		NzSubMesh* GetSubMesh(const NzString& identifier);
 		NzSubMesh* GetSubMesh(unsigned int index);
 		const NzSubMesh* GetSubMesh(const NzString& identifier) const;
@@ -66,8 +71,6 @@ class NAZARA_API NzMesh : public NzResource, NzResourceListener
 		int GetSubMeshIndex(const NzString& identifier) const;
 		unsigned int GetVertexCount() const;
 
-		bool HasAnimation() const;
-		bool HasSkin(unsigned int index = 0) const;
 		bool HasSubMesh(const NzString& identifier) const;
 		bool HasSubMesh(unsigned int index = 0) const;
 
@@ -80,14 +83,18 @@ class NAZARA_API NzMesh : public NzResource, NzResourceListener
 		bool LoadFromMemory(const void* data, std::size_t size, const NzMeshParams& params = NzMeshParams());
 		bool LoadFromStream(NzInputStream& stream, const NzMeshParams& params = NzMeshParams());
 
-		void RemoveSkin(unsigned int index = 0);
 		void RemoveSubMesh(const NzString& identifier);
-		void RemoveSubMesh(unsigned int index = 0);
+		void RemoveSubMesh(unsigned int index);
 
-		bool SetAnimation(const NzAnimation* animation);
+		void SetAnimation(const NzString& animationPath);
+		void SetMaterial(unsigned int matIndex, const NzString& materialPath);
+		void SetMaterialCount(unsigned int matCount);
+
+		void Skin(const NzSkeleton* skeleton) const;
+
+		static const NzVertexDeclaration* GetDeclaration();
 
 	private:
-		void OnResourceCreated(const NzResource* resource, int index) override;
 		void OnResourceReleased(const NzResource* resource, int index) override;
 
 		NzMeshImpl* m_impl = nullptr;

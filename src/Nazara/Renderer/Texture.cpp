@@ -632,6 +632,19 @@ nzTextureWrap NzTexture::GetWrapMode() const
 	}
 }
 
+bool NzTexture::HasMipmaps() const
+{
+	#if NAZARA_RENDERER_SAFE
+	if (!m_impl)
+	{
+		NazaraError("Texture must be valid");
+		return false;
+	}
+	#endif
+
+	return m_impl->levelCount > 1;
+}
+
 bool NzTexture::IsCompressed() const
 {
 	#if NAZARA_RENDERER_SAFE
@@ -1382,7 +1395,6 @@ bool NzTexture::UpdateFace(nzCubemapFace face, const nzUInt8* pixels, const NzRe
 	glTexSubImage2D(NzOpenGL::CubemapFace[face], level, rect.x, height-rect.height-rect.y, rect.width, rect.height, format.dataFormat, format.dataType, mirrored);
 	UnlockTexture(m_impl);
 
-
 	return true;
 }
 
@@ -1480,7 +1492,8 @@ bool NzTexture::IsFormatSupported(nzPixelFormat format)
 		case nzPixelFormat_Stencil16:
 			return false;
 
-		// Dépréciés depuis OpenGL 3 (FIXME: Il doit bien exister des remplaçants ..)
+		// Dépréciés depuis OpenGL 3
+		///FIXME: Il doit bien exister des remplaçants ..
 		case nzPixelFormat_L8:
 		case nzPixelFormat_LA8:
 			return false;

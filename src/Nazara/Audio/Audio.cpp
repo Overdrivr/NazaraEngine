@@ -101,7 +101,7 @@ float NzAudio::GetSpeedOfSound()
 
 bool NzAudio::Initialize()
 {
-	if (s_moduleReferenceCouter++ != 0)
+	if (s_moduleReferenceCounter++ != 0)
 		return true; // Déjà initialisé
 
 	// Initialisation des dépendances
@@ -159,6 +159,7 @@ bool NzAudio::Initialize()
 	formats[nzAudioFormat_6_1]    = alGetEnumValue("AL_FORMAT_61CHN16");
 	formats[nzAudioFormat_7_1]    = alGetEnumValue("AL_FORMAT_71CHN16");
 
+	// Loaders
 	NzLoaders_sndfile_Register();
 
 	NazaraNotice("Initialized: Audio module");
@@ -176,7 +177,7 @@ bool NzAudio::IsFormatSupported(nzAudioFormat format)
 
 bool NzAudio::IsInitialized()
 {
-	return s_moduleReferenceCouter != 0;
+	return s_moduleReferenceCounter != 0;
 }
 
 void NzAudio::SetDopplerFactor(float dopplerFactor)
@@ -252,8 +253,11 @@ void NzAudio::SetSpeedOfSound(float speed)
 
 void NzAudio::Uninitialize()
 {
-	if (--s_moduleReferenceCouter != 0)
+	if (--s_moduleReferenceCounter != 0)
 		return; // Encore utilisé
+
+	// Loaders
+	NzLoaders_sndfile_Unregister();
 
 	// Libération du module
 	alcMakeContextCurrent(nullptr);
@@ -282,4 +286,4 @@ unsigned int NzAudio::GetOpenALFormat(nzAudioFormat format)
 	return formats[format];
 }
 
-unsigned int NzAudio::s_moduleReferenceCouter = 0;
+unsigned int NzAudio::s_moduleReferenceCounter = 0;
