@@ -174,25 +174,6 @@ void NzNode::DeletePatch()
     }
 }
 
-void NzNode::Display()
-{
-    if(m_isLeaf)
-    {
-        if(m_patchMemoryAllocated)
-        {
-            //m_patch->Display();
-        }
-        else
-        {
-            cout<<"EXCEPTION : Trying to display non-allocated patch"<<endl;
-        }
-    }
-    else
-    {
-        cout<<"EXCEPTION : Trying to display non-leaf node, error in quadtree leaves list"<<endl;
-    }
-}
-
 NzNode* NzNode::GetChild(nzLocation location)
 {
     if(!m_isLeaf)
@@ -245,15 +226,16 @@ NzNode* NzNode::GetParent()
     return m_parent;
 }
 
-void NzNode::HierarchicalSubdivide(unsigned int maxDepth,bool eraseMemory)
+void NzNode::HierarchicalSubdivide(unsigned int maxDepth)
 {
     if(m_isLeaf == true && m_nodeID.lvl < maxDepth)
     {
-        this->Subdivide(eraseMemory);
-        m_topLeftLeaf->HierarchicalSubdivide(maxDepth,eraseMemory);
-        m_topRightLeaf->HierarchicalSubdivide(maxDepth,eraseMemory);
-        m_bottomLeftLeaf->HierarchicalSubdivide(maxDepth,eraseMemory);
-        m_bottomRightLeaf->HierarchicalSubdivide(maxDepth,eraseMemory);
+        m_doNotRefine = true;
+        this->Subdivide();
+        m_topLeftLeaf->HierarchicalSubdivide(maxDepth);
+        m_topRightLeaf->HierarchicalSubdivide(maxDepth);
+        m_bottomLeftLeaf->HierarchicalSubdivide(maxDepth);
+        m_bottomRightLeaf->HierarchicalSubdivide(maxDepth);
     }
 }
 
@@ -278,7 +260,7 @@ void NzNode::SlopeBasedHierarchicalSubdivide(unsigned int maxDepth)
         if(m_nodeID.lvl < maxDepth && m_nodeID.lvl < m_patch->GetTerrainConstrainedMinDepth())
         {
             m_doNotRefine = true;
-            this->Subdivide(true);
+            this->Subdivide();
             m_topLeftLeaf->SlopeBasedHierarchicalSubdivide(maxDepth);
             m_topRightLeaf->SlopeBasedHierarchicalSubdivide(maxDepth);
             m_bottomLeftLeaf->SlopeBasedHierarchicalSubdivide(maxDepth);
@@ -294,14 +276,13 @@ void NzNode::SlopeBasedHierarchicalSubdivide(unsigned int maxDepth)
     }
 }
 
-bool NzNode::Subdivide(bool eraseMemory)
+bool NzNode::Subdivide()
 {
     if(m_isLeaf)
     {
         m_isLeaf = false;
         m_associatedQuadTree->UnRegisterLeaf(this);
 
-        //if(eraseMemory)
         this->DeletePatch();
 
         if(m_topLeftLeaf == nullptr)
@@ -381,51 +362,29 @@ bool NzNode::Subdivide(bool eraseMemory)
     return false;
 }
 
-void NzNode::Refine(bool eraseMemory)
+void NzNode::Refine()
 {
     if(!m_isLeaf && !m_doNotRefine)
     {
         m_isLeaf = true;
         m_associatedQuadTree->RegisterLeaf(this);
 
-        //if(eraseMemory)
-        //{
-            this->CreatePatch(m_center,m_size);
+        this->CreatePatch(m_center,m_size);
 
-            m_topLeftLeaf->DeletePatch();
-            m_topRightLeaf->DeletePatch();
-            m_bottomLeftLeaf->DeletePatch();
-            m_bottomRightLeaf->DeletePatch();
+        m_topLeftLeaf->DeletePatch();
+        m_topRightLeaf->DeletePatch();
+        m_bottomLeftLeaf->DeletePatch();
+        m_bottomRightLeaf->DeletePatch();
 
-            delete m_topLeftLeaf;
-            delete m_topRightLeaf;
-            delete m_bottomLeftLeaf;
-            delete m_bottomRightLeaf;
+        delete m_topLeftLeaf;
+        delete m_topRightLeaf;
+        delete m_bottomLeftLeaf;
+        delete m_bottomRightLeaf;
 
-            m_topLeftLeaf = nullptr;
-            m_topRightLeaf = nullptr;
-            m_bottomLeftLeaf = nullptr;
-            m_bottomRightLeaf = nullptr;
-
-
-       /* }
-        else
-        {
-            m_topLeftLeaf->m_isLeaf = false;
-            m_topRightLeaf->m_isLeaf = false;
-            m_bottomLeftLeaf->m_isLeaf = false;
-            m_bottomRightLeaf->m_isLeaf = false;
-
-            m_associatedQuadTree->UnRegisterLeaf(m_topLeftLeaf);
-            m_associatedQuadTree->UnRegisterLeaf(m_topRightLeaf);
-            m_associatedQuadTree->UnRegisterLeaf(m_bottomLeftLeaf);
-            m_associatedQuadTree->UnRegisterLeaf(m_bottomRightLeaf);
-
-            m_associatedQuadTree->UnRegisterNode(m_topLeftLeaf);
-            m_associatedQuadTree->UnRegisterNode(m_topRightLeaf);
-            m_associatedQuadTree->UnRegisterNode(m_bottomLeftLeaf);
-            m_associatedQuadTree->UnRegisterNode(m_bottomRightLeaf);
-        }*/
+        m_topLeftLeaf = nullptr;
+        m_topRightLeaf = nullptr;
+        m_bottomLeftLeaf = nullptr;
+        m_bottomRightLeaf = nullptr;
     }
 }
 

@@ -4,8 +4,8 @@
 
 #pragma once
 
-#ifndef ENUMERATIONS_H_INCLUDED
-#define ENUMERATIONS_H_INCLUDED
+#ifndef ENUMERATIONS_HPP
+#define ENUMERATIONS_HPP
 
 enum nzLocation
 {
@@ -43,4 +43,9 @@ struct id
     }
 };
 
-#endif // ENUMERATIONS_H_INCLUDED
+struct nzBufferLocation
+{
+    unsigned int buffer;
+    unsigned int index;
+}
+#endif // ENUMERATIONS_HPP

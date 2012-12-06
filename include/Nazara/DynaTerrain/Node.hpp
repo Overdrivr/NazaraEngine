@@ -24,13 +24,14 @@ class NzNode
         NzNode(NzQuadTree* quad, NzNode* parent, NzHeightSource* heightSource, const NzVector2f& center, const NzVector2f& size, nzLocation loc = TOPLEFT);
         ~NzNode();
         //Libère la mémoire à partir du niveau minDepth
+            //Si un node a une profondeur inférieure à minDepth, il ne sera pas supprimé
         void CleanTree(unsigned int minDepth);
         //Subdivise l'ensemble de l'arbre jusqu'à atteindre la profondeur demandée
-        void HierarchicalSubdivide(unsigned int maxDepth, bool eraseMemory = false);
-        //La classe NzPatch est chargée de l'affichage et de l'utilisation de la source de hauteur
+            //Il sera par la suite impossible de refiner en dessous de minDepth
+        void HierarchicalSubdivide(unsigned int maxDepth);
+        //La classe NzPatch est chargée de communiquer avec le dispatcher (affichage) et de l'utilisation de la source de hauteur
         void CreatePatch(const NzVector2f& center, const NzVector2f& size);
         void DeletePatch();
-        void Display();
 
         NzNode* GetChild(nzLocation location);
         unsigned int GetLevel() const;
@@ -45,8 +46,8 @@ class NzNode
         bool IsRoot() const;
         //Subdivise les nodes nécéssaires pour obtenir un terrain suffisamment défini lors des variations importantes de pente
         void SlopeBasedHierarchicalSubdivide(unsigned int maxDepth);
-        bool Subdivide(bool eraseMemory = false);
-        void Refine(bool eraseMemory);
+        bool Subdivide();
+        void Refine();
 
     private:
         void HandleNeighborSubdivision(nzDirection direction);
