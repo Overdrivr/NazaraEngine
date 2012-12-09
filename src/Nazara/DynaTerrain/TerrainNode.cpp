@@ -2,20 +2,20 @@
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include "Node.hpp"
-#include "QuadTree.hpp"
+#include "TerrainNode.hpp"
+#include "TerrainQuadTree.hpp"
 #include <stack>
 #include <iostream>
-//#include <Nazara/DynaTerrain/Node.hpp>
+//#include <Nazara/DynaTerrain/QuadCell.hpp>
 //#include <Nazara/DynaTerrain/Error.hpp>
 //#include <Nazara/DynaTerrain/Config.hpp>
 //#include <Nazara/DynaTerrain/Debug.hpp>
 
 using namespace std;
 
-int NzNode::nbNodes = 0;
+int NzTerrainNode::nbNodes = 0;
 
-NzNode::NzNode(NzQuadTree* quad, NzNode* parent, NzHeightSource* heightSource, const NzVector2f& center, const NzVector2f& size, nzLocation loc) : antiInfiniteLoop(200)
+NzTerrainNode::NzTerrainNode(NzTerrainQuadTree* quad, NzTerrainNode* parent, NzHeightSource* heightSource, const NzVector2f& center, const NzVector2f& size, nzLocation loc) : antiInfiniteLoop(200)
 {
     m_location = loc;
     m_center = center;
@@ -77,9 +77,9 @@ NzNode::NzNode(NzQuadTree* quad, NzNode* parent, NzHeightSource* heightSource, c
     m_patch->ComputeSlope();
 }
 
-NzNode::~NzNode()
+NzTerrainNode::~NzTerrainNode()
 {
-    //cout<<"Deleting Node : "<<m_nodeID.lvl<<"|"<<m_nodeID.sx<<"|"<<m_nodeID.sy<<endl;
+    //cout<<"Deleting QuadCell : "<<m_nodeID.lvl<<"|"<<m_nodeID.sx<<"|"<<m_nodeID.sy<<endl;
     nbNodes--;
     m_associatedQuadTree->UnRegisterNode(this);
     if(m_isLeaf)
@@ -90,7 +90,7 @@ NzNode::~NzNode()
 }
 
 
-void NzNode::CleanTree(unsigned int minDepth)
+void NzTerrainNode::CleanTree(unsigned int minDepth)
 {
     if(m_nodeID.lvl >= minDepth)
     {
@@ -156,7 +156,7 @@ void NzNode::CleanTree(unsigned int minDepth)
     }
 }
 
-void NzNode::CreatePatch(const NzVector2f& center, const NzVector2f& size)
+void NzTerrainNode::CreatePatch(const NzVector2f& center, const NzVector2f& size)
 {
     if(!m_patchMemoryAllocated)
     {
@@ -165,7 +165,7 @@ void NzNode::CreatePatch(const NzVector2f& center, const NzVector2f& size)
     }
 }
 
-void NzNode::DeletePatch()
+void NzTerrainNode::DeletePatch()
 {
     if(m_patchMemoryAllocated)
     {
@@ -174,7 +174,7 @@ void NzNode::DeletePatch()
     }
 }
 
-NzNode* NzNode::GetChild(nzLocation location)
+NzTerrainNode* NzTerrainNode::GetChild(nzLocation location)
 {
     if(!m_isLeaf)
     {
@@ -201,32 +201,32 @@ NzNode* NzNode::GetChild(nzLocation location)
         return this;
 }
 
-unsigned int NzNode::GetLevel() const
+unsigned int NzTerrainNode::GetLevel() const
 {
     return m_nodeID.lvl;
 }
 
-int NzNode::GetNodeAmount()
+int NzTerrainNode::GetNodeAmount()
 {
     return nbNodes;
 }
 
-const id& NzNode::GetNodeID() const
+const id& NzTerrainNode::GetNodeID() const
 {
     return m_nodeID;
 }
 
-bool NzNode::TestNodeIDIsOutsideQuadTree(id nodeId)
+bool NzTerrainNode::TestNodeIDIsOutsideQuadTree(id nodeId)
 {
     return nodeId.lvl < 0 || nodeId.sx < 0 || nodeId.sy < 0 || nodeId.sx > (std::pow(2,nodeId.lvl)-1) || nodeId.sy > (std::pow(2,nodeId.lvl)-1);
 }
 
-NzNode* NzNode::GetParent()
+NzTerrainNode* NzTerrainNode::GetParent()
 {
     return m_parent;
 }
 
-void NzNode::HierarchicalSubdivide(unsigned int maxDepth)
+void NzTerrainNode::HierarchicalSubdivide(unsigned int maxDepth)
 {
     if(m_isLeaf == true && m_nodeID.lvl < maxDepth)
     {
@@ -239,19 +239,19 @@ void NzNode::HierarchicalSubdivide(unsigned int maxDepth)
     }
 }
 
-bool NzNode::IsLeaf() const
+bool NzTerrainNode::IsLeaf() const
 {
     return m_isLeaf;
 }
 
-bool NzNode::IsRoot() const
+bool NzTerrainNode::IsRoot() const
 {
     return m_isRoot;
 }
 
-void NzNode::SlopeBasedHierarchicalSubdivide(unsigned int maxDepth)
+void NzTerrainNode::SlopeBasedHierarchicalSubdivide(unsigned int maxDepth)
 {
-    //Si le node est une feuille
+    //Si la cellule est une feuille
     if(m_isLeaf == true)
     {
         //Si son niveau est inférieur au niveau max de subdivision
@@ -276,7 +276,7 @@ void NzNode::SlopeBasedHierarchicalSubdivide(unsigned int maxDepth)
     }
 }
 
-bool NzNode::Subdivide()
+bool NzTerrainNode::Subdivide()
 {
     if(m_isLeaf)
     {
@@ -288,7 +288,7 @@ bool NzNode::Subdivide()
         if(m_topLeftLeaf == nullptr)
         {
             //On crée le premier node fils
-            m_topLeftLeaf = new NzNode(m_associatedQuadTree,this,m_heightSource,
+            m_topLeftLeaf = new NzTerrainNode(m_associatedQuadTree,this,m_heightSource,
                                        NzVector2f(m_center.x-m_size.x/2.f,m_center.y+m_size.y/2.f),
                                        m_size/2.f,TOPLEFT);
             //C'est une subdivision, le node est forcément une leaf
@@ -305,12 +305,12 @@ bool NzNode::Subdivide()
         }
         else
         {
-            cout<<"Node::Subdivide topleft problem"<<endl;
+            cout<<"QuadCell::Subdivide topleft problem"<<endl;
         }
 
         if(m_topRightLeaf == nullptr)
         {
-            m_topRightLeaf = new NzNode(m_associatedQuadTree,this,m_heightSource,
+            m_topRightLeaf = new NzTerrainNode(m_associatedQuadTree,this,m_heightSource,
                                         NzVector2f(m_center.x+m_size.x/2.f,m_center.y+m_size.y/2.f),
                                         m_size/2.f,TOPRIGHT);
             m_topRightLeaf->m_isLeaf = true;
@@ -322,12 +322,12 @@ bool NzNode::Subdivide()
         }
         else
         {
-            cout<<"Node::Subdivide topright problem"<<endl;
+            cout<<"QuadCell::Subdivide topright problem"<<endl;
         }
 
         if(m_bottomLeftLeaf == nullptr)
         {
-            m_bottomLeftLeaf = new NzNode(m_associatedQuadTree,this,m_heightSource,
+            m_bottomLeftLeaf = new NzTerrainNode(m_associatedQuadTree,this,m_heightSource,
                                           NzVector2f(m_center.x-m_size.x/2.f,m_center.y-m_size.y/2.f),
                                           m_size/2.f,BOTTOMLEFT);
             m_bottomLeftLeaf->m_isLeaf = true;
@@ -338,12 +338,12 @@ bool NzNode::Subdivide()
         }
         else
         {
-            cout<<"Node::Subdivide bottomleft problem"<<endl;
+            cout<<"QuadCell::Subdivide bottomleft problem"<<endl;
         }
 
         if(m_bottomRightLeaf == nullptr)
         {
-            m_bottomRightLeaf = new NzNode(m_associatedQuadTree,this,m_heightSource,
+            m_bottomRightLeaf = new NzTerrainNode(m_associatedQuadTree,this,m_heightSource,
                                            NzVector2f(m_center.x+m_size.x/2.f,m_center.y-m_size.y/2.f),
                                            m_size/2.f,BOTTOMRIGHT);
             m_bottomRightLeaf->m_isLeaf = true;
@@ -362,7 +362,7 @@ bool NzNode::Subdivide()
     return false;
 }
 
-void NzNode::Refine()
+void NzTerrainNode::Refine()
 {
     if(!m_isLeaf && !m_doNotRefine)
     {
@@ -388,10 +388,10 @@ void NzNode::Refine()
     }
 }
 
-void NzNode::HandleNeighborSubdivision(nzDirection direction)
+void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction)
 {
     id tempID;
-    NzNode* tempNode;
+    NzTerrainNode* tempNode;
     tempID = m_nodeID;
     int counter = 0;
 
@@ -449,16 +449,16 @@ void NzNode::HandleNeighborSubdivision(nzDirection direction)
                 if(counter < antiInfiniteLoop)
                 {
                     cout<<"Resubdivision de "<<tempID.lvl<<"|"<<tempID.sx<<"|"<<tempID.sy<<" de "<<counter<<" niveau(x)"<<endl;
-                    //On subdivise le node jusqu'à atteindre le bon niveau
+                    //On subdivise la cellule jusqu'à atteindre le bon niveau
                     tempNode->HierarchicalSubdivide(m_nodeID.lvl-1);
                 }
                 else
                 {
-                    cout<<"EXCEPTION : NzNode::HandleNeighborSubdivision ENTREE EN BOUCLE INFINIE"<<endl;
+                    cout<<"EXCEPTION : NzTerrainNode::HandleNeighborSubdivision ENTREE EN BOUCLE INFINIE"<<endl;
                     return;
                 }
             }
-            //else le node voisin est suffisamment divisé
+            //else la cellule voisine voisin est suffisamment divisé
         }
     }
     else

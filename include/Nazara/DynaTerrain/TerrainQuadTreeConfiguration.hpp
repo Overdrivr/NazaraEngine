@@ -4,13 +4,13 @@
 
 #pragma once
 
-#ifndef QUADTREECONFIGURATION_HPP
-#define QUADTREECONFIGURATION_HPP
+#ifndef TERRAINQUADTREECONFIGURATION_HPP
+#define TERRAINQUADTREECONFIGURATION_HPP
 
 #include <Nazara/Prerequesites.hpp>
 
 
-class NzQuadTreeConfiguration
+class NzTerrainQuadTreeConfiguration
 {
     //For now, there are two different mesh-optimizing methods :
         //-Distance to camera
@@ -18,8 +18,8 @@ class NzQuadTreeConfiguration
     //Each method accepts various parameters, but there are several conditions over these parameters
     //This class helps configurating the quadtree and checks input parameters
     public:
-        NzQuadTreeConfiguration();
-        ~NzQuadTreeConfiguration();
+        NzTerrainQuadTreeConfiguration();
+        ~NzTerrainQuadTreeConfiguration();
         float ComputeCameraSlope() const;
         unsigned int ComputeMaxPatchNumber() const;
         bool IsValid() const;
@@ -38,4 +38,4 @@ class NzQuadTreeConfiguration
     private:
 };
 
-#endif // QUADTREECONFIGURATION_HPP
+#endif // TERRAINQUADTREECONFIGURATION_HPP

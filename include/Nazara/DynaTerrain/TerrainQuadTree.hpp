@@ -12,30 +12,30 @@
 #include <list>
 #include <Nazara/Math/Vector2.hpp>
 #include <Nazara/Math/Vector3.hpp>
-#include "Node.hpp"
+#include "TerrainNode.hpp"
 #include "StackArray2D.hpp"
 #include "HeightSource.hpp"
-#include "NzQuadTreeConfiguration.hpp"
+#include "TerrainQuadTreeConfiguration.hpp"
 
 
-class NzQuadTree
+class NzTerrainQuadTree
 {
     public:
-        NzQuadTree(const NzQuadTreeConfiguration& configuration, const NzVector2f& terrainCenter, NzHeightSource* heightSource);
-        ~NzQuadTree();
+        NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& configuration, const NzVector2f& terrainCenter, NzHeightSource* heightSource);
+        ~NzTerrainQuadTree();
 
         void DrawTerrain();
-        const std::list<NzNode*>& GetLeavesList();
+        const std::list<NzTerrainNode*>& GetLeavesList();
         void Initialize(const NzVector3f& cameraPosition);
-        NzNode* GetNode(id nodeID);
-        NzNode* GetRootPtr();
+        NzTerrainNode* GetNode(id nodeID);
+        NzTerrainNode* GetRootPtr();
 
-        //FIX ME : ces 3 méthodes doit être private et NzNode ajouté en friend
+        //FIX ME : ces 3 méthodes doit être private et NzTerrainNode ajouté en friend
         //Vu que quadtree ne sera pas en charge de l'affichage, elles sont même peut être inutiles, y compris maintenir à jour m_leaves
         //Peut éventuellement servir à optimiser Update(..)
-        void RegisterLeaf(NzNode* node);
-        bool UnRegisterLeaf(NzNode* node);
-        bool UnRegisterNode(NzNode* node);
+        void RegisterLeaf(NzTerrainNode* node);
+        bool UnRegisterLeaf(NzTerrainNode* node);
+        bool UnRegisterNode(NzTerrainNode* node);
 
         //Updates the terrain mesh accordingly to the camera position
             //If you want a pure static terrain, you must not call this function
@@ -44,13 +44,13 @@ class NzQuadTree
 
 
     private:
-        NzNode* root;
+        NzTerrainNode* root;
         //Ces listes n'ont pas la charge des objets en mémoire
-        std::list<NzNode*> m_leaves;
-        StackArray2D<NzNode*> m_nodes;
+        std::list<NzTerrainNode*> m_leaves;
+        StackArray2D<NzTerrainNode*> m_nodes;
         NzHeightSource* m_heightSource;
 
-        NzQuadTreeConfiguration m_configuration;
+        NzTerrainQuadTreeConfiguration m_configuration;
         unsigned int m_buffersAmount;
 
         bool m_isInitialized;

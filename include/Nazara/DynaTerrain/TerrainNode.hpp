@@ -4,8 +4,8 @@
 
 #pragma once
 
-#ifndef NODE_HPP
-#define NODE_HPP
+#ifndef QUADCELL_HPP
+#define QUADCELL_HPP
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Math/Vector2.hpp>
@@ -14,17 +14,17 @@
 #include "HeightSource.hpp"
 #include "Enumerations.hpp"
 
-class NzQuadTree;
+class NzTerrainQuadTree;
 class NzHeightSource;
 
-class NzNode
+class NzTerrainNode
 {
     public:
 
-        NzNode(NzQuadTree* quad, NzNode* parent, NzHeightSource* heightSource, const NzVector2f& center, const NzVector2f& size, nzLocation loc = TOPLEFT);
-        ~NzNode();
+        NzTerrainNode(NzTerrainQuadTree* quad, NzTerrainNode* parent, NzHeightSource* heightSource, const NzVector2f& center, const NzVector2f& size, nzLocation loc = TOPLEFT);
+        ~NzTerrainNode();
         //Libère la mémoire à partir du niveau minDepth
-            //Si un node a une profondeur inférieure à minDepth, il ne sera pas supprimé
+            //Si un node a une profondeur inférieure à minDepth, elle ne sera pas supprimée
         void CleanTree(unsigned int minDepth);
         //Subdivise l'ensemble de l'arbre jusqu'à atteindre la profondeur demandée
             //Il sera par la suite impossible de refiner en dessous de minDepth
@@ -33,12 +33,12 @@ class NzNode
         void CreatePatch(const NzVector2f& center, const NzVector2f& size);
         void DeletePatch();
 
-        NzNode* GetChild(nzLocation location);
+        NzTerrainNode* GetChild(nzLocation location);
         unsigned int GetLevel() const;
         static int GetNodeAmount();
         const id& GetNodeID() const;
         bool TestNodeIDIsOutsideQuadTree(id nodeId);
-        NzNode* GetParent();
+        NzTerrainNode* GetParent();
 
         //Renvoie true si le node est a une extrémité de l'arbre
         bool IsLeaf() const;
@@ -52,12 +52,12 @@ class NzNode
     private:
         void HandleNeighborSubdivision(nzDirection direction);
         /* Variables pour le fonctionnement basique de l'arbre */
-        NzQuadTree* m_associatedQuadTree;
-        NzNode* m_parent;
-        NzNode* m_topLeftLeaf;
-        NzNode* m_topRightLeaf;
-        NzNode* m_bottomLeftLeaf;
-        NzNode* m_bottomRightLeaf;
+        NzTerrainQuadTree* m_associatedQuadTree;
+        NzTerrainNode* m_parent;
+        NzTerrainNode* m_topLeftLeaf;
+        NzTerrainNode* m_topRightLeaf;
+        NzTerrainNode* m_bottomLeftLeaf;
+        NzTerrainNode* m_bottomRightLeaf;
 
         bool m_isLeaf;
         bool m_isRoot;
@@ -81,4 +81,4 @@ class NzNode
         NzHeightSource* m_heightSource;
 };
 
-#endif // NODE_HPP
+#endif // QUADCELL_HPP

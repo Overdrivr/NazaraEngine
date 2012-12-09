@@ -2,10 +2,10 @@
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include "QuadTreeConfiguration.hpp"
+#include "TerrainQuadTreeConfiguration.hpp"
 #include <cmath>
 
-NzQuadTreeConfiguration::NzQuadTreeConfiguration()
+NzTerrainQuadTreeConfiguration::NzTerrainQuadTreeConfiguration()
 {
     terrainSize = 2000.f;
     minimumDepth = 3;
@@ -15,17 +15,17 @@ NzQuadTreeConfiguration::NzQuadTreeConfiguration()
     effectRadius = 300.f;
 }
 
-NzQuadTreeConfiguration::~NzQuadTreeConfiguration()
+NzTerrainQuadTreeConfiguration::~NzTerrainQuadTreeConfiguration()
 {
     //dtor
 }
 
-float NzQuadTreeConfiguration::ComputeCameraSlope() const
+float NzTerrainQuadTreeConfiguration::ComputeCameraSlope() const
 {
     return (terrainSize/std::pow(2,farCameraDepth) - terrainSize/std::pow(2,closeCameraDepth))/effectRadius;
 }
 
-unsigned int NzQuadTreeConfiguration::ComputeMaxPatchNumber() const
+unsigned int NzTerrainQuadTreeConfiguration::ComputeMaxPatchNumber() const
 {
     unsigned int camera = 0;
 
@@ -64,7 +64,7 @@ unsigned int NzQuadTreeConfiguration::ComputeMaxPatchNumber() const
     return camera + slope;
 }
 
-bool NzQuadTreeConfiguration::IsValid() const
+bool NzTerrainQuadTreeConfiguration::IsValid() const
 {
     return minimumDepth < slopeMaxDepth &&
            minimumDepth < closeCameraDepth &&

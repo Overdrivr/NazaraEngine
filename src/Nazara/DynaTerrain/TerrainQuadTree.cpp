@@ -2,26 +2,25 @@
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include "QuadTree.hpp"
+#include "TerrainQuadTree.hpp"
 #include <iostream>
 #include <cmath>
 
 using namespace std;
-
 
 //#include <Nazara/DynaTerrain/HeightSource.hpp>
 //#include <Nazara/DynaTerrain/Error.hpp>
 //#include <Nazara/DynaTerrain/Config.hpp>
 //#include <Nazara/DynaTerrain/Debug.hpp>
 
-NzQuadTree::NzQuadTree(const NzQuadTreeConfiguration& configuration, const NzVector2f& terrainCenter, NzHeightSource* heightSource)
+NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& configuration, const NzVector2f& terrainCenter, NzHeightSource* heightSource)
 {
 
     if(configuration.IsValid())
         m_configuration = configuration;
 
     m_heightSource = heightSource;
-    root = new NzNode(this,0,m_heightSource,terrainCenter,NzVector2f(m_configuration.terrainSize,m_configuration.terrainSize));
+    root = new NzTerrainNode(this,0,m_heightSource,terrainCenter,NzVector2f(m_configuration.terrainSize,m_configuration.terrainSize));
     m_leaves.push_back(root);
     m_nodes.at(0,0,0) = root;
 
@@ -31,25 +30,25 @@ NzQuadTree::NzQuadTree(const NzQuadTreeConfiguration& configuration, const NzVec
     m_isInitialized = false;
 }
 
-NzQuadTree::~NzQuadTree()
+NzTerrainQuadTree::~NzTerrainQuadTree()
 {
     root->CleanTree(0);
     cout << "NbNodes non supprimes : "<<root->GetNodeAmount()-1<< endl;
     delete root;
 }
 
-void NzQuadTree::DrawTerrain()
+void NzTerrainQuadTree::DrawTerrain()
 {
     //for(unsigned int i(0) ; i < m_leaves.size() ; ++i)
       //  m_leaves.at(i)->Display();
 }
 
-const std::list<NzNode*>& NzQuadTree::GetLeavesList()
+const std::list<NzTerrainNode*>& NzTerrainQuadTree::GetLeavesList()
 {
     return m_leaves;
 }
 
-NzNode* NzQuadTree::GetNode(id nodeID)
+NzTerrainNode* NzTerrainQuadTree::GetNode(id nodeID)
 {
     if(m_nodes.Exists(nodeID))
         return m_nodes.at(nodeID);
@@ -57,12 +56,12 @@ NzNode* NzQuadTree::GetNode(id nodeID)
         return nullptr;
 }
 
-NzNode* NzQuadTree::GetRootPtr()
+NzTerrainNode* NzTerrainQuadTree::GetRootPtr()
 {
     return root;
 }
 
-void NzQuadTree::Initialize(const NzVector3f& cameraPosition)
+void NzTerrainQuadTree::Initialize(const NzVector3f& cameraPosition)
 {
      m_isInitialized = true;
 
@@ -85,21 +84,21 @@ void NzQuadTree::Initialize(const NzVector3f& cameraPosition)
 
 }
 
-void NzQuadTree::RegisterLeaf(NzNode* node)
+void NzTerrainQuadTree::RegisterLeaf(NzTerrainNode* node)
 {
-    //Verifier si le node n'y est pas déjà (PB potentiel avec Clean Tree)
+    //Verifier si la cellule n'y est pas déjà (PB potentiel avec Clean Tree)
     m_leaves.push_back(node);
     m_nodes.at(node->GetNodeID()) = node;
 }
 
-bool NzQuadTree::UnRegisterLeaf(NzNode* node)
+bool NzTerrainQuadTree::UnRegisterLeaf(NzTerrainNode* node)
 {
     m_leaves.remove(node);
     //En cas de problèmes, tester si la feuille est bien présente avant de tenter de l'enlever
     return true;
 }
 
-bool NzQuadTree::UnRegisterNode(NzNode* node)
+bool NzTerrainQuadTree::UnRegisterNode(NzTerrainNode* node)
 {
     if(m_nodes.Exists(node->GetNodeID()))
     {
@@ -108,14 +107,14 @@ bool NzQuadTree::UnRegisterNode(NzNode* node)
     }
     else
     {
-        cout<< "EXCEPTION : NzQuadTree::UnRegisterLeaf : Trying to remove unexisting node"<<node->GetNodeID().lvl<<"|"
-                                                                                          <<node->GetNodeID().sx<<"|"
-                                                                                          <<node->GetNodeID().sy<<endl;
+        cout<< "EXCEPTION : NzTerrainQuadTree::UnRegisterLeaf : Trying to remove unexisting node"<<node->GetNodeID().lvl<<"|"
+                                                                                                 <<node->GetNodeID().sx<<"|"
+                                                                                                 <<node->GetNodeID().sy<<endl;
         return false;
     }
 }
 
-void NzQuadTree::Update(const NzVector3d& cameraPosition)
+void NzTerrainQuadTree::Update(const NzVector3d& cameraPosition)
 {
 
 }
