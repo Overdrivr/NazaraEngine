@@ -47,5 +47,5 @@ struct nzBufferLocation
 {
     unsigned int buffer;
     unsigned int index;
-}
+};
 #endif // ENUMERATIONS_HPP

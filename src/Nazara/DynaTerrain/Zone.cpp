@@ -15,3 +15,38 @@ NzZone::~NzZone()
 {
     //dtor
 }
+
+void NzZone::AddBuffer(NzVertexBuffer* buffer)
+{
+
+}
+
+void NzZone::AddPatch(const std::array<float,150>& vertices, const id& ID)
+{
+
+}
+
+void NzZone::DrawBuffers()
+{
+
+}
+
+unsigned int NzZone::GetFreeBuffersAmount()
+{
+
+}
+
+bool NzZone::RemoveFreeBuffer(NzVertexBuffer* buffer)
+{
+
+}
+
+bool NzZone::RemovePatch(const id& ID)
+{
+
+}
+
+bool NzZone::UpdatePatch(const std::array<float,150>& vertices, const id& ID)
+{
+
+}

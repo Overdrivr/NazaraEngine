@@ -8,6 +8,9 @@
 #define ZONE_HPP
 
 #include <Nazara/Prerequesites.hpp>
+#include <Nazara/Utility/VertexBuffer.hpp>
+#include "Enumerations.hpp"
+#include <array>
 #include <vector>
 #include <deque>
 #include <map>
@@ -24,9 +27,6 @@ class NzZone
         bool RemoveFreeBuffer(NzVertexBuffer* buffer);
         bool RemovePatch(const id& ID);
         bool UpdatePatch(const std::array<float,150>& vertices, const id& ID);
-
-
-
     protected:
     private:
         //Les buffers alloués à la zone
