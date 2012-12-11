@@ -14,6 +14,7 @@
 #include <vector>
 #include <deque>
 #include <map>
+#include <queue>
 
 class NzZone
 {
@@ -24,6 +25,7 @@ class NzZone
         void AddPatch(const std::array<float,150>& vertices, const id& ID);
         void DrawBuffers();
         unsigned int GetFreeBuffersAmount();
+        unsigned int GetFreeSubBuffersAmount();
         bool RemoveFreeBuffer(NzVertexBuffer* buffer);
         bool RemovePatch(const id& ID);
         bool UpdatePatch(const std::array<float,150>& vertices, const id& ID);
@@ -42,7 +44,11 @@ class NzZone
         //Contient l'ensemble des id des patchs contenus par la zone et leur position dans le buffer
             //tout patch contenu par la zone est localisable grace à ce conteneur.
             //Le buffer (de 25 points) du patch est alors situé à m_buffers.at(m_meshesIndexIterator->second())
-        std::map<id,unsigned int> m_meshesIndex;
+        std::map<id,unsigned int> m_patchesIndex;
+
+        //Contient l'ensemble des patches qui n'ont pas pu être mis en mémoire vidéo
+            //pour cause d'espace insuffisant
+        std::queue<float> m_unbufferedPatches;
 
         unsigned int m_patchAmount;
         unsigned int m_bufferAmount;
