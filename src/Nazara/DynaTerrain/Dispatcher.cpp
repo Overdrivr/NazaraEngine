@@ -10,7 +10,46 @@
 
 NzDispatcher::NzDispatcher()
 {
-	m_elements[0].usage = nzElementUsage_Position;
+    m_isReady = false;
+
+
+}
+
+NzDispatcher::~NzDispatcher()
+{
+    for(unsigned int i(0) ; i < m_buffers.size() ; ++i)
+    {
+        delete m_buffers.at(i);
+        m_buffers.at(i) = nullptr;
+    }
+    m_buffers.clear();
+}
+
+void NzDispatcher::DrawAll()
+{
+    if(m_isReady)
+    {
+
+    }
+}
+
+unsigned int NzDispatcher::GetFreeBuffersAmount() const
+{
+    return m_freeBuffers.size();
+}
+
+void NzDispatcher::ErasePatch(const id& ID)
+{
+    if(m_isReady)
+    {
+
+    }
+}
+
+bool NzDispatcher::Initialize(unsigned int zoneDepth, unsigned int bufferAmount)
+{
+    ///---- On crée la déclaration de vertices
+    m_elements[0].usage = nzElementUsage_Position;
 	m_elements[0].offset = 0;
 	m_elements[0].type = nzElementType_Float3;
 
@@ -18,124 +57,109 @@ NzDispatcher::NzDispatcher()
 	m_elements[1].offset = 3*sizeof(float);
 	m_elements[1].type = nzElementType_Float3;
 
-/*	if (!declaration.Create(elements, 2))
+	if (!m_declaration.Create(m_elements, 2))
 	{
 		std::cout << "NzDispatcher : Failed to create vertex declaration" << std::endl;
-	}*/
-}
+		return false;
+	}
 
-NzDispatcher::~NzDispatcher()
-{
-    for(int i(0) ; i < m_zones.size() ; ++i)
-    {
-        delete m_zones.at(i);
-        m_zones.at(i) = nullptr;
-    }
-/*
-    for(int i(0) ; i < m_buffers.size() ; ++i)
-    {
-        delete m_buffers.at(i);
-        m_buffers.at(i) = nullptr;
-    }*/
-}
+	///On crée l'index buffer
+        //Un patch a besoin d'un index buffer de 192 points, * 1750 patches = 336000
+	m_indexBuffer.reset(new NzIndexBuffer(336000));
 
-void NzDispatcher::DrawAll()
-{
-
-}
-
-unsigned int NzDispatcher::GetFreeBuffersAmount() const
-{
-    return m_freeBuffersAmount;
-}
-
-void NzDispatcher::ErasePatch(const id& ID)
-{
-
-}
-
-void NzDispatcher::Initialize(unsigned int zoneDepth, unsigned int bufferAmount)
-{
+    ///-----On crée toutes les zones nécessaires
     m_zoneDepth = zoneDepth;
+    m_zonesAmountX = std::pow(2,m_zoneDepth);
     //On crée le nombre de zones demandé
-    for(int i(0) ; i < (1<<zoneDepth) ; ++i)
-        for(int j(0) ; j < (1<<zoneDepth) ; ++j)
-        {
-            NzZone* zone = new NzZone;
-            m_zones.push_back(zone);
-        }
-    int nbZones = (1<<zoneDepth)*(1<<zoneDepth);
-    std::cout<< nbZones<<" created zones"<<std::endl;
-
-    m_totalBuffersAmount = bufferAmount;
-    //On alloue le nombre de buffers demandés si possible
-    /*for(int i(0) ; i < m_bufferAmount ; ++i)
+    for(unsigned int i(0) ; i < m_zonesAmountX*m_zonesAmountX ; ++i)
     {
-        NzVertexBuffer* buffer = new NzVertexBuffer;
-        m_buffers.push_back(buffer);
-    }*/
+        std::unique_ptr<NzZone> zone(new NzZone(this));
+        m_zones.push_back(std::move(zone));
+    }
 
-    //On met tous ces buffers dans la file de buffers libres
-    //
-    m_freeBuffersAmount = m_totalBuffersAmount;
+    ///------ On alloue le nombre de buffers demandés si possible
+    //FIX ME : Que se passe t'il si on demande trop de mémoire vidéo ?
+    for(unsigned int i(0) ; i < bufferAmount ; ++i)
+    {
+        NzVertexBuffer* buffer = new NzVertexBuffer(&m_declaration,262500, nzBufferStorage_Hardware, nzBufferUsage_Static);
+        m_buffers.push_back(buffer);
+        //On met tous ces buffers dans la file de buffers libres
+        m_freeBuffers.push(buffer);
+        //std::cout<<"buffer capacity "<<m_freeBuffers.back()->GetVertexCount()<<"|"<<i<<std::endl;
+    }
+    m_isReady = true;
+    return true;
 }
 
-bool NzDispatcher::QueryFreeBuffer(NzVertexBuffer* buffer)
+NzVertexBuffer* NzDispatcher::QueryFreeBuffer()
 {
-    if(m_freeBuffersAmount > 0)
+    NzVertexBuffer* buffer = nullptr;
+
+    if(m_freeBuffers.size() > 0 && m_isReady)
     {
         buffer = m_freeBuffers.front();
         m_freeBuffers.pop();
-        m_freeBuffersAmount--;
-
-        return true;
     }
-    else
-        return false;
+
+    return buffer;
+}
+
+void NzDispatcher::ReturnBuffer(NzVertexBuffer* buffer)
+{
+    m_freeBuffers.push(buffer);
 }
 
 bool NzDispatcher::SubmitPatch(const std::array<float,150>& subBuffer, const id& ID)
 {
+    if(!m_isReady)
+        return false;
+
     //On récupère la zone devant accueillir le patch
     id temp;
-    temp.sx = ID.sx*(1<<m_zoneDepth)/(1<<ID.lvl);
-    temp.sy = ID.sy*(1<<m_zoneDepth)/(1<<ID.lvl);
+    temp.sx = ID.sx*m_zonesAmountX/std::pow(2,ID.lvl);
+    temp.sy = ID.sy*m_zonesAmountX/std::pow(2,ID.lvl);
 
-    if(temp.sx < (1<<m_zoneDepth) && temp.sy < (1<<m_zoneDepth))
+    if(temp.sx < m_zonesAmountX && temp.sy < m_zonesAmountX)
     {
-        m_zones.at(temp.sx + (1<<m_zoneDepth)*temp.sy)->AddPatch(subBuffer,ID);
+        m_zones.at(temp.sx + m_zonesAmountX*temp.sy)->AddPatch(subBuffer,ID);
         return true;
     }
     else
     {
-        std::cout<<"Submitting patch "<<ID.lvl<<"|"<<ID.sx<<"|"<<ID.sy<<" outside supported area :"<<std::pow(2,m_zoneDepth)<<std::endl;
+        std::cout<<"Submitting patch "<<ID.lvl<<"|"<<ID.sx<<"|"<<ID.sy<<" outside supported area :"<<m_zonesAmountX<<std::endl;
         return false;
     }
 
 }
-
 
 bool NzDispatcher::UpdatePatch(const std::array<float,150>& subBuffer, const id& ID)
 {
-    //On récupère la zone devant accueillir le patch
-    id temp;
-    temp.sx = ID.sx*(1<<m_zoneDepth)/(1<<ID.lvl);
-    temp.sy = ID.sy*(1<<m_zoneDepth)/(1<<ID.lvl);
-
-    if(temp.sx < (1<<m_zoneDepth) && temp.sy < (1<<m_zoneDepth))
+    if(m_isReady)
     {
-        m_zones.at(temp.sx + (1<<m_zoneDepth)*temp.sy)->UpdatePatch(subBuffer,ID);
+        //On récupère la zone devant accueillir le patch
+        id temp;
+        temp.sx = ID.sx*m_zonesAmountX/std::pow(2,ID.lvl);
+        temp.sy = ID.sy*m_zonesAmountX/std::pow(2,ID.lvl);
+
+        if(temp.sx < m_zonesAmountX && temp.sy < m_zonesAmountX)
+        {
+            m_zones.at(temp.sx + m_zonesAmountX*temp.sy)->UpdatePatch(subBuffer,ID);
+            return true;
+        }
+        else
+        {
+            std::cout<<"Submitting patch "<<ID.lvl<<"|"<<ID.sx<<"|"<<ID.sy<<" outside supported area :"<<m_zonesAmountX<<std::endl;
+            return false;
+        }
     }
     else
-    {
-        std::cout<<"Submitting patch "<<ID.lvl<<"|"<<ID.sx<<"|"<<ID.sy<<" outside supported area :"<<std::pow(2,m_zoneDepth)<<std::endl;
         return false;
-    }
-
 }
 
-
-void NzDispatcher::ViewFrustumCulling()
+void NzDispatcher::UpdateViewFrustumCulling()
 {
+    if(m_isReady)
+    {
 
+    }
 }
