@@ -121,6 +121,7 @@ bool NzDispatcher::SubmitPatch(const std::array<float,150>& subBuffer, const id&
 
     if(temp.sx < m_zonesAmountX && temp.sy < m_zonesAmountX)
     {
+        std::cout<<"submitting patch to zone "<<temp.sx<<" | "<<temp.sy<<std::endl;
         m_zones.at(temp.sx + m_zonesAmountX*temp.sy)->AddPatch(subBuffer,ID);
         return true;
     }
@@ -143,6 +144,7 @@ bool NzDispatcher::UpdatePatch(const std::array<float,150>& subBuffer, const id&
 
         if(temp.sx < m_zonesAmountX && temp.sy < m_zonesAmountX)
         {
+            std::cout<<"submitting patch to zone "<<temp.sx<<" | "<<temp.sy<<std::endl;
             m_zones.at(temp.sx + m_zonesAmountX*temp.sy)->UpdatePatch(subBuffer,ID);
             return true;
         }

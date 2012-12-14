@@ -16,9 +16,12 @@
 #include <deque>
 #include <map>
 #include <queue>
+#include <list>
 #include <memory>
 
 class NzDispatcher;
+
+
 
 class NzZone
 {
@@ -34,6 +37,8 @@ class NzZone
         unsigned int GetFreeBuffersAmount();
         unsigned int GetFreeSubBuffersAmount();
 
+        void Optimize(int amount);
+
         bool RemoveFreeBuffer(NzVertexBuffer* buffer);
         bool RemovePatch(const id& ID);
 
@@ -41,6 +46,8 @@ class NzZone
 
     protected:
     private:
+        bool InsertSparseBufferValue(const nzBufferLocation& loc, const id& ID);
+        bool RemoveSparseBufferValue(const nzBufferLocation& loc);
         NzDispatcher* m_dispatcher;
 
         std::vector<NzVertexBuffer*> m_buffers;
@@ -48,7 +55,11 @@ class NzZone
         std::deque<nzBufferLocation> m_freeSpotsIndex;
 
         //Contient l'ensemble des id des patchs contenus par la zone et leur emplacement dans le buffer
+            //Efficace pour trouver rapidement l'emplacement d'un patch
         std::map<id,nzBufferLocation> m_patchesIndex;
+        //Représentation de l'agencement des patches dans les buffers
+            //Efficace pour gérer la mémoire
+        std::vector<std::list<xid>> m_sparseBuffers;
 
         //Contient l'ensemble des patches qui n'ont pas pu être mis en mémoire vidéo pour cause d'espace insuffisant
         std::queue<float> m_unbufferedPatches;

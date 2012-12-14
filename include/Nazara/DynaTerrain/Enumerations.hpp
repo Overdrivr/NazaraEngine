@@ -43,6 +43,24 @@ struct id
     }
 };
 
+//extended id
+struct xid
+{
+    unsigned int lvl;
+    unsigned int sx;
+    unsigned int sy;
+    unsigned freeAdjacentConsecutiveSlots;
+    bool dummy;
+
+    xid() : lvl(0), sx(0), sy(0), freeAdjacentConsecutiveSlots(0), dummy(false)
+    {}
+
+    bool operator<( const xid& ID ) const
+    {
+        return (this->lvl != ID.lvl) ? this->lvl < ID.lvl : (this->sx != ID.sx) ? this->sx < ID.sx : this->sy < ID.sy;
+    }
+};
+
 struct nzBufferLocation
 {
     unsigned int buffer;
