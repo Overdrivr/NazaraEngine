@@ -10,14 +10,12 @@
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Utility/VertexBuffer.hpp>
 #include "Enumerations.hpp"
+#include "SparseBuffer.hpp"
+#include "SparseBufferSet.hpp"
 
+#include <queue>
 #include <array>
 #include <vector>
-#include <deque>
-#include <map>
-#include <queue>
-#include <list>
-#include <memory>
 
 class NzDispatcher;
 
@@ -35,7 +33,7 @@ class NzZone
         void DrawBuffers();
 
         unsigned int GetFreeBuffersAmount();
-        unsigned int GetFreeSubBuffersAmount();
+        unsigned int GetFreeSlotsAmount();
 
         void Optimize(int amount);
 
@@ -46,22 +44,17 @@ class NzZone
 
     protected:
     private:
-        bool InsertSparseBufferValue(const nzBufferLocation& loc, const id& ID);
-        bool RemoveSparseBufferValue(const nzBufferLocation& loc);
+
+
         NzDispatcher* m_dispatcher;
-
+        //Raw data for rendering
         std::vector<NzVertexBuffer*> m_buffers;
+        //Image of the raw data for quick search over patch id & memory fragmentation reduction
+        NzSparseBufferSet<id> m_buffersImage;
 
-        std::deque<nzBufferLocation> m_freeSpotsIndex;
-
-        //Contient l'ensemble des id des patchs contenus par la zone et leur emplacement dans le buffer
-            //Efficace pour trouver rapidement l'emplacement d'un patch
-        std::map<id,nzBufferLocation> m_patchesIndex;
-        //Représentation de l'agencement des patches dans les buffers
-            //Efficace pour gérer la mémoire
-        std::vector<std::list<xid>> m_sparseBuffers;
 
         //Contient l'ensemble des patches qui n'ont pas pu être mis en mémoire vidéo pour cause d'espace insuffisant
+            //Non utilisé : FIX ME : Vraiment Utile ?
         std::queue<float> m_unbufferedPatches;
         std::queue<id> m_unbufferedPatchesIndex;
 };
