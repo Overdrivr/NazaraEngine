@@ -30,7 +30,7 @@ class NzZone
         void AddBuffer(NzVertexBuffer* buffer);
         void AddPatch(const std::array<float,150>& vertices, const id& ID);
 
-        void DrawBuffers();
+        void DrawBuffers() const;
 
         unsigned int GetFreeBuffersAmount();
         unsigned int GetFreeSlotsAmount();
@@ -50,8 +50,7 @@ class NzZone
         //Raw data for rendering
         std::vector<NzVertexBuffer*> m_buffers;
         //Image of the raw data for quick search over patch id & memory fragmentation reduction
-        NzSparseBufferSet<id> m_buffersImage;
-
+        NzSparseBufferSet<id> m_buffersMap;
 
         //Contient l'ensemble des patches qui n'ont pas pu être mis en mémoire vidéo pour cause d'espace insuffisant
             //Non utilisé : FIX ME : Vraiment Utile ?

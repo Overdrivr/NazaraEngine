@@ -18,10 +18,12 @@ template <typename T> class NzSparseBuffer
         NzSparseBuffer(unsigned int bufferSize);
         ~NzSparseBuffer();
 
+
+        const std::list<NzVector2i>& GetVerticeIndexBatches();
         unsigned int GetFreeSlotsAmount() const;
 
         //Insert the value inside the buffer
-            //Returns -1 if something went wrong or the index location if everything ok
+            //Returns -1 if something went wrong OR index location if everything ok
         int InsertValue(const T& value);
 
         //Reduces fragmentation by moving 1 value from case to an other
@@ -37,12 +39,18 @@ template <typename T> class NzSparseBuffer
     private:
 
         std::deque<nzBufferLocation> m_freeSlots;
+
         //Contient l'ensemble des id des patchs contenus par la zone et leur emplacement dans le buffer
             //Efficace pour trouver rapidement l'emplacement d'un patch
         std::map<id,nzBufferLocation> m_slots;
+
         //Représentation de l'agencement des patches dans les buffers
             //Efficace pour gérer la mémoire
         std::list<xid> m_internalBuffer;
+
+        //Représentation des espaces libres dans le buffer
+            //Efficace pour déterminer le nombre et la position de blocs de vertices consécutives
+        std::list<int> m_verticeBatches;
 
         unsigned int m_bufferSize;
 };

@@ -18,28 +18,29 @@
 #include <queue>
 #include <memory>
 
+//FIX ME : Remplacer le vector par un quadtree
+
 class NzDispatcher
 {
     public:
         NzDispatcher();
         ~NzDispatcher();
 
-        void DrawAll();
+        void DrawAll(bool viewFrustumCullingEnabled = true);
 
         unsigned int GetFreeBuffersAmount() const;
-
-        void ErasePatch(const id& ID);
 
         bool Initialize(unsigned int zoneDepth, unsigned int bufferAmount);
 
         NzVertexBuffer* QueryFreeBuffer();
 
+        void RemovePatch(const id& ID);
         void ReturnBuffer(NzVertexBuffer* buffer);
 
         bool SubmitPatch(const std::array<float,150>& subBuffer, const id& ID);
 
         bool UpdatePatch(const std::array<float,150>& subBuffer, const id& ID);
-        void UpdateViewFrustumCulling();
+        void UpdateViewFrustum(/* */);
 
     protected:
     private:

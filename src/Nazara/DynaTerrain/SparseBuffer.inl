@@ -6,12 +6,19 @@ template <typename T>
 NzSparseBuffer<T>::NzSparseBuffer(unsigned int bufferSize)
 {
     m_bufferSize = bufferSize;
+    m_verticeBatches.push_front(0);
 }
 
 template <typename T>
 NzSparseBuffer<T>::~NzSparseBuffer()
 {
     //dtor
+}
+
+template <typename T>
+const std::list<NzVector2i>& NzSparseBuffer<T>::GetVerticeIndexBatches()
+{
+    return m_verticeBatches;
 }
 
 template <typename T>

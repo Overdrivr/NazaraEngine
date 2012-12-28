@@ -2,9 +2,8 @@
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#pragma once
-
 #include "Dispatcher.hpp"
+#include <Nazara/Renderer/Renderer.hpp>
 #include <iostream>
 #include <cmath>
 
@@ -25,11 +24,21 @@ NzDispatcher::~NzDispatcher()
     m_buffers.clear();
 }
 
-void NzDispatcher::DrawAll()
+void NzDispatcher::DrawAll(bool viewFrustumCullingEnabled)
 {
     if(m_isReady)
     {
+        //Le SetIndexBuffer peut être fait une seule fois dans le dispatcher ?
+        NzRenderer::SetIndexBuffer(m_indexBuffer.get());
+        //Pareil pour la vertex declaration
+        //NzRenderer::SetVertexDeclaration(m_declaration);
 
+        //FIX ME : View Frustum Culling
+
+        for(unsigned int i(0) ; i < m_zones.size() ; ++i)
+        {
+            m_zones.at(i)->DrawBuffers();
+        }
     }
 }
 
@@ -38,11 +47,15 @@ unsigned int NzDispatcher::GetFreeBuffersAmount() const
     return m_freeBuffers.size();
 }
 
-void NzDispatcher::ErasePatch(const id& ID)
+void NzDispatcher::RemovePatch(const id& ID)
 {
     if(m_isReady)
     {
-
+        for(unsigned int i(0) ; i < m_zones.size() ; ++i)
+        {
+            if(m_zones.at(i)->RemovePatch(ID))
+                return;
+        }
     }
 }
 
@@ -150,7 +163,7 @@ bool NzDispatcher::UpdatePatch(const std::array<float,150>& subBuffer, const id&
         }
         else
         {
-            std::cout<<"Submitting patch "<<ID.lvl<<"|"<<ID.sx<<"|"<<ID.sy<<" outside supported area :"<<m_zonesAmountX<<std::endl;
+            std::cout<<"Updating patch "<<ID.lvl<<"|"<<ID.sx<<"|"<<ID.sy<<" outside supported area :"<<m_zonesAmountX<<std::endl;
             return false;
         }
     }
@@ -158,10 +171,7 @@ bool NzDispatcher::UpdatePatch(const std::array<float,150>& subBuffer, const id&
         return false;
 }
 
-void NzDispatcher::UpdateViewFrustumCulling()
+void NzDispatcher::UpdateViewFrustum(/* */)
 {
-    if(m_isReady)
-    {
 
-    }
 }

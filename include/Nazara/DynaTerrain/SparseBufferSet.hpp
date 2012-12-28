@@ -17,10 +17,11 @@ template <typename T> class NzSparseBufferSet
         NzSparseBufferSet();
         ~NzSparseBufferSet();
 
-        //at()
-        void AddBuffer();
+        T& at(unsigned int index);
+        const T& at(unsigned int index) const;
+        void AddEmptyBuffer();
 
-        nzBufferLocation FindValue(const T& value) const;
+        //nzBufferLocation FindValue(const T& value) const;
 
         unsigned int GetBufferAmount() const;
         unsigned int GetFreeBuffersAmount() const;
@@ -31,11 +32,14 @@ template <typename T> class NzSparseBufferSet
 
         NzVector2<nzBufferLocation> ReduceFragmentation();
         bool RemoveBuffer(unsigned int index);
-        nzBufferLocation RemoveValue(const T& value);
+        bool RemoveValue(const T& value);
+
+        nzBufferLocation UpdateValue(const T& value);
 
     protected:
     private:
         std::vector<NzSparseBuffer<T>> m_buffers;
+        unsigned int m_occupiedSlotsAmount;
 };
 
 #include "SparseBufferSet.inl"
