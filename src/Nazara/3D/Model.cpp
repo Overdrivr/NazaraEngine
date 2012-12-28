@@ -112,6 +112,11 @@ nzSceneNodeType NzModel::GetSceneNodeType() const
 	return nzSceneNodeType_Model;
 }
 
+NzSkeleton* NzModel::GetSkeleton()
+{
+	return &m_skeleton;
+}
+
 const NzSkeleton* NzModel::GetSkeleton() const
 {
 	return &m_skeleton;
@@ -356,6 +361,7 @@ void NzModel::SetSkinCount(unsigned int skinCount)
 
 bool NzModel::SetSequence(const NzString& sequenceName)
 {
+	///TODO: Rendre cette erreur "safe" avec le nouveau système de gestions d'erreur (No-log)
 	#if NAZARA_3D_SAFE
 	if (!m_animation)
 	{
@@ -364,17 +370,17 @@ bool NzModel::SetSequence(const NzString& sequenceName)
 	}
 	#endif
 
-	m_currentSequence = m_animation->GetSequence(sequenceName);
-	if (m_currentSequence)
-	{
-		m_nextFrame = m_currentSequence->firstFrame;
-		return true;
-	}
-	else
+	const NzSequence* currentSequence = m_animation->GetSequence(sequenceName);
+	if (!currentSequence)
 	{
 		NazaraError("Sequence not found");
 		return false;
 	}
+
+	m_currentSequence = currentSequence;
+	m_nextFrame = m_currentSequence->firstFrame;
+
+	return true;
 }
 
 void NzModel::SetSequence(unsigned int sequenceIndex)
@@ -387,7 +393,16 @@ void NzModel::SetSequence(unsigned int sequenceIndex)
 	}
 	#endif
 
-	m_currentSequence = m_animation->GetSequence(sequenceIndex);
+	const NzSequence* currentSequence = m_animation->GetSequence(sequenceIndex);
+	#if NAZARA_3D_SAFE
+	if (!currentSequence)
+	{
+		NazaraError("Sequence not found");
+		return;
+	}
+	#endif
+
+	m_currentSequence = currentSequence;
 	m_nextFrame = m_currentSequence->firstFrame;
 }
 
@@ -419,5 +434,5 @@ void NzModel::Update(float elapsedTime)
 		}
 	}
 
-	m_mesh->Animate(m_animation, m_currentFrame, m_nextFrame, m_interpolation);
+	m_mesh->Animate(m_animation, m_currentFrame, m_nextFrame, m_interpolation, &m_skeleton);
 }

@@ -108,6 +108,8 @@ bool NzAudio::Initialize()
 	if (!NzCore::Initialize())
 	{
 		NazaraError("Failed to initialize core module");
+		Uninitialize();
+
 		return false;
 	}
 
@@ -116,6 +118,8 @@ bool NzAudio::Initialize()
 	if (!device)
 	{
 		NazaraError("Failed to open default device");
+		Uninitialize();
+
 		return false;
 	}
 
@@ -124,17 +128,16 @@ bool NzAudio::Initialize()
 	if (!context)
 	{
 		NazaraError("Failed to create context");
+		Uninitialize();
 
-		alcCloseDevice(device);
 		return false;
 	}
 
 	if (!alcMakeContextCurrent(context))
 	{
 		NazaraError("Failed to activate context");
+		Uninitialize();
 
-		alcDestroyContext(context);
-		alcCloseDevice(device);
 		return false;
 	}
 
@@ -253,19 +256,34 @@ void NzAudio::SetSpeedOfSound(float speed)
 
 void NzAudio::Uninitialize()
 {
-	if (--s_moduleReferenceCounter != 0)
-		return; // Encore utilisé
+	if (s_moduleReferenceCounter != 1)
+	{
+		// Le module est soit encore utilisé, soit pas initialisé
+		if (s_moduleReferenceCounter > 1)
+			s_moduleReferenceCounter--;
+
+		return;
+	}
+
+	// Libération du module
+	s_moduleReferenceCounter = 0;
 
 	// Loaders
 	NzLoaders_sndfile_Unregister();
 
-	// Libération du module
-	alcMakeContextCurrent(nullptr);
-	alcDestroyContext(context);
+	// Libération d'OpenAL
+	if (device)
+	{
+		if (context)
+		{
+			alcMakeContextCurrent(nullptr);
+			alcDestroyContext(context);
+		}
 
-	if (!alcCloseDevice(device))
-		// Nous n'avons pas pu fermer le device, ce qui signifie qu'il est en cours d'utilisation
-		NazaraWarning("Failed to close device");
+		if (!alcCloseDevice(device))
+			// Nous n'avons pas pu fermer le device, ce qui signifie qu'il est en cours d'utilisation
+			NazaraWarning("Failed to close device");
+	}
 
 	NazaraNotice("Uninitialized: Audio module");
 

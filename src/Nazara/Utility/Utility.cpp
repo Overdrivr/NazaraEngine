@@ -26,6 +26,8 @@ bool NzUtility::Initialize()
 	if (!NzCore::Initialize())
 	{
 		NazaraError("Failed to initialize core module");
+		Uninitialize();
+
 		return false;
 	}
 
@@ -33,19 +35,23 @@ bool NzUtility::Initialize()
 	if (!NzBuffer::Initialize())
 	{
 		NazaraError("Failed to initialize buffers");
+		Uninitialize();
+
 		return false;
 	}
 
 	if (!NzPixelFormat::Initialize())
 	{
 		NazaraError("Failed to initialize pixel formats");
+		Uninitialize();
+
 		return false;
 	}
 
 	if (!NzWindow::Initialize())
 	{
 		NazaraError("Failed to initialize window's system");
-		NzPixelFormat::Uninitialize();
+		Uninitialize();
 
 		return false;
 	}
@@ -78,10 +84,18 @@ bool NzUtility::IsInitialized()
 
 void NzUtility::Uninitialize()
 {
-	if (--s_moduleReferenceCounter != 0)
-		return; // Encore utilisé
+	if (s_moduleReferenceCounter != 1)
+	{
+		// Le module est soit encore utilisé, soit pas initialisé
+		if (s_moduleReferenceCounter > 1)
+			s_moduleReferenceCounter--;
+
+		return;
+	}
 
 	// Libération du module
+	s_moduleReferenceCounter = 0;
+
 	NzLoaders_MD2_Unregister();
 	NzLoaders_MD5Mesh_Unregister();
 	NzLoaders_PCX_Unregister();

@@ -12,6 +12,7 @@
 #include <Nazara/Core/ResourceLoader.hpp>
 #include <Nazara/Renderer/Enums.hpp>
 #include <Nazara/Renderer/Texture.hpp>
+#include <Nazara/Renderer/TextureSampler.hpp>
 
 struct NAZARA_API NzMaterialParams
 {
@@ -31,7 +32,11 @@ class NAZARA_API NzMaterial : public NzResource
 
 	public:
 		NzMaterial();
+		NzMaterial(const NzMaterial& material);
+		NzMaterial(NzMaterial&& material);
 		~NzMaterial();
+
+		void Apply() const;
 
 		void EnableAlphaBlending(bool alphaBlending);
 		void EnableZTest(bool zTest);
@@ -40,14 +45,17 @@ class NAZARA_API NzMaterial : public NzResource
 		NzColor GetAmbientColor() const;
 		NzColor GetDiffuseColor() const;
 		const NzTexture* GetDiffuseMap() const;
+		NzTextureSampler& GetDiffuseSampler();
+		const NzTextureSampler& GetDiffuseSampler() const;
 		nzBlendFunc GetDstBlend() const;
 		nzFaceCulling GetFaceCulling() const;
 		nzFaceFilling GetFaceFilling() const;
 		float GetShininess() const;
 		NzColor GetSpecularColor() const;
 		const NzTexture* GetSpecularMap() const;
+		NzTextureSampler& GetSpecularSampler();
+		const NzTextureSampler& GetSpecularSampler() const;
 		nzBlendFunc GetSrcBlend() const;
-		nzTextureFilter GetTextureFilter() const;
 		nzRendererComparison GetZTestCompare() const;
 
 		bool IsAlphaBlendingEnabled() const;
@@ -63,16 +71,20 @@ class NAZARA_API NzMaterial : public NzResource
 		void SetAmbientColor(const NzColor& ambient);
 		void SetDiffuseColor(const NzColor& diffuse);
 		void SetDiffuseMap(const NzTexture* map);
+		void SetDiffuseSampler(const NzTextureSampler& sampler);
 		void SetDstBlend(nzBlendFunc func);
 		void SetFaceCulling(nzFaceCulling culling);
 		void SetFaceFilling(nzFaceFilling filling);
+		void SetSamplerWrap(nzSamplerWrap wrapMode);
 		void SetShininess(float shininess);
 		void SetSpecularColor(const NzColor& specular);
 		void SetSpecularMap(const NzTexture* map);
+		void SetSpecularSampler(const NzTextureSampler& sampler);
 		void SetSrcBlend(nzBlendFunc func);
-		void SetTextureFilter(nzTextureFilter filter);
-		void SetTextureWrap(nzTextureWrap wrapMode);
 		void SetZTestCompare(nzRendererComparison compareFunc);
+
+		NzMaterial& operator=(const NzMaterial& material);
+		NzMaterial& operator=(NzMaterial&& material);
 
 		static const NzMaterial* GetDefault();
 
@@ -82,11 +94,11 @@ class NAZARA_API NzMaterial : public NzResource
 		nzFaceCulling m_faceCulling;
 		nzFaceFilling m_faceFilling;
 		nzRendererComparison m_zTestCompareFunc;
-		nzTextureFilter m_textureFilter;
-		nzTextureWrap m_textureWrap;
 		NzColor m_ambientColor;
 		NzColor m_diffuseColor;
 		NzColor m_specularColor;
+		NzTextureSampler m_diffuseSampler;
+		NzTextureSampler m_specularSampler;
 		const NzTexture* m_diffuseMap;
 		const NzTexture* m_specularMap;
 		bool m_alphaBlendingEnabled;

@@ -1,4 +1,4 @@
-#include <Nazara/3D/Model.hpp>
+#include <Nazara/3D.hpp>
 #include <Nazara/Core/Clock.hpp>
 #include <Nazara/Math.hpp>
 #include <Nazara/Renderer.hpp>
@@ -18,13 +18,10 @@ int main()
 	std::cout << "Left click to capture/free the mouse" << std::endl;
 	std::cout << "Right click to control Dr. Freak" << std::endl;
 
-	// Cette ligne active le mode de compatibilité d'OpenGL lors de l'initialisation de Nazara (Nécessaire pour le shader)
-	NzContextParameters::defaultCompatibilityProfile = true;
-
 	// Maintenant nous initialisons le Renderer (Qui initialisera le noyau ainsi que le module utilitaire)
 	// Cette étape est obligatoire pour beaucoup de fonctionnalités (Notamment le chargement de ressources et le rendu)
-	NzInitializer<NzRenderer> renderer;
-	if (!renderer)
+	NzInitializer<Nz3D> nazara;
+	if (!nazara)
 	{
 		// Ça n'a pas fonctionné, le pourquoi se trouve dans le fichier NazaraLog.log
 		std::cout << "Failed to initialize Nazara, see NazaraLog.log for further informations" << std::endl;
@@ -85,45 +82,7 @@ int main()
 	// Il existe plusieurs langages de shaders, GLSL pour OpenGL, HLSL pour Direct3D et Cg qui peut être utilisé pour les deux.
 	// Le Renderer de Nazara utilise OpenGL, par conséquent nous utiliserons le GLSL
 	// La méthode NzShader::IsLanguageSupported permet de savoir si un langage est supporté.
-	NzShader shader;
-	if (!shader.Create(nzShaderLanguage_GLSL))
-	{
-		std::cout << "Failed to load shader" << std::endl;
-		std::getchar();
-		return EXIT_FAILURE;
-	}
-
-	// Une fois le shader créé, nous devons lui spécifier les codes sources de nos shaders
-	// Pour notre exemple nous prendrons un shader très simple
-	// Un shader doit obligatoirement posséder au moins deux codes, un pour le fragment shader et un pour le vertex shader
-
-	// Le fragment shader traite la couleur de nos pixels
-	if (!shader.LoadFromFile(nzShaderType_Fragment, "shaders/basic.frag"))
-	{
-		std::cout << "Failed to load fragment shader from file" << std::endl;
-		// À la différence des autres ressources, le shader possède un log qui peut indiquer les erreurs en cas d'échec
-		std::cout << "Log: " << shader.GetLog() << std::endl;
-		std::getchar();
-		return EXIT_FAILURE;
-	}
-
-	// Le vertex shader (Transformation des vertices de l'espace 3D vers l'espace écran)
-	if (!shader.LoadFromFile(nzShaderType_Vertex, "shaders/basic.vert"))
-	{
-		std::cout << "Failed to load vertex shader from file" << std::endl;
-		std::cout << "Log: " << shader.GetLog() << std::endl;
-		std::getchar();
-		return EXIT_FAILURE;
-	}
-
-	// Une fois les codes sources de notre shader chargé, nous pouvons le compiler, afin de le rendre utilisable
-	if (!shader.Compile())
-	{
-		std::cout << "Failed to compile shader" << std::endl;
-		std::cout << "Log: " << shader.GetLog() << std::endl;
-		std::getchar();
-		return EXIT_FAILURE;
-	}
+	const NzShader* shader = NzShaderBuilder::Get(nzShaderBuilder_DiffuseMapping);
 
 	// Nos ressources sont chargées, et c'est bien beau, mais il nous faudrait une fenêtre pour afficher tout ça
 	// Window représente une fenêtre singulière, pour y effectuer un rendu il nous faut une RenderWindow
@@ -150,7 +109,7 @@ int main()
 	// Le troisième argument représente la décoration de la fenêtre, sa bordure, ses boutons.
 	// Attention que cela permet à la fenêtre de changer sa taille et qu'il faudra donc traiter l'évènement.
 	// Par défaut le troisième argument vaut nzWindowStyle_Default (Bordure + Bouton de fermeture + Redimensionnement)
-	if (!window.Create(mode, windowTitle, nzWindowStyle_Default))
+	if (!window.Create(mode, windowTitle, nzWindowStyle_Default, NzContextParameters(4)))
 	{
 		std::cout << "Failed to create window" << std::endl;
 		std::getchar();
@@ -357,6 +316,18 @@ int main()
 							drawHellknight = !drawHellknight;
 							break;
 
+						case NzKeyboard::F5:
+						{
+							NzTextureSampler::SetDefaultFilterMode(nzSamplerFilter_Trilinear);
+							break;
+						}
+
+						case NzKeyboard::F6:
+						{
+							NzTextureSampler::SetDefaultFilterMode(nzSamplerFilter_Nearest);
+							break;
+						}
+
 						/*case NzKeyboard::F5:
 						{
 							NzString animationName;
@@ -458,6 +429,7 @@ int main()
 			{
 				drfreak.Update(elapsedTime);
 				hellknight.Update(elapsedTime);
+
 				/*AnimateModel(hellknight, elapsedTime);
 				hellknight.mesh.GetSkeleton()->GetJoint("luparm")->SetScale(2.f);
 				hellknight.mesh.Skin(hellknight.mesh.GetSkeleton());*/
@@ -473,7 +445,7 @@ int main()
 		drfreak.SetTranslation(translation);
 
 		// On active le shader et paramètrons le rendu
-		NzRenderer::SetShader(&shader);
+		NzRenderer::SetShader(shader);
 
 		// Notre scène 3D requiert un test de profondeur
 		NzRenderer::Enable(nzRendererParameter_DepthTest, true);
@@ -494,6 +466,8 @@ int main()
 
 		if (drawHellknight)
 			DrawModel(hellknight);
+		else
+			NzRenderer::SetMatrix(nzMatrixType_World, hellknight.GetTransformMatrix());
 
 		if (drawSkeleton)
 		{
@@ -536,8 +510,6 @@ int main()
 		}
 	}
 
-	NzDebugDrawer::Uninitialize();
-
     return EXIT_SUCCESS;
 }
 
@@ -574,9 +546,6 @@ bool CreateCheckerMaterial(NzMaterial* material)
 		std::cout << "Failed to load image" << std::endl;
 		return false;
 	}
-
-	texture->SetAnisotropyLevel(NzRenderer::GetMaxAnisotropyLevel()); // Un filtrage anisotropique pour la texture
-	texture->SetWrapMode(nzTextureWrap_Repeat); // Si les coordonnées de texture dépassent 1.f, la texture sera répétée
 
 	material->SetDiffuseMap(texture);
 
@@ -704,7 +673,7 @@ void DrawModel(const NzModel& model)
 		// On récupère le submesh
 		const NzSubMesh* subMesh = model.GetMesh()->GetSubMesh(i);
 
-		NzRenderer::ApplyMaterial(model.GetMaterial(i));
+		model.GetMaterial(i)->Apply();
 
 		NzRenderer::SetVertexBuffer(subMesh->GetVertexBuffer());
 

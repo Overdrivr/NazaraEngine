@@ -12,8 +12,8 @@
 #include <Nazara/Math/Matrix4.hpp>
 #include <Nazara/Math/Rect.hpp>
 #include <Nazara/Renderer/Enums.hpp>
+#include <Nazara/Renderer/TextureSampler.hpp>
 #include <Nazara/Utility/Enums.hpp>
-#include <map>
 
 class NzColor;
 class NzContext;
@@ -30,8 +30,6 @@ class NAZARA_API NzRenderer
 		NzRenderer() = delete;
 		~NzRenderer() = delete;
 
-		static void ApplyMaterial(const NzMaterial* material);
-
 		static void Clear(unsigned long flags = nzRendererClear_Color | nzRendererClear_Depth);
 
 		static void DrawIndexedPrimitives(nzPrimitiveType primitive, unsigned int firstIndex, unsigned int indexCount);
@@ -42,17 +40,17 @@ class NAZARA_API NzRenderer
 		static float GetLineWidth();
 		//static NzMatrix4f GetMatrix(nzMatrixCombination combination);
 		static NzMatrix4f GetMatrix(nzMatrixType type);
-		static unsigned int GetMaxAnisotropyLevel();
+		static nzUInt8 GetMaxAnisotropyLevel();
 		static unsigned int GetMaxRenderTargets();
 		static unsigned int GetMaxTextureUnits();
 		static float GetPointSize();
-		static NzShader* GetShader();
+		static const NzShader* GetShader();
 		static NzRenderTarget* GetTarget();
 		static NzRectui GetViewport();
 
 		static bool HasCapability(nzRendererCap capability);
 
-		static bool Initialize();
+		static bool Initialize(bool initializeDebugDrawer = false);
 
 		static bool IsEnabled(nzRendererParameter parameter);
 		static bool IsInitialized();
@@ -69,7 +67,7 @@ class NAZARA_API NzRenderer
 		static void SetLineWidth(float size);
 		static void SetMatrix(nzMatrixType type, const NzMatrix4f& matrix);
 		static void SetPointSize(float size);
-		static bool SetShader(NzShader* shader);
+		static bool SetShader(const NzShader* shader);
 		static void SetStencilCompareFunction(nzRendererComparison compareFunc);
 		static void SetStencilFailOperation(nzStencilOperation failOperation);
 		static void SetStencilMask(nzUInt32 mask);
@@ -77,6 +75,8 @@ class NAZARA_API NzRenderer
 		static void SetStencilReferenceValue(unsigned int refValue);
 		static void SetStencilZFailOperation(nzStencilOperation zfailOperation);
 		static bool SetTarget(NzRenderTarget* target);
+		static void SetTexture(nzUInt8 unit, const NzTexture* texture);
+		static void SetTextureSampler(nzUInt8 textureUnit, const NzTextureSampler& sampler);
 		static bool SetVertexBuffer(const NzVertexBuffer* vertexBuffer);
 		static void SetViewport(const NzRectui& viewport);
 

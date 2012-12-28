@@ -3,6 +3,10 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Renderer/Material.hpp>
+#include <Nazara/Renderer/Renderer.hpp>
+#include <Nazara/Renderer/Shader.hpp>
+#include <cstring>
+#include <Nazara/Renderer/Debug.hpp>
 
 bool NzMaterialParams::IsValid() const
 {
@@ -16,6 +20,32 @@ m_specularMap(nullptr)
 	Reset();
 }
 
+NzMaterial::NzMaterial(const NzMaterial& material)
+{
+	std::memcpy(this, &material, sizeof(NzMaterial)); // Autorisé dans notre cas, et plus rapide
+
+	if (m_diffuseMap)
+		m_diffuseMap->AddResourceReference();
+
+	if (m_specularMap)
+		m_specularMap->AddResourceReference();
+}
+
+NzMaterial::NzMaterial(NzMaterial&& material)
+{
+	if (m_diffuseMap)
+		m_diffuseMap->RemoveResourceReference();
+
+	if (m_specularMap)
+		m_specularMap->RemoveResourceReference();
+
+	std::memcpy(this, &material, sizeof(NzMaterial)); // Autorisé dans notre cas, et plus rapide
+
+	// Comme ça nous volons la référence du matériau
+	material.m_diffuseMap = nullptr;
+	material.m_specularMap = nullptr;
+}
+
 NzMaterial::~NzMaterial()
 {
 	if (m_diffuseMap)
@@ -23,6 +53,78 @@ NzMaterial::~NzMaterial()
 
 	if (m_specularMap)
 		m_specularMap->RemoveResourceReference();
+}
+
+void NzMaterial::Apply() const
+{
+	const NzShader* shader = NzRenderer::GetShader();
+	#if NAZARA_RENDERER_SAFE
+	if (!shader)
+	{
+		NazaraError("No shader bound");
+		return;
+	}
+	#endif
+
+	int ambientColorLocation = shader->GetUniformLocation("AmbientColor");
+	int diffuseColorLocation = shader->GetUniformLocation("DiffuseColor");
+	int shininessLocation = shader->GetUniformLocation("Shininess");
+	int specularColorLocation = shader->GetUniformLocation("SpecularColor");
+
+	if (ambientColorLocation != -1)
+		shader->SendColor(ambientColorLocation, m_ambientColor);
+
+	if (diffuseColorLocation != -1)
+		shader->SendColor(diffuseColorLocation, m_diffuseColor);
+
+	if (m_diffuseMap)
+	{
+		int diffuseMapLocation = shader->GetUniformLocation("DiffuseMap");
+		if (diffuseMapLocation != -1)
+		{
+			nzUInt8 textureUnit;
+			if (shader->SendTexture(diffuseMapLocation, m_diffuseMap, &textureUnit))
+				NzRenderer::SetTextureSampler(textureUnit, m_diffuseSampler);
+			else
+				NazaraWarning("Failed to send diffuse map");
+		}
+	}
+
+	if (shininessLocation != -1)
+		shader->SendFloat(shininessLocation, m_shininess);
+
+	if (specularColorLocation != -1)
+		shader->SendColor(ambientColorLocation, m_specularColor);
+
+	if (m_specularMap)
+	{
+		int specularMapLocation = shader->GetUniformLocation("SpecularMap");
+		if (specularMapLocation != -1)
+		{
+			nzUInt8 textureUnit;
+			if (shader->SendTexture(specularMapLocation, m_specularMap, &textureUnit))
+				NzRenderer::SetTextureSampler(textureUnit, m_specularSampler);
+			else
+				NazaraWarning("Failed to send diffuse map");
+		}
+	}
+
+	if (m_alphaBlendingEnabled)
+	{
+		NzRenderer::Enable(nzRendererParameter_Blend, true);
+		NzRenderer::SetBlendFunc(m_srcBlend, m_dstBlend);
+	}
+	else
+		NzRenderer::Enable(nzRendererParameter_Blend, false);
+
+	if (m_zTestEnabled)
+	{
+		NzRenderer::Enable(nzRendererParameter_DepthTest, true);
+		NzRenderer::Enable(nzRendererParameter_DepthWrite, m_zWriteEnabled);
+		NzRenderer::SetDepthFunc(m_zTestCompareFunc);
+	}
+	else
+		NzRenderer::Enable(nzRendererParameter_DepthTest, false);
 }
 
 void NzMaterial::EnableAlphaBlending(bool alphaBlending)
@@ -48,6 +150,16 @@ NzColor NzMaterial::GetAmbientColor() const
 NzColor NzMaterial::GetDiffuseColor() const
 {
 	return m_diffuseColor;
+}
+
+NzTextureSampler& NzMaterial::GetDiffuseSampler()
+{
+	return m_diffuseSampler;
+}
+
+const NzTextureSampler& NzMaterial::GetDiffuseSampler() const
+{
+	return m_diffuseSampler;
 }
 
 const NzTexture* NzMaterial::GetDiffuseMap() const
@@ -83,6 +195,16 @@ NzColor NzMaterial::GetSpecularColor() const
 const NzTexture* NzMaterial::GetSpecularMap() const
 {
 	return m_specularMap;
+}
+
+NzTextureSampler& NzMaterial::GetSpecularSampler()
+{
+	return m_specularSampler;
+}
+
+const NzTextureSampler& NzMaterial::GetSpecularSampler() const
+{
+	return m_specularSampler;
 }
 
 nzBlendFunc NzMaterial::GetSrcBlend() const
@@ -142,14 +264,14 @@ void NzMaterial::Reset()
 	m_alphaBlendingEnabled = false;
 	m_ambientColor = NzColor::Black;
 	m_diffuseColor = NzColor::White;
+	m_diffuseSampler = NzTextureSampler();
 	m_dstBlend = nzBlendFunc_Zero;
 	m_faceCulling = nzFaceCulling_Back;
 	m_faceFilling = nzFaceFilling_Fill;
 	m_shininess = 0;
 	m_specularColor = NzColor::White;
+	m_specularSampler = NzTextureSampler();
 	m_srcBlend = nzBlendFunc_One;
-	m_textureFilter = nzTextureFilter_Default;
-	m_textureWrap = nzTextureWrap_Repeat;
 	m_zTestCompareFunc = nzRendererComparison_LessOrEqual;
 	m_zTestEnabled = true;
 	m_zWriteEnabled = true;
@@ -173,6 +295,11 @@ void NzMaterial::SetDiffuseMap(const NzTexture* map)
 	m_diffuseMap = map;
 	if (m_diffuseMap)
 		m_diffuseMap->AddResourceReference();
+}
+
+void NzMaterial::SetDiffuseSampler(const NzTextureSampler& sampler)
+{
+	m_diffuseSampler = sampler;
 }
 
 void NzMaterial::SetDstBlend(nzBlendFunc func)
@@ -210,6 +337,11 @@ void NzMaterial::SetSpecularMap(const NzTexture* map)
 		m_specularMap->AddResourceReference();
 }
 
+void NzMaterial::SetSpecularSampler(const NzTextureSampler& sampler)
+{
+	m_specularSampler = sampler;
+}
+
 void NzMaterial::SetSrcBlend(nzBlendFunc func)
 {
 	m_srcBlend = func;
@@ -218,6 +350,42 @@ void NzMaterial::SetSrcBlend(nzBlendFunc func)
 void NzMaterial::SetZTestCompare(nzRendererComparison compareFunc)
 {
 	m_zTestEnabled = compareFunc;
+}
+
+NzMaterial& NzMaterial::operator=(const NzMaterial& material)
+{
+	if (m_diffuseMap)
+		m_diffuseMap->RemoveResourceReference();
+
+	if (m_specularMap)
+		m_specularMap->RemoveResourceReference();
+
+	std::memcpy(this, &material, sizeof(NzMaterial)); // Autorisé dans notre cas, et plus rapide
+
+	if (m_diffuseMap)
+		m_diffuseMap->AddResourceReference();
+
+	if (m_specularMap)
+		m_specularMap->AddResourceReference();
+
+	return *this;
+}
+
+NzMaterial& NzMaterial::operator=(NzMaterial&& material)
+{
+	if (m_diffuseMap)
+		m_diffuseMap->RemoveResourceReference();
+
+	if (m_specularMap)
+		m_specularMap->RemoveResourceReference();
+
+	std::memcpy(this, &material, sizeof(NzMaterial)); // Autorisé dans notre cas, et plus rapide
+
+	// Comme ça nous volons la référence du matériau
+	material.m_diffuseMap = nullptr;
+	material.m_specularMap = nullptr;
+
+	return *this;
 }
 
 const NzMaterial* NzMaterial::GetDefault()

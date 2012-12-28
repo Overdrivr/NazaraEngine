@@ -22,7 +22,7 @@ class NAZARA_API NzTexture : public NzResource, NzNonCopyable
 	friend class NzShader;
 
 	public:
-		NzTexture();
+		NzTexture() = default;
 		explicit NzTexture(const NzImage& image);
 		~NzTexture();
 
@@ -33,15 +33,12 @@ class NAZARA_API NzTexture : public NzResource, NzNonCopyable
 
 		bool EnableMipmapping(bool enable);
 
-		unsigned int GetAnisotropyLevel() const;
 		nzUInt8 GetBytesPerPixel() const;
 		unsigned int GetDepth() const;
-		nzTextureFilter GetFilterMode() const;
 		nzPixelFormat GetFormat() const;
 		unsigned int GetHeight() const;
 		nzImageType GetType() const;
 		unsigned int GetWidth() const;
-		nzTextureWrap GetWrapMode() const;
 
 		bool HasMipmaps() const;
 
@@ -50,17 +47,14 @@ class NAZARA_API NzTexture : public NzResource, NzNonCopyable
 		bool IsTarget() const;
 		bool IsValid() const;
 
-		bool LoadFromFile(const NzString& filePath, const NzImageParams& params = NzImageParams());
-		bool LoadFromImage(const NzImage& image);
-		bool LoadFromMemory(const void* data, std::size_t size, const NzImageParams& params = NzImageParams());
-		bool LoadFromStream(NzInputStream& stream, const NzImageParams& params = NzImageParams());
+		bool LoadFromFile(const NzString& filePath, const NzImageParams& params = NzImageParams(), bool generateMipmaps = true);
+		bool LoadFromImage(const NzImage& image, bool generateMipmaps = true);
+		bool LoadFromMemory(const void* data, std::size_t size, const NzImageParams& params = NzImageParams(), bool generateMipmaps = true);
+		bool LoadFromStream(NzInputStream& stream, const NzImageParams& params = NzImageParams(), bool generateMipmaps = true);
 
 		bool Lock();
 
-		bool SetAnisotropyLevel(unsigned int anistropyLevel);
-		bool SetFilterMode(nzTextureFilter filter);
 		bool SetMipmapRange(nzUInt8 minLevel, nzUInt8 maxLevel);
-		bool SetWrapMode(nzTextureWrap wrap);
 
 		bool Update(const NzImage& image, nzUInt8 level = 0);
 		bool Update(const NzImage& image, const NzRectui& rect, unsigned int z = 0, nzUInt8 level = 0);
@@ -76,8 +70,8 @@ class NAZARA_API NzTexture : public NzResource, NzNonCopyable
 		void Unlock();
 
 		// Fonctions OpenGL
+		bool Bind() const;
 		unsigned int GetOpenGLID() const;
-		bool Prepare() const;
 
 		static unsigned int GetValidSize(unsigned int size);
 		static bool IsFormatSupported(nzPixelFormat format);
@@ -88,7 +82,7 @@ class NAZARA_API NzTexture : public NzResource, NzNonCopyable
 		NzRenderTexture* GetRenderTexture() const;
 		void SetRenderTexture(NzRenderTexture* renderTexture);
 
-		NzTextureImpl* m_impl;
+		NzTextureImpl* m_impl = nullptr;
 };
 
 #endif // NAZARA_TEXTURE_HPP

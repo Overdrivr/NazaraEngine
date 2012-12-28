@@ -51,14 +51,8 @@ bool NzGLSLShader::BindTextures()
 	for (auto it = m_textures.begin(); it != m_textures.end(); ++it)
 	{
 		TextureSlot& slot = it->second;
-		if (slot.enabled && !slot.updated)
-		{
-			glActiveTexture(GL_TEXTURE0 + slot.unit);
-			if (!slot.texture->Prepare())
-				NazaraWarning("Failed to prepare texture");
-
-			slot.updated = true;
-		}
+		if (slot.enabled)
+			NzRenderer::SetTexture(slot.unit, slot.texture);
 	}
 
 	return true;
@@ -123,24 +117,22 @@ bool NzGLSLShader::Create()
 	glBindAttribLocation(m_program, NzOpenGL::AttributeIndex[nzElementUsage_Tangent], "Tangent");
 
 	NzString uniform;
-
-	static const unsigned int maxTexCoords = NzRenderer::GetMaxTextureUnits();
-
 	uniform.Reserve(10); // 8 + 2
 	uniform = "TexCoord";
+
+	unsigned int maxTexCoords = NzRenderer::GetMaxTextureUnits();
 	for (unsigned int i = 0; i < maxTexCoords; ++i)
 	{
 		NzString uniformName = uniform + NzString::Number(i);
 		glBindAttribLocation(m_program, NzOpenGL::AttributeIndex[nzElementUsage_TexCoord]+i, uniformName.GetConstBuffer());
 	}
 
-	static const bool mrtSupported = NzRenderer::HasCapability(nzRendererCap_MultipleRenderTargets);
-	if (mrtSupported)
+	if (NzRenderer::HasCapability(nzRendererCap_MultipleRenderTargets))
 	{
-		static const unsigned int maxRenderTargets = NzRenderer::GetMaxRenderTargets();
-
 		uniform.Reserve(14); // 12 + 2
 		uniform = "RenderTarget";
+
+		unsigned int maxRenderTargets = NzRenderer::GetMaxRenderTargets();
 		for (unsigned int i = 0; i < maxRenderTargets; ++i)
 		{
 			NzString uniformName = uniform + NzString::Number(i);
@@ -430,7 +422,7 @@ bool NzGLSLShader::SendMatrix(int location, const NzMatrix4f& matrix)
 	return true;
 }
 
-bool NzGLSLShader::SendTexture(int location, const NzTexture* texture)
+bool NzGLSLShader::SendTexture(int location, const NzTexture* texture, nzUInt8* textureUnit)
 {
 	auto it = m_textures.find(location);
 	if (it != m_textures.end())
@@ -451,15 +443,17 @@ bool NzGLSLShader::SendTexture(int location, const NzTexture* texture)
 			else
 				m_textures.erase(it); // On supprime le slot
 		}
+
+		if (textureUnit)
+			*textureUnit = slot.unit;
 	}
 	else
 	{
-		static const unsigned int maxUnits = NzRenderer::GetMaxTextureUnits();
-
+		unsigned int maxUnits = NzRenderer::GetMaxTextureUnits();
 		unsigned int unitUsed = m_textures.size();
 		if (unitUsed >= maxUnits)
 		{
-			NazaraError("Unable to use texture for shader: all available texture units are used");
+			NazaraError("Unable to use texture for shader: all available texture units are in use");
 			return false;
 		}
 
@@ -493,9 +487,6 @@ bool NzGLSLShader::SendTexture(int location, const NzTexture* texture)
 		slot.enabled = texture->IsValid();
 		slot.unit = unit;
 		slot.texture = texture;
-		texture->AddResourceListener(this, location);
-
-		m_textures[location] = slot;
 
 		if (slot.enabled)
 		{
@@ -513,6 +504,12 @@ bool NzGLSLShader::SendTexture(int location, const NzTexture* texture)
 				Unlock();
 			}
 		}
+
+		m_textures[location] = slot;
+		texture->AddResourceListener(this, location);
+
+		if (textureUnit)
+			*textureUnit = unit;
 	}
 
 	return true;
