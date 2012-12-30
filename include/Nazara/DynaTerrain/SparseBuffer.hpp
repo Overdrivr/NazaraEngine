@@ -8,7 +8,7 @@
 #define SPARSEBUFFER_HPP
 
 #include <Nazara/Math/Vector2.hpp>
-#include <deque>
+#include <vector>
 #include <map>
 #include <list>
 
@@ -18,8 +18,7 @@ template <typename T> class NzSparseBuffer
         NzSparseBuffer(unsigned int bufferSize);
         ~NzSparseBuffer();
 
-
-        const std::list<NzVector2i>& GetVerticeIndexBatches();
+        const std::list<NzVector2ui>& GetVerticeIndexBatches();
         unsigned int GetFreeSlotsAmount() const;
 
         //Insert the value inside the buffer
@@ -31,28 +30,31 @@ template <typename T> class NzSparseBuffer
             //y the new position
             //If x == -1 then something went wrong and the buffer hasn't been changed
         NzVector2i ReduceFragmentation();
-
-        //Returns true if everything ok
         bool RemoveValue(const T& value);
 
     protected:
     private:
 
-        std::deque<nzBufferLocation> m_freeSlots;
+        //Contient l'ensemble des valeurs du buffer et leur emplacement dans le buffer
+            //Efficace pour trouver rapidement l'emplacement d'une valeur dans internalBuffer
+        std::map<T,int> m_slots;
 
-        //Contient l'ensemble des id des patchs contenus par la zone et leur emplacement dans le buffer
-            //Efficace pour trouver rapidement l'emplacement d'un patch
-        std::map<id,nzBufferLocation> m_slots;
+        //Map du buffer...utile ?
+        std::vector<T> m_internalBuffer;
 
-        //Représentation de l'agencement des patches dans les buffers
-            //Efficace pour gérer la mémoire
-        std::list<xid> m_internalBuffer;
+        //Représentation des espaces pleins dans le buffer
+            //Efficace pour déterminer le nombre et la position de blocs de vertices consécutifs
+            //x représente l'index
+            //y le nombre de slots pleins consécutifs
+        std::list<NzVector2ui> m_filledSlotBatches;
 
         //Représentation des espaces libres dans le buffer
-            //Efficace pour déterminer le nombre et la position de blocs de vertices consécutives
-        std::list<int> m_verticeBatches;
+            //x représente l'index
+            //y le nombre de slots vides consécutifs
+        std::list<NzVector2ui> m_freeSlotBatches;
 
         unsigned int m_bufferSize;
+        unsigned int m_occupiedSlotsAmount;
 };
 
 #include "SparseBuffer.inl"
