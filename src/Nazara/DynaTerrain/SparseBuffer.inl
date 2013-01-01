@@ -6,6 +6,7 @@ template <typename T>
 NzSparseBuffer<T>::NzSparseBuffer(unsigned int bufferSize)
 {
     m_bufferSize = bufferSize;
+    m_occupiedSlotsAmount = 0;
     //Il y a m_bufferSize cases de libres à partir de l'index 0
     m_freeSlotBatches.push_front(NzVector2ui(0,bufferSize));
 }
@@ -14,6 +15,20 @@ template <typename T>
 NzSparseBuffer<T>::~NzSparseBuffer()
 {
     //dtor
+}
+
+
+template <typename T>
+int NzSparseBuffer<T>::FindValue(const T& value)
+{
+    //On récupère l'emplacement de la valeur
+    std::map<T,int>::iterator it = m_slots.find(value);
+
+    //Si la valeur n'existe pas dans le buffer, il n'y a rien à supprimer
+    if(it == m_slots.end())
+        return -1;
+
+    return (*it).second;
 }
 
 template <typename T>
@@ -72,12 +87,15 @@ int NzSparseBuffer<T>::InsertValue(const T& value)
         m_freeSlotBatches.pop_front();
         //On fusionne les deux blocs pleins consécutifs de filledSlotBatches
         (*it_filled).y += (*(it_filled++)).y;
+        m_filledSlotBatches.erase(it_filled);
     }
     else
     {
         //On avance simplement de 1 le premier index de libre
         m_freeSlotBatches.front().x++;
     }
+
+    m_occupiedSlotsAmount++;
 
     return index;
 }
@@ -92,29 +110,88 @@ template <typename T>
 bool NzSparseBuffer<T>::RemoveValue(const T& value)
 {
     //On récupère l'emplacement de la valeur
-    unsigned int index = m_slots[value];
+    std::map<T,int>::iterator it = m_slots.find(value);
+
+    //Si la valeur n'existe pas dans le buffer, il n'y a rien à supprimer
+    if(it == m_slots.end())
+        return false;
+
+    unsigned int index = (*it).second;
 
     //On localise le nouvel emplacement libre créé
         //Soit il peut être ajouté en début ou fin d'un lot déjà existant
         //Soit il faut en créer un nouveau
-    //si l'emplacement libéré ne contenait qu'un seul slot occupé, il faut fusionner deux lots dans m_freeSlotBatches
+    //si l'emplacement libéré ne contenait qu'un seul slot occupé, il faut fusionner deux lots consécutifs dans m_freeSlotBatches
 
     std::list<NzVector2ui>::iterator it_free;
+
+    //Pour savoir dans lequel des cas on se trouve
+    unsigned int situation = 0;
 
     for(it_free = m_freeSlotBatches.begin() ; it_free != m_freeSlotBatches.end() ; ++it_free)
     {
         if((*it_free).x + (*it_free).y == index)//Si il peut être ajouté en fin d'un lot existant
         {
-
+            (*it_free).y++;//Un slot libre supplémentaire
+            m_slots.erase(value);//On retire la valeur
+            m_occupiedSlotsAmount--;//Et on diminue de 1 le compteur
+            situation = 1;
+            break;
         }
         else if((*it_free).x - 1 == index)//Si il peut être ajouté en début d'un lot existant
         {
-
+            (*it_free).x--;//On recule l'index de 1 pour intégrer le nouvel emplacement
+            (*it_free).y++;//Idem qu'avant
+            m_slots.erase(value);
+            m_occupiedSlotsAmount--;
+            situation = 2;
+            break;
         }
         else if((*it_free).x > index) //On vient de dépasser l'index de 2, il faut créer un nouveau lot dans freeSlotBatches
         {
-
+            m_freeSlotBatches.insert(it_free,NzVector2ui(index,1));
+            m_occupiedSlotsAmount--;
+            situation = 3;
             break;
         }
     }
+
+    if(situation == 0)
+    {
+        std::cout<<"SparseBuffer::Remove : Something went wrong"<<std::endl;
+        return false;
+    }
+
+    //On localise l'emplacement plein supprimé
+
+    std::list<NzVector2ui>::iterator it_filled;
+
+    for(it_filled = m_filledSlotBatches.begin() ; it_filled != m_filledSlotBatches.end() ; ++it_filled)
+    {
+        if((*it_filled).x == index)//Normalement on est dans la situation 1
+        {
+            (*it_filled).x++;//On décale le premier index
+            (*it_filled).y--;//Et on réduit la taille du lot de 1
+            return true;
+        }
+        else if((*it_filled).x + (*it_filled).y == index)//Normalement situation 2
+        {
+            (*it_filled).y--;//On réduit simplement la taille du lot de 1
+            return true;
+        }
+        else if((*it_filled).x < index && (*it_filled).x + (*it_filled).y > index) //Normalement 3, il faut créer un nouveau lot dans freeSlotBatches
+        {
+            //Taille du nouveau lot à créé
+            unsigned int offset = (*it_filled).y - (index - (*it_filled).x) - 1;
+            //Nouvelle taille du premier lot
+            (*it_filled).y = index - (*it_filled).x;
+            //L'insertion dans une liste a lieu a la position précédant l'iterateur, on avance de 1 pour être bien placé
+            it_filled++;
+            //On insère un nouveau lot
+            m_filledSlotBatches.insert(it_filled,NzVector2ui(index+1,offset));
+            return true;
+        }
+    }
+
+    return false;
 }

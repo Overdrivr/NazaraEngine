@@ -18,6 +18,9 @@ template <typename T> class NzSparseBuffer
         NzSparseBuffer(unsigned int bufferSize);
         ~NzSparseBuffer();
 
+        //Returns the value's index OR -1 if the value cannot be located
+        int FindValue(const T& value);
+
         const std::list<NzVector2ui>& GetVerticeIndexBatches();
         unsigned int GetFreeSlotsAmount() const;
 
@@ -39,7 +42,7 @@ template <typename T> class NzSparseBuffer
             //Efficace pour trouver rapidement l'emplacement d'une valeur dans internalBuffer
         std::map<T,int> m_slots;
 
-        //Map du buffer...utile ?
+        //Map du buffer...utile ? Sachant que ce buffer n'est qu'une représentation et non un "vrai" buffer
         std::vector<T> m_internalBuffer;
 
         //Représentation des espaces pleins dans le buffer
