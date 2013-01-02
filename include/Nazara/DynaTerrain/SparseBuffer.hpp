@@ -21,7 +21,8 @@ template <typename T> class NzSparseBuffer
         //Returns the value's index OR -1 if the value cannot be located
         int FindValue(const T& value);
 
-        const std::list<NzVector2ui>& GetVerticeIndexBatches();
+        unsigned int GetFilledSlotsAmount() const;
+        const std::list<NzVector2ui>& GetFilledSlotBatches();
         unsigned int GetFreeSlotsAmount() const;
 
         //Insert the value inside the buffer
@@ -33,7 +34,9 @@ template <typename T> class NzSparseBuffer
             //y the new position
             //If x == -1 then something went wrong and the buffer hasn't been changed
         NzVector2i ReduceFragmentation();
-        bool RemoveValue(const T& value);
+        //Returns the erased value's index OR -1 if something went wrong
+            //FIX ME : Mieux bool ou int en sortie ?
+        int RemoveValue(const T& value);
 
     protected:
     private:

@@ -2,6 +2,8 @@
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
+#include <iostream>
+
 template <typename T>
 NzSparseBuffer<T>::NzSparseBuffer(unsigned int bufferSize)
 {
@@ -9,6 +11,7 @@ NzSparseBuffer<T>::NzSparseBuffer(unsigned int bufferSize)
     m_occupiedSlotsAmount = 0;
     //Il y a m_bufferSize cases de libres à partir de l'index 0
     m_freeSlotBatches.push_front(NzVector2ui(0,bufferSize));
+    m_filledSlotBatches.push_front(NzVector2ui(0,0));
 }
 
 template <typename T>
@@ -17,12 +20,11 @@ NzSparseBuffer<T>::~NzSparseBuffer()
     //dtor
 }
 
-
 template <typename T>
 int NzSparseBuffer<T>::FindValue(const T& value)
 {
     //On récupère l'emplacement de la valeur
-    std::map<T,int>::iterator it = m_slots.find(value);
+    typename std::map<T,int>::iterator it = m_slots.find(value);
 
     //Si la valeur n'existe pas dans le buffer, il n'y a rien à supprimer
     if(it == m_slots.end())
@@ -32,7 +34,13 @@ int NzSparseBuffer<T>::FindValue(const T& value)
 }
 
 template <typename T>
-const std::list<NzVector2ui>& NzSparseBuffer<T>::GetVerticeIndexBatches()
+unsigned int NzSparseBuffer<T>::GetFilledSlotsAmount() const
+{
+    return m_occupiedSlotsAmount;
+}
+
+template <typename T>
+const std::list<NzVector2ui>& NzSparseBuffer<T>::GetFilledSlotBatches()
 {
     return m_filledSlotBatches;
 }
@@ -53,7 +61,7 @@ int NzSparseBuffer<T>::InsertValue(const T& value)
     unsigned int index = m_freeSlotBatches.front().x;
     //On ajoute la valeur dans le buffer à l'emplacement libre
     m_slots[value] = index;
-    m_internalBuffer.at(index) = value;
+    //m_internalBuffer.at(index) = value;
 
     //On met à jour les emplacements libres et pleins
         //-1 pour les libres
@@ -107,14 +115,14 @@ NzVector2i NzSparseBuffer<T>::ReduceFragmentation()
 }
 
 template <typename T>
-bool NzSparseBuffer<T>::RemoveValue(const T& value)
+int NzSparseBuffer<T>::RemoveValue(const T& value)
 {
     //On récupère l'emplacement de la valeur
-    std::map<T,int>::iterator it = m_slots.find(value);
+    typename std::map<T,int>::iterator it = m_slots.find(value);
 
     //Si la valeur n'existe pas dans le buffer, il n'y a rien à supprimer
     if(it == m_slots.end())
-        return false;
+        return -1;
 
     unsigned int index = (*it).second;
 
@@ -159,7 +167,7 @@ bool NzSparseBuffer<T>::RemoveValue(const T& value)
     if(situation == 0)
     {
         std::cout<<"SparseBuffer::Remove : Something went wrong"<<std::endl;
-        return false;
+        return -1;
     }
 
     //On localise l'emplacement plein supprimé
@@ -172,12 +180,12 @@ bool NzSparseBuffer<T>::RemoveValue(const T& value)
         {
             (*it_filled).x++;//On décale le premier index
             (*it_filled).y--;//Et on réduit la taille du lot de 1
-            return true;
+            return index;
         }
         else if((*it_filled).x + (*it_filled).y == index)//Normalement situation 2
         {
             (*it_filled).y--;//On réduit simplement la taille du lot de 1
-            return true;
+            return index;
         }
         else if((*it_filled).x < index && (*it_filled).x + (*it_filled).y > index) //Normalement 3, il faut créer un nouveau lot dans freeSlotBatches
         {
@@ -189,9 +197,9 @@ bool NzSparseBuffer<T>::RemoveValue(const T& value)
             it_filled++;
             //On insère un nouveau lot
             m_filledSlotBatches.insert(it_filled,NzVector2ui(index+1,offset));
-            return true;
+            return index;
         }
     }
 
-    return false;
+    return -1;
 }
