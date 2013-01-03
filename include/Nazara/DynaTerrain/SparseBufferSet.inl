@@ -6,6 +6,7 @@ template <typename T>
 NzSparseBufferSet<T>::NzSparseBufferSet()
 {
     m_occupiedSlotsAmount = 0;
+    m_totalSlots = 0;
 }
 
 template <typename T>
@@ -15,34 +16,59 @@ NzSparseBufferSet<T>::~NzSparseBufferSet()
 }
 
 template <typename T>
-T& NzSparseBufferSet<T>::at(unsigned int index)
+NzSparseBuffer<T>& NzSparseBufferSet<T>::at(unsigned int index)
 {
     return m_buffers.at(index);
 }
 
 template <typename T>
-const T& NzSparseBufferSet<T>::at(unsigned int index) const
+const NzSparseBuffer<T>& NzSparseBufferSet<T>::at(unsigned int index) const
 {
     return m_buffers.at(index);
 }
 
 template <typename T>
-void NzSparseBufferSet<T>::AddEmptyBuffer()
+void NzSparseBufferSet<T>::AddEmptyBuffer(unsigned int bufferSize)
 {
-    NzSparseBuffer<T> temp(1750);
+    m_totalSlots += bufferSize;
+    NzSparseBuffer<T> temp(bufferSize);
     m_buffers.push_back(temp);
 }
-/*
+
 template <typename T>
-nzBufferLocation NzSparseBufferSet<T>::FindValue(const T& value) const
+NzVector2i NzSparseBufferSet<T>::FindKeyLocation(const T& key) const
 {
-    nzBufferLocation
-    for(unsigned int i(0) ; i < m_buffers.size(); ++i)
+    NzVector2i location(-1,-1);
+
+    location.x = FindKeyBuffer(key);
+
+    if(location.x > -1)
     {
-       m_buffers.at(i).FindValue(value);
+       location.y = m_buffers.at(location.x).FindKey(key);
     }
+
+    return location;
 }
-*/
+
+template <typename T>
+int NzSparseBufferSet<T>::FindKeyBuffer(const T& key) const
+{
+    typename std::map<T,int>::const_iterator it = m_valueToBufferIndex.find(key);
+
+    if(it == m_valueToBufferIndex.end())
+        return -1;
+
+    int bufferIndex = (*it).second;
+
+    if(bufferIndex < 0 || bufferIndex >= m_buffers.size())
+    {
+        std::cout<<"SparseBufferSet::FindKeyBuffer : bufferIndex outside boundaries : "<<bufferIndex<<" | 0 to "<<m_buffers.size()<<"|"<<std::endl;
+        return -1;
+    }
+
+    return bufferIndex;
+}
+
 template <typename T>
 unsigned int NzSparseBufferSet<T>::GetBufferAmount() const
 {
@@ -59,7 +85,7 @@ unsigned int NzSparseBufferSet<T>::GetFreeBuffersAmount() const
 template <typename T>
 unsigned int NzSparseBufferSet<T>::GetTotalFreeSlotsAmount() const
 {
-    return m_buffers.size()*1750-m_occupiedSlotsAmount;
+    return m_totalSlots - m_occupiedSlotsAmount;
 }
 
 template <typename T>
@@ -69,29 +95,32 @@ unsigned int NzSparseBufferSet<T>::GetTotalOccupiedSlotsAmount() const
 }
 
 template <typename T>
-nzBufferLocation NzSparseBufferSet<T>::InsertValue(const T& value)
+NzVector2i NzSparseBufferSet<T>::InsertValueKey(const T& key)
 {
-    nzBufferLocation location;
-    location.index = -1;
-    location.buffer = -1;
+    NzVector2i location(-1,-1);
 
     for(unsigned int i(0) ; i < m_buffers.size() ; ++i)
     {
-        if(m_buffers.at(i).GetFreeSlotsAmount > 0)
+        if(m_buffers.at(i).GetFreeSlotsAmount() > 0)
         {
-            location.buffer = i;
-            location.index =  m_buffers.at(i).InsertValue(value);
-            return location;
+            location.y =  m_buffers.at(i).InsertValueKey(key);
+            if(location.y > -1)//Si l'index retourné est valide, on s'arrête là
+            {
+                m_valueToBufferIndex[key] = i;
+                location.x = i;
+                break;
+            }
+            //Sinon on continue
         }
     }
+    m_occupiedSlotsAmount++;
+    return location;
 }
 
 template <typename T>
-NzVector2<nzBufferLocation> NzSparseBufferSet<T>::ReduceFragmentation()
+NzVector4i NzSparseBufferSet<T>::ReduceFragmentation()
 {
-    nzBufferLocation location;
-    location.index = -1;
-    location.buffer = -1;
+    NzVector4i location(-1,-1,-1,-1);
 
     return location;
 }
@@ -99,21 +128,34 @@ NzVector2<nzBufferLocation> NzSparseBufferSet<T>::ReduceFragmentation()
 template <typename T>
 bool NzSparseBufferSet<T>::RemoveBuffer(unsigned int index)
 {
+    //m_totalSlots -= m_buffers.at(index).size();
     return false;
 }
 
 template <typename T>
-bool NzSparseBufferSet<T>::RemoveValue(const T& value)
+bool NzSparseBufferSet<T>::RemoveValueKey(const T& key)
 {
+    int bufferIndex = FindKeyBuffer(key);
+
+    if(bufferIndex < 0)
+        return false;
+
+    int freedIndex = m_buffers.at(bufferIndex).RemoveValueKey(key);
+
+    if(freedIndex > -1)
+    {
+        m_occupiedSlotsAmount--;
+        m_valueToBufferIndex.erase(key);
+        return true;
+    }
+
     return false;
 }
 
 template <typename T>
-nzBufferLocation NzSparseBufferSet<T>::UpdateValue(const T& value)
+NzVector2i NzSparseBufferSet<T>::UpdateValueKey(const T& key)
 {
-    nzBufferLocation location;
-    location.index = -1;
-    location.buffer = -1;
+    NzVector2i location(-1,-1);
 
     return location;
 }

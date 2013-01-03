@@ -21,10 +21,10 @@ NzSparseBuffer<T>::~NzSparseBuffer()
 }
 
 template <typename T>
-int NzSparseBuffer<T>::FindValue(const T& value)
+int NzSparseBuffer<T>::FindKey(const T& key) const
 {
     //On récupère l'emplacement de la valeur
-    typename std::map<T,int>::iterator it = m_slots.find(value);
+    typename std::map<T,int>::const_iterator it = m_slots.find(key);
 
     //Si la valeur n'existe pas dans le buffer, il n'y a rien à supprimer
     if(it == m_slots.end())
@@ -40,9 +40,15 @@ unsigned int NzSparseBuffer<T>::GetFilledSlotsAmount() const
 }
 
 template <typename T>
-const std::list<NzVector2ui>& NzSparseBuffer<T>::GetFilledSlotBatches()
+const std::list<NzVector2ui>& NzSparseBuffer<T>::GetFilledBatches()
 {
     return m_filledSlotBatches;
+}
+
+template <typename T>
+const std::list<NzVector2ui>& NzSparseBuffer<T>::GetFreeBatches()
+{
+    return m_freeSlotBatches;
 }
 
 template <typename T>
@@ -52,7 +58,7 @@ unsigned int NzSparseBuffer<T>::GetFreeSlotsAmount() const
 }
 
 template <typename T>
-int NzSparseBuffer<T>::InsertValue(const T& value)
+int NzSparseBuffer<T>::InsertValueKey(const T& key)
 {
     if(m_freeSlotBatches.empty())
         return -1;
@@ -60,7 +66,7 @@ int NzSparseBuffer<T>::InsertValue(const T& value)
     //On récupère le premier emplacement libre avec m_freeSlotBatches
     unsigned int index = m_freeSlotBatches.front().x;
     //On ajoute la valeur dans le buffer à l'emplacement libre
-    m_slots[value] = index;
+    m_slots[key] = index;
     //m_internalBuffer.at(index) = value;
 
     //On met à jour les emplacements libres et pleins
@@ -118,10 +124,10 @@ NzVector2i NzSparseBuffer<T>::ReduceFragmentation()
 }
 
 template <typename T>
-int NzSparseBuffer<T>::RemoveValue(const T& value)
+int NzSparseBuffer<T>::RemoveValueKey(const T& key)
 {
     //On récupère l'emplacement de la valeur
-    typename std::map<T,int>::iterator it = m_slots.find(value);
+    typename std::map<T,int>::iterator it = m_slots.find(key);
 
     //Si la valeur n'existe pas dans le buffer, il n'y a rien à supprimer
     if(it == m_slots.end())
@@ -144,7 +150,7 @@ int NzSparseBuffer<T>::RemoveValue(const T& value)
         if((*it_free).x + (*it_free).y == index)//Si il peut être ajouté en fin d'un lot existant
         {
             (*it_free).y++;//Un slot libre supplémentaire
-            m_slots.erase(value);//On retire la valeur
+            m_slots.erase(key);//On retire la valeur
             m_occupiedSlotsAmount--;//Et on diminue de 1 le compteur
             situation = 1;
             break;
@@ -153,7 +159,7 @@ int NzSparseBuffer<T>::RemoveValue(const T& value)
         {
             (*it_free).x--;//On recule l'index de 1 pour intégrer le nouvel emplacement
             (*it_free).y++;//Idem qu'avant
-            m_slots.erase(value);
+            m_slots.erase(key);
             m_occupiedSlotsAmount--;
             situation = 2;
             break;
@@ -161,7 +167,7 @@ int NzSparseBuffer<T>::RemoveValue(const T& value)
         else if((*it_free).x > index) //On vient de dépasser l'index de 2, il faut créer un nouveau lot dans freeSlotBatches
         {
             m_freeSlotBatches.insert(it_free,NzVector2ui(index,1));
-            m_slots.erase(value);
+            m_slots.erase(key);
             m_occupiedSlotsAmount--;
             situation = 3;
             break;

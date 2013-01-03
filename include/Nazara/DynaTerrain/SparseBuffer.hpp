@@ -19,24 +19,25 @@ template <typename T> class NzSparseBuffer
         ~NzSparseBuffer();
 
         //Returns the value's index OR -1 if the value cannot be located
-        int FindValue(const T& value);
+        int FindKey(const T& key) const;
 
         unsigned int GetFilledSlotsAmount() const;
-        const std::list<NzVector2ui>& GetFilledSlotBatches();
+        const std::list<NzVector2ui>& GetFilledBatches();
+        const std::list<NzVector2ui>& GetFreeBatches();
         unsigned int GetFreeSlotsAmount() const;
 
-        //Insert the value inside the buffer
+        //Insert the value's key inside the buffer
             //Returns -1 if something went wrong OR index location if everything ok
-        int InsertValue(const T& value);
+        int InsertValueKey(const T& key);
 
-        //Reduces fragmentation by moving 1 value from case to an other
+        //Reduces fragmentation by moving 1 value key from one case to an other
             //Returns a vector where x is the previous position
             //y the new position
             //If x == -1 then something went wrong and the buffer hasn't been changed
         NzVector2i ReduceFragmentation();
-        //Returns the erased value's index OR -1 if something went wrong
+        //Returns the erased value key's index OR -1 if something went wrong
             //FIX ME : Mieux bool ou int en sortie ?
-        int RemoveValue(const T& value);
+        int RemoveValueKey(const T& key);
 
     protected:
     private:
@@ -44,9 +45,6 @@ template <typename T> class NzSparseBuffer
         //Contient l'ensemble des valeurs du buffer et leur emplacement dans le buffer
             //Efficace pour trouver rapidement l'emplacement d'une valeur dans internalBuffer
         std::map<T,int> m_slots;
-
-        //Map du buffer...utile ? Sachant que ce buffer n'est qu'une représentation et non un "vrai" buffer
-        std::vector<T> m_internalBuffer;
 
         //Représentation des espaces pleins dans le buffer
             //Efficace pour déterminer le nombre et la position de blocs de vertices consécutifs

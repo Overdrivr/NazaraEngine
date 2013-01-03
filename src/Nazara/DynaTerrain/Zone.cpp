@@ -19,7 +19,7 @@ NzZone::~NzZone()
 void NzZone::AddBuffer(NzVertexBuffer* buffer)
 {
     m_buffers.push_back(buffer);
-    m_buffersMap.AddEmptyBuffer();
+    m_buffersMap.AddEmptyBuffer(1750);
 
     //Un buffer contient 1750 emplacements
 
@@ -67,13 +67,13 @@ void NzZone::AddPatch(const std::array<float,150>& vertices, const id& ID)
         }
     }
 
-    nzBufferLocation location = m_buffersMap.InsertValue(ID);
+    NzVector2i location = m_buffersMap.InsertValueKey(ID);
 
-    if(location.buffer < 0)
+    if(location.x < 0)
         return;
 
     //La zone a des slots de libres, on remplit le buffer avec les vertices
-    if(!m_buffers.at(location.buffer)->Fill(vertices.data(),location.index,25))
+    if(!m_buffers.at(location.x)->Fill(vertices.data(),location.y,25))
     {
         std::cout<<"Cannot fill buffer"<<std::endl;
         return;
@@ -122,10 +122,10 @@ void NzZone::Optimize(int amount)
     for(int i(0) ; i < amount ; ++i)
     {
         //We recover the initial and final position
-        NzVector2<nzBufferLocation> move_data = m_buffersMap.ReduceFragmentation();
+        NzVector4i move_data = m_buffersMap.ReduceFragmentation();
 
         //If there is no fragmentation
-        if(move_data.x.index < 0)
+        if((move_data.x || move_data.z) < 0)
             return;
 
         //We reduce fragmentation by moving 1 patch from one position to an other
@@ -143,18 +143,18 @@ bool NzZone::RemoveFreeBuffer(NzVertexBuffer* buffer)
 
 bool NzZone::RemovePatch(const id& ID)
 {
-    return m_buffersMap.RemoveValue(ID);
+    return m_buffersMap.RemoveValueKey(ID);
 }
 
 bool NzZone::UpdatePatch(const std::array<float,150>& vertices, const id& ID)
 {
-    nzBufferLocation location = m_buffersMap.UpdateValue(ID);
+    NzVector2i location = m_buffersMap.FindKeyLocation(ID);
 
     //Si l'emplacement n'a pas été retrouvé, on abandonne
-    if(location.buffer < 0)
+    if(location.x < 0)
         return false;
 
-    if(!m_buffers.at(location.buffer)->Fill(vertices.data(),location.index,25))
+    if(!m_buffers.at(location.x)->Fill(vertices.data(),location.y,25))
     {
         std::cout<<"Cannot fill buffer"<<std::endl;
         return false;
