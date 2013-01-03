@@ -11,6 +11,48 @@ NzDispatcher::NzDispatcher()
 {
     m_isReady = false;
 
+    //On construit l'index buffer
+    //taille totale : 1750 * 96 = 168000
+    //taille atomique : 96
+    //32 triangles
+
+    unsigned int rowIndex[24];
+    for(int i(0) ; i < 4 ; ++i)
+    {
+        rowIndex[i*6] = i;
+        rowIndex[i*6+1] = i + 1;
+        rowIndex[i*6+2] = i + 6;
+        rowIndex[i*6+3] = i;
+        rowIndex[i*6+4] = i + 5;
+        rowIndex[i*6+5] = i + 6;
+    }
+    unsigned int indexes[96];
+
+
+    for(unsigned int i(0) ; i < 4 ; ++i)
+        for(unsigned int j(0) ; j < 24 ; ++j)
+        {
+            indexes[i*24+j] = rowIndex[j] + i*5;
+        }
+
+    //L'index entier
+    unsigned int allIndexes[168000];
+
+    for(int i(0) ; i < 1750 ; ++i)
+        for(int j(0) ; j < 96 ; ++j)
+        {
+            allIndexes[i*96+j] = indexes[j] + 25*i;
+            if(i*96+j < 100)
+            {
+                std::cout<<i*96+j<<" : "<<allIndexes[i*96+j]<<std::endl;
+            }
+        }
+
+	m_indexBuffer = new NzIndexBuffer(168000, true, nzBufferStorage_Hardware);// nzBufferStorage_Hardware, nzBufferUsage_Static);
+	if (!m_indexBuffer->Fill(allIndexes, 0, 168000)) // FIX ME : Que faire en cas d'échec
+	{
+		std::cout << "Failed to fill indexbuffer" << std::endl;
+	}
 
 }
 
@@ -22,6 +64,8 @@ NzDispatcher::~NzDispatcher()
         m_buffers.at(i) = nullptr;
     }
     m_buffers.clear();
+
+    delete m_indexBuffer;
 }
 
 void NzDispatcher::DrawAll(bool viewFrustumCullingEnabled)
@@ -29,7 +73,7 @@ void NzDispatcher::DrawAll(bool viewFrustumCullingEnabled)
     if(m_isReady)
     {
         //Le SetIndexBuffer peut être fait une seule fois dans le dispatcher ?
-        NzRenderer::SetIndexBuffer(m_indexBuffer.get());
+        NzRenderer::SetIndexBuffer(m_indexBuffer);
         //Pareil pour la vertex declaration
         //NzRenderer::SetVertexDeclaration(m_declaration);
 
@@ -75,10 +119,6 @@ bool NzDispatcher::Initialize(unsigned int zoneDepth, unsigned int bufferAmount)
 		std::cout << "NzDispatcher : Failed to create vertex declaration" << std::endl;
 		return false;
 	}
-
-	///On crée l'index buffer
-        //Un patch a besoin d'un index buffer de 192 points, * 1750 patches = 336000
-	m_indexBuffer.reset(new NzIndexBuffer(336000));
 
     ///-----On crée toutes les zones nécessaires
     m_zoneDepth = zoneDepth;

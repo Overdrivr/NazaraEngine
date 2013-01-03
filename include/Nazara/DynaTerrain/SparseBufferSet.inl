@@ -60,7 +60,7 @@ int NzSparseBufferSet<T>::FindKeyBuffer(const T& key) const
 
     int bufferIndex = (*it).second;
 
-    if(bufferIndex < 0 || bufferIndex >= m_buffers.size())
+    if(bufferIndex < 0 || bufferIndex >= static_cast<int>(m_buffers.size()))
     {
         std::cout<<"SparseBufferSet::FindKeyBuffer : bufferIndex outside boundaries : "<<bufferIndex<<" | 0 to "<<m_buffers.size()<<"|"<<std::endl;
         return -1;

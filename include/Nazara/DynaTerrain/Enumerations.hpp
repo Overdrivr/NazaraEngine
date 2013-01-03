@@ -43,9 +43,18 @@ struct id
     }
 };
 
+class NzTerrainQuadTree;
+class NzHeightSource;
+
+struct TerrainNodeData
+{
+    NzTerrainQuadTree* quadtree;
+    NzHeightSource* heightSource;
+};
+/*
 struct nzBufferLocation
 {
     unsigned int buffer;
     unsigned int index;
-};
+};*/
 #endif // ENUMERATIONS_HPP

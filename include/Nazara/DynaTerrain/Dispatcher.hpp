@@ -58,7 +58,7 @@ class NzDispatcher
         NzVertexElement m_elements[2];
         NzVertexDeclaration m_declaration;
 
-        std::unique_ptr<NzIndexBuffer> m_indexBuffer;
+        NzIndexBuffer* m_indexBuffer;
 };
 
 #endif // DISPATCHER_HPP

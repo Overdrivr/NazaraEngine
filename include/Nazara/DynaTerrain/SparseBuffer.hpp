@@ -22,8 +22,10 @@ template <typename T> class NzSparseBuffer
         int FindKey(const T& key) const;
 
         unsigned int GetFilledSlotsAmount() const;
-        const std::list<NzVector2ui>& GetFilledBatches();
-        const std::list<NzVector2ui>& GetFreeBatches();
+        const std::list<NzVector2ui>& GetFilledBatches() const;
+        std::list<NzVector2ui> GetFilledBatches();
+        const std::list<NzVector2ui>& GetFreeBatches() const;
+        std::list<NzVector2ui> GetFreeBatches();
         unsigned int GetFreeSlotsAmount() const;
 
         //Insert the value's key inside the buffer

@@ -40,13 +40,25 @@ unsigned int NzSparseBuffer<T>::GetFilledSlotsAmount() const
 }
 
 template <typename T>
-const std::list<NzVector2ui>& NzSparseBuffer<T>::GetFilledBatches()
+const std::list<NzVector2ui>& NzSparseBuffer<T>::GetFilledBatches() const
 {
     return m_filledSlotBatches;
 }
 
 template <typename T>
-const std::list<NzVector2ui>& NzSparseBuffer<T>::GetFreeBatches()
+std::list<NzVector2ui> NzSparseBuffer<T>::GetFilledBatches()
+{
+    return m_filledSlotBatches;
+}
+
+template <typename T>
+const std::list<NzVector2ui>& NzSparseBuffer<T>::GetFreeBatches() const
+{
+    return m_freeSlotBatches;
+}
+
+template <typename T>
+std::list<NzVector2ui> NzSparseBuffer<T>::GetFreeBatches()
 {
     return m_freeSlotBatches;
 }

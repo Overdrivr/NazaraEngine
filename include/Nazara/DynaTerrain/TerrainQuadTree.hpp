@@ -24,7 +24,7 @@ class NzTerrainQuadTree
         NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& configuration, const NzVector2f& terrainCenter, NzHeightSource* heightSource);
         ~NzTerrainQuadTree();
 
-        void DrawTerrain();
+        void Render();
         const std::list<NzTerrainNode*>& GetLeavesList();
         void Initialize(const NzVector3f& cameraPosition);
         NzTerrainNode* GetNode(id nodeID);
@@ -45,6 +45,7 @@ class NzTerrainQuadTree
 
     private:
         NzTerrainNode* root;
+        TerrainNodeData m_data;
         //Ces listes n'ont pas la charge des objets en mémoire
         std::list<NzTerrainNode*> m_leaves;
         StackArray2D<NzTerrainNode*> m_nodes;

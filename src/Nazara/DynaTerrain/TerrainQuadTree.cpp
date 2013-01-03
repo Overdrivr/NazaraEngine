@@ -20,7 +20,10 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& confi
         m_configuration = configuration;
 
     m_heightSource = heightSource;
-    root = new NzTerrainNode(this,0,m_heightSource,terrainCenter,NzVector2f(m_configuration.terrainSize,m_configuration.terrainSize));
+    m_data.quadtree = this;
+    m_data.heightSource = m_heightSource;
+
+    root = new NzTerrainNode(&m_data,0,terrainCenter,NzVector2f(m_configuration.terrainSize,m_configuration.terrainSize));
     m_leaves.push_back(root);
     m_nodes.at(0,0,0) = root;
 
@@ -37,7 +40,7 @@ NzTerrainQuadTree::~NzTerrainQuadTree()
     delete root;
 }
 
-void NzTerrainQuadTree::DrawTerrain()
+void NzTerrainQuadTree::Render()
 {
     //for(unsigned int i(0) ; i < m_leaves.size() ; ++i)
       //  m_leaves.at(i)->Display();

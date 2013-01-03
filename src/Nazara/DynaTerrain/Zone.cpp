@@ -5,6 +5,7 @@
 #include "Zone.hpp"
 #include <iostream>
 #include "Dispatcher.hpp"
+#include <Nazara/Renderer/Renderer.hpp>
 
 NzZone::NzZone(NzDispatcher* dispatcher)
 {
@@ -83,24 +84,23 @@ void NzZone::AddPatch(const std::array<float,150>& vertices, const id& ID)
 void NzZone::DrawBuffers() const
 {
 
-
     //For each buffer
     for(unsigned int i(0) ; i < m_buffers.size() ; ++i)
     {
 
-        //we recover consecutive vertices block amount
-        /*for(std::list<NzVector2ui>::iterator it = m_buffersMap.at(i).GetVerticeIndexBatches().begin();
-                                             it != m_buffersMap.at(i).GetVerticeIndexBatches().end() ;
-                                             it++)
+        //we recover consecutive patches amount
+        std::list<NzVector2ui>::const_iterator it = m_buffersMap.at(i).GetFilledBatches().cbegin();
+        for(it = m_buffersMap.at(i).GetFilledBatches().cbegin() ; it != m_buffersMap.at(i).GetFilledBatches().cend() ; ++it)
         {
-            //We render each vertice batch in a single call to reduce draw calls
+            //We render each patch batch in a single call to reduce draw calls
             NzRenderer::SetVertexBuffer(m_buffers.at(i));
 
             // On fait le rendu
                 //(*it).x -> firstIndex;
                 //(*it).y -> vertexCount;
-            NzRenderer::DrawIndexedPrimitives(nzPrimitiveType_TriangleFan, (*it).x, (*it).y);
-        }*/
+            //Pour dessiner 1 patch (25 vertex) il nous faut 96 index
+            NzRenderer::DrawIndexedPrimitives(nzPrimitiveType_TriangleList, (*it).x*96, (*it).y*96);
+        }
     }
 }
 

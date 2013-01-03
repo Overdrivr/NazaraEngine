@@ -19,8 +19,6 @@
 
 class NzDispatcher;
 
-
-
 class NzZone
 {
     public:

@@ -21,7 +21,7 @@ class NzTerrainNode
 {
     public:
 
-        NzTerrainNode(NzTerrainQuadTree* quad, NzTerrainNode* parent, NzHeightSource* heightSource, const NzVector2f& center, const NzVector2f& size, nzLocation loc = TOPLEFT);
+        NzTerrainNode(TerrainNodeData *data, NzTerrainNode* parent, const NzVector2f& center, const NzVector2f& size, nzLocation loc = TOPLEFT);
         ~NzTerrainNode();
         //Libère la mémoire à partir du niveau minDepth
             //Si un node a une profondeur inférieure à minDepth, elle ne sera pas supprimée
@@ -52,7 +52,7 @@ class NzTerrainNode
     private:
         void HandleNeighborSubdivision(nzDirection direction);
         /* Variables pour le fonctionnement basique de l'arbre */
-        NzTerrainQuadTree* m_associatedQuadTree;
+        TerrainNodeData* m_data;
         NzTerrainNode* m_parent;
         NzTerrainNode* m_topLeftLeaf;
         NzTerrainNode* m_topRightLeaf;
@@ -78,7 +78,6 @@ class NzTerrainNode
 
         //Indique que le node ne doit pas être refiné, pour conserver une précision du terrain lors de variation de pente
         bool m_doNotRefine;
-        NzHeightSource* m_heightSource;
 };
 
 #endif // QUADCELL_HPP
