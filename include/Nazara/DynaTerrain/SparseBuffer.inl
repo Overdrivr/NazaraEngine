@@ -94,8 +94,11 @@ int NzSparseBuffer<T>::InsertValue(const T& value)
         //On vire la case concernée
         m_freeSlotBatches.pop_front();
         //On fusionne les deux blocs pleins consécutifs de filledSlotBatches
-        (*it_filled).y += (*(it_filled++)).y;
-        m_filledSlotBatches.erase(it_filled);
+        ++it_filled;
+        unsigned int offset = (*it_filled).y;
+        it_filled = m_filledSlotBatches.erase(it_filled);
+        --it_filled;
+        (*it_filled).y += offset;
     }
     else
     {
@@ -128,7 +131,7 @@ int NzSparseBuffer<T>::RemoveValue(const T& value)
 
     //On localise le nouvel emplacement libre créé
         //Soit il peut être ajouté en début ou fin d'un lot déjà existant
-        //Soit il faut en créer un nouveau
+        //Soit la suppression a lieu au milieu d'un lot, il faut créer un nouveau plein et vide
     //si l'emplacement libéré ne contenait qu'un seul slot occupé, il faut fusionner deux lots consécutifs dans m_freeSlotBatches
 
     std::list<NzVector2ui>::iterator it_free;
@@ -158,6 +161,7 @@ int NzSparseBuffer<T>::RemoveValue(const T& value)
         else if((*it_free).x > index) //On vient de dépasser l'index de 2, il faut créer un nouveau lot dans freeSlotBatches
         {
             m_freeSlotBatches.insert(it_free,NzVector2ui(index,1));
+            m_slots.erase(value);
             m_occupiedSlotsAmount--;
             situation = 3;
             break;
@@ -166,10 +170,11 @@ int NzSparseBuffer<T>::RemoveValue(const T& value)
 
     if(situation == 0)
     {
-        std::cout<<"SparseBuffer::Remove : Something went wrong"<<std::endl;
+        std::cout<<"SparseBuffer::Remove : Something went wrong with freeBatches"<<std::endl;
         return -1;
     }
 
+    situation = 0;
     //On localise l'emplacement plein supprimé
 
     std::list<NzVector2ui>::iterator it_filled;
@@ -179,15 +184,15 @@ int NzSparseBuffer<T>::RemoveValue(const T& value)
         if((*it_filled).x == index)//Normalement on est dans la situation 1
         {
             (*it_filled).x++;//On décale le premier index
-            (*it_filled).y--;//Et on réduit la taille du lot de 1
-            return index;
+            situation = 1;
+            break;
         }
-        else if((*it_filled).x + (*it_filled).y == index)//Normalement situation 2
+        else if((*it_filled).x + (*it_filled).y - 1 == index)//Normalement situation 2
         {
-            (*it_filled).y--;//On réduit simplement la taille du lot de 1
-            return index;
+            situation = 2;
+            break;
         }
-        else if((*it_filled).x < index && (*it_filled).x + (*it_filled).y > index) //Normalement 3, il faut créer un nouveau lot dans freeSlotBatches
+        else if((*it_filled).x < index && (*it_filled).x + (*it_filled).y > index) //Normalement 3
         {
             //Taille du nouveau lot à créé
             unsigned int offset = (*it_filled).y - (index - (*it_filled).x) - 1;
@@ -197,9 +202,36 @@ int NzSparseBuffer<T>::RemoveValue(const T& value)
             it_filled++;
             //On insère un nouveau lot
             m_filledSlotBatches.insert(it_filled,NzVector2ui(index+1,offset));
-            return index;
+            situation = 3;
+            break;
         }
     }
 
-    return -1;
+    if(situation == 0)
+    {
+        std::cout<<"SparseBuffer::Remove : Something went wrong with filledBatches"<<std::endl;
+        return -1;
+    }
+
+    if(situation == 1 || situation == 2)
+    {
+        //Dans la situation 3, le nouvel emplacement est créé au milieu d'un lot, pas au début ni à la fin
+        //Le lot a donc une taille de 3, jamais 1, et la taille a déjà été mise à jour
+
+        if((*it_filled).y <= 1)//Si le lot ne contenait qu'un slot plein, il est désormais vide, on le supprime
+        {
+            m_filledSlotBatches.erase(it_filled);
+            //On fusionne les 2 blocs vides consécutifs
+            ++it_free;
+            unsigned int offset = (*it_free).y;
+            it_free = m_freeSlotBatches.erase(it_free);
+            --it_free;
+            (*it_free).y += offset;
+        }
+        else
+            (*it_filled).y--;
+    }
+
+
+    return index;
 }
