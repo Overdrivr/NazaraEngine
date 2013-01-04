@@ -38,7 +38,7 @@ template <typename T> class NzSparseBufferSet
         //w is the destination index
         NzVector4i ReduceFragmentation();
         bool RemoveBuffer(unsigned int index);
-        bool RemoveValueKey(const T& key);
+        NzVector2i RemoveValueKey(const T& key);
 
         NzVector2i UpdateValueKey(const T& key);
 

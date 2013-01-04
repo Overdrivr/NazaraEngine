@@ -34,7 +34,7 @@ class NzDispatcher
 
         NzVertexBuffer* QueryFreeBuffer();
 
-        void RemovePatch(const id& ID);
+        bool RemovePatch(const id& ID);
         void ReturnBuffer(NzVertexBuffer* buffer);
 
         bool SubmitPatch(const std::array<float,150>& subBuffer, const id& ID);

@@ -41,7 +41,7 @@ void NzZone::AddBuffer(NzVertexBuffer* buffer)
     temp.push_back(ID);
     m_sparseBuffers.push_back(temp);*/
 
-    std::cout<<"Added Buffer"<<std::endl;
+    //std::cout<<"Added Buffer"<<std::endl;
 }
 
 void NzZone::AddPatch(const std::array<float,150>& vertices, const id& ID)
@@ -74,7 +74,7 @@ void NzZone::AddPatch(const std::array<float,150>& vertices, const id& ID)
         return;
 
     //La zone a des slots de libres, on remplit le buffer avec les vertices
-    if(!m_buffers.at(location.x)->Fill(vertices.data(),location.y,25))
+    if(!m_buffers.at(location.x)->Fill(vertices.data(),location.y*25,25))
     {
         std::cout<<"Cannot fill buffer"<<std::endl;
         return;
@@ -100,6 +100,7 @@ void NzZone::DrawBuffers() const
                 //(*it).y -> vertexCount;
             //Pour dessiner 1 patch (25 vertex) il nous faut 96 index
             NzRenderer::DrawIndexedPrimitives(nzPrimitiveType_TriangleList, (*it).x*96, (*it).y*96);
+            //NzRenderer::DrawPrimitives(nzPrimitiveType_TriangleFan, (*it).x*25, (*it).y*25);
         }
     }
 }
@@ -143,7 +144,19 @@ bool NzZone::RemoveFreeBuffer(NzVertexBuffer* buffer)
 
 bool NzZone::RemovePatch(const id& ID)
 {
-    return m_buffersMap.RemoveValueKey(ID);
+    NzVector2i location = m_buffersMap.RemoveValueKey(ID);
+
+    if(location.x < 0 || location.y < 0)
+        return false;
+/*
+    float vertices[150] = {0};
+
+    if(!m_buffers.at(location.x)->Fill(vertices,location.y*25,25))
+    {
+        std::cout<<"Cannot fill buffer"<<std::endl;
+        return false;
+    }*/
+    return true;
 }
 
 bool NzZone::UpdatePatch(const std::array<float,150>& vertices, const id& ID)
@@ -154,7 +167,7 @@ bool NzZone::UpdatePatch(const std::array<float,150>& vertices, const id& ID)
     if(location.x < 0)
         return false;
 
-    if(!m_buffers.at(location.x)->Fill(vertices.data(),location.y,25))
+    if(!m_buffers.at(location.x)->Fill(vertices.data(),location.y*25,25))
     {
         std::cout<<"Cannot fill buffer"<<std::endl;
         return false;

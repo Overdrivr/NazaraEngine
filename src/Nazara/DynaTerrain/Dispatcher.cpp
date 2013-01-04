@@ -39,14 +39,12 @@ NzDispatcher::NzDispatcher()
     unsigned int allIndexes[168000];
 
     for(int i(0) ; i < 1750 ; ++i)
+    {
         for(int j(0) ; j < 96 ; ++j)
         {
             allIndexes[i*96+j] = indexes[j] + 25*i;
-            if(i*96+j < 100)
-            {
-                std::cout<<i*96+j<<" : "<<allIndexes[i*96+j]<<std::endl;
-            }
         }
+    }
 
 	m_indexBuffer = new NzIndexBuffer(168000, true, nzBufferStorage_Hardware);// nzBufferStorage_Hardware, nzBufferUsage_Static);
 	if (!m_indexBuffer->Fill(allIndexes, 0, 168000)) // FIX ME : Que faire en cas d'échec
@@ -72,7 +70,6 @@ void NzDispatcher::DrawAll(bool viewFrustumCullingEnabled)
 {
     if(m_isReady)
     {
-        //Le SetIndexBuffer peut être fait une seule fois dans le dispatcher ?
         NzRenderer::SetIndexBuffer(m_indexBuffer);
         //Pareil pour la vertex declaration
         //NzRenderer::SetVertexDeclaration(m_declaration);
@@ -91,16 +88,18 @@ unsigned int NzDispatcher::GetFreeBuffersAmount() const
     return m_freeBuffers.size();
 }
 
-void NzDispatcher::RemovePatch(const id& ID)
+bool NzDispatcher::RemovePatch(const id& ID)
 {
     if(m_isReady)
     {
         for(unsigned int i(0) ; i < m_zones.size() ; ++i)
         {
             if(m_zones.at(i)->RemovePatch(ID))
-                return;
+                return true;
         }
     }
+    std::cout<<"Impossible to remove patch"<<std::endl;
+    return false;
 }
 
 bool NzDispatcher::Initialize(unsigned int zoneDepth, unsigned int bufferAmount)
@@ -174,7 +173,7 @@ bool NzDispatcher::SubmitPatch(const std::array<float,150>& subBuffer, const id&
 
     if(temp.sx < m_zonesAmountX && temp.sy < m_zonesAmountX)
     {
-        std::cout<<"submitting patch to zone "<<temp.sx<<" | "<<temp.sy<<std::endl;
+        //std::cout<<"submitting patch to zone "<<temp.sx<<" | "<<temp.sy<<std::endl;
         m_zones.at(temp.sx + m_zonesAmountX*temp.sy)->AddPatch(subBuffer,ID);
         return true;
     }

@@ -22,13 +22,16 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& confi
     m_heightSource = heightSource;
     m_data.quadtree = this;
     m_data.heightSource = m_heightSource;
+    m_data.dispatcher = new NzDispatcher;
+
+    m_buffersAmount = 1+(600*(m_configuration.ComputeMaxPatchNumber()))/1048576;
+    cout<<"1 Mio buffers amount : "<<m_buffersAmount<<endl;
+
+    m_data.dispatcher->Initialize(m_configuration.minimumDepth,m_buffersAmount);
 
     root = new NzTerrainNode(&m_data,0,terrainCenter,NzVector2f(m_configuration.terrainSize,m_configuration.terrainSize));
     m_leaves.push_back(root);
     m_nodes.at(0,0,0) = root;
-
-    m_buffersAmount = 1+(600*(m_configuration.ComputeMaxPatchNumber()))/1048576;
-    cout<<"1 Mio buffers amount : "<<m_buffersAmount<<endl;
 
     m_isInitialized = false;
 }
@@ -36,14 +39,14 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& confi
 NzTerrainQuadTree::~NzTerrainQuadTree()
 {
     root->CleanTree(0);
+    delete m_data.dispatcher;
     cout << "NbNodes non supprimes : "<<root->GetNodeAmount()-1<< endl;
     delete root;
 }
 
 void NzTerrainQuadTree::Render()
 {
-    //for(unsigned int i(0) ; i < m_leaves.size() ; ++i)
-      //  m_leaves.at(i)->Display();
+    m_data.dispatcher->DrawAll();
 }
 
 const std::list<NzTerrainNode*>& NzTerrainQuadTree::GetLeavesList()
@@ -72,7 +75,7 @@ void NzTerrainQuadTree::Initialize(const NzVector3f& cameraPosition)
     root->HierarchicalSubdivide(m_configuration.minimumDepth);
 
     //Si on doit améliorer l'arbre là où la pente est la plus forte, on le fait également
-    root->SlopeBasedHierarchicalSubdivide(m_configuration.slopeMaxDepth);
+    //root->SlopeBasedHierarchicalSubdivide(m_configuration.slopeMaxDepth);
 
     //La partie statique de l'arbre est prête
     //L'arbre ne pourra plus être refiné en dessous des niveaux définits à ce stade

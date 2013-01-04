@@ -13,6 +13,7 @@ MyHeightSource::~MyHeightSource()
 
 float MyHeightSource::GetNoiseValue(float x, float y)
 {
-    return (std::sin(x/1000.f)+1);
+    return (std::sin(x/100.f)+1);
     //return source->GetValue(x,y,30);
+    //return 0.f;
 }

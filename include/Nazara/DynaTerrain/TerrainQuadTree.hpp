@@ -16,6 +16,7 @@
 #include "StackArray2D.hpp"
 #include "HeightSource.hpp"
 #include "TerrainQuadTreeConfiguration.hpp"
+#include "Dispatcher.hpp"
 
 
 class NzTerrainQuadTree
@@ -24,11 +25,13 @@ class NzTerrainQuadTree
         NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& configuration, const NzVector2f& terrainCenter, NzHeightSource* heightSource);
         ~NzTerrainQuadTree();
 
-        void Render();
+
         const std::list<NzTerrainNode*>& GetLeavesList();
         void Initialize(const NzVector3f& cameraPosition);
         NzTerrainNode* GetNode(id nodeID);
         NzTerrainNode* GetRootPtr();
+
+        void Render();
 
         //FIX ME : ces 3 méthodes doit être private et NzTerrainNode ajouté en friend
         //Vu que quadtree ne sera pas en charge de l'affichage, elles sont même peut être inutiles, y compris maintenir à jour m_leaves

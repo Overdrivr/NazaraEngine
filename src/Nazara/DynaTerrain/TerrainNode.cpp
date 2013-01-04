@@ -70,9 +70,11 @@ NzTerrainNode::NzTerrainNode(TerrainNodeData *data, NzTerrainNode* parent, const
     //On crée son patch pour l'affichage
     this->CreatePatch(center,size);
     //On lui affecte la source de bruit
-    m_patch->SetHeightSource(m_data->heightSource);
+    m_patch->SetData(m_data);
     //On le fait calculer ses hauteurs et sa variation moyenne de pente
     m_patch->ComputeSlope();
+    //On uploade le patch sur le dispatcher
+    m_patch->UploadMesh();
 }
 
 NzTerrainNode::~NzTerrainNode()
@@ -159,7 +161,7 @@ void NzTerrainNode::CreatePatch(const NzVector2f& center, const NzVector2f& size
     if(!m_patchMemoryAllocated)
     {
         m_patchMemoryAllocated = true;
-        m_patch = new NzPatch(center,size);
+        m_patch = new NzPatch(center,size,m_nodeID);
     }
 }
 
@@ -167,6 +169,7 @@ void NzTerrainNode::DeletePatch()
 {
     if(m_patchMemoryAllocated)
     {
+        m_patch->UnUploadMesh();
         m_patchMemoryAllocated = false;
         delete m_patch;
     }
@@ -286,13 +289,13 @@ bool NzTerrainNode::Subdivide()
         if(m_topLeftLeaf == nullptr)
         {
             //On crée le premier node fils
-            m_topLeftLeaf = new NzTerrainNode(m_data,this,NzVector2f(m_center.x-m_size.x/2.f,m_center.y+m_size.y/2.f),m_size/2.f,TOPLEFT);
+            m_topLeftLeaf = new NzTerrainNode(m_data,this,NzVector2f(m_center.x-m_size.x/4.f,m_center.y+m_size.y/4.f),m_size/2.f,TOPLEFT);
             //C'est une subdivision, le node est forcément une leaf
             m_topLeftLeaf->m_isLeaf = true;
 
             //Et on l'enregistre auprès du quadtree
             m_data->quadtree->RegisterLeaf(m_topLeftLeaf);
-            cout<<"creating topleft "<<m_nodeID.lvl+1<<endl;
+            //cout<<"creating topleft "<<m_nodeID.lvl+1<<endl;
 
             //On vérifie que le voisin de gauche est suffisamment subdivisé/refiné pour qu'il y ait au max 1 niveau d'écart entre les 2
             m_topLeftLeaf->HandleNeighborSubdivision(LEFT);
@@ -306,10 +309,10 @@ bool NzTerrainNode::Subdivide()
 
         if(m_topRightLeaf == nullptr)
         {
-            m_topRightLeaf = new NzTerrainNode(m_data,this,NzVector2f(m_center.x+m_size.x/2.f,m_center.y+m_size.y/2.f),m_size/2.f,TOPRIGHT);
+            m_topRightLeaf = new NzTerrainNode(m_data,this,NzVector2f(m_center.x+m_size.x/4.f,m_center.y+m_size.y/4.f),m_size/2.f,TOPRIGHT);
             m_topRightLeaf->m_isLeaf = true;
             m_data->quadtree->RegisterLeaf(m_topRightLeaf);
-            cout<<"creating topright "<<m_nodeID.lvl+1<<endl;
+            //cout<<"creating topright "<<m_nodeID.lvl+1<<endl;
             m_topRightLeaf->HandleNeighborSubdivision(RIGHT);
             m_topRightLeaf->HandleNeighborSubdivision(TOP);
 
@@ -321,10 +324,10 @@ bool NzTerrainNode::Subdivide()
 
         if(m_bottomLeftLeaf == nullptr)
         {
-            m_bottomLeftLeaf = new NzTerrainNode(m_data,this,NzVector2f(m_center.x-m_size.x/2.f,m_center.y-m_size.y/2.f),m_size/2.f,BOTTOMLEFT);
+            m_bottomLeftLeaf = new NzTerrainNode(m_data,this,NzVector2f(m_center.x-m_size.x/4.f,m_center.y-m_size.y/4.f),m_size/2.f,BOTTOMLEFT);
             m_bottomLeftLeaf->m_isLeaf = true;
             m_data->quadtree->RegisterLeaf(m_bottomLeftLeaf);
-            cout<<"creating bottomleft "<<m_nodeID.lvl+1<<endl;
+            //cout<<"creating bottomleft "<<m_nodeID.lvl+1<<endl;
             m_bottomLeftLeaf->HandleNeighborSubdivision(LEFT);
             m_bottomLeftLeaf->HandleNeighborSubdivision(BOTTOM);
         }
@@ -335,10 +338,10 @@ bool NzTerrainNode::Subdivide()
 
         if(m_bottomRightLeaf == nullptr)
         {
-            m_bottomRightLeaf = new NzTerrainNode(m_data,this,NzVector2f(m_center.x+m_size.x/2.f,m_center.y-m_size.y/2.f),m_size/2.f,BOTTOMRIGHT);
+            m_bottomRightLeaf = new NzTerrainNode(m_data,this,NzVector2f(m_center.x+m_size.x/4.f,m_center.y-m_size.y/4.f),m_size/2.f,BOTTOMRIGHT);
             m_bottomRightLeaf->m_isLeaf = true;
             m_data->quadtree->RegisterLeaf(m_bottomRightLeaf);
-            cout<<"creating bottomright "<<m_nodeID.lvl+1<<endl;
+            //cout<<"creating bottomright "<<m_nodeID.lvl+1<<endl;
             m_bottomRightLeaf->HandleNeighborSubdivision(RIGHT);
             m_bottomRightLeaf->HandleNeighborSubdivision(BOTTOM);
 
@@ -438,7 +441,7 @@ void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction)
 
                 if(counter < antiInfiniteLoop)
                 {
-                    cout<<"Resubdivision de "<<tempID.lvl<<"|"<<tempID.sx<<"|"<<tempID.sy<<" de "<<counter<<" niveau(x)"<<endl;
+                    //cout<<"Resubdivision de "<<tempID.lvl<<"|"<<tempID.sx<<"|"<<tempID.sy<<" de "<<counter<<" niveau(x)"<<endl;
                     //On subdivise la cellule jusqu'à atteindre le bon niveau
                     tempNode->HierarchicalSubdivide(m_nodeID.lvl-1);
                 }

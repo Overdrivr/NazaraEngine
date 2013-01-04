@@ -133,23 +133,24 @@ bool NzSparseBufferSet<T>::RemoveBuffer(unsigned int index)
 }
 
 template <typename T>
-bool NzSparseBufferSet<T>::RemoveValueKey(const T& key)
+NzVector2i NzSparseBufferSet<T>::RemoveValueKey(const T& key)
 {
-    int bufferIndex = FindKeyBuffer(key);
+    NzVector2i location(-1,-1);
+    location.x = FindKeyBuffer(key);
 
-    if(bufferIndex < 0)
-        return false;
+    if(location.x < 0)
+        return NzVector2i(-1,-1);
 
-    int freedIndex = m_buffers.at(bufferIndex).RemoveValueKey(key);
+    location.y = m_buffers.at(location.x).RemoveValueKey(key);
 
-    if(freedIndex > -1)
+    if(location.y > -1)
     {
         m_occupiedSlotsAmount--;
         m_valueToBufferIndex.erase(key);
-        return true;
+        return location;
     }
 
-    return false;
+    return NzVector2i(-1,-1);
 }
 
 template <typename T>

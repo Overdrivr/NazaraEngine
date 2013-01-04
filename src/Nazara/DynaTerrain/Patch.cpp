@@ -9,20 +9,23 @@
 //#include <Nazara/DynaTerrain/Debug.hpp>
 #include <cmath>
 #include <iostream>
+#include "Dispatcher.hpp"
 
 using namespace std;
 
 
 
-NzPatch::NzPatch(NzVector2f center, NzVector2f size)
+NzPatch::NzPatch(NzVector2f center, NzVector2f size, id nodeID)
 {
+    m_id = nodeID;
     m_center = center;
     m_size = size;
-    m_heightSource = nullptr;
+    m_data = nullptr;
 
-    m_isHeightSourceSet = false;
+    m_isDataSet = false;
     m_isHeightDefined = false;
     m_isSlopeComputed = false;
+    m_isUploaded = false;
 
     m_slope = 0.f;
     m_sensitivity = 3;
@@ -65,14 +68,14 @@ void NzPatch::ComputeSlope()
             for(unsigned int k(0) ; k < 2 ; ++k)
             {
                 offset.x = (2*k-1)*m_size.x/20.f;
-                heightSamples[k] = m_heightSource->GetHeight(m_center.x+m_size.x*(0.25*i-0.5)+offset.x,
+                heightSamples[k] = m_data->heightSource->GetHeight(m_center.x+m_size.x*(0.25*i-0.5)+offset.x,
                                                              m_center.y+m_size.y*(0.25*j-0.5)+offset.y);
             }
             offset.x = 0.f;
             for(unsigned int k(0) ; k < 2 ; ++k)
             {
                 offset.y = (2*k-1)*m_size.y/20.f;
-                heightSamples[k+2] = m_heightSource->GetHeight(m_center.x+m_size.x*(0.25*i-0.5)+offset.x,
+                heightSamples[k+2] = m_data->heightSource->GetHeight(m_center.x+m_size.x*(0.25*i-0.5)+offset.x,
                                                                m_center.y+m_size.y*(0.25*j-0.5)+offset.y);
             }
 
@@ -93,7 +96,7 @@ void NzPatch::ComputeSlope()
                 maxdSlope = dSlope[1];
         }
         m_slope = maxdSlope;
-        cout<<"slope : "<<maxdSlope*m_sensitivity<<endl;
+        //cout<<"slope : "<<maxdSlope*m_sensitivity<<endl;
 }
 
 NzVector2f NzPatch::GetCenter() const
@@ -108,7 +111,7 @@ NzVector2f NzPatch::GetSize() const
 
 unsigned int NzPatch::GetTerrainConstrainedMinDepth()
 {
-    if(m_isHeightSourceSet)
+    if(m_isDataSet)
     {
         if(!m_isSlopeComputed)
             ComputeSlope();
@@ -133,10 +136,10 @@ void NzPatch::SetConfiguration(bool leftNeighbor, bool topNeighbor, bool rightNe
         m_configuration += 1<<3;
 }
 
-void NzPatch::SetHeightSource(NzHeightSource* heightSource)
+void NzPatch::SetData(TerrainNodeData* data)
 {
-    m_heightSource = heightSource;
-    m_isHeightSourceSet = true;
+    m_data = data;
+    m_isDataSet = true;
 }
 
 bool NzPatch::IntersectsCircle(const NzVector2f& center, double radius)
@@ -153,11 +156,11 @@ bool NzPatch::IsContainedByCircle(const NzVector2f& center, double radius)
 
 void NzPatch::RecoverPatchHeightsFromSource()
 {
-    if(m_heightSource != nullptr)
+    if(m_data->heightSource != nullptr)
     {
         for(int i(0) ; i < 5 ; ++i)
             for(int j(0) ; j < 5 ; ++j)
-                m_noiseValues[i+5*j] = m_heightSource->GetHeight(m_center.x+m_size.x*(0.25*i-0.5),m_center.y+m_size.y*(0.25*j-0.5));
+                m_noiseValues[i+5*j] = m_data->heightSource->GetHeight(m_center.x+m_size.x*(0.25*i-0.5),m_center.y+m_size.y*(0.25*j-0.5));
 
         m_isHeightDefined = true;
     }
@@ -172,11 +175,27 @@ void NzPatch::RecoverPatchHeightsFromSource()
 
 void NzPatch::UploadMesh()
 {
+    //cout<<"Patch"<<endl;
+    for(int i(0) ; i < 5 ; ++i)
+        for(int j(0) ; j < 5 ; ++j)
+        {
+            //cout<<"pos "<<5*i+j<<": "<<m_center.x + m_size.x*(0.25*j-0.5)<<" | "<<m_center.y+m_size.y*(0.25*i-0.5)<<endl;
+            //Position
+            m_uploadedData.at((5*i+j)*6) = m_center.x + m_size.x*(0.25*j-0.5);//X
+            m_uploadedData.at((5*i+j)*6+1) = m_noiseValues.at(5*i+j) * 50.f;//Z
+            m_uploadedData.at((5*i+j)*6+2) = m_center.y+m_size.y*(0.25*i-0.5);//Y
+            //Normales
+
+            m_uploadedData.at((5*i+j)*6+3) = 1.f;
+            m_uploadedData.at((5*i+j)*6+4) = 0.f;
+            m_uploadedData.at((5*i+j)*6+5) = 0.f;
+        }
     //Le patch classique (une grille carrée de triangles) est constitué de 32 triangles et 25 vertices
     //Mais avec ce patch problèmes aux jonctions entre niveaux. Pour ça, on utilise un patch variable selon les niveaux des patchs voisins
-
+    m_data->dispatcher->SubmitPatch(m_uploadedData,m_id);
+    m_isUploaded = true;
     //FIX ME : implementer patch variable
-    switch(m_configuration)
+    /*switch(m_configuration)
     {
         case 0 :
 
@@ -185,6 +204,16 @@ void NzPatch::UploadMesh()
         case 1 :
 
         break;
+    }*/
+}
+
+void NzPatch::UnUploadMesh()
+{
+    if(m_isUploaded)
+    {
+        //FIX ME : Suppression pas encore suffisamment débuggée pour sparse buffer
+        //m_data->dispatcher->RemovePatch(m_id);
+        m_isUploaded = false;
     }
 }
 

@@ -45,16 +45,12 @@ struct id
 
 class NzTerrainQuadTree;
 class NzHeightSource;
+class NzDispatcher;
 
 struct TerrainNodeData
 {
     NzTerrainQuadTree* quadtree;
     NzHeightSource* heightSource;
+    NzDispatcher* dispatcher;
 };
-/*
-struct nzBufferLocation
-{
-    unsigned int buffer;
-    unsigned int index;
-};*/
 #endif // ENUMERATIONS_HPP
