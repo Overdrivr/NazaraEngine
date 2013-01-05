@@ -92,10 +92,22 @@ bool NzDispatcher::RemovePatch(const id& ID)
 {
     if(m_isReady)
     {
-        for(unsigned int i(0) ; i < m_zones.size() ; ++i)
+        //On récupère la zone devant accueillir le patch
+        id temp;
+        temp.sx = ID.sx*m_zonesAmountX/std::pow(2,ID.lvl);
+        temp.sy = ID.sy*m_zonesAmountX/std::pow(2,ID.lvl);
+
+        if(temp.sx < m_zonesAmountX && temp.sy < m_zonesAmountX)
         {
-            if(m_zones.at(i)->RemovePatch(ID))
-                return true;
+            //std::cout<<"submitting patch to zone "<<temp.sx<<" | "<<temp.sy<<std::endl;
+            std::cout<<"Trying Removing patch "<<ID.lvl<<"|"<<ID.sx<<"|"<<ID.sy<<" in Zone "<<temp.lvl<<"|"<<temp.sx<<"|"<<temp.sy<<" with buf";
+            m_zones.at(temp.sx + m_zonesAmountX*temp.sy)->RemovePatch(ID);
+            return true;
+        }
+        else
+        {
+            std::cout<<"Removing patch "<<ID.lvl<<"|"<<ID.sx<<"|"<<ID.sy<<" outside supported area :"<<m_zonesAmountX<<std::endl;
+            return false;
         }
     }
     std::cout<<"Impossible to remove patch"<<std::endl;
@@ -173,7 +185,7 @@ bool NzDispatcher::SubmitPatch(const std::array<float,150>& subBuffer, const id&
 
     if(temp.sx < m_zonesAmountX && temp.sy < m_zonesAmountX)
     {
-        //std::cout<<"submitting patch to zone "<<temp.sx<<" | "<<temp.sy<<std::endl;
+        std::cout<<"Submitting patch "<<ID.lvl<<"|"<<ID.sx<<"|"<<ID.sy<<" in Zone "<<temp.lvl<<"|"<<temp.sx<<"|"<<temp.sy<<std::endl;
         m_zones.at(temp.sx + m_zonesAmountX*temp.sy)->AddPatch(subBuffer,ID);
         return true;
     }

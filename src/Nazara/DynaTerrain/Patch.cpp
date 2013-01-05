@@ -212,7 +212,8 @@ void NzPatch::UnUploadMesh()
     if(m_isUploaded)
     {
         //FIX ME : Suppression pas encore suffisamment débuggée pour sparse buffer
-        //m_data->dispatcher->RemovePatch(m_id);
+        //std::cout<<"Removing patch "<<m_id.lvl<<"|"<<m_id.sx<<"|"<<m_id.sy<<std::endl;
+        m_data->dispatcher->RemovePatch(m_id);
         m_isUploaded = false;
     }
 }
