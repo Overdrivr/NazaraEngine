@@ -8,6 +8,7 @@
 #define SPARSEBUFFER_HPP
 
 #include <Nazara/Math/Vector2.hpp>
+#include "Batch.hpp"
 #include <vector>
 #include <map>
 #include <list>
@@ -52,12 +53,12 @@ template <typename T> class NzSparseBuffer
             //Efficace pour déterminer le nombre et la position de blocs de vertices consécutifs
             //x représente l'index
             //y le nombre de slots pleins consécutifs
-        std::list<NzVector2ui> m_filledSlotBatches;
+        std::list<NzBatch> m_filledSlotBatches;
 
         //Représentation des espaces libres dans le buffer
             //x représente l'index
             //y le nombre de slots vides consécutifs
-        std::list<NzVector2ui> m_freeSlotBatches;
+        std::list<NzBatch> m_freeSlotBatches;
 
         unsigned int m_bufferSize;
         unsigned int m_occupiedSlotsAmount;
