@@ -10,37 +10,66 @@ using namespace std;
 int main()
 {
     ///Example d'application du SparseBuffer
-    //Notre pool de mémoire, et son image
-    std::array<NzString,20> buffer;
-    NzSparseBuffer<unsigned int> buffer_map(20);
 
-    ///Ajout dans le pool du mot "neuf" utilisant la clé 9
-    int freeIndex = buffer_map.InsertValueKey(9);
+    //Notre pool de NzString
+    std::array<NzString,6> buffer;
+    //La map de notre pool
+    NzSparseBuffer<unsigned int> buffer_map(6);
+
+
+    //Ajout dans le pool du mot "un" utilisant la clé 1
+    int freeIndex = buffer_map.InsertValueKey(1);
     if(freeIndex > -1)
-        buffer.at(freeIndex) = "neuf";
+        buffer.at(freeIndex) = "un";
 
-    ///Ajout dans le pool du mot "trois" utilisant la clé 3
+        //Ajout dans le pool du mot "deux" utilisant la clé 2
+    freeIndex = buffer_map.InsertValueKey(2);
+    if(freeIndex > -1)
+        buffer.at(freeIndex) = "deux";
+
+    //Ajout dans le pool du mot "trois" utilisant la clé 3
     freeIndex = buffer_map.InsertValueKey(3);
     if(freeIndex > -1)
         buffer.at(freeIndex) = "trois";
 
-    ///Ajout dans le pool du mot "six" utilisant la clé 6
+             //Ajout dans le pool du mot "trois" utilisant la clé 3
+    freeIndex = buffer_map.InsertValueKey(4);
+    if(freeIndex > -1)
+        buffer.at(freeIndex) = "quatre";
+
+
+    //Ajout dans le pool du mot "six" utilisant la clé 6
+    freeIndex = buffer_map.InsertValueKey(5);
+    if(freeIndex > -1)
+        buffer.at(freeIndex) = "cinq";
+
+
+    //Ajout dans le pool du mot "six" utilisant la clé 6
     freeIndex = buffer_map.InsertValueKey(6);
     if(freeIndex > -1)
         buffer.at(freeIndex) = "six";
 
-    cout<<"----- Affichage 1 ------"<<endl;
-    //On affiche le contenu par lots d'objets (ici NzString) consécutifs
-    //Si des objets sont dans le même lot, ils seront affichés sur la même ligne
-    std::list<NzVector2ui>::const_iterator it = buffer_map.GetFilledBatches().cbegin();
+
+    ///Choose any you want to remove and observe the way the buffer batches together the consecutives strings
+    buffer_map.RemoveValueKey(1);
+    buffer_map.RemoveValueKey(6);
+    //buffer_map.RemoveValueKey(5);
+    //buffer_map.RemoveValueKey(4);
+    buffer_map.RemoveValueKey(2);
+    buffer_map.RemoveValueKey(3);
+
+    std::list<NzBatch>::const_iterator it = buffer_map.GetFilledBatches().cbegin();
     int lot = 0;
+    cout<<"-------------- Display 1 -------------"<<endl;
+    std::cout<<"FILLED BATCHES-------------"<<std::endl;
+
     for(it = buffer_map.GetFilledBatches().cbegin() ; it != buffer_map.GetFilledBatches().cend() ; ++it)
     {
-        //On affiche un lot de NzString
-        //(*it).x représente l'index de départ
-        //(*it).y le nombre de NzString contenues dans le lot
-        cout<<"Lot "<<lot<<" : ";
-        for(int i((*it).x) ; i < (*it).x + (*it).y ; ++i)
+        //Displaying NzString by batch
+        //(*it).Start() is the starting index of the batch
+        //(*it).Count() is the number of objects in the batch
+        cout<<"Lot "<<lot<<" starts at "<<(*it).Start()<<" with "<<(*it).Count()<<" string(s) :";
+        for(unsigned int i((*it).Start()) ; i < (*it).Start() + (*it).Count() ; ++i)
         {
             cout<<"["<<buffer.at(i)<<"] ";
         }
@@ -48,34 +77,65 @@ int main()
         lot++;
     }
 
-    ///Ajout dans le pool du mot "Nazara" utilisant la clé 1
+    it = buffer_map.GetFreeBatches().cbegin();
+    lot = 0;
+
+    std::cout<<"FREE BATCHES-----------------------"<<std::endl;
+
+    for(it = buffer_map.GetFreeBatches().cbegin() ; it != buffer_map.GetFreeBatches().cend() ; ++it)
+    {
+        cout<<"Batch "<<lot<<" starts at "<<(*it).Start()<<" with "<<(*it).Count()<<" string(s)"<<endl;
+        lot++;
+    }
+    cout<<"--------------------------------"<<endl;
+
+
+
     freeIndex = buffer_map.InsertValueKey(1);
     if(freeIndex > -1)
         buffer.at(freeIndex) = "Nazara";
+    else
+        cout<<"not enough space !"<<endl;
 
-    //Suppression dans le pool de la valeur de la clé 3
-    int filledIndex = buffer_map.RemoveValueKey(3);
-    if(filledIndex > 0)
-    {
-        //Cette étape est inutile si on affiche par lots, car cette valeur ne sera alors jamais affichée
-        buffer.at(filledIndex) = "removed";
-    }
 
-    cout<<"------ Affichage 2 ------"<<endl;
-    it = buffer_map.GetFilledBatches().cbegin();
-    lot = 0;
+   /int filledIndex = buffer_map.RemoveValueKey(3);
+
+    freeIndex = buffer_map.InsertValueKey(12);
+    if(freeIndex > -1)
+        buffer.at(freeIndex) = "Is Awesome";
+    else
+        cout<<"not enough space !"<<endl;
+
+
+  //int filledIndex = buffer_map.RemoveValueKey(3);
+
+
+    std::list<NzBatch>::const_iterator it = buffer_map.GetFilledBatches().cbegin();
+    int lot = 0;
+
+    cout<<"-------------- Display 2 -------------"<<endl;
+    std::cout<<"FILLED BATCHES-------------"<<std::endl;
+
     for(it = buffer_map.GetFilledBatches().cbegin() ; it != buffer_map.GetFilledBatches().cend() ; ++it)
     {
-        //Contrairement au premier affichage, ici la suppression de la valeur ayant pour clé 3 a provoqué la création d'un nouveau lot
-        //on a donc deux lots à afficher au lieu d'un
-        cout<<"Lot "<<lot<<" : ";
-        for(int i((*it).x) ; i < (*it).x + (*it).y ; ++i)
+        cout<<"Lot "<<lot<<" starts at "<<(*it).Start()<<" with "<<(*it).Count()<<" string(s) :";
+        for(unsigned int i((*it).Start()) ; i < (*it).Start() + (*it).Count() ; ++i)
         {
             cout<<"["<<buffer.at(i)<<"] ";
         }
         cout<<endl;
         lot++;
     }
+
+    it = buffer_map.GetFreeBatches().cbegin();
+    std::cout<<"FREE BATCHES-----------------------"<<std::endl;
+    lot = 0;
+    for(it = buffer_map.GetFreeBatches().cbegin() ; it != buffer_map.GetFreeBatches().cend() ; ++it)
+    {
+        cout<<"Batch "<<lot<<" starts at "<<(*it).Start()<<" with "<<(*it).Count()<<" string(s)"<<endl;
+        lot++;
+    }
+    cout<<"--------------------------------"<<endl;
 
     return 0;
 }

@@ -23,10 +23,10 @@ template <typename T> class NzSparseBuffer
         int FindKey(const T& key) const;
 
         unsigned int GetFilledSlotsAmount() const;
-        const std::list<NzVector2ui>& GetFilledBatches() const;
-        std::list<NzVector2ui> GetFilledBatchesCopy();
-        const std::list<NzVector2ui>& GetFreeBatches() const;
-        std::list<NzVector2ui> GetFreeBatchesCopy();
+        const std::list<NzBatch>& GetFilledBatches() const;
+        std::list<NzBatch> GetFilledBatchesCopy();
+        const std::list<NzBatch>& GetFreeBatches() const;
+        std::list<NzBatch> GetFreeBatchesCopy();
         unsigned int GetFreeSlotsAmount() const;
 
         //Insert the value's key inside the buffer
@@ -44,6 +44,8 @@ template <typename T> class NzSparseBuffer
 
     protected:
     private:
+        bool InsertValueToSingleBuffer(std::list<NzBatch>& buffer, unsigned int index);
+        bool RemoveValueFromSingleBuffer(std::list<NzBatch>& buffer, unsigned int index);
 
         //Contient l'ensemble des valeurs du buffer et leur emplacement dans le buffer
             //Efficace pour trouver rapidement l'emplacement d'une valeur dans internalBuffer
