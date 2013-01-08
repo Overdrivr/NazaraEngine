@@ -9,8 +9,10 @@
 #include <Nazara/Math/Basic.hpp>
 #include <Nazara/Math/Quaternion.hpp>
 #include <Nazara/Utility/Animation.hpp>
+#include <Nazara/Utility/BufferMapper.hpp>
 #include <Nazara/Utility/KeyframeMesh.hpp>
 #include <Nazara/Utility/Mesh.hpp>
+#include <Nazara/Utility/StaticMesh.hpp>
 #include <Nazara/Utility/Loaders/MD2/Constants.hpp>
 #include <cstddef>
 #include <cstring>
@@ -71,7 +73,6 @@ namespace
 
 		/// Création du mesh
 		// Animé ou statique, c'est la question
-		///FIXME: Le loader ne traite pas correctement le cas d'un mesh statique
 		if (parameters.animated)
 			mesh->CreateKeyframe();
 		else
@@ -103,19 +104,7 @@ namespace
 
 		/// Chargement des submesh
 		// Actuellement le loader ne charge qu'un submesh
-		// FIXME: Utiliser les commandes OpenGL ?
-		unsigned int vertexCount = header.num_tris * 3;
-
-		std::unique_ptr<NzVertexBuffer> vertexBuffer(new NzVertexBuffer(NzMesh::GetDeclaration(), vertexCount, parameters.storage, nzBufferUsage_Dynamic));
-		std::unique_ptr<NzKeyframeMesh> subMesh(new NzKeyframeMesh(mesh));
-		if (!subMesh->Create(vertexBuffer.get(), header.num_frames))
-		{
-			NazaraError("Failed to create SubMesh");
-			return false;
-		}
-
-		vertexBuffer->SetPersistent(false);
-		vertexBuffer.release();
+		std::unique_ptr<NzIndexBuffer> indexBuffer(new NzIndexBuffer(header.num_tris * 3, false, parameters.storage, nzBufferUsage_Static));
 
 		/// Lecture des triangles
 		std::vector<md2_triangle> triangles(header.num_tris);
@@ -123,9 +112,12 @@ namespace
 		stream.SetCursorPos(header.offset_tris);
 		stream.Read(&triangles[0], header.num_tris*sizeof(md2_triangle));
 
-		#ifdef NAZARA_BIG_ENDIAN
+		NzBufferMapper<NzIndexBuffer> indexMapper(indexBuffer.get(), nzBufferAccess_DiscardAndWrite);
+		nzUInt16* index = reinterpret_cast<nzUInt16*>(indexMapper.GetPointer());
+
 		for (unsigned int i = 0; i < header.num_tris; ++i)
 		{
+			#ifdef NAZARA_BIG_ENDIAN
 			NzByteSwap(&triangles[i].vertices[0], sizeof(nzUInt16));
 			NzByteSwap(&triangles[i].texCoords[0], sizeof(nzUInt16));
 
@@ -134,13 +126,19 @@ namespace
 
 			NzByteSwap(&triangles[i].vertices[2], sizeof(nzUInt16));
 			NzByteSwap(&triangles[i].texCoords[2], sizeof(nzUInt16));
+			#endif
+
+			// On respécifie le triangle dans le bon ordre
+			*index++ = triangles[i].vertices[0];
+			*index++ = triangles[i].vertices[2];
+			*index++ = triangles[i].vertices[1];
 		}
-		#endif
+
+		indexMapper.Unmap();
 
 		/// Lecture des coordonnées de texture
 		std::vector<md2_texCoord> texCoords(header.num_st);
 
-		// Lecture des coordonnées de texture
 		stream.SetCursorPos(header.offset_st);
 		stream.Read(&texCoords[0], header.num_st*sizeof(md2_texCoord));
 
@@ -152,20 +150,93 @@ namespace
 		}
 		#endif
 
-		/// Chargement des frames
-		stream.SetCursorPos(header.offset_frames);
+		const unsigned int indexFix[3] = {0, 2, 1}; // Pour respécifier les indices dans le bon ordre
 
 		// Pour que le modèle soit correctement aligné, on génère un quaternion que nous appliquerons à chacune des vertices
 		NzQuaternionf rotationQuat = NzEulerAnglesf(-90.f, 90.f, 0.f);
 
-		std::unique_ptr<md2_vertex[]> vertices(new md2_vertex[header.num_vertices]);
-		for (unsigned int f = 0; f < header.num_frames; ++f)
+		if (parameters.animated)
 		{
-			NzVector3f scale, translate;
+			std::unique_ptr<NzVertexBuffer> vertexBuffer(new NzVertexBuffer(NzMesh::GetDeclaration(), header.num_vertices, parameters.storage, nzBufferUsage_Dynamic));
+			std::unique_ptr<NzKeyframeMesh> subMesh(new NzKeyframeMesh(mesh));
+			if (!subMesh->Create(vertexBuffer.get(), header.num_frames))
+			{
+				NazaraError("Failed to create SubMesh");
+				return false;
+			}
 
+			subMesh->SetIndexBuffer(indexBuffer.release());
+
+			vertexBuffer->SetPersistent(false);
+			vertexBuffer.release();
+
+			/// Chargement des frames
+			stream.SetCursorPos(header.offset_frames);
+
+			std::unique_ptr<md2_vertex[]> vertices(new md2_vertex[header.num_vertices]);
+			for (unsigned int f = 0; f < header.num_frames; ++f)
+			{
+				NzVector3f scale, translate;
+
+				stream.Read(scale, sizeof(NzVector3f));
+				stream.Read(translate, sizeof(NzVector3f));
+				stream.Read(nullptr, 16*sizeof(char)); // On avance en ignorant le nom de la frame (Géré par l'animation)
+				stream.Read(vertices.get(), header.num_vertices*sizeof(md2_vertex));
+
+				#ifdef NAZARA_BIG_ENDIAN
+				NzByteSwap(&scale.x, sizeof(float));
+				NzByteSwap(&scale.y, sizeof(float));
+				NzByteSwap(&scale.z, sizeof(float));
+
+				NzByteSwap(&translate.x, sizeof(float));
+				NzByteSwap(&translate.y, sizeof(float));
+				NzByteSwap(&translate.z, sizeof(float));
+				#endif
+
+				for (unsigned int v = 0; v < header.num_vertices; ++v)
+				{
+					const md2_vertex& vert = vertices[v];
+					NzVector3f position = rotationQuat * NzVector3f(vert.x * scale.x + translate.x, vert.y * scale.y + translate.y, vert.z * scale.z + translate.z);
+
+					subMesh->SetNormal(f, v, rotationQuat * md2Normals[vert.n]);
+					subMesh->SetPosition(f, v, position);
+				}
+			}
+
+			/// Chargement des coordonnées de texture
+			for (unsigned int i = 0; i < header.num_tris; ++i)
+			{
+				for (unsigned int j = 0; j < 3; ++j)
+				{
+					const unsigned int fixedIndex = indexFix[j];
+					const md2_texCoord& texC = texCoords[triangles[i].texCoords[fixedIndex]];
+					subMesh->SetTexCoords(triangles[i].vertices[fixedIndex], NzVector2f(static_cast<float>(texC.u) / header.skinwidth, 1.f - static_cast<float>(texC.v)/header.skinheight));
+				}
+			}
+
+			subMesh->SetMaterialIndex(0);
+			mesh->AddSubMesh(subMesh.release());
+		}
+		else
+		{
+			std::unique_ptr<NzVertexBuffer> vertexBuffer(new NzVertexBuffer(NzMesh::GetDeclaration(), header.num_vertices, parameters.storage, nzBufferUsage_Static));
+			std::unique_ptr<NzStaticMesh> subMesh(new NzStaticMesh(mesh));
+			if (!subMesh->Create(vertexBuffer.get()))
+			{
+				NazaraError("Failed to create SubMesh");
+				return false;
+			}
+
+			subMesh->SetIndexBuffer(indexBuffer.release());
+
+			/// Chargement des vertices
+			stream.SetCursorPos(header.offset_frames);
+
+			std::unique_ptr<md2_vertex[]> vertices(new md2_vertex[header.num_vertices]);
+			NzVector3f scale, translate;
 			stream.Read(scale, sizeof(NzVector3f));
 			stream.Read(translate, sizeof(NzVector3f));
-			stream.Read(nullptr, 16*sizeof(char));
+			stream.Read(nullptr, 16*sizeof(char)); // On avance en ignorant le nom de la frame (Géré par l'animation)
 			stream.Read(vertices.get(), header.num_vertices*sizeof(md2_vertex));
 
 			#ifdef NAZARA_BIG_ENDIAN
@@ -178,41 +249,39 @@ namespace
 			NzByteSwap(&translate.z, sizeof(float));
 			#endif
 
-			NzAxisAlignedBox aabb;
-			for (unsigned int t = 0; t < header.num_tris; ++t)
+			NzBufferMapper<NzVertexBuffer> vertexMapper(vertexBuffer.get(), nzBufferAccess_DiscardAndWrite);
+			NzMeshVertex* vertex = reinterpret_cast<NzMeshVertex*>(vertexMapper.GetPointer());
+
+			/// Chargement des coordonnées de texture
+			for (unsigned int i = 0; i < header.num_tris; ++i)
 			{
-				for (unsigned int v = 0; v < 3; ++v)
+				for (unsigned int j = 0; j < 3; ++j)
 				{
-					const md2_vertex& vert = vertices[triangles[t].vertices[v]];
-					NzVector3f position = rotationQuat * NzVector3f(vert.x * scale.x + translate.x, vert.y * scale.y + translate.y, vert.z * scale.z + translate.z);
-
-					// On fait en sorte d'étendre l'AABB pour qu'il contienne ce sommet
-					aabb.ExtendTo(position);
-
-					// Et on finit par copier les éléments dans le buffer
-					NzMeshVertex vertex;
-					vertex.normal = md2Normals[vert.n];
-					vertex.position = position;
-
-					unsigned int vertexIndex = vertexCount - (t*3 + v) - 1;
-					if (f == 0)
-					{
-						// On ne définit les coordonnées de texture que lors de la première frame
-						const md2_texCoord& texC = texCoords[triangles[t].texCoords[v]];
-						subMesh->SetTexCoords(vertexIndex, NzVector2f(texC.u / static_cast<float>(header.skinwidth), 1.f - texC.v / static_cast<float>(header.skinheight)));
-					}
-
-					subMesh->SetVertex(f, vertexIndex, vertex);
+					const unsigned int fixedIndex = indexFix[j];
+					const md2_texCoord& texC = texCoords[triangles[i].texCoords[fixedIndex]];
+					vertex[triangles[i].vertices[fixedIndex]].uv.Set(static_cast<float>(texC.u) / header.skinwidth, 1.f - static_cast<float>(texC.v)/header.skinheight);
 				}
 			}
 
-			subMesh->SetAABB(f, aabb);
+			for (unsigned int v = 0; v < header.num_vertices; ++v)
+			{
+				const md2_vertex& vert = vertices[v];
+				NzVector3f position = rotationQuat * NzVector3f(vert.x * scale.x + translate.x, vert.y * scale.y + translate.y, vert.z * scale.z + translate.z);
+
+				vertex->normal = rotationQuat * md2Normals[vert.n];
+				vertex->position = position;
+
+				vertex++;
+			}
+
+			vertexMapper.Unmap();
+
+			vertexBuffer->SetPersistent(false);
+			vertexBuffer.release();
+
+			subMesh->SetMaterialIndex(0);
+			mesh->AddSubMesh(subMesh.release());
 		}
-
-		subMesh->Unlock();
-
-		subMesh->SetMaterialIndex(0);
-		mesh->AddSubMesh(subMesh.release());
 
 		return true;
 	}
@@ -265,6 +334,9 @@ namespace
 			NazaraInternalError("Failed to create animaton");
 			return false;
 		}
+
+		// Le MD2 requiert une interpolation de la dernière à la première frame (en cas de loop)
+		animation->EnableLoopPointInterpolation(true);
 
 		// Décodage des séquences
 		///TODO: Optimiser le calcul

@@ -63,6 +63,7 @@ bool NzWindowImpl::Create(NzVideoMode mode, const NzString& title, nzUInt32 styl
 	if (fullscreen)
 	{
 		DEVMODE win32Mode;
+		std::memset(&win32Mode, 0, sizeof(DEVMODE));
 		win32Mode.dmBitsPerPel = mode.bitsPerPixel;
 		win32Mode.dmPelsHeight = mode.height;
 		win32Mode.dmPelsWidth  = mode.width;
@@ -257,22 +258,6 @@ bool NzWindowImpl::HasFocus() const
 	return GetForegroundWindow() == m_handle;
 }
 
-void NzWindowImpl::ProcessEvents(bool block)
-{
-	if (m_ownsWindow)
-	{
-		if (block)
-			WaitMessage();
-
-		MSG message;
-		while (PeekMessageW(&message, nullptr, 0, 0, PM_REMOVE))
-		{
-			TranslateMessage(&message);
-			DispatchMessageW(&message);
-		}
-	}
-}
-
 void NzWindowImpl::IgnoreNextMouseEvent(int mouseX, int mouseY)
 {
 	// Petite astuce ...
@@ -288,6 +273,22 @@ bool NzWindowImpl::IsMinimized() const
 bool NzWindowImpl::IsVisible() const
 {
 	return IsWindowVisible(m_handle);
+}
+
+void NzWindowImpl::ProcessEvents(bool block)
+{
+	if (m_ownsWindow)
+	{
+		if (block)
+			WaitMessage();
+
+		MSG message;
+		while (PeekMessageW(&message, nullptr, 0, 0, PM_REMOVE))
+		{
+			TranslateMessage(&message);
+			DispatchMessageW(&message);
+		}
+	}
 }
 
 void NzWindowImpl::SetCursor(nzWindowCursor cursor)

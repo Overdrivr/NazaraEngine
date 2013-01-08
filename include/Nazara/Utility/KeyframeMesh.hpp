@@ -21,16 +21,24 @@ class NAZARA_API NzKeyframeMesh final : public NzSubMesh
 		NzKeyframeMesh(const NzMesh* parent);
 		virtual ~NzKeyframeMesh();
 
-		bool Create(NzVertexBuffer* vertexBuffer, unsigned int frameCount, bool lock = true);
+		bool Create(NzVertexBuffer* vertexBuffer, unsigned int frameCount);
 		void Destroy();
 
 		void Finish();
+
+		void GenerateAABBs();
 
 		const NzAxisAlignedBox& GetAABB() const override;
 		nzAnimationType GetAnimationType() const override;
 		unsigned int GetFrameCount() const;
 		const NzIndexBuffer* GetIndexBuffer() const override;
+		NzVector3f GetNormal(unsigned int frameIndex, unsigned int vertexIndex) const;
+		NzVector3f GetPosition(unsigned int frameIndex, unsigned int vertexIndex) const;
+		NzVector3f GetTangent(unsigned int frameIndex, unsigned int vertexIndex) const;
+		NzVector2f GetTexCoords(unsigned int vertexIndex) const;
 		void GetVertex(unsigned int frameIndex, unsigned int vertexIndex, NzMeshVertex* dest) const;
+
+		NzVertexBuffer* GetVertexBuffer() override;
 		const NzVertexBuffer* GetVertexBuffer() const override;
 
 		void Interpolate(const NzAnimation* animation, unsigned int frameA, unsigned int frameB, float interpolation) const;
@@ -38,14 +46,12 @@ class NAZARA_API NzKeyframeMesh final : public NzSubMesh
 		bool IsAnimated() const override;
 		bool IsValid();
 
-		bool Lock(nzBufferAccess access) const;
-
 		void SetAABB(unsigned int frameIndex, const NzAxisAlignedBox& aabb);
 		void SetIndexBuffer(const NzIndexBuffer* indexBuffer);
-		void SetVertex(unsigned int frameIndex, unsigned int vertexIndex, const NzMeshVertex& source);
-		void SetTexCoords(unsigned int vertexIndex, const NzVector2f& uv);
-
-		void Unlock() const;
+		void SetNormal(unsigned int frameIndex, unsigned int vertexIndex, const NzVector3f& normal);
+		void SetPosition(unsigned int frameIndex, unsigned int vertexIndex, const NzVector3f& position);
+		void SetTangent(unsigned int frameIndex, unsigned int vertexIndex, const NzVector3f& tangent);
+		void SetTexCoords(unsigned int vertexIndex, const NzVector2f& texCoords);
 
 	private:
 		void InterpolateImpl(unsigned int frameA, unsigned int frameB, float interpolation) const;

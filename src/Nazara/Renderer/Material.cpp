@@ -20,7 +20,8 @@ m_specularMap(nullptr)
 	Reset();
 }
 
-NzMaterial::NzMaterial(const NzMaterial& material)
+NzMaterial::NzMaterial(const NzMaterial& material) :
+NzResource()
 {
 	std::memcpy(this, &material, sizeof(NzMaterial)); // Autorisé dans notre cas, et plus rapide
 
@@ -66,10 +67,10 @@ void NzMaterial::Apply() const
 	}
 	#endif
 
-	int ambientColorLocation = shader->GetUniformLocation("AmbientColor");
-	int diffuseColorLocation = shader->GetUniformLocation("DiffuseColor");
-	int shininessLocation = shader->GetUniformLocation("Shininess");
-	int specularColorLocation = shader->GetUniformLocation("SpecularColor");
+	int ambientColorLocation = shader->GetUniformLocation("MaterialAmbient");
+	int diffuseColorLocation = shader->GetUniformLocation("MaterialDiffuse");
+	int shininessLocation = shader->GetUniformLocation("MaterialShininess");
+	int specularColorLocation = shader->GetUniformLocation("MaterialSpecular");
 
 	if (ambientColorLocation != -1)
 		shader->SendColor(ambientColorLocation, m_ambientColor);
@@ -79,7 +80,7 @@ void NzMaterial::Apply() const
 
 	if (m_diffuseMap)
 	{
-		int diffuseMapLocation = shader->GetUniformLocation("DiffuseMap");
+		int diffuseMapLocation = shader->GetUniformLocation("MaterialDiffuseMap");
 		if (diffuseMapLocation != -1)
 		{
 			nzUInt8 textureUnit;
@@ -94,11 +95,11 @@ void NzMaterial::Apply() const
 		shader->SendFloat(shininessLocation, m_shininess);
 
 	if (specularColorLocation != -1)
-		shader->SendColor(ambientColorLocation, m_specularColor);
+		shader->SendColor(specularColorLocation, m_specularColor);
 
 	if (m_specularMap)
 	{
-		int specularMapLocation = shader->GetUniformLocation("SpecularMap");
+		int specularMapLocation = shader->GetUniformLocation("MaterialSpecularMap");
 		if (specularMapLocation != -1)
 		{
 			nzUInt8 textureUnit;
@@ -262,13 +263,13 @@ void NzMaterial::Reset()
 	}
 
 	m_alphaBlendingEnabled = false;
-	m_ambientColor = NzColor::Black;
+	m_ambientColor = NzColor(128, 128, 128);
 	m_diffuseColor = NzColor::White;
 	m_diffuseSampler = NzTextureSampler();
 	m_dstBlend = nzBlendFunc_Zero;
 	m_faceCulling = nzFaceCulling_Back;
 	m_faceFilling = nzFaceFilling_Fill;
-	m_shininess = 0;
+	m_shininess = 50.f;
 	m_specularColor = NzColor::White;
 	m_specularSampler = NzTextureSampler();
 	m_srcBlend = nzBlendFunc_One;

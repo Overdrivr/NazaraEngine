@@ -78,8 +78,7 @@ bool NzBuffer::CopyContent(NzBuffer& buffer)
 
 	bool r = Fill(ptr, 0, buffer.GetLength());
 
-	if (!buffer.Unmap())
-		NazaraWarning("Failed to unmap source buffer");
+	buffer.Unmap();
 
 	return r;
 }
@@ -235,6 +234,31 @@ void* NzBuffer::Map(nzBufferAccess access, unsigned int offset, unsigned int len
 	return m_impl->Map(access, offset*m_typeSize, ((length == 0) ? m_length-offset : length)*m_typeSize);
 }
 
+void* NzBuffer::Map(nzBufferAccess access, unsigned int offset, unsigned int length) const
+{
+	#if NAZARA_UTILITY_SAFE
+	if (!m_impl)
+	{
+		NazaraError("Buffer not valid");
+		return nullptr;
+	}
+
+	if (access != nzBufferAccess_ReadOnly)
+	{
+		NazaraError("Buffer access must be read-only when used const");
+		return nullptr;
+	}
+
+	if (offset+length > m_length)
+	{
+		NazaraError("Exceeding buffer size");
+		return nullptr;
+	}
+	#endif
+
+	return m_impl->Map(access, offset*m_typeSize, ((length == 0) ? m_length-offset : length)*m_typeSize);
+}
+
 bool NzBuffer::SetStorage(nzBufferStorage storage)
 {
 	#if NAZARA_UTILITY_SAFE
@@ -268,9 +292,7 @@ bool NzBuffer::SetStorage(nzBufferStorage storage)
 	{
 		NazaraError("Failed to create buffer");
 		delete impl;
-
-		if (!m_impl->Unmap())
-			NazaraWarning("Failed to unmap buffer");
+		m_impl->Unmap();
 
 		return false;
 	}
@@ -280,9 +302,7 @@ bool NzBuffer::SetStorage(nzBufferStorage storage)
 		NazaraError("Failed to fill buffer");
 		impl->Destroy();
 		delete impl;
-
-		if (!m_impl->Unmap())
-			NazaraWarning("Failed to unmap buffer");
+		m_impl->Unmap();
 
 		return false;
 	}
@@ -297,17 +317,18 @@ bool NzBuffer::SetStorage(nzBufferStorage storage)
 	return true;
 }
 
-bool NzBuffer::Unmap()
+void NzBuffer::Unmap() const
 {
 	#if NAZARA_UTILITY_SAFE
 	if (!m_impl)
 	{
 		NazaraError("Buffer not valid");
-		return false;
+		return;
 	}
 	#endif
 
-	return m_impl->Unmap();
+	if (!m_impl->Unmap())
+		NazaraWarning("Failed to unmap buffer (it's content is undefined)"); ///TODO: Unexpected ?
 }
 
 bool NzBuffer::IsSupported(nzBufferStorage storage)

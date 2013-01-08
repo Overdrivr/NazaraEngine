@@ -111,14 +111,14 @@ bool NzGLSLShader::Create()
 		return false;
 	}
 
-	glBindAttribLocation(m_program, NzOpenGL::AttributeIndex[nzElementUsage_Position], "Position");
-	glBindAttribLocation(m_program, NzOpenGL::AttributeIndex[nzElementUsage_Normal], "Normal");
-	glBindAttribLocation(m_program, NzOpenGL::AttributeIndex[nzElementUsage_Diffuse], "Diffuse");
-	glBindAttribLocation(m_program, NzOpenGL::AttributeIndex[nzElementUsage_Tangent], "Tangent");
+	glBindAttribLocation(m_program, NzOpenGL::AttributeIndex[nzElementUsage_Position], "VertexPosition");
+	glBindAttribLocation(m_program, NzOpenGL::AttributeIndex[nzElementUsage_Normal], "VertexNormal");
+	glBindAttribLocation(m_program, NzOpenGL::AttributeIndex[nzElementUsage_Diffuse], "VertexDiffuse");
+	glBindAttribLocation(m_program, NzOpenGL::AttributeIndex[nzElementUsage_Tangent], "VertexTangent");
 
 	NzString uniform;
-	uniform.Reserve(10); // 8 + 2
-	uniform = "TexCoord";
+	uniform.Reserve(16); // 14 + 2
+	uniform = "VertexTexCoord";
 
 	unsigned int maxTexCoords = NzRenderer::GetMaxTextureUnits();
 	for (unsigned int i = 0; i < maxTexCoords; ++i)
@@ -308,10 +308,10 @@ bool NzGLSLShader::SendBoolean(int location, bool value)
 
 bool NzGLSLShader::SendColor(int location, const NzColor& color)
 {
-	NzVector3f vecColor(color.r/255.f, color.g/255.f, color.b/255.f);
+	NzVector4f vecColor(color.r/255.f, color.g/255.f, color.b/255.f, color.a/255.f);
 
-	if (glProgramUniform3fv)
-		glProgramUniform3fv(m_program, location, 1, vecColor);
+	if (glProgramUniform4fv)
+		glProgramUniform4fv(m_program, location, 1, vecColor);
 	else
 	{
 		if (!Lock())
@@ -320,7 +320,7 @@ bool NzGLSLShader::SendColor(int location, const NzColor& color)
 			return false;
 		}
 
-		glUniform3fv(location, 1, vecColor);
+		glUniform4fv(location, 1, vecColor);
 		Unlock();
 	}
 
