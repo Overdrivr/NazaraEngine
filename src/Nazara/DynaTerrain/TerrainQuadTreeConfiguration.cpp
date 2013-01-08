@@ -8,8 +8,9 @@
 NzTerrainQuadTreeConfiguration::NzTerrainQuadTreeConfiguration()
 {
     terrainSize = 2000.f;
-    minimumDepth = 3;
-    slopeMaxDepth = 8;
+    terrainHeight = 100.f;
+    minimumDepth = 2;
+    slopeMaxDepth = 6;
     closeCameraDepth = 8;
     farCameraDepth = 4;
     effectRadius = 300.f;

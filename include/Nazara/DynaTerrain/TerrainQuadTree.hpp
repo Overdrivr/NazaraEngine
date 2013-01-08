@@ -27,9 +27,11 @@ class NzTerrainQuadTree
 
 
         const std::list<NzTerrainNode*>& GetLeavesList();
-        void Initialize(const NzVector3f& cameraPosition);
+        float GetMaximumHeight() const;
         NzTerrainNode* GetNode(id nodeID);
         NzTerrainNode* GetRootPtr();
+
+        void Initialize(const NzVector3f& cameraPosition);
 
         void Render();
 

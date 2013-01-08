@@ -9,6 +9,7 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Math/Vector2.hpp>
+#include <Nazara/Math/Vector3.hpp>
 //#include <Nazara/DynaTerrain/NzHeightSource.hpp>
 #include "HeightSource.hpp"
 #include "Enumerations.hpp"
@@ -19,18 +20,20 @@ class NzPatch
     public:
         NzPatch(NzVector2f center, NzVector2f size, id nodeID);
         ~NzPatch();
+
+        void ComputeNormals();
         void ComputeSlope();
+
         NzVector2f GetCenter() const;
         NzVector2f GetSize() const;
         unsigned int GetTerrainConstrainedMinDepth();
-        bool IntersectsCircle(const NzVector2f& center, double radius);//FIX ME : Hériter NzRect
-        bool IsContainedByCircle(const NzVector2f& center, double radius);
+
         void RecoverPatchHeightsFromSource();
+
         void SetConfiguration(bool leftNeighbor,
                               bool topNeighbor,
                               bool rightNeighbor,
                               bool bottomNeighbor);
-
         void SetData(TerrainNodeData* data);
 
         void UploadMesh();
@@ -44,6 +47,8 @@ class NzPatch
         NzVector2f m_size;
         unsigned short int m_configuration;
         std::array<float,25> m_noiseValues;
+        std::array<float,49> m_extraHeightValues;
+        std::array<NzVector3f,25> m_vertexNormals;
         std::array<float,150> m_uploadedData;
         float m_slope;
         float m_noiseValuesDistance;

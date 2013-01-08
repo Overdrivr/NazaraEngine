@@ -9,10 +9,10 @@ class NzBatch
         ~NzBatch();
 
         bool Add(unsigned int index);
-        int Remove(unsigned int index, Batch& newBatch)
+        int Remove(unsigned int index, NzBatch& newBatch);
 
         bool Contains(unsigned int index) const;
-        unsigned int Count();
+        unsigned int Count() const;
 
         bool IsEmpty() const;
 
@@ -22,7 +22,7 @@ class NzBatch
         bool IsRightAfter(unsigned int index) const;
         bool IsRightBefore(unsigned int index) const;
 
-        bool MergeWith(const Batch& batch);
+        bool MergeWith(const NzBatch& batch);
 
         unsigned int Start() const;
 

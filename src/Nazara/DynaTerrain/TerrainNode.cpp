@@ -229,10 +229,20 @@ NzTerrainNode* NzTerrainNode::GetParent()
 
 void NzTerrainNode::HierarchicalSubdivide(unsigned int maxDepth)
 {
-    if(m_isLeaf == true && m_nodeID.lvl < maxDepth)
+    if(m_isLeaf == true)
     {
-        m_doNotRefine = true;
-        this->Subdivide();
+        if(m_nodeID.lvl < maxDepth)
+        {
+            m_doNotRefine = true;
+            this->Subdivide();
+            m_topLeftLeaf->HierarchicalSubdivide(maxDepth);
+            m_topRightLeaf->HierarchicalSubdivide(maxDepth);
+            m_bottomLeftLeaf->HierarchicalSubdivide(maxDepth);
+            m_bottomRightLeaf->HierarchicalSubdivide(maxDepth);
+        }
+    }
+    else
+    {
         m_topLeftLeaf->HierarchicalSubdivide(maxDepth);
         m_topRightLeaf->HierarchicalSubdivide(maxDepth);
         m_bottomLeftLeaf->HierarchicalSubdivide(maxDepth);

@@ -8,6 +8,7 @@
 //#include <Nazara/DynaTerrain/Config.hpp>
 //#include <Nazara/DynaTerrain/Debug.hpp>
 #include <cmath>
+#include "TerrainQuadTree.hpp"
 #include <iostream>
 #include "Dispatcher.hpp"
 
@@ -17,6 +18,7 @@ using namespace std;
 
 NzPatch::NzPatch(NzVector2f center, NzVector2f size, id nodeID)
 {
+    //std::cout<<"Creating patch "<<nodeID.lvl<<"|"<<nodeID.sx<<"|"<<nodeID.sy<<std::endl;
     m_id = nodeID;
     m_center = center;
     m_size = size;
@@ -39,6 +41,48 @@ NzPatch::NzPatch(NzVector2f center, NzVector2f size, id nodeID)
 NzPatch::~NzPatch()
 {
     //dtor
+}
+
+void NzPatch::ComputeNormals()
+{
+    //top, right, bottom, left
+    NzVector3f v1,v2,v3,v4;
+    NzVector3f v12;
+    NzVector3f v23;
+    NzVector3f v34;
+    NzVector3f v41;
+    NzVector3f sum;
+
+    for(int i(0) ; i < 5 ; ++i)
+        for(int j(0) ; j < 5 ; ++j)
+        {
+            //Compute four vectors
+            v1.x = m_size.x*(0.25*(i+1)-0.5);
+            v1.y = m_size.y*(0.25*j-0.5);
+            v1.z = m_extraHeightValues.at((i+1)+7*j) * m_data->quadtree->GetMaximumHeight();
+
+            v2.x = m_size.x*(0.25*i-0.5);
+            v2.y = m_size.y*(0.25*(j+1)-0.5);
+            v2.z = m_extraHeightValues.at(i+7*(j+1)) * m_data->quadtree->GetMaximumHeight();
+
+            v3.x = m_size.x*(0.25*(i-1)-0.5);
+            v3.y = m_size.y*(0.25*j-0.5);
+            v3.z = m_extraHeightValues.at((i-1)+7*j) * m_data->quadtree->GetMaximumHeight();
+
+            v4.x = m_size.x*(0.25*i-0.5);
+            v4.y = m_size.y*(0.25*(j-1)-0.5);
+            v4.z = m_extraHeightValues.at(i+7*(j-1)) * m_data->quadtree->GetMaximumHeight();
+
+            v12 = v1.CrossProduct(v2);
+            v23 = v2.CrossProduct(v3);
+            v34 = v3.CrossProduct(v4);
+            v41 = v4.CrossProduct(v1);
+
+            sum = v12 + v23 + v34 + v41;
+            sum.Normalize();
+
+            m_vertexNormals[i+5*j] = sum;
+        }
 }
 
 void NzPatch::ComputeSlope()
@@ -96,7 +140,9 @@ void NzPatch::ComputeSlope()
                 maxdSlope = dSlope[1];
         }
         m_slope = maxdSlope;
-        //cout<<"slope : "<<maxdSlope*m_sensitivity<<endl;
+       /* if(//m_center.x > 700.f && m_center.x < 1000.f &&
+           m_center.y > 700.f && m_center.y < 750.f)
+                cout<<"slope : "<<m_center.x<<" : "<<maxdSlope*m_sensitivity<<endl;*/
 }
 
 NzVector2f NzPatch::GetCenter() const
@@ -116,7 +162,7 @@ unsigned int NzPatch::GetTerrainConstrainedMinDepth()
         if(!m_isSlopeComputed)
             ComputeSlope();
 
-        return static_cast<int>(m_slope*m_sensitivity);
+        return static_cast<unsigned int>(m_slope*m_sensitivity);
     }
     else
         return 0;
@@ -142,18 +188,6 @@ void NzPatch::SetData(TerrainNodeData* data)
     m_isDataSet = true;
 }
 
-bool NzPatch::IntersectsCircle(const NzVector2f& center, double radius)
-{
-    //A faire
-    return false;
-}
-
-bool NzPatch::IsContainedByCircle(const NzVector2f& center, double radius)
-{
-    //A faire
-    return false;
-}
-
 void NzPatch::RecoverPatchHeightsFromSource()
 {
     if(m_data->heightSource != nullptr)
@@ -161,6 +195,10 @@ void NzPatch::RecoverPatchHeightsFromSource()
         for(int i(0) ; i < 5 ; ++i)
             for(int j(0) ; j < 5 ; ++j)
                 m_noiseValues[i+5*j] = m_data->heightSource->GetHeight(m_center.x+m_size.x*(0.25*i-0.5),m_center.y+m_size.y*(0.25*j-0.5));
+
+        for(int i(-1) ; i < 6 ; ++i)
+            for(int j(-1) ; j < 6 ; ++j)
+                m_extraHeightValues.at((i+1)+7*(j+1)) = m_data->heightSource->GetHeight(m_center.x+m_size.x*(0.25*i-0.5),m_center.y+m_size.y*(0.25*j-0.5));
 
         m_isHeightDefined = true;
     }
@@ -182,13 +220,13 @@ void NzPatch::UploadMesh()
             //cout<<"pos "<<5*i+j<<": "<<m_center.x + m_size.x*(0.25*j-0.5)<<" | "<<m_center.y+m_size.y*(0.25*i-0.5)<<endl;
             //Position
             m_uploadedData.at((5*i+j)*6) = m_center.x + m_size.x*(0.25*j-0.5);//X
-            m_uploadedData.at((5*i+j)*6+1) = m_noiseValues.at(5*i+j) * 50.f;//Z
+            m_uploadedData.at((5*i+j)*6+1) = m_noiseValues.at(5*i+j) * m_data->quadtree->GetMaximumHeight();;//Z
             m_uploadedData.at((5*i+j)*6+2) = m_center.y+m_size.y*(0.25*i-0.5);//Y
             //Normales
 
-            m_uploadedData.at((5*i+j)*6+3) = 1.f;
-            m_uploadedData.at((5*i+j)*6+4) = 0.f;
-            m_uploadedData.at((5*i+j)*6+5) = 0.f;
+            m_uploadedData.at((5*i+j)*6+3) = m_vertexNormals.at(i+5*j).x;
+            m_uploadedData.at((5*i+j)*6+4) = m_vertexNormals.at(i+5*j).z;
+            m_uploadedData.at((5*i+j)*6+5) = m_vertexNormals.at(i+5*j).y;
         }
     //Le patch classique (une grille carrée de triangles) est constitué de 32 triangles et 25 vertices
     //Mais avec ce patch problèmes aux jonctions entre niveaux. Pour ça, on utilise un patch variable selon les niveaux des patchs voisins

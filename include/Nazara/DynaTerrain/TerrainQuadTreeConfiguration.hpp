@@ -26,6 +26,7 @@ class NzTerrainQuadTreeConfiguration
 
         //Terrain parameters
         float terrainSize;
+        float terrainHeight;
         unsigned int minimumDepth;
         //Distance to camera parameters
         unsigned int closeCameraDepth;

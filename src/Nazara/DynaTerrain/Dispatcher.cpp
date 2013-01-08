@@ -100,7 +100,7 @@ bool NzDispatcher::RemovePatch(const id& ID)
         if(temp.sx < m_zonesAmountX && temp.sy < m_zonesAmountX)
         {
             //std::cout<<"submitting patch to zone "<<temp.sx<<" | "<<temp.sy<<std::endl;
-            std::cout<<"Trying Removing patch "<<ID.lvl<<"|"<<ID.sx<<"|"<<ID.sy<<" in Zone "<<temp.lvl<<"|"<<temp.sx<<"|"<<temp.sy<<" with buf";
+            //std::cout<<"Trying Removing patch "<<ID.lvl<<"|"<<ID.sx<<"|"<<ID.sy<<" in Zone "<<temp.lvl<<"|"<<temp.sx<<"|"<<temp.sy<<" with buf"<<std::endl;
             m_zones.at(temp.sx + m_zonesAmountX*temp.sy)->RemovePatch(ID);
             return true;
         }
@@ -140,6 +140,11 @@ bool NzDispatcher::Initialize(unsigned int zoneDepth, unsigned int bufferAmount)
         std::unique_ptr<NzZone> zone(new NzZone(this));
         m_zones.push_back(std::move(zone));
     }
+
+    if(bufferAmount < m_zonesAmountX*m_zonesAmountX*1.5)
+        bufferAmount = static_cast<unsigned int>(m_zonesAmountX*m_zonesAmountX*1.5f);
+
+    std::cout<<"Real buffer amount : "<<bufferAmount<<std::endl;
 
     ///------ On alloue le nombre de buffers demandés si possible
     //FIX ME : Que se passe t'il si on demande trop de mémoire vidéo ?
@@ -185,7 +190,7 @@ bool NzDispatcher::SubmitPatch(const std::array<float,150>& subBuffer, const id&
 
     if(temp.sx < m_zonesAmountX && temp.sy < m_zonesAmountX)
     {
-        std::cout<<"Submitting patch "<<ID.lvl<<"|"<<ID.sx<<"|"<<ID.sy<<" in Zone "<<temp.lvl<<"|"<<temp.sx<<"|"<<temp.sy<<std::endl;
+        //std::cout<<"Submitting patch "<<ID.lvl<<"|"<<ID.sx<<"|"<<ID.sy<<" in Zone "<<temp.lvl<<"|"<<temp.sx<<"|"<<temp.sy<<std::endl;
         m_zones.at(temp.sx + m_zonesAmountX*temp.sy)->AddPatch(subBuffer,ID);
         return true;
     }
@@ -208,7 +213,7 @@ bool NzDispatcher::UpdatePatch(const std::array<float,150>& subBuffer, const id&
 
         if(temp.sx < m_zonesAmountX && temp.sy < m_zonesAmountX)
         {
-            std::cout<<"submitting patch to zone "<<temp.sx<<" | "<<temp.sy<<std::endl;
+            //std::cout<<"submitting patch to zone "<<temp.sx<<" | "<<temp.sy<<std::endl;
             m_zones.at(temp.sx + m_zonesAmountX*temp.sy)->UpdatePatch(subBuffer,ID);
             return true;
         }

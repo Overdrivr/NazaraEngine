@@ -89,7 +89,7 @@ void NzZone::DrawBuffers() const
     {
 
         //we recover consecutive patches amount
-        std::list<NzVector2ui>::const_iterator it = m_buffersMap.at(i).GetFilledBatches().cbegin();
+        std::list<NzBatch>::const_iterator it = m_buffersMap.at(i).GetFilledBatches().cbegin();
         for(it = m_buffersMap.at(i).GetFilledBatches().cbegin() ; it != m_buffersMap.at(i).GetFilledBatches().cend() ; ++it)
         {
             //We render each patch batch in a single call to reduce draw calls
@@ -99,7 +99,7 @@ void NzZone::DrawBuffers() const
                 //(*it).x -> firstIndex;
                 //(*it).y -> vertexCount;
             //Pour dessiner 1 patch (25 vertex) il nous faut 96 index
-            NzRenderer::DrawIndexedPrimitives(nzPrimitiveType_TriangleList, (*it).x*96, (*it).y*96);
+            NzRenderer::DrawIndexedPrimitives(nzPrimitiveType_TriangleList, (*it).Start()*96, (*it).Count()*96);
             //NzRenderer::DrawPrimitives(nzPrimitiveType_TriangleFan, (*it).x*25, (*it).y*25);
         }
     }

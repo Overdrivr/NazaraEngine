@@ -62,6 +62,11 @@ NzTerrainNode* NzTerrainQuadTree::GetNode(id nodeID)
         return nullptr;
 }
 
+float NzTerrainQuadTree::GetMaximumHeight() const
+{
+    return m_configuration.terrainHeight;
+}
+
 NzTerrainNode* NzTerrainQuadTree::GetRootPtr()
 {
     return root;
@@ -75,7 +80,7 @@ void NzTerrainQuadTree::Initialize(const NzVector3f& cameraPosition)
     root->HierarchicalSubdivide(m_configuration.minimumDepth);
 
     //Si on doit améliorer l'arbre là où la pente est la plus forte, on le fait également
-    //root->SlopeBasedHierarchicalSubdivide(m_configuration.slopeMaxDepth);
+    root->SlopeBasedHierarchicalSubdivide(m_configuration.slopeMaxDepth);
 
     //La partie statique de l'arbre est prête
     //L'arbre ne pourra plus être refiné en dessous des niveaux définits à ce stade
