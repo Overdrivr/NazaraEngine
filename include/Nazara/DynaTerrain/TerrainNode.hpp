@@ -9,13 +9,15 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Math/Vector2.hpp>
+#include <Nazara/Math/Circle.hpp>
 #include "Patch.hpp"
-#include "StackArray2D.hpp"
 #include "HeightSource.hpp"
 #include "Enumerations.hpp"
 
 class NzTerrainQuadTree;
 class NzHeightSource;
+
+//FIX ME : directement utiliser un NzRect à la place du center/size... Même occupation mémoire & + de facilité pour les tests cam
 
 class NzTerrainNode
 {
@@ -23,6 +25,7 @@ class NzTerrainNode
 
         NzTerrainNode(TerrainNodeData *data, NzTerrainNode* parent, const NzVector2f& center, const NzVector2f& size, nzLocation loc = TOPLEFT);
         ~NzTerrainNode();
+
         //Libère la mémoire à partir du niveau minDepth
             //Si un node a une profondeur inférieure à minDepth, elle ne sera pas supprimée
         void CleanTree(unsigned int minDepth);
@@ -34,30 +37,33 @@ class NzTerrainNode
         void DeletePatch();
 
         NzTerrainNode* GetChild(nzLocation location);
+        const NzVector2f& GetCenter() const;
+        const NzVector2f& GetSize() const;
         unsigned int GetLevel() const;
         static int GetNodeAmount();
         const id& GetNodeID() const;
-        bool TestNodeIDIsOutsideQuadTree(id nodeId);
         NzTerrainNode* GetParent();
 
-        //Renvoie true si le node est a une extrémité de l'arbre
         bool IsLeaf() const;
-        //Renvoie true si le node est la racine de l'arbre, celui dont tous les autres nodes sont rattachés
         bool IsRoot() const;
+
+        void HierarchicalAddToCameraList(const NzCirclef& cameraRadius);
+        void HierarchicalAddAllChildrenToCameraList();
+
+        void Refine();//FIX ME : Won't work with camera subdivision because of m_doNotRefine and HierarchicalSubdiv()
+
         //Subdivise les nodes nécéssaires pour obtenir un terrain suffisamment défini lors des variations importantes de pente
         void SlopeBasedHierarchicalSubdivide(unsigned int maxDepth);
         bool Subdivide();
-        void Refine();
+
+        bool TestNodeIDIsOutsideQuadTree(id nodeId);
 
     private:
         void HandleNeighborSubdivision(nzDirection direction);
         /* Variables pour le fonctionnement basique de l'arbre */
         TerrainNodeData* m_data;
         NzTerrainNode* m_parent;
-        NzTerrainNode* m_topLeftLeaf;
-        NzTerrainNode* m_topRightLeaf;
-        NzTerrainNode* m_bottomLeftLeaf;
-        NzTerrainNode* m_bottomRightLeaf;
+        NzTerrainNode* m_children[4];
 
         bool m_isLeaf;
         bool m_isRoot;

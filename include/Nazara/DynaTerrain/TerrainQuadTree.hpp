@@ -13,18 +13,15 @@
 #include <Nazara/Math/Vector2.hpp>
 #include <Nazara/Math/Vector3.hpp>
 #include "TerrainNode.hpp"
-#include "StackArray2D.hpp"
 #include "HeightSource.hpp"
 #include "TerrainQuadTreeConfiguration.hpp"
 #include "Dispatcher.hpp"
-
 
 class NzTerrainQuadTree
 {
     public:
         NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& configuration, const NzVector2f& terrainCenter, NzHeightSource* heightSource);
         ~NzTerrainQuadTree();
-
 
         const std::list<NzTerrainNode*>& GetLeavesList();
         float GetMaximumHeight() const;
@@ -39,21 +36,28 @@ class NzTerrainQuadTree
         //Vu que quadtree ne sera pas en charge de l'affichage, elles sont même peut être inutiles, y compris maintenir à jour m_leaves
         //Peut éventuellement servir à optimiser Update(..)
         void RegisterLeaf(NzTerrainNode* node);
-        bool UnRegisterLeaf(NzTerrainNode* node);
+        bool UnRegisterLeaf(NzTerrainNode* node);//Les feuilles enlevées ici doivent aussi l'être de la camera list
         bool UnRegisterNode(NzTerrainNode* node);
-
         //Updates the terrain mesh accordingly to the camera position
             //If you want a pure static terrain, you must not call this function
             //Otherwise this function will makes the terrain closer to the camera more precise
-        void Update(const NzVector3d& cameraPosition);
+        void Update(const NzVector3f& cameraPosition);
+        void AddLeaveToCameraList(NzTerrainNode* node);
 
 
     private:
-        NzTerrainNode* root;
+        NzTerrainNode* m_root;
         TerrainNodeData m_data;
         //Ces listes n'ont pas la charge des objets en mémoire
         std::list<NzTerrainNode*> m_leaves;
-        StackArray2D<NzTerrainNode*> m_nodes;
+        std::map<id,NzTerrainNode*> m_nodes;
+
+        std::map<id,NzTerrainNode*> m_cameraList;
+        std::map<id,NzTerrainNode*> m_cameraListAdded;
+        std::map<id,NzTerrainNode*> m_cameraListRemoved;
+
+        unsigned int m_currentCameraRadiusIndex;
+
         NzHeightSource* m_heightSource;
 
         NzTerrainQuadTreeConfiguration m_configuration;

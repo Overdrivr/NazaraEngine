@@ -45,7 +45,7 @@ bool NzHeightSource::LoadTerrainFile(const NzString& filename)
         m_proceduralDetails = properties & 0x02;
         file.Read(&m_chunkSize,sizeof(float),1);
         file.Read(&m_chunksNumber,sizeof(nzUInt32),1);
-        for(int i(0) ; i < m_chunksNumber ; ++i)
+        for(unsigned int i(0) ; i < m_chunksNumber ; ++i)
         {
             NzString temp;
             nzInt32 coordinate;
@@ -58,7 +58,7 @@ bool NzHeightSource::LoadTerrainFile(const NzString& filename)
         }
         file.Close();
         std::cout<<"Loaded data for "<<m_chunksNumber<<" chunk(s) with properties : "<<m_proceduralDetails<<"|"<<m_bicubicInterpolation<<std::endl;
-        for(int i(0) ; i < m_chunksNumber ; ++i)
+        for(unsigned int i(0) ; i < m_chunksNumber ; ++i)
             std::cout<<m_chunkPatches.at(i)<<std::endl;
         return true;
     }

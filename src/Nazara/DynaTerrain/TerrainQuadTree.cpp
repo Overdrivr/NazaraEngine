@@ -2,7 +2,12 @@
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
+#include <Nazara/Core/Error.hpp>
+#include <Nazara/Core/Log.hpp>
+#include <Nazara/Core/String.hpp>
 #include "TerrainQuadTree.hpp"
+#include <Nazara/Math/Circle.hpp>
+#include <Nazara/Math/Rect.hpp>
 #include <iostream>
 #include <cmath>
 
@@ -29,19 +34,21 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& confi
 
     m_data.dispatcher->Initialize(m_configuration.minimumDepth,m_buffersAmount);
 
-    root = new NzTerrainNode(&m_data,0,terrainCenter,NzVector2f(m_configuration.terrainSize,m_configuration.terrainSize));
-    m_leaves.push_back(root);
-    m_nodes.at(0,0,0) = root;
+    m_root = new NzTerrainNode(&m_data,0,terrainCenter,NzVector2f(m_configuration.terrainSize,m_configuration.terrainSize));
+    m_leaves.push_back(m_root);
+    m_nodes[id(0,0,0)] = m_root;
 
     m_isInitialized = false;
+
+    m_currentCameraRadiusIndex = 0;
 }
 
 NzTerrainQuadTree::~NzTerrainQuadTree()
 {
-    root->CleanTree(0);
+    m_root->CleanTree(0);
     delete m_data.dispatcher;
-    cout << "NbNodes non supprimes : "<<root->GetNodeAmount()-1<< endl;
-    delete root;
+    cout << "NbNodes non supprimes : "<<m_root->GetNodeAmount()-1<< endl;
+    delete m_root;
 }
 
 void NzTerrainQuadTree::Render()
@@ -56,7 +63,7 @@ const std::list<NzTerrainNode*>& NzTerrainQuadTree::GetLeavesList()
 
 NzTerrainNode* NzTerrainQuadTree::GetNode(id nodeID)
 {
-    if(m_nodes.Exists(nodeID))
+    if(m_nodes.count(nodeID) == 1)
         return m_nodes.at(nodeID);
     else
         return nullptr;
@@ -69,7 +76,7 @@ float NzTerrainQuadTree::GetMaximumHeight() const
 
 NzTerrainNode* NzTerrainQuadTree::GetRootPtr()
 {
-    return root;
+    return m_root;
 }
 
 void NzTerrainQuadTree::Initialize(const NzVector3f& cameraPosition)
@@ -77,10 +84,10 @@ void NzTerrainQuadTree::Initialize(const NzVector3f& cameraPosition)
      m_isInitialized = true;
 
     //On subdivise l'arbre équitablement au niveau minimum
-    root->HierarchicalSubdivide(m_configuration.minimumDepth);
+    m_root->HierarchicalSubdivide(m_configuration.minimumDepth);
 
     //Si on doit améliorer l'arbre là où la pente est la plus forte, on le fait également
-    root->SlopeBasedHierarchicalSubdivide(m_configuration.slopeMaxDepth);
+    //m_root->SlopeBasedHierarchicalSubdivide(m_configuration.slopeMaxDepth);
 
     //La partie statique de l'arbre est prête
     //L'arbre ne pourra plus être refiné en dessous des niveaux définits à ce stade
@@ -97,38 +104,80 @@ void NzTerrainQuadTree::Initialize(const NzVector3f& cameraPosition)
 
 void NzTerrainQuadTree::RegisterLeaf(NzTerrainNode* node)
 {
-    //Verifier si la cellule n'y est pas déjà (PB potentiel avec Clean Tree)
-    m_leaves.push_back(node);
-    m_nodes.at(node->GetNodeID()) = node;
+    if(m_nodes.count(node->GetNodeID()) == 0)
+    {
+        m_leaves.push_back(node);
+        m_nodes[node->GetNodeID()] = node;
+    }
 }
 
 bool NzTerrainQuadTree::UnRegisterLeaf(NzTerrainNode* node)
 {
     m_leaves.remove(node);
-    //En cas de problèmes, tester si la feuille est bien présente avant de tenter de l'enlever
+
+    //Enlever de la liste de caméra un node si il y est déjà ??
     return true;
 }
 
 bool NzTerrainQuadTree::UnRegisterNode(NzTerrainNode* node)
 {
-    if(m_nodes.Exists(node->GetNodeID()))
+    std::map<id,NzTerrainNode*>::iterator it = m_nodes.find(node->GetNodeID());
+    if(it != m_nodes.end())
     {
-        m_nodes.Erase(node->GetNodeID());
+        m_nodes.erase(it);
         return true;
     }
     else
     {
-        cout<< "EXCEPTION : NzTerrainQuadTree::UnRegisterLeaf : Trying to remove unexisting node"<<node->GetNodeID().lvl<<"|"
-                                                                                                 <<node->GetNodeID().sx<<"|"
-                                                                                                 <<node->GetNodeID().sy<<endl;
+        NazaraError("NzTerrainQuadTree::UnRegisterLeaf : Trying to remove unexisting node" +
+                    NzString::Number(node->GetNodeID().lvl) + "|" +
+                    NzString::Number(node->GetNodeID().sx) + "|" +
+                    NzString::Number(node->GetNodeID().sy));
         return false;
     }
 }
 
-void NzTerrainQuadTree::Update(const NzVector3d& cameraPosition)
+void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
 {
+    //On prend un rayon de 200.f dans un premier temps
+    //On ajuste en fonction de l'altitude, si la caméra est à plus de 200.f du sol, le rayon est nul, et le périmètre est ignoré
+    if(std::fabs(cameraPosition.y) > 200.f)
+        return;
 
+    //Une optimisation potentielle à mettre en oeuvre : Au lieu de tester l'ensemble de l'arbre contre le périmètre caméra
+    //On teste d'abord l'ensemble de l'arbre sur le périmètre le plus grand
+    //On teste ensuite les nodes retenus sur le périmètre suivant (et donc plus petit) et ainsi de suite,
+    //On a donc de moins en moins de nodes à tester à chaque fois, mais alors plus d'aspect hiérarchique
+    //Les nodes feuilles seront tous testés dés le second périmètre.
+    //Cette optimisation sera efficace si traverser l'arbre est plus lent que tester un node contre un périmètre
+    //Ce qui est peut probable, mais à tester quand même
+
+    float radius = 200.f - std::fabs(cameraPosition.y);
+    NzCirclef cameraRadius(cameraPosition.x,cameraPosition.z,radius);
+
+    m_cameraListAdded.empty();
+
+    //A chaque frame, on recalcule quels noeuds sont dans le périmètre de la caméra
+    m_root->HierarchicalAddToCameraList(cameraRadius);
+
+    //Si ils viennent d'être ajoutés, on tente une subdivision
+    std::map<id,NzTerrainNode*>::iterator it;
+
+    for(it  = m_cameraListAdded.begin() ; it != m_cameraListAdded.end() ; ++it)
+    {
+        it->second->HierarchicalSubdivide(6);
+    }
+
+    //Les noeuds manquants ont quitté le périmètre, on tente de les refiner
 }
 
-
-
+void NzTerrainQuadTree::AddLeaveToCameraList(NzTerrainNode* node)
+{
+    //Le node n'était pas présent à la frame précédente
+    if(m_cameraList.count(node->GetNodeID()) == 0)
+    {
+        m_cameraList[node->GetNodeID()] = node;
+        m_cameraListAdded[node->GetNodeID()] = node;
+    }
+    //Sinon il était déjà dedans, pas besoin de lui refaire subir les opérations
+}

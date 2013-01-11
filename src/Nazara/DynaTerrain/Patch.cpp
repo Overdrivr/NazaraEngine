@@ -97,6 +97,9 @@ void NzPatch::ComputeSlope()
 
     float maxdSlope = 0.f;
 
+    //FIX ME : Si la pente change brusquement, l'algo ne le détectera pas
+    //Besoin d'un algorithme plus avancé de calcul de variation de pente
+
     for(unsigned int i(0) ; i < 5 ; ++i)
         for(unsigned int j(0) ; j < 5 ; ++j)
         {
@@ -134,11 +137,16 @@ void NzPatch::ComputeSlope()
             //On calcule la variation de pente selon y1
             dSlope[1] = std::fabs(slope[3] - slope[2])/std::fabs(slope[3] + slope[2]);
 
+            ///Maximum method
             if(dSlope[0] > maxdSlope)
                 maxdSlope = dSlope[0];
             if(dSlope[1] > maxdSlope)
                 maxdSlope = dSlope[1];
+            ///Average method
+            /*maxdSlope += dSlope[0];
+            maxdSlope += dSlope[1];*/
         }
+        //maxdSlope /= 50;
         m_slope = maxdSlope;
        /* if(//m_center.x > 700.f && m_center.x < 1000.f &&
            m_center.y > 700.f && m_center.y < 750.f)
