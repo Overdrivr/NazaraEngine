@@ -56,6 +56,12 @@ inline unsigned int NzVector2<unsigned int>::AbsDotProduct(const NzVector2<unsig
 }
 
 template<typename T>
+T NzVector2<T>::Determinant(const NzVector2& vec) const
+{
+   return x * vec.y - y * vec.x;
+}
+
+template<typename T>
 T NzVector2<T>::Distance(const NzVector2& vec) const
 {
 	return std::sqrt(SquaredDistance(vec));
