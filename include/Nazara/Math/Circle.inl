@@ -46,14 +46,14 @@ bool NzCircle<T>::Contains(const NzCircle<T>& circle) const
 	return center.SquaredDistance(circle.center) + circle.GetSquaredRadius() <= GetSquaredRadius();
 }
 
-/*
+
 template<typename T>
 bool NzCircle<T>::Contains(const NzRect<T>& rect) const
 {
 	return Contains(rect.x, rect.y) &&
 		   Contains(rect.x + rect.width, rect.y + rect.height);
 }
-*/
+
 
 template<typename T>
 NzCircle<T>& NzCircle<T>::ExtendTo(const NzVector2<T>& point)
@@ -99,17 +99,10 @@ bool NzCircle<T>::Intersect(const NzRect<T>& rect) const
    if (rect.Contains(center))
       return true;
 
-    NzSegment<T> vertical;
-    NzSegment<T> horizontal;
+    NzSegment<T> vertical(rect.x, rect.y, rect.x, rect.y + rect.height);
+    NzSegment<T> horizontal(rect.x, rect.y, rect.x + rect.width, rect.y);
 
-
-   /*int projvertical = ProjectionSurSegment(C1.x,C1.y,box1.x,box1.y,box1.x,box1.y+box1.h);
-   int projhorizontal = ProjectionSurSegment(C1.x,C1.y,box1.x,box1.y,box1.x+box1.w,box1.y);
-
-   return
-   if (projvertical==1 || projhorizontal==1)
-      return true;   // cas E
-   return false;  // cas B*/
+    return vertical.IsPointProjectionPossible(center) || horizontal.IsPointProjectionPossible(center);
 }
 
 template<typename T>
@@ -131,7 +124,8 @@ NzCircle<T>& NzCircle<T>::MakeZero()
 template<typename T>
 NzCircle<T>& NzCircle<T>::Set(T centerX, T centerY, T Radius)
 {
-	center(centerX,centerY);
+	center.x = centerX;
+	center.y = centerY;
 	radius = Radius;
 
 	return *this;
