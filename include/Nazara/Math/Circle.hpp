@@ -9,7 +9,8 @@
 
 #include <Nazara/Core/String.hpp>
 #include <Nazara/Math/Vector2.hpp>
-#include <Nazara/Math/Rect.hpp>
+
+template<typename T> class NzRect;
 
 template<typename T>
 class NzCircle

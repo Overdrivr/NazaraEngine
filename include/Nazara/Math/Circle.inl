@@ -3,9 +3,11 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Core/StringStream.hpp>
+#include <iostream>
 #include <algorithm>
-#include <Nazara/Core/Debug.hpp>
 #include <Nazara/Math/Segment.hpp>
+#include <Nazara/Math/Rect.hpp>
+#include <Nazara/Core/Debug.hpp>
 
 #define F(a) static_cast<T>(a)
 
@@ -51,7 +53,9 @@ template<typename T>
 bool NzCircle<T>::Contains(const NzRect<T>& rect) const
 {
 	return Contains(rect.x, rect.y) &&
-		   Contains(rect.x + rect.width, rect.y + rect.height);
+           Contains(rect.x, rect.y + rect.height) &&
+           Contains(rect.x + rect.width, rect.y) &&
+           Contains(rect.x + rect.width, rect.y + rect.height);
 }
 
 
@@ -87,22 +91,30 @@ bool NzCircle<T>::Intersect(const NzRect<T>& rect) const
 {
     NzRect<T> AABB = GetBoundingRect();
 
-   if(!AABB.Intersect(rect))
-      return false;
+    if(!AABB.Intersect(rect))
+        return false;
 
-   if(Contains(rect.x, rect.y)                              ||
-      Contains(rect.x, rect.y + rect.height)                ||
-      Contains(rect.x + rect.width, rect.y)                 ||
-      Contains(rect.x + rect.width, rect.y + rect.height))
-      return true;
+    unsigned int count = 0;
 
-   if (rect.Contains(center))
+    if(Contains(rect.x, rect.y))
+        count++;
+    if(Contains(rect.x, rect.y + rect.height))
+        count++;
+    if(Contains(rect.x + rect.width, rect.y))
+        count++;
+    if(Contains(rect.x + rect.width, rect.y + rect.height))
+        count++;
+
+    if(count >= 1 && count < 4)
+        return true;
+
+    if(rect.Contains(center))
       return true;
 
     NzSegment<T> vertical(rect.x, rect.y, rect.x, rect.y + rect.height);
     NzSegment<T> horizontal(rect.x, rect.y, rect.x + rect.width, rect.y);
 
-    return vertical.IsPointProjectionPossible(center) || horizontal.IsPointProjectionPossible(center);
+    return vertical.IsPointProjectionPossible(center) ^ horizontal.IsPointProjectionPossible(center);
 }
 
 template<typename T>
