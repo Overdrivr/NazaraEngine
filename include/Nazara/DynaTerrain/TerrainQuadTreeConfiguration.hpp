@@ -34,6 +34,7 @@ class NzTerrainQuadTreeConfiguration
         float effectRadius;
         //Slope variation parameters
         unsigned int slopeMaxDepth;
+        float startRadius;
 
     protected:
     private:

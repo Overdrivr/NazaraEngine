@@ -139,10 +139,13 @@ bool NzTerrainQuadTree::UnRegisterNode(NzTerrainNode* node)
 
 void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
 {
-    //On prend un rayon de 200.f dans un premier temps
+    /*
+    NzVector3f centerPoint(cameraPosition.x,cameraPosition.z,cameraPosition.y);
+    m_root->HierarchicalDynamicPrecisionAroundPoint(centerPoint);*/
+
+    float radius = 200.f;
     //On ajuste en fonction de l'altitude, si la caméra est à plus de 200.f du sol, le rayon est nul, et le périmètre est ignoré
-    if(std::fabs(cameraPosition.y) > 200.f)
-        return;
+    //if(std::fabs(cameraPosition.y) > radius-20.f)
 
     //Une optimisation potentielle à mettre en oeuvre : Au lieu de tester l'ensemble de l'arbre contre le périmètre caméra
     //On teste d'abord l'ensemble de l'arbre sur le périmètre le plus grand
@@ -152,32 +155,72 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
     //Cette optimisation sera efficace si traverser l'arbre est plus lent que tester un node contre un périmètre
     //Ce qui est peut probable, mais à tester quand même
 
-    float radius = 200.f - std::fabs(cameraPosition.y);
+    //radius -= std::fabs(cameraPosition.y);
     NzCirclef cameraRadius(cameraPosition.x,cameraPosition.z,radius);
 
-    m_cameraListAdded.empty();
+    m_subdivideList.clear();
+    m_removeList.clear();
 
     //A chaque frame, on recalcule quels noeuds sont dans le périmètre de la caméra
-    m_root->HierarchicalAddToCameraList(cameraRadius);
+    m_root->HierarchicalAddToCameraList(cameraRadius,6);
 
-    //Si ils viennent d'être ajoutés, on tente une subdivision
+    if(!m_subdivideList.empty())
+        std::cout<<"Updated "<<m_subdivideList.size()<<" Node(s)"<<std::endl;
+
+    //On subdivise les nodes nécessaires
     std::map<id,NzTerrainNode*>::iterator it;
 
-    for(it  = m_cameraListAdded.begin() ; it != m_cameraListAdded.end() ; ++it)
+    for(it  = m_subdivideList.begin() ; it != m_subdivideList.end() ; ++it)
     {
-        it->second->HierarchicalSubdivide(6);
+        it->second->Subdivide();
     }
+
+    //Note : cette méthode ne subdivisera pas l'arbre dans la position optimale de caméra dés la première frame
+    //A chaque frame, un seul niveau sera subdivisé, ce qui étalera le travail sur plusieurs frames
 
     //Les noeuds manquants ont quitté le périmètre, on tente de les refiner
+
+    ///Autre méthode
+    //Chaque node détermine grâce à la position de la caméra :
+        //A quel rayon il appartient
+            //Si il est dans un rayon et que son niveau est trop important
+                //Il demande un refine
+            //Si il est dans un rayon et que son niveau est trop faible
+                //Il demande un subdivide
+            //Si il coupe un rayon, on teste ses enfants contre les mêmes conditions
+            //Si il ne remplit aucune des 3 conditions, on s'arrête là
+    ///Avantage : une seule traversée de l'arbre
+    ///Peut également mettre à jour l'arbre avec la variation de pente dynamique
+    ///Inconvénient, l'ensemble des nodes contenus dans un rayon de la caméra seront traversés jusqu'en bas de l'arbre
+
 }
 
-void NzTerrainQuadTree::AddLeaveToCameraList(NzTerrainNode* node)
+void NzTerrainQuadTree::AddLeaveToCameraList(NzTerrainNode* node, bool addList)
 {
-    //Le node n'était pas présent à la frame précédente
-    if(m_cameraList.count(node->GetNodeID()) == 0)
+    if(addList)
     {
-        m_cameraList[node->GetNodeID()] = node;
-        m_cameraListAdded[node->GetNodeID()] = node;
+        m_subdivideList[node->GetNodeID()] = node;
     }
-    //Sinon il était déjà dedans, pas besoin de lui refaire subir les opérations
+    else
+    {
+        m_removeList[node->GetNodeID()] = node;
+    }
+}
+
+int NzTerrainQuadTree::TransformDistanceToCameraInRadiusIndex(float distance)
+{
+    std::cout<<distance<<std::endl;
+    if(distance > m_configuration.startRadius + m_configuration.effectRadius)
+    {
+        return -1;
+    }
+    else if(distance < m_configuration.startRadius)
+    {
+        return m_configuration.closeCameraDepth;
+    }
+    else
+    {
+        float pas = m_configuration.effectRadius/(m_configuration.closeCameraDepth - m_configuration.farCameraDepth);
+        return m_configuration.closeCameraDepth - 1 + static_cast<unsigned int>((distance-m_configuration.startRadius)/pas);
+    }
 }

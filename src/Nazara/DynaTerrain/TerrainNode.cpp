@@ -20,6 +20,9 @@ NzTerrainNode::NzTerrainNode(TerrainNodeData *data, NzTerrainNode* parent, const
     m_data = data;
     m_location = loc;
     m_center = center;
+    m_realCenter.x = center.x;
+    m_realCenter.y = center.y;
+    m_realCenter.z = 0.f;
     m_size = size;
     m_isLeaf = false;
     m_patchMemoryAllocated = false;
@@ -73,6 +76,8 @@ NzTerrainNode::NzTerrainNode(TerrainNodeData *data, NzTerrainNode* parent, const
     m_patch->ComputeSlope();
     //On uploade le patch sur le dispatcher
     m_patch->UploadMesh();
+
+    m_realCenter = m_patch->GetRealCenter();
 }
 
 NzTerrainNode::~NzTerrainNode()
@@ -166,6 +171,11 @@ int NzTerrainNode::GetNodeAmount()
 const id& NzTerrainNode::GetNodeID() const
 {
     return m_nodeID;
+}
+
+const NzVector3f& NzTerrainNode::GetRealCenter() const
+{
+    return m_realCenter;
 }
 
 bool NzTerrainNode::TestNodeIDIsOutsideQuadTree(id nodeId)
@@ -407,47 +417,83 @@ void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction)
     }
 }
 
-void NzTerrainNode::HierarchicalAddToCameraList(const NzCirclef& cameraRadius)
+void NzTerrainNode::HierarchicalAddToCameraList(const NzCirclef& cameraRadius, unsigned int indexRadius)
 {
     NzRectf tester(m_center - m_size/2.f, m_center + m_size/2.f);
 
-    if(cameraRadius.Intersect(tester))
+    if(cameraRadius.Contains(tester))
+    {
+        this->HierarchicalAddAllChildrenToCameraList(indexRadius);
+    }
+    else if(cameraRadius.Intersect(tester))
     {
         //Si c'est un node feuille, on l'ajoute à la liste
         if(m_isLeaf)
+        {
+            if(m_nodeID.lvl < indexRadius)
+            {
+                m_data->quadtree->AddLeaveToCameraList(this);
+            }
+
+        }
+        else
+        {
+            if(m_nodeID.lvl + 1 > indexRadius)//Il est trop subdivisé, on l'ajoute à la liste de refine
+                m_data->quadtree->AddLeaveToCameraList(this,false);
+            else
+            {
+                //Sinon on teste ses enfants
+                for(int i(0) ; i < 4 ; ++i)
+                    m_children[i]->HierarchicalAddToCameraList(cameraRadius,indexRadius);
+            }
+        }
+    }
+    else if(tester.Contains(cameraRadius))
+    {
+        //Le rayon de la caméra est entièrement contenu dans le node
+        //Ne se produit qu'en haut de l'arbre
+         if(m_isLeaf)
+         {
+             //Si on est ici, ça veut dire que le node est largement trop peu précis
+             if(m_nodeID.lvl < indexRadius)
+                m_data->quadtree->AddLeaveToCameraList(this);
+         }
+        else
+        {
+            if(m_nodeID.lvl + 1 > indexRadius)//Il est trop subdivisé, on l'ajoute à la liste de refine
+                m_data->quadtree->AddLeaveToCameraList(this,false);
+            else
+            {
+                //Sinon on teste ses enfants
+                for(int i(0) ; i < 4 ; ++i)
+                    m_children[i]->HierarchicalAddToCameraList(cameraRadius,indexRadius);
+            }
+        }
+    }
+    //else la méthode s'arrête là pour le node
+}
+
+void NzTerrainNode::HierarchicalAddAllChildrenToCameraList(unsigned int indexRadius)
+{
+    //Si c'est un node feuille
+    if(m_isLeaf)
+    {
+        //Si il n'est pas assez subdivisé, on l'ajoute à la liste
+        if(m_nodeID.lvl < indexRadius)
+        {
             m_data->quadtree->AddLeaveToCameraList(this);
+        }
+    }
+    else
+    {
+        if(m_nodeID.lvl + 1 > indexRadius)//Il est trop subdivisé, on l'ajoute à la liste de refine
+            m_data->quadtree->AddLeaveToCameraList(this,false);
         else
         {
             //Sinon on teste ses enfants
             for(int i(0) ; i < 4 ; ++i)
-                m_children[i]->HierarchicalAddToCameraList(cameraRadius);
+                m_children[i]->HierarchicalAddAllChildrenToCameraList(indexRadius);
         }
     }
-    else if(cameraRadius.Contains(tester))
-    {
-        //Si c'est un node feuille, on l'ajoute à la liste
-        if(m_isLeaf)
-            m_data->quadtree->AddLeaveToCameraList(this);
-        else
-        {
-            //Sinon on ajoute ses enfants
-            for(int i(0) ; i < 4 ; ++i)
-                m_children[i]->HierarchicalAddAllChildrenToCameraList();
-        }
-    }
-    //else la méthode s'arrête là pour le node
-
 }
 
-void NzTerrainNode::HierarchicalAddAllChildrenToCameraList()
-{
-    if(m_isLeaf)
-    {
-        m_data->quadtree->AddLeaveToCameraList(this);
-    }
-    else
-    {
-        for(int i(0) ; i < 4 ; ++i)
-                m_children[i]->HierarchicalAddAllChildrenToCameraList();
-    }
-}

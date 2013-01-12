@@ -42,9 +42,11 @@ class NzTerrainQuadTree
             //If you want a pure static terrain, you must not call this function
             //Otherwise this function will makes the terrain closer to the camera more precise
         void Update(const NzVector3f& cameraPosition);
-        void AddLeaveToCameraList(NzTerrainNode* node);
+        void AddLeaveToCameraList(NzTerrainNode* node, bool addList = true);
 
-
+        //Returns -1 if the distance to the camera is too big
+        //or the radius index otherwise
+        int TransformDistanceToCameraInRadiusIndex(float distance);
     private:
         NzTerrainNode* m_root;
         TerrainNodeData m_data;
@@ -53,8 +55,8 @@ class NzTerrainQuadTree
         std::map<id,NzTerrainNode*> m_nodes;
 
         std::map<id,NzTerrainNode*> m_cameraList;
-        std::map<id,NzTerrainNode*> m_cameraListAdded;
-        std::map<id,NzTerrainNode*> m_cameraListRemoved;
+        std::map<id,NzTerrainNode*> m_subdivideList;
+        std::map<id,NzTerrainNode*> m_removeList;
 
         unsigned int m_currentCameraRadiusIndex;
 

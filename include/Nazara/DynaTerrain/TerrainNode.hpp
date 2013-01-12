@@ -9,6 +9,7 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Math/Vector2.hpp>
+#include <Nazara/Math/Vector3.hpp>
 #include <Nazara/Math/Circle.hpp>
 #include "Patch.hpp"
 #include "HeightSource.hpp"
@@ -43,12 +44,13 @@ class NzTerrainNode
         static int GetNodeAmount();
         const id& GetNodeID() const;
         NzTerrainNode* GetParent();
+        const NzVector3f& GetRealCenter() const;
 
         bool IsLeaf() const;
         bool IsRoot() const;
 
-        void HierarchicalAddToCameraList(const NzCirclef& cameraRadius);
-        void HierarchicalAddAllChildrenToCameraList();
+        void HierarchicalAddToCameraList(const NzCirclef& cameraRadius, unsigned int indexRadius);
+        void HierarchicalAddAllChildrenToCameraList(unsigned int indexRadius);
 
         void Refine();//FIX ME : Won't work with camera subdivision because of m_doNotRefine and HierarchicalSubdiv()
 
@@ -73,6 +75,7 @@ class NzTerrainNode
 
         NzPatch* m_patch;
         NzVector2f m_center;
+        NzVector3f m_realCenter;
         NzVector2f m_size;
         nzLocation m_location;
 

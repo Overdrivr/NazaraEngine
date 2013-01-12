@@ -11,9 +11,10 @@ NzTerrainQuadTreeConfiguration::NzTerrainQuadTreeConfiguration()
     terrainHeight = 100.f;
     minimumDepth = 2;
     slopeMaxDepth = 6;
-    closeCameraDepth = 8;
+    closeCameraDepth = 7;
     farCameraDepth = 4;
     effectRadius = 300.f;
+    startRadius = 30.f;
 }
 
 NzTerrainQuadTreeConfiguration::~NzTerrainQuadTreeConfiguration()
@@ -71,5 +72,6 @@ bool NzTerrainQuadTreeConfiguration::IsValid() const
            minimumDepth < closeCameraDepth &&
            farCameraDepth < closeCameraDepth &&
            effectRadius > 0.f &&
+           effectRadius > startRadius &&
            ComputeCameraSlope() < 1.f;
 }

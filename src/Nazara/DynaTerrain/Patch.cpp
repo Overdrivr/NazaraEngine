@@ -21,6 +21,9 @@ NzPatch::NzPatch(NzVector2f center, NzVector2f size, id nodeID)
     //std::cout<<"Creating patch "<<nodeID.lvl<<"|"<<nodeID.sx<<"|"<<nodeID.sy<<std::endl;
     m_id = nodeID;
     m_center = center;
+    m_realCenter.x = center.x;
+    m_realCenter.y = center.y;
+    m_realCenter.z = 0.f;
     m_size = size;
     m_data = nullptr;
 
@@ -163,6 +166,11 @@ NzVector2f NzPatch::GetSize() const
     return m_size;
 }
 
+NzVector3f NzPatch::GetRealCenter() const
+{
+    return m_realCenter;
+}
+
 unsigned int NzPatch::GetTerrainConstrainedMinDepth()
 {
     if(m_isDataSet)
@@ -200,9 +208,17 @@ void NzPatch::RecoverPatchHeightsFromSource()
 {
     if(m_data->heightSource != nullptr)
     {
+        float average = 0;
+
         for(int i(0) ; i < 5 ; ++i)
             for(int j(0) ; j < 5 ; ++j)
+            {
                 m_noiseValues[i+5*j] = m_data->heightSource->GetHeight(m_center.x+m_size.x*(0.25*i-0.5),m_center.y+m_size.y*(0.25*j-0.5));
+                average += m_noiseValues[i+5*j];
+            }
+
+        average /= 25;
+        m_realCenter.z = average;
 
         for(int i(-1) ; i < 6 ; ++i)
             for(int j(-1) ; j < 6 ; ++j)
@@ -225,7 +241,6 @@ void NzPatch::UploadMesh()
     for(int i(0) ; i < 5 ; ++i)
         for(int j(0) ; j < 5 ; ++j)
         {
-            //cout<<"pos "<<5*i+j<<": "<<m_center.x + m_size.x*(0.25*j-0.5)<<" | "<<m_center.y+m_size.y*(0.25*i-0.5)<<endl;
             //Position
             m_uploadedData.at((5*i+j)*6) = m_center.x + m_size.x*(0.25*j-0.5);//X
             m_uploadedData.at((5*i+j)*6+1) = m_noiseValues.at(5*i+j) * m_data->quadtree->GetMaximumHeight();;//Z

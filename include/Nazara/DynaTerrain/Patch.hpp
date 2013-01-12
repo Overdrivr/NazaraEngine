@@ -26,6 +26,7 @@ class NzPatch
 
         NzVector2f GetCenter() const;
         NzVector2f GetSize() const;
+        NzVector3f GetRealCenter() const;
         unsigned int GetTerrainConstrainedMinDepth();
 
         void RecoverPatchHeightsFromSource();
@@ -44,6 +45,7 @@ class NzPatch
         TerrainNodeData* m_data;
         id m_id;
         NzVector2f m_center;
+        NzVector3f m_realCenter;
         NzVector2f m_size;
         unsigned short int m_configuration;
         std::array<float,25> m_noiseValues;
