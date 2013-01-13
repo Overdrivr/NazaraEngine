@@ -25,7 +25,7 @@ class NzTerrainQuadTree
 
         const std::list<NzTerrainNode*>& GetLeavesList();
         float GetMaximumHeight() const;
-        unsigned int GetUpdatedNodeAmountPerFrame() const;
+        unsigned int GetSubdivisionsAmount();
         NzTerrainNode* GetNode(id nodeID);
         NzTerrainNode* GetRootPtr();
 
@@ -60,6 +60,8 @@ class NzTerrainQuadTree
         std::map<id,NzTerrainNode*> m_removeList;
 
         unsigned int m_currentCameraRadiusIndex;
+
+        unsigned int m_subdivisionsAmount;
 
         NzHeightSource* m_heightSource;
 

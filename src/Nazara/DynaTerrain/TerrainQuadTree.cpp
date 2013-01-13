@@ -41,6 +41,8 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& confi
     m_isInitialized = false;
 
     m_currentCameraRadiusIndex = 0;
+
+    m_subdivisionsAmount = 0;
 }
 
 NzTerrainQuadTree::~NzTerrainQuadTree()
@@ -79,9 +81,11 @@ NzTerrainNode* NzTerrainQuadTree::GetRootPtr()
     return m_root;
 }
 
-unsigned int NzTerrainQuadTree::GetUpdatedNodeAmountPerFrame() const
+unsigned int NzTerrainQuadTree::GetSubdivisionsAmount()
 {
-    return m_subdivideList.size();
+    unsigned int temp = m_subdivisionsAmount;
+    m_subdivisionsAmount = 0;
+    return temp;
 }
 
 void NzTerrainQuadTree::Initialize(const NzVector3f& cameraPosition)
@@ -100,7 +104,6 @@ void NzTerrainQuadTree::Initialize(const NzVector3f& cameraPosition)
     //Si la contribution proche de la camera n'est pas 0 (= pas d'optimisations), on prépare le terrain pour la camera
     //if(closeCameraContribution > 0)
         //this->Update(cameraPosition);
-
 
 }
 
@@ -145,9 +148,7 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
     NzVector3f centerPoint(cameraPosition.x,cameraPosition.z,cameraPosition.y);
     m_root->HierarchicalDynamicPrecisionAroundPoint(centerPoint);*/
 
-    float radius = 200.f;
-    //On ajuste en fonction de l'altitude, si la caméra est à plus de 200.f du sol, le rayon est nul, et le périmètre est ignoré
-    //if(std::fabs(cameraPosition.y) > radius-20.f)
+    float radius = 100.f;
 
     //Une optimisation potentielle à mettre en oeuvre : Au lieu de tester l'ensemble de l'arbre contre le périmètre caméra
     //On teste d'abord l'ensemble de l'arbre sur le périmètre le plus grand
@@ -157,14 +158,13 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
     //Cette optimisation sera efficace si traverser l'arbre est plus lent que tester un node contre un périmètre
     //Ce qui est peut probable, mais à tester quand même
 
-    //radius -= std::fabs(cameraPosition.y);
     NzCirclef cameraRadius(cameraPosition.x,cameraPosition.z,radius);
 
-    m_subdivideList.clear();
+    //m_subdivideList.clear();
     m_removeList.clear();
 
     //A chaque frame, on recalcule quels noeuds sont dans le périmètre de la caméra
-    m_root->HierarchicalAddToCameraList(cameraRadius,7);
+    m_root->HierarchicalAddToCameraList(cameraRadius,8);
 
     /*if(!m_subdivideList.empty())
         std::cout<<"Subdivisions amount : "<<m_subdivideList.size()<<std::endl;*/
@@ -173,11 +173,28 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
 
     //On subdivise les nodes nécessaires
     std::map<id,NzTerrainNode*>::iterator it;
-
+/*
     for(it = m_subdivideList.begin() ; it != m_subdivideList.end() ; ++it)
     {
         it->second->Subdivide();
+    }*/
+
+    it = m_subdivideList.begin();
+    int subdivisionsPerFrame = 0;
+    unsigned int maxSubdivisionsAmountPerFrame = 3;
+
+    while(subdivisionsPerFrame < maxSubdivisionsAmountPerFrame)
+    {
+        if(it == m_subdivideList.end())
+            break;
+
+        it->second->Subdivide();
+        m_subdivideList.erase(it);
+        it = m_subdivideList.begin();
+        subdivisionsPerFrame++;
     }
+
+    m_subdivisionsAmount += subdivisionsPerFrame;
 
     //On refine les nodes nécessaires
     /*for(it = m_removeList.begin() ; it != m_removeList.end() ; ++it)
