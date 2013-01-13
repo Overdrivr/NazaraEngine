@@ -46,7 +46,7 @@ NzDispatcher::NzDispatcher()
         }
     }
 
-	m_indexBuffer = new NzIndexBuffer(168000, true, nzBufferStorage_Hardware);// nzBufferStorage_Hardware, nzBufferUsage_Static);
+	m_indexBuffer = new NzIndexBuffer(168000, true, nzBufferStorage_Hardware);
 	if (!m_indexBuffer->Fill(allIndexes, 0, 168000)) // FIX ME : Que faire en cas d'échec
 	{
 		std::cout << "Failed to fill indexbuffer" << std::endl;
@@ -71,10 +71,6 @@ void NzDispatcher::DrawAll(bool viewFrustumCullingEnabled)
     if(m_isReady)
     {
         NzRenderer::SetIndexBuffer(m_indexBuffer);
-        //Pareil pour la vertex declaration
-        //NzRenderer::SetVertexDeclaration(m_declaration);
-
-        //FIX ME : View Frustum Culling
 
         for(unsigned int i(0) ; i < m_zones.size() ; ++i)
         {
@@ -225,9 +221,4 @@ bool NzDispatcher::UpdatePatch(const std::array<float,150>& subBuffer, const id&
     }
     else
         return false;
-}
-
-void NzDispatcher::UpdateViewFrustum(/* */)
-{
-
 }

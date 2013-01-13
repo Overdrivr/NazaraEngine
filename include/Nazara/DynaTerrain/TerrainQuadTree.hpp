@@ -25,6 +25,7 @@ class NzTerrainQuadTree
 
         const std::list<NzTerrainNode*>& GetLeavesList();
         float GetMaximumHeight() const;
+        unsigned int GetUpdatedNodeAmountPerFrame() const;
         NzTerrainNode* GetNode(id nodeID);
         NzTerrainNode* GetRootPtr();
 
@@ -42,7 +43,7 @@ class NzTerrainQuadTree
             //If you want a pure static terrain, you must not call this function
             //Otherwise this function will makes the terrain closer to the camera more precise
         void Update(const NzVector3f& cameraPosition);
-        void AddLeaveToCameraList(NzTerrainNode* node, bool addList = true);
+        void AddLeaveToSubdivisionList(NzTerrainNode* node);
 
         //Returns -1 if the distance to the camera is too big
         //or the radius index otherwise

@@ -40,7 +40,6 @@ class NzDispatcher
         bool SubmitPatch(const std::array<float,150>& subBuffer, const id& ID);
 
         bool UpdatePatch(const std::array<float,150>& subBuffer, const id& ID);
-        void UpdateViewFrustum(/* */);
 
     protected:
     private:

@@ -88,8 +88,9 @@ NzTerrainNode::~NzTerrainNode()
     if(m_isLeaf)
         m_data->quadtree->UnRegisterLeaf(this);
     if(m_patchMemoryAllocated)
+    {
         delete m_patch;
-
+    }
 }
 
 
@@ -324,17 +325,42 @@ void NzTerrainNode::Refine()
 {
     if(!m_isLeaf && !m_doNotRefine)
     {
-        m_isLeaf = true;
-        m_data->quadtree->RegisterLeaf(this);
-
-        this->CreatePatch(m_center,m_size);
-
-        for(int i(0) ; i < 4 ; ++i)
+        std::cout<<"refine"<<std::endl;
+        if(m_children[0]->m_isLeaf)
         {
-            m_children[i]->DeletePatch();
-            delete m_children[i];
-            m_children[i] = nullptr;
+            m_isLeaf = true;
+            m_data->quadtree->RegisterLeaf(this);
+
+            this->CreatePatch(m_center,m_size);
+            //On lui affecte la source de bruit
+            m_patch->SetData(m_data);
+            //On le fait calculer ses hauteurs et sa variation moyenne de pente
+            m_patch->ComputeSlope();
+            //On uploade le patch sur le dispatcher
+            m_patch->UploadMesh();
+
+            m_realCenter = m_patch->GetRealCenter();
+
+            for(int i(0) ; i < 4 ; ++i)
+            {
+                m_children[i]->DeletePatch();
+                delete m_children[i];
+                m_children[i] = nullptr;
+            }
         }
+        else
+        {
+            for(int i(0) ; i < 4 ; ++i)
+                m_children[i]->Refine();
+        }
+
+    }
+    else if(!m_isLeaf && m_doNotRefine)
+    {
+        std::cout<<"not called"<<std::endl;
+        //Le node n'est pas refine-able à cause de la pente, mais ses enfants le sont peut être
+        for(int i(0) ; i < 4 ; ++i)
+                m_children[i]->Refine();
     }
 }
 
@@ -432,15 +458,12 @@ void NzTerrainNode::HierarchicalAddToCameraList(const NzCirclef& cameraRadius, u
         {
             if(m_nodeID.lvl < indexRadius)
             {
-                m_data->quadtree->AddLeaveToCameraList(this);
+                m_data->quadtree->AddLeaveToSubdivisionList(this);
             }
-
         }
         else
         {
-            if(m_nodeID.lvl + 1 > indexRadius)//Il est trop subdivisé, on l'ajoute à la liste de refine
-                m_data->quadtree->AddLeaveToCameraList(this,false);
-            else
+            if(!(m_nodeID.lvl + 1 > indexRadius))
             {
                 //Sinon on teste ses enfants
                 for(int i(0) ; i < 4 ; ++i)
@@ -456,13 +479,11 @@ void NzTerrainNode::HierarchicalAddToCameraList(const NzCirclef& cameraRadius, u
          {
              //Si on est ici, ça veut dire que le node est largement trop peu précis
              if(m_nodeID.lvl < indexRadius)
-                m_data->quadtree->AddLeaveToCameraList(this);
+                m_data->quadtree->AddLeaveToSubdivisionList(this);
          }
         else
         {
-            if(m_nodeID.lvl + 1 > indexRadius)//Il est trop subdivisé, on l'ajoute à la liste de refine
-                m_data->quadtree->AddLeaveToCameraList(this,false);
-            else
+            if(!(m_nodeID.lvl + 1 > indexRadius))
             {
                 //Sinon on teste ses enfants
                 for(int i(0) ; i < 4 ; ++i)
@@ -481,14 +502,12 @@ void NzTerrainNode::HierarchicalAddAllChildrenToCameraList(unsigned int indexRad
         //Si il n'est pas assez subdivisé, on l'ajoute à la liste
         if(m_nodeID.lvl < indexRadius)
         {
-            m_data->quadtree->AddLeaveToCameraList(this);
+            m_data->quadtree->AddLeaveToSubdivisionList(this);
         }
     }
     else
     {
-        if(m_nodeID.lvl + 1 > indexRadius)//Il est trop subdivisé, on l'ajoute à la liste de refine
-            m_data->quadtree->AddLeaveToCameraList(this,false);
-        else
+        if(!(m_nodeID.lvl + 1 > indexRadius))//Il est trop subdivisé, on l'ajoute à la liste de refine
         {
             //Sinon on teste ses enfants
             for(int i(0) ; i < 4 ; ++i)

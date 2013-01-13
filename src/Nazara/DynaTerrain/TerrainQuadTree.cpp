@@ -79,6 +79,11 @@ NzTerrainNode* NzTerrainQuadTree::GetRootPtr()
     return m_root;
 }
 
+unsigned int NzTerrainQuadTree::GetUpdatedNodeAmountPerFrame() const
+{
+    return m_subdivideList.size();
+}
+
 void NzTerrainQuadTree::Initialize(const NzVector3f& cameraPosition)
 {
      m_isInitialized = true;
@@ -87,7 +92,7 @@ void NzTerrainQuadTree::Initialize(const NzVector3f& cameraPosition)
     m_root->HierarchicalSubdivide(m_configuration.minimumDepth);
 
     //Si on doit améliorer l'arbre là où la pente est la plus forte, on le fait également
-    //m_root->SlopeBasedHierarchicalSubdivide(m_configuration.slopeMaxDepth);
+    m_root->SlopeBasedHierarchicalSubdivide(m_configuration.slopeMaxDepth);
 
     //La partie statique de l'arbre est prête
     //L'arbre ne pourra plus être refiné en dessous des niveaux définits à ce stade
@@ -95,9 +100,6 @@ void NzTerrainQuadTree::Initialize(const NzVector3f& cameraPosition)
     //Si la contribution proche de la camera n'est pas 0 (= pas d'optimisations), on prépare le terrain pour la camera
     //if(closeCameraContribution > 0)
         //this->Update(cameraPosition);
-
-    //On demander au dispatcher d'allouer les buffers nécessaires
-    //m_buffersAmount
 
 
 }
@@ -162,18 +164,26 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
     m_removeList.clear();
 
     //A chaque frame, on recalcule quels noeuds sont dans le périmètre de la caméra
-    m_root->HierarchicalAddToCameraList(cameraRadius,6);
+    m_root->HierarchicalAddToCameraList(cameraRadius,7);
 
-    if(!m_subdivideList.empty())
-        std::cout<<"Updated "<<m_subdivideList.size()<<" Node(s)"<<std::endl;
+    /*if(!m_subdivideList.empty())
+        std::cout<<"Subdivisions amount : "<<m_subdivideList.size()<<std::endl;*/
+    /*if(!m_removeList.empty())
+        std::cout<<"Refines amount : "<<m_removeList.size()<<std::endl;*/
 
     //On subdivise les nodes nécessaires
     std::map<id,NzTerrainNode*>::iterator it;
 
-    for(it  = m_subdivideList.begin() ; it != m_subdivideList.end() ; ++it)
+    for(it = m_subdivideList.begin() ; it != m_subdivideList.end() ; ++it)
     {
         it->second->Subdivide();
     }
+
+    //On refine les nodes nécessaires
+    /*for(it = m_removeList.begin() ; it != m_removeList.end() ; ++it)
+    {
+        it->second->Refine();
+    }*/
 
     //Note : cette méthode ne subdivisera pas l'arbre dans la position optimale de caméra dés la première frame
     //A chaque frame, un seul niveau sera subdivisé, ce qui étalera le travail sur plusieurs frames
@@ -195,16 +205,9 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
 
 }
 
-void NzTerrainQuadTree::AddLeaveToCameraList(NzTerrainNode* node, bool addList)
+void NzTerrainQuadTree::AddLeaveToSubdivisionList(NzTerrainNode* node)
 {
-    if(addList)
-    {
-        m_subdivideList[node->GetNodeID()] = node;
-    }
-    else
-    {
-        m_removeList[node->GetNodeID()] = node;
-    }
+    m_subdivideList[node->GetNodeID()] = node;
 }
 
 int NzTerrainQuadTree::TransformDistanceToCameraInRadiusIndex(float distance)

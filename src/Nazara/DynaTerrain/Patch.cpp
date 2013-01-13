@@ -56,25 +56,32 @@ void NzPatch::ComputeNormals()
     NzVector3f v41;
     NzVector3f sum;
 
-    for(int i(0) ; i < 5 ; ++i)
-        for(int j(0) ; j < 5 ; ++j)
+    unsigned int i0,j0;
+    unsigned int i1,j1;
+
+    for(unsigned int i(0) ; i < 5 ; ++i)
+        for(unsigned int j(0) ; j < 5 ; ++j)
         {
+            i0 = i + 1;
+            j0 = j + 1;
+            i1 = i - 1;
+            j1 = j - 1;
             //Compute four vectors
-            v1.x = m_size.x*(0.25*(i+1)-0.5);
-            v1.y = m_size.y*(0.25*j-0.5);
-            v1.z = m_extraHeightValues.at((i+1)+7*j) * m_data->quadtree->GetMaximumHeight();
+            v1.x = m_size.x*(0.25*(i0+1)-0.5);
+            v1.y = m_size.y*(0.25*j0-0.5);
+            v1.z = m_extraHeightValues.at((i0+1) + 7*j0) * m_data->quadtree->GetMaximumHeight();
 
-            v2.x = m_size.x*(0.25*i-0.5);
-            v2.y = m_size.y*(0.25*(j+1)-0.5);
-            v2.z = m_extraHeightValues.at(i+7*(j+1)) * m_data->quadtree->GetMaximumHeight();
+            v2.x = m_size.x*(0.25*i0-0.5);
+            v2.y = m_size.y*(0.25*(j0+1)-0.5);
+            v2.z = m_extraHeightValues.at(i0     + 7*(j0+1)) * m_data->quadtree->GetMaximumHeight();
 
-            v3.x = m_size.x*(0.25*(i-1)-0.5);
-            v3.y = m_size.y*(0.25*j-0.5);
-            v3.z = m_extraHeightValues.at((i-1)+7*j) * m_data->quadtree->GetMaximumHeight();
+            v3.x = m_size.x*(0.25*(i0-1)-0.5);
+            v3.y = m_size.y*(0.25*j0-0.5);
+            v3.z = m_extraHeightValues.at((i0-1) + 7*j0) * m_data->quadtree->GetMaximumHeight();
 
-            v4.x = m_size.x*(0.25*i-0.5);
-            v4.y = m_size.y*(0.25*(j-1)-0.5);
-            v4.z = m_extraHeightValues.at(i+7*(j-1)) * m_data->quadtree->GetMaximumHeight();
+            v4.x = m_size.x*(0.25*i0-0.5);
+            v4.y = m_size.y*(0.25*(j0-1)-0.5);
+            v4.z = m_extraHeightValues.at(i0     + 7*(j0-1)) * m_data->quadtree->GetMaximumHeight();
 
             v12 = v1.CrossProduct(v2);
             v23 = v2.CrossProduct(v3);
@@ -84,7 +91,12 @@ void NzPatch::ComputeNormals()
             sum = v12 + v23 + v34 + v41;
             sum.Normalize();
 
-            m_vertexNormals[i+5*j] = sum;
+            if(sum.DotProduct(NzVector3f(0.f,0.f,1.f)) < 0)
+                sum *= -1;
+            /*if(i == 0 || j == 0)
+                m_vertexNormals.at(i+5*j) = NzVector3f(1.0,0.0,0.0);
+            else*/
+                m_vertexNormals.at(i+5*j) = sum;
         }
 }
 
@@ -225,6 +237,8 @@ void NzPatch::RecoverPatchHeightsFromSource()
                 m_extraHeightValues.at((i+1)+7*(j+1)) = m_data->heightSource->GetHeight(m_center.x+m_size.x*(0.25*i-0.5),m_center.y+m_size.y*(0.25*j-0.5));
 
         m_isHeightDefined = true;
+
+        this->ComputeNormals();
     }
     else
     {
@@ -237,7 +251,6 @@ void NzPatch::RecoverPatchHeightsFromSource()
 
 void NzPatch::UploadMesh()
 {
-    //cout<<"Patch"<<endl;
     for(int i(0) ; i < 5 ; ++i)
         for(int j(0) ; j < 5 ; ++j)
         {
@@ -247,9 +260,9 @@ void NzPatch::UploadMesh()
             m_uploadedData.at((5*i+j)*6+2) = m_center.y+m_size.y*(0.25*i-0.5);//Y
             //Normales
 
-            m_uploadedData.at((5*i+j)*6+3) = m_vertexNormals.at(i+5*j).x;
-            m_uploadedData.at((5*i+j)*6+4) = m_vertexNormals.at(i+5*j).z;
-            m_uploadedData.at((5*i+j)*6+5) = m_vertexNormals.at(i+5*j).y;
+            m_uploadedData.at((5*i+j)*6+3) = m_vertexNormals.at(5*i+j).x;
+            m_uploadedData.at((5*i+j)*6+4) = m_vertexNormals.at(5*i+j).z;
+            m_uploadedData.at((5*i+j)*6+5) = m_vertexNormals.at(5*i+j).y;
         }
     //Le patch classique (une grille carrée de triangles) est constitué de 32 triangles et 25 vertices
     //Mais avec ce patch problèmes aux jonctions entre niveaux. Pour ça, on utilise un patch variable selon les niveaux des patchs voisins
