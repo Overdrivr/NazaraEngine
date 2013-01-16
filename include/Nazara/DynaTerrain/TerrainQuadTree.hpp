@@ -26,8 +26,12 @@ class NzTerrainQuadTree
         const std::list<NzTerrainNode*>& GetLeavesList();
         float GetMaximumHeight() const;
         unsigned int GetSubdivisionsAmount();
+
         NzTerrainNode* GetNode(id nodeID);
         NzTerrainNode* GetRootPtr();
+
+        NzTerrainNode* GetNodeFromPool();
+        void ReturnNodeToPool(NzTerrainNode* node);
 
         void Initialize(const NzVector3f& cameraPosition);
 
@@ -51,9 +55,10 @@ class NzTerrainQuadTree
     private:
         NzTerrainNode* m_root;
         TerrainNodeData m_data;
-        //Ces listes n'ont pas la charge des objets en mémoire
-        std::list<NzTerrainNode*> m_leaves;
-        std::map<id,NzTerrainNode*> m_nodes;
+
+        std::list<NzTerrainNode*> m_leaves;//Inutilisé?
+
+        std::map<id,NzTerrainNode*> m_nodesMap;
 
         std::map<id,NzTerrainNode*> m_cameraList;
         std::map<id,NzTerrainNode*> m_subdivideList;
@@ -62,6 +67,8 @@ class NzTerrainQuadTree
         unsigned int m_currentCameraRadiusIndex;
 
         unsigned int m_subdivisionsAmount;
+        unsigned int m_poolReallocationSize;
+        unsigned int m_poolAllocatedSpace;
 
         NzHeightSource* m_heightSource;
 
@@ -69,6 +76,8 @@ class NzTerrainQuadTree
         unsigned int m_buffersAmount;
 
         bool m_isInitialized;
+
+        unsigned int m_maxOperationsPerFrame;
 };
 
 #endif // QUADTREE_HPP

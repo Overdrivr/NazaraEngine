@@ -14,38 +14,41 @@
 #include "HeightSource.hpp"
 #include "Enumerations.hpp"
 #include <array>
+#include <Nazara/Math/Cube.hpp>
+
+//FIX ME : Eliminer tableau redondant debug
 
 class NzPatch
 {
     public:
-        NzPatch(NzVector2f center, NzVector2f size, id nodeID);
+        NzPatch();
         ~NzPatch();
-
-        void ComputeNormals();
-        void ComputeSlope();
 
         NzVector2f GetCenter() const;
         NzVector2f GetSize() const;
-        NzVector3f GetRealCenter() const;
-        unsigned int GetTerrainConstrainedMinDepth();
+        NzCubef& GetAABB();
+        const NzCubef& GetAABB() const;
+        float GetGlobalSlope() const;
 
-        void RecoverPatchHeightsFromSource();
+        void Initialize(NzVector2f center, NzVector2f size, id nodeID, TerrainNodeData* data);
+        void Invalidate();
 
-        void SetConfiguration(bool leftNeighbor,
-                              bool topNeighbor,
-                              bool rightNeighbor,
-                              bool bottomNeighbor);
-        void SetData(TerrainNodeData* data);
+        void SetConfiguration(bool leftNeighbor, bool topNeighbor, bool rightNeighbor, bool bottomNeighbor);
 
         void UploadMesh();
         void UnUploadMesh();
 
     protected:
     private:
+
+        void ComputeNormals();
+        void ComputeSlope();
+        void ComputeHeights();
+
         TerrainNodeData* m_data;
         id m_id;
         NzVector2f m_center;
-        NzVector3f m_realCenter;
+        NzCubef m_aabb;
         NzVector2f m_size;
         unsigned short int m_configuration;
         std::array<float,25> m_noiseValues;
@@ -53,12 +56,8 @@ class NzPatch
         std::array<NzVector3f,25> m_vertexNormals;
         std::array<float,150> m_uploadedData;
         float m_slope;
-        float m_noiseValuesDistance;
-        float m_sensitivity;
-        bool m_isDataSet;
-        bool m_isHeightDefined;
-        bool m_isSlopeComputed;
         bool m_isUploaded;
+        bool m_isInitialized;
 };
 
 #endif // PATCH_HPP

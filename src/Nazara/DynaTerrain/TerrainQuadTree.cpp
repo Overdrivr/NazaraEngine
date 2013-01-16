@@ -8,6 +8,7 @@
 #include "TerrainQuadTree.hpp"
 #include <Nazara/Math/Circle.hpp>
 #include <Nazara/Math/Rect.hpp>
+#include <Nazara/Core/Clock.hpp>
 #include <iostream>
 #include <cmath>
 
@@ -34,22 +35,33 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& confi
 
     m_data.dispatcher->Initialize(m_configuration.minimumDepth,m_buffersAmount);
 
-    m_root = new NzTerrainNode(&m_data,0,terrainCenter,NzVector2f(m_configuration.terrainSize,m_configuration.terrainSize));
+    m_root = new NzTerrainNode();
+    m_root->Initialize(&m_data,0,terrainCenter,NzVector2f(m_configuration.terrainSize,m_configuration.terrainSize));
     m_leaves.push_back(m_root);
-    m_nodes[id(0,0,0)] = m_root;
+    m_nodesMap[id(0,0,0)] = m_root;
 
     m_isInitialized = false;
 
     m_currentCameraRadiusIndex = 0;
 
     m_subdivisionsAmount = 0;
+
+    m_poolReallocationSize = 200;
+    m_poolAllocatedSpace = 0;
+    m_maxOperationsPerFrame = 0;
 }
 
 NzTerrainQuadTree::~NzTerrainQuadTree()
 {
+    cout<<"Maximum amount of operations per frame : "<<m_maxOperationsPerFrame<<std::endl;
+    cout<<"Libération de l'arbre, veuillez patientez..."<<endl;
+    NzClock clk;
+    clk.Restart();
     m_root->CleanTree(0);
+    clk.Pause();
     delete m_data.dispatcher;
-    cout << "NbNodes non supprimes : "<<m_root->GetNodeAmount()-1<< endl;
+    cout<<"Arbre libere en "<<clk.GetMilliseconds()/1000.f<<" s "<<endl;
+    cout<<"NbNodes non supprimes : "<<m_root->GetNodeAmount()-1<< endl;
     delete m_root;
 }
 
@@ -65,8 +77,8 @@ const std::list<NzTerrainNode*>& NzTerrainQuadTree::GetLeavesList()
 
 NzTerrainNode* NzTerrainQuadTree::GetNode(id nodeID)
 {
-    if(m_nodes.count(nodeID) == 1)
-        return m_nodes.at(nodeID);
+    if(m_nodesMap.count(nodeID) == 1)
+        return m_nodesMap.at(nodeID);
     else
         return nullptr;
 }
@@ -109,10 +121,10 @@ void NzTerrainQuadTree::Initialize(const NzVector3f& cameraPosition)
 
 void NzTerrainQuadTree::RegisterLeaf(NzTerrainNode* node)
 {
-    if(m_nodes.count(node->GetNodeID()) == 0)
+    if(m_nodesMap.count(node->GetNodeID()) == 0)
     {
         m_leaves.push_back(node);
-        m_nodes[node->GetNodeID()] = node;
+        m_nodesMap[node->GetNodeID()] = node;
     }
 }
 
@@ -126,10 +138,10 @@ bool NzTerrainQuadTree::UnRegisterLeaf(NzTerrainNode* node)
 
 bool NzTerrainQuadTree::UnRegisterNode(NzTerrainNode* node)
 {
-    std::map<id,NzTerrainNode*>::iterator it = m_nodes.find(node->GetNodeID());
-    if(it != m_nodes.end())
+    std::map<id,NzTerrainNode*>::iterator it = m_nodesMap.find(node->GetNodeID());
+    if(it != m_nodesMap.end())
     {
-        m_nodes.erase(it);
+        m_nodesMap.erase(it);
         return true;
     }
     else
@@ -181,7 +193,10 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
 
     it = m_subdivideList.begin();
     int subdivisionsPerFrame = 0;
-    unsigned int maxSubdivisionsAmountPerFrame = 3;
+
+    ///En limitant le nombre de subdivisions par frame
+    /*
+    unsigned int maxSubdivisionsAmountPerFrame = 1;
 
     while(subdivisionsPerFrame < maxSubdivisionsAmountPerFrame)
     {
@@ -193,6 +208,27 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
         it = m_subdivideList.begin();
         subdivisionsPerFrame++;
     }
+    */
+
+    ///En limitant le temps accordé au terrain par frame
+    ///Pas mieux, car la précisions des horloges est limitée, ne pas descendre en dessous d'1 ms
+    ///Permet d'estimer grossièrement les performances néanmoins
+    NzClock clock;
+    nzUInt64 maxTime = 5;//ms
+    clock.Restart();
+    while(clock.GetMilliseconds() < maxTime)
+    {
+        if(it == m_subdivideList.end())
+            break;
+
+        it->second->Subdivide();
+        m_subdivideList.erase(it);
+        it = m_subdivideList.begin();
+        subdivisionsPerFrame++;
+    }
+
+    if(subdivisionsPerFrame > m_maxOperationsPerFrame)
+        m_maxOperationsPerFrame = subdivisionsPerFrame;
 
     m_subdivisionsAmount += subdivisionsPerFrame;
 

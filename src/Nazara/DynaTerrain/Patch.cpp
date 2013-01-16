@@ -12,42 +12,50 @@
 #include <iostream>
 #include "Dispatcher.hpp"
 
-using namespace std;
-
-
-
-NzPatch::NzPatch(NzVector2f center, NzVector2f size, id nodeID)
+NzPatch::NzPatch()
 {
-    //std::cout<<"Creating patch "<<nodeID.lvl<<"|"<<nodeID.sx<<"|"<<nodeID.sy<<std::endl;
-    m_id = nodeID;
-    m_center = center;
-    m_realCenter.x = center.x;
-    m_realCenter.y = center.y;
-    m_realCenter.z = 0.f;
-    m_size = size;
-    m_data = nullptr;
-
-    m_isDataSet = false;
-    m_isHeightDefined = false;
-    m_isSlopeComputed = false;
-    m_isUploaded = false;
-
+    m_isInitialized = false;
     m_slope = 0.f;
-    m_sensitivity = 3;
-
-    m_noiseValuesDistance = size.x / 5.f;
-
-    for(int i(0) ; i < 25 ; ++i)
-        m_noiseValues[i] = 0.f;
 }
 
 NzPatch::~NzPatch()
 {
     //dtor
+    if(m_isUploaded)
+        UnUploadMesh();
+}
+
+void NzPatch::ComputeHeights()
+{
+    if(m_isInitialized)
+    {
+        float x,z;
+
+        for(int i(0) ; i < 5 ; ++i)
+            for(int j(0) ; j < 5 ; ++j)
+            {
+                x = m_center.x+m_size.x*(0.25*i-0.5);
+                z = m_center.y+m_size.y*(0.25*j-0.5);
+
+                //We recover y (altitude) from heightSource
+                m_noiseValues[i+5*j] = m_data->heightSource->GetHeight(x,z);
+
+                if(i == 0 && j == 0)
+                    m_aabb.z = m_noiseValues[0];
+
+                m_aabb.ExtendTo(NzVector3f(x,m_noiseValues[0],z));
+            }
+
+        for(int i(-1) ; i < 6 ; ++i)
+            for(int j(-1) ; j < 6 ; ++j)
+                m_extraHeightValues.at((i+1)+7*(j+1)) = m_data->heightSource->GetHeight(m_center.x+m_size.x*(0.25*i-0.5),m_center.y+m_size.y*(0.25*j-0.5));
+    }
 }
 
 void NzPatch::ComputeNormals()
 {
+    if(m_isInitialized)
+    {
     //top, right, bottom, left
     NzVector3f v1,v2,v3,v4;
     NzVector3f v12;
@@ -98,13 +106,13 @@ void NzPatch::ComputeNormals()
             else*/
                 m_vertexNormals.at(i+5*j) = sum;
         }
+    }
 }
 
 void NzPatch::ComputeSlope()
 {
-    if(!m_isHeightDefined)
-        RecoverPatchHeightsFromSource();
-
+    if(m_isInitialized)
+    {
     NzVector2f offset;
     float heightSamples[4];
     float slope[4];
@@ -166,6 +174,17 @@ void NzPatch::ComputeSlope()
        /* if(//m_center.x > 700.f && m_center.x < 1000.f &&
            m_center.y > 700.f && m_center.y < 750.f)
                 cout<<"slope : "<<m_center.x<<" : "<<maxdSlope*m_sensitivity<<endl;*/
+    }
+}
+
+NzCubef& NzPatch::GetAABB()
+{
+    return m_aabb;
+}
+
+const NzCubef& NzPatch::GetAABB() const
+{
+    return m_aabb;
 }
 
 NzVector2f NzPatch::GetCenter() const
@@ -178,22 +197,39 @@ NzVector2f NzPatch::GetSize() const
     return m_size;
 }
 
-NzVector3f NzPatch::GetRealCenter() const
+float NzPatch::GetGlobalSlope() const
 {
-    return m_realCenter;
+    return m_slope;
 }
 
-unsigned int NzPatch::GetTerrainConstrainedMinDepth()
+void NzPatch::Initialize(NzVector2f center, NzVector2f size, id nodeID, TerrainNodeData* data)
 {
-    if(m_isDataSet)
-    {
-        if(!m_isSlopeComputed)
-            ComputeSlope();
+    m_id = nodeID;
+    m_center = center;
+    m_size = size;
+    m_data = data;
 
-        return static_cast<unsigned int>(m_slope*m_sensitivity);
-    }
-    else
-        return 0;
+    m_isUploaded = false;
+    m_isInitialized = true;
+
+    m_aabb.MakeZero();
+    m_aabb.x = center.x - size.x/2.f;
+    m_aabb.z = center.y - size.y/2.f;
+
+
+    for(unsigned int i(0) ; i < 25 ; ++i)
+        m_noiseValues[i] = 0.f;
+
+    ComputeHeights();
+
+    ComputeNormals();
+
+    ComputeSlope();
+}
+
+void NzPatch::Invalidate()
+{
+    m_isInitialized = false;
 }
 
 void NzPatch::SetConfiguration(bool leftNeighbor, bool topNeighbor, bool rightNeighbor, bool bottomNeighbor)
@@ -210,45 +246,6 @@ void NzPatch::SetConfiguration(bool leftNeighbor, bool topNeighbor, bool rightNe
         m_configuration += 1<<3;
 }
 
-void NzPatch::SetData(TerrainNodeData* data)
-{
-    m_data = data;
-    m_isDataSet = true;
-}
-
-void NzPatch::RecoverPatchHeightsFromSource()
-{
-    if(m_data->heightSource != nullptr)
-    {
-        float average = 0;
-
-        for(int i(0) ; i < 5 ; ++i)
-            for(int j(0) ; j < 5 ; ++j)
-            {
-                m_noiseValues[i+5*j] = m_data->heightSource->GetHeight(m_center.x+m_size.x*(0.25*i-0.5),m_center.y+m_size.y*(0.25*j-0.5));
-                average += m_noiseValues[i+5*j];
-            }
-
-        average /= 25;
-        m_realCenter.z = average;
-
-        for(int i(-1) ; i < 6 ; ++i)
-            for(int j(-1) ; j < 6 ; ++j)
-                m_extraHeightValues.at((i+1)+7*(j+1)) = m_data->heightSource->GetHeight(m_center.x+m_size.x*(0.25*i-0.5),m_center.y+m_size.y*(0.25*j-0.5));
-
-        m_isHeightDefined = true;
-
-        this->ComputeNormals();
-    }
-    else
-    {
-        for(int i(0) ; i < 5 ; ++i)
-            for(int j(0) ; j < 5 ; ++j)
-                m_noiseValues[i+5*j] = 0;
-        m_isHeightDefined = false;
-    }
-}
-
 void NzPatch::UploadMesh()
 {
     for(int i(0) ; i < 5 ; ++i)
@@ -256,7 +253,7 @@ void NzPatch::UploadMesh()
         {
             //Position
             m_uploadedData.at((5*i+j)*6) = m_center.x + m_size.x*(0.25*j-0.5);//X
-            m_uploadedData.at((5*i+j)*6+1) = m_noiseValues.at(5*i+j) * m_data->quadtree->GetMaximumHeight();;//Z
+            m_uploadedData.at((5*i+j)*6+1) = m_noiseValues.at(5*i+j) * m_data->quadtree->GetMaximumHeight();//Z
             m_uploadedData.at((5*i+j)*6+2) = m_center.y+m_size.y*(0.25*i-0.5);//Y
             //Normales
 

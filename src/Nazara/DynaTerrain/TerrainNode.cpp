@@ -15,69 +15,9 @@ using namespace std;
 
 int NzTerrainNode::nbNodes = 0;
 
-NzTerrainNode::NzTerrainNode(TerrainNodeData *data, NzTerrainNode* parent, const NzVector2f& center, const NzVector2f& size, nzLocation loc) : antiInfiniteLoop(200)
+NzTerrainNode::NzTerrainNode() : antiInfiniteLoop(200)
 {
-    m_data = data;
-    m_location = loc;
-    m_center = center;
-    m_realCenter.x = center.x;
-    m_realCenter.y = center.y;
-    m_realCenter.z = 0.f;
-    m_size = size;
-    m_isLeaf = false;
-    m_patchMemoryAllocated = false;
-    m_doNotRefine = false;
 
-    for(int i(0) ; i < 4 ; ++i)
-        m_children[i] = nullptr;
-
-    if(parent == 0)
-    {
-        m_isRoot = true;
-        m_isLeaf = true;
-        m_nodeID.lvl = 0;
-        m_nodeID.sx = 0;
-        m_nodeID.sy = 0;
-    }
-    else
-    {
-        m_nodeID.lvl = parent->GetLevel()+1;
-        m_parent = parent;
-        m_isRoot = false;
-        int offx = 0, offy = 0;
-        switch(m_location)
-        {
-            case TOPRIGHT:
-                offx = 1;
-            break;
-
-            case BOTTOMLEFT:
-                offy = 1;
-            break;
-
-            case BOTTOMRIGHT:
-                offx = 1;
-                offy = 1;
-            break;
-
-            default:
-            break;
-        }
-        m_nodeID.sx = parent->m_nodeID.sx * 2 + offx;
-        m_nodeID.sy = parent->m_nodeID.sy * 2 + offy;
-    }
-    nbNodes++;
-
-    //On crée son patch pour l'affichage
-    this->CreatePatch(center,size);
-    //On lui affecte la source de bruit
-    m_patch->SetData(m_data);
-    //On le fait calculer ses hauteurs et sa variation moyenne de pente
-    m_patch->ComputeSlope();
-    //On uploade le patch sur le dispatcher
-    m_patch->UploadMesh();
-
-    m_realCenter = m_patch->GetRealCenter();
 }
 
 NzTerrainNode::~NzTerrainNode()
@@ -107,6 +47,7 @@ void NzTerrainNode::CleanTree(unsigned int minDepth)
                 else
                     m_children[i]->CleanTree(minDepth);
 
+                //m_data->quadtree->ReturnNodeToPool(m_children[i]);
                 delete m_children[i];
                 m_children[i] = nullptr;
             }
@@ -125,12 +66,13 @@ void NzTerrainNode::CleanTree(unsigned int minDepth)
     }
 }
 
-void NzTerrainNode::CreatePatch(const NzVector2f& center, const NzVector2f& size)
+void NzTerrainNode::CreatePatch()
 {
     if(!m_patchMemoryAllocated)
     {
         m_patchMemoryAllocated = true;
-        m_patch = new NzPatch(center,size,m_nodeID);
+        m_patch = new NzPatch();
+        m_patch->Initialize(m_center,m_size,m_nodeID,m_data);
     }
 }
 
@@ -139,6 +81,7 @@ void NzTerrainNode::DeletePatch()
     if(m_patchMemoryAllocated)
     {
         m_patch->UnUploadMesh();
+        m_patch->Invalidate();
         m_patchMemoryAllocated = false;
         delete m_patch;
     }
@@ -219,6 +162,71 @@ bool NzTerrainNode::IsRoot() const
     return m_isRoot;
 }
 
+void NzTerrainNode::Initialize(TerrainNodeData *data, NzTerrainNode* parent, const NzVector2f& center, const NzVector2f& size, nzLocation loc)
+{
+    m_data = data;
+    m_location = loc;
+    m_center = center;
+    m_realCenter.x = center.x;
+    m_realCenter.y = center.y;
+    m_realCenter.z = 0.f;
+    m_size = size;
+    m_isLeaf = false;
+    m_patchMemoryAllocated = false;
+    m_doNotRefine = false;
+
+    for(int i(0) ; i < 4 ; ++i)
+        m_children[i] = nullptr;
+
+    if(parent == 0)
+    {
+        m_isRoot = true;
+        m_isLeaf = true;
+        m_nodeID.lvl = 0;
+        m_nodeID.sx = 0;
+        m_nodeID.sy = 0;
+    }
+    else
+    {
+        m_nodeID.lvl = parent->GetLevel()+1;
+        m_parent = parent;
+        m_isRoot = false;
+        int offx = 0, offy = 0;
+        switch(m_location)
+        {
+            case TOPRIGHT:
+                offx = 1;
+            break;
+
+            case BOTTOMLEFT:
+                offy = 1;
+            break;
+
+            case BOTTOMRIGHT:
+                offx = 1;
+                offy = 1;
+            break;
+
+            default:
+            break;
+        }
+        m_nodeID.sx = parent->m_nodeID.sx * 2 + offx;
+        m_nodeID.sy = parent->m_nodeID.sy * 2 + offy;
+    }
+    nbNodes++;
+
+    //On crée son patch pour l'affichage
+    CreatePatch();
+    m_patch->UploadMesh();
+
+    m_isInitialized = true;
+}
+
+void NzTerrainNode::Invalidate()
+{
+    m_isInitialized = false;
+}
+
 void NzTerrainNode::SlopeBasedHierarchicalSubdivide(unsigned int maxDepth)
 {
     //Si la cellule est une feuille
@@ -227,7 +235,7 @@ void NzTerrainNode::SlopeBasedHierarchicalSubdivide(unsigned int maxDepth)
         //Si son niveau est inférieur au niveau max de subdivision
             //Et également inférieur au niveau minimum de précision requis par la pente du terrain
                 //Alors on le subdivise
-        if(m_nodeID.lvl < maxDepth && m_nodeID.lvl < m_patch->GetTerrainConstrainedMinDepth())
+        if(m_nodeID.lvl < maxDepth && m_nodeID.lvl < static_cast<int>(m_patch->GetGlobalSlope() * m_data->quadtree->GetMaximumHeight()))
         {
             m_doNotRefine = true;
             this->Subdivide();
@@ -255,7 +263,8 @@ bool NzTerrainNode::Subdivide()
         if(m_children[TOPLEFT] == nullptr)
         {
             //On crée le premier node fils
-            m_children[TOPLEFT] = new NzTerrainNode(m_data,this,NzVector2f(m_center.x-m_size.x/4.f,m_center.y+m_size.y/4.f),m_size/2.f,TOPLEFT);
+            m_children[TOPLEFT] = new NzTerrainNode();
+            m_children[TOPLEFT]->Initialize(m_data,this,NzVector2f(m_center.x-m_size.x/4.f,m_center.y+m_size.y/4.f),m_size/2.f,TOPLEFT);
             //C'est une subdivision, le node est forcément une leaf
             m_children[TOPLEFT]->m_isLeaf = true;
 
@@ -275,7 +284,8 @@ bool NzTerrainNode::Subdivide()
 
         if(m_children[TOPRIGHT] == nullptr)
         {
-            m_children[TOPRIGHT] = new NzTerrainNode(m_data,this,NzVector2f(m_center.x+m_size.x/4.f,m_center.y+m_size.y/4.f),m_size/2.f,TOPRIGHT);
+            m_children[TOPRIGHT] = new NzTerrainNode();
+            m_children[TOPRIGHT]->Initialize(m_data,this,NzVector2f(m_center.x+m_size.x/4.f,m_center.y+m_size.y/4.f),m_size/2.f,TOPRIGHT);
             m_children[TOPRIGHT]->m_isLeaf = true;
             m_data->quadtree->RegisterLeaf(m_children[TOPRIGHT]);
             //cout<<"creating topright "<<m_nodeID.lvl+1<<endl;
@@ -290,7 +300,8 @@ bool NzTerrainNode::Subdivide()
 
         if(m_children[BOTTOMLEFT] == nullptr)
         {
-            m_children[BOTTOMLEFT] = new NzTerrainNode(m_data,this,NzVector2f(m_center.x-m_size.x/4.f,m_center.y-m_size.y/4.f),m_size/2.f,BOTTOMLEFT);
+            m_children[BOTTOMLEFT] = new NzTerrainNode();
+            m_children[BOTTOMLEFT]->Initialize(m_data,this,NzVector2f(m_center.x-m_size.x/4.f,m_center.y-m_size.y/4.f),m_size/2.f,BOTTOMLEFT);
             m_children[BOTTOMLEFT]->m_isLeaf = true;
             m_data->quadtree->RegisterLeaf(m_children[BOTTOMLEFT]);
             //cout<<"creating bottomleft "<<m_nodeID.lvl+1<<endl;
@@ -304,7 +315,8 @@ bool NzTerrainNode::Subdivide()
 
         if(m_children[BOTTOMRIGHT] == nullptr)
         {
-            m_children[BOTTOMRIGHT] = new NzTerrainNode(m_data,this,NzVector2f(m_center.x+m_size.x/4.f,m_center.y-m_size.y/4.f),m_size/2.f,BOTTOMRIGHT);
+            m_children[BOTTOMRIGHT] = new NzTerrainNode();
+            m_children[BOTTOMRIGHT]->Initialize(m_data,this,NzVector2f(m_center.x+m_size.x/4.f,m_center.y-m_size.y/4.f),m_size/2.f,BOTTOMRIGHT);
             m_children[BOTTOMRIGHT]->m_isLeaf = true;
             m_data->quadtree->RegisterLeaf(m_children[BOTTOMRIGHT]);
             //cout<<"creating bottomright "<<m_nodeID.lvl+1<<endl;
@@ -331,19 +343,13 @@ void NzTerrainNode::Refine()
             m_isLeaf = true;
             m_data->quadtree->RegisterLeaf(this);
 
-            this->CreatePatch(m_center,m_size);
-            //On lui affecte la source de bruit
-            m_patch->SetData(m_data);
-            //On le fait calculer ses hauteurs et sa variation moyenne de pente
-            m_patch->ComputeSlope();
-            //On uploade le patch sur le dispatcher
+            CreatePatch();
             m_patch->UploadMesh();
-
-            m_realCenter = m_patch->GetRealCenter();
 
             for(int i(0) ; i < 4 ; ++i)
             {
                 m_children[i]->DeletePatch();
+                //m_data->quadtree->ReturnNodeToPool(m_children[i])
                 delete m_children[i];
                 m_children[i] = nullptr;
             }

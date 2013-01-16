@@ -24,7 +24,7 @@ class NzTerrainNode
 {
     public:
 
-        NzTerrainNode(TerrainNodeData *data, NzTerrainNode* parent, const NzVector2f& center, const NzVector2f& size, nzLocation loc = TOPLEFT);
+        NzTerrainNode();
         ~NzTerrainNode();
 
         //Libère la mémoire à partir du niveau minDepth
@@ -34,7 +34,7 @@ class NzTerrainNode
             //Il sera par la suite impossible de refiner en dessous de minDepth
         void HierarchicalSubdivide(unsigned int maxDepth);
         //La classe NzPatch est chargée de communiquer avec le dispatcher (affichage) et de l'utilisation de la source de hauteur
-        void CreatePatch(const NzVector2f& center, const NzVector2f& size);
+        void CreatePatch();
         void DeletePatch();
 
         NzTerrainNode* GetChild(nzLocation location);
@@ -48,6 +48,8 @@ class NzTerrainNode
 
         bool IsLeaf() const;
         bool IsRoot() const;
+        void Initialize(TerrainNodeData *data, NzTerrainNode* parent, const NzVector2f& center, const NzVector2f& size, nzLocation loc = TOPLEFT);
+        void Invalidate();
 
         void HierarchicalAddToCameraList(const NzCirclef& cameraRadius, unsigned int indexRadius);
         void HierarchicalAddAllChildrenToCameraList(unsigned int indexRadius);
@@ -70,6 +72,7 @@ class NzTerrainNode
         bool m_isLeaf;
         bool m_isRoot;
         bool m_patchMemoryAllocated;
+        bool m_isInitialized;//FIX ME : Améliorer management
 
         id m_nodeID;
 
@@ -81,7 +84,7 @@ class NzTerrainNode
 
         static int nbNodes;
 
-        const int antiInfiniteLoop;
+        const int antiInfiniteLoop;//FIX ME : A supprimer ?
 
         /* Variables pour les fonctionnalités supplémentaires */
 
