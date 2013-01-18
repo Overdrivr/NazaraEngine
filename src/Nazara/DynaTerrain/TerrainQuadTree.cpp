@@ -33,12 +33,12 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& confi
     m_heightSource = heightSource;
     m_data.quadtree = this;
     m_data.heightSource = m_heightSource;
-    m_data.dispatcher = new NzDispatcher;
+    m_data.dispatcher = &m_dispatcher;
 
     m_buffersAmount = 1+(600*(m_configuration.ComputeMaxPatchNumber()))/1048576;
     cout<<"1 Mio buffers amount : "<<m_buffersAmount<<endl;
 
-    m_data.dispatcher->Initialize(m_configuration.minimumDepth,m_buffersAmount);
+    m_dispatcher.Initialize(m_configuration.minimumDepth,m_buffersAmount);
 
     m_root = m_nodesPool.GetObjectPtr();
     m_root->Initialize(&m_data,nullptr,terrainCenter,NzVector2f(m_configuration.terrainSize,m_configuration.terrainSize));
@@ -64,8 +64,8 @@ NzTerrainQuadTree::~NzTerrainQuadTree()
     NzClock clk;
     clk.Restart();
     m_nodesPool.ReleaseAll();
+    m_patchesPool.ReleaseAll();
     clk.Pause();
-    delete m_data.dispatcher;
     cout<<"Arbre libere en "<<clk.GetMilliseconds()/1000.f<<" s "<<endl;
     cout<<"NbNodes non supprimes : "<<m_root->GetNodeAmount()<< endl;
 }

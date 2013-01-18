@@ -20,8 +20,6 @@ NzPatch::NzPatch()
 NzPatch::~NzPatch()
 {
     //dtor
-    if(m_isUploaded)
-        UnUploadMesh();
 }
 
 void NzPatch::ComputeHeights()

@@ -64,6 +64,7 @@ class NAZARA_API NzTerrainQuadTree
         NzShader m_shader;
         NzTerrainNode* m_root;
         TerrainNodeData m_data;
+        NzDispatcher m_dispatcher;
 
         std::list<NzTerrainNode*> m_leaves;//Inutilisé?
 
