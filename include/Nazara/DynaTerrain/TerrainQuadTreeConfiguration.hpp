@@ -4,13 +4,13 @@
 
 #pragma once
 
-#ifndef TERRAINQUADTREECONFIGURATION_HPP
-#define TERRAINQUADTREECONFIGURATION_HPP
+#ifndef NAZARA_TERRAINQUADTREECONFIGURATION_HPP
+#define NAZARA_TERRAINQUADTREECONFIGURATION_HPP
 
 #include <Nazara/Prerequesites.hpp>
 
 
-class NzTerrainQuadTreeConfiguration
+class NAZARA_API NzTerrainQuadTreeConfiguration
 {
     //For now, there are two different mesh-optimizing methods :
         //-Distance to camera
@@ -40,4 +40,4 @@ class NzTerrainQuadTreeConfiguration
     private:
 };
 
-#endif // TERRAINQUADTREECONFIGURATION_HPP
+#endif // NAZARA_TERRAINQUADTREECONFIGURATION_HPP

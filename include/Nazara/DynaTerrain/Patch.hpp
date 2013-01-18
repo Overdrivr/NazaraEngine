@@ -4,21 +4,20 @@
 
 #pragma once
 
-#ifndef PATCH_HPP
-#define PATCH_HPP
+#ifndef NAZARA_PATCH_HPP
+#define NAZARA_PATCH_HPP
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Math/Vector2.hpp>
 #include <Nazara/Math/Vector3.hpp>
-//#include <Nazara/DynaTerrain/NzHeightSource.hpp>
-#include "HeightSource.hpp"
-#include "Enumerations.hpp"
+#include <Nazara/DynaTerrain/HeightSource.hpp>
+#include <Nazara/DynaTerrain/Enums.hpp>
 #include <array>
 #include <Nazara/Math/Cube.hpp>
 
 //FIX ME : Eliminer tableau redondant debug
 
-class NzPatch
+class NAZARA_API NzPatch
 {
     public:
         NzPatch();
@@ -60,4 +59,4 @@ class NzPatch
         bool m_isInitialized;
 };
 
-#endif // PATCH_HPP
+#endif // NAZARA_PATCH_HPP

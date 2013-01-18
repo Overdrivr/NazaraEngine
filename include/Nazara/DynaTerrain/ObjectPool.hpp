@@ -1,6 +1,13 @@
-#ifndef OBJECTPOOL_HPP
-#define OBJECTPOOL_HPP
+// Copyright (C) 2012 Rémi Bèges
+// This file is part of the "Nazara Engine".
+// For conditions of distribution and use, see copyright notice in Config.hpp
 
+#pragma once
+
+#ifndef NAZARA_OBJECTPOOL_HPP
+#define NAZARA_OBJECTPOOL_HPP
+
+#include <Nazara/Prerequesites.hpp>
 #include <deque>
 #include <list>
 
@@ -29,4 +36,4 @@ template <typename T> class NzObjectPool
 
 #include "ObjectPool.inl"
 
-#endif // OBJECTPOOL_HPP
+#endif // NAZARA_OBJECTPOOL_HPP

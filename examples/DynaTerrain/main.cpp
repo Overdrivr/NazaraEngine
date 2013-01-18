@@ -1,28 +1,14 @@
-#include <iostream>
 #include <Nazara/3D.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
 #include <Nazara/Renderer/RenderWindow.hpp>
-#include <Nazara/Renderer/Shader.hpp>
-#include <Nazara/Utility/Utility.hpp>
+#include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
+#include <iostream>
 #include "MyHeightSource.hpp"
-#include "TerrainQuadTree.hpp"
-#include <Nazara/Math/Circle.hpp>
-#include <Nazara/Math/Rect.hpp>
-
 
 using namespace std;
 
-//TODO : rajouter des constructeurs par défaut à chacun des bruits
-//TODO : Les bruits ne peuvent pas être instanciés par pointeurs ??
-
-//TODO : Remplacer calcul variation moyenne de pente par variation max
-//TODO2 : Un patch pourrait transmettre à son fils certaines valeurs de hauteur communes
 int main()
 {
-    /*NzCirclef circle(-325,970,200);
-    NzRectf rect(-1000,-1000,2000,2000);
-    cout<<"intersects "<<circle.Intersect(rect)<<endl;
-    cout<<"contains "<<circle.Contains(rect)<<endl;*/
     // Cette ligne active le mode de compatibilité d'OpenGL lors de l'initialisation de Nazara (Nécessaire pour le shader)
 	NzContextParameters::defaultCompatibilityProfile = true;
 	NzInitializer<NzRenderer> renderer;
@@ -34,96 +20,57 @@ int main()
 		return EXIT_FAILURE;
 	}
 
-    ///Partie réservée au terrain
+    ///Initialisation du terrain
+    // On instancie notre source de hauteur personnalisée, définissant la hauteur du terrain en tout point
     MyHeightSource source;
+    // La source peut charger des données manuelles grâce à cette méthode
     source.LoadTerrainFile("terrain.hsd");
 
+    // On créé la configuration du terrain
     NzTerrainQuadTreeConfiguration myConfig;
-    myConfig.slopeMaxDepth = 6;
-    myConfig.minimumDepth = 2;
-    myConfig.terrainHeight = 500.f;
-    std::cout<<"is valid"<<myConfig.IsValid()<<std::endl;
 
+    myConfig.slopeMaxDepth = 6;//La précision maximale en cas de très forte pente
+    myConfig.minimumDepth = 3;//La précision minimale du terrain
+    myConfig.terrainHeight = 1000.f;//La hauteur maximale du terrain
+
+    //Configurer correctement un terrain est complexe pour l'instant
+    //Si la configuration n'est pas bonne, pas de problème on utilise une configuration par défaut
+    if(!myConfig.IsValid())
+        std::cout<<"Terrain configuration not valid, falling back to default."<<std::endl;
+
+    //Le terrain en lui-même, aka le quadtree
     NzTerrainQuadTree quad(myConfig,NzVector2f(0.f,0.f),&source);
 
-    cout<<"--------------Preparation terrain----------------------------"<<endl;
+    //On initialise le terrain, en lui indiquant les chemins vers les shaders
+    quad.Initialize("slope_shader.vert","slope_shader.frag");
 
-    quad.Initialize(NzVector2f(0.f,0.f));
-
-    cout<<"------Nombre feuilles après préparation : "<<quad.GetLeavesList().size()<<endl;
-    cout<<"------Nombre de triangles : "<<quad.GetLeavesList().size()*32<<std::endl;
-
-
-    ///creation du shader
-	NzShader shader;
-	if (!shader.Create(nzShaderLanguage_GLSL))
-	{
-		std::cout << "Failed to load shader" << std::endl;
-		std::getchar();
-		return EXIT_FAILURE;
-	}
-
-	// Le fragment shader traite la couleur de nos pixels
-	if (!shader.LoadFromFile(nzShaderType_Fragment, "slope_shader.frag"))
-	{
-		std::cout << "Failed to load fragment shader from file" << std::endl;
-		// À la différence des autres ressources, le shader possède un log qui peut indiquer les erreurs en cas d'échec
-		std::cout << "Log: " << shader.GetLog() << std::endl;
-		std::getchar();
-		return EXIT_FAILURE;
-	}
-
-	// Le vertex shader (Transformation des vertices de l'espace 3D vers l'espace écran)
-	if (!shader.LoadFromFile(nzShaderType_Vertex, "slope_shader.vert"))
-	{
-		std::cout << "Failed to load vertex shader from file" << std::endl;
-		std::cout << "Log: " << shader.GetLog() << std::endl;
-		std::getchar();
-		return EXIT_FAILURE;
-	}
-
-	// Une fois les codes sources de notre shader chargé, nous pouvons le compiler, afin de le rendre utilisable
-	if (!shader.Compile())
-	{
-		std::cout << "Failed to compile shader" << std::endl;
-		std::cout << "Log: " << shader.GetLog() << std::endl;
-		std::getchar();
-		return EXIT_FAILURE;
-	}
+    cout<<"Nombre de feuilles  : "<<quad.GetLeavesList().size()<<endl;
+    cout<<"Nombre de triangles : "<<quad.GetLeavesList().size()*32<<endl;
+    cout<<"---------------------------------------------------------------"<<endl;
 
 
-    NzString windowTitle("DynaTerrain slope optimization example");
+    ///Code classique pour ouvrir une fenêtre avec Nazara
 
-	// Nous pouvons créer notre fenêtre ! (Via le constructeur directement ou par la méthode Create)
-	NzRenderWindow window(NzVideoMode(1000,600,32),windowTitle,nzWindowStyle_Default);
-
-	// Nous limitons les FPS à 100
+    NzString windowTitle("DynaTerrain example");
+	NzRenderWindow window(NzVideoMode(800,600,32),windowTitle,nzWindowStyle_Default);
 	window.SetFramerateLimit(100);
-
-	// La matrice de projection définit la transformation du vertice 3D à un point 2D
 	NzRenderer::SetMatrix(nzMatrixType_Projection, NzMatrix4f::Perspective(NzDegrees(70.f), static_cast<float>(window.GetWidth())/window.GetHeight(), 1.f, 10000.f));
 
-	// Notre fenêtre est créée, cependant il faut s'occuper d'elle, pour le rendu et les évènements
 	NzClock secondClock, updateClock; // Des horloges pour gérer le temps
 	unsigned int fps = 0; // Compteur de FPS
-
     NzMatrix4f matrix;
     matrix.MakeIdentity();
     NzRenderer::SetMatrix(nzMatrixType_View, NzMatrix4f::LookAt(NzVector3f(0.f,0.f,0.f), NzVector3f::Forward()));
 
-	// Quelques variables
-
 	// Notre caméra
-	//NzVector3f camPos(-6.f, 750.f, 2080.f);
 	NzVector3f camPos(-600.f, 900.f, 1200.f);
-	//NzVector3f camPos(22.f, 16.f, 65.f);
-	NzEulerAnglesf camRot(0.f, 0.f, 0.f); // Les angles d'eulers sont bien plus facile à utiliser
+	NzEulerAnglesf camRot(0.f, 0.f, 0.f);
 
 	NzNode camera;
 	camera.SetTranslation(camPos);
 	camera.SetRotation(camRot);
 
-	float camSpeed = 50.f;
+	float camSpeed = 80.f;
 	float sensitivity = 0.2f;
 
 	// Quelques variables
@@ -243,7 +190,7 @@ int main()
 				// Sinon, c'est la caméra qui se déplace (en fonction des mêmes touches)
 
 				// Un boost en maintenant le shift gauche
-				float speed2 = (NzKeyboard::IsKeyPressed(NzKeyboard::Key::LShift)) ? camSpeed*5 : camSpeed;
+				float speed2 = (NzKeyboard::IsKeyPressed(NzKeyboard::Key::LShift)) ? camSpeed*7: camSpeed;
                 NzVector3f speed(speed2,speed2,speed2);
 
 				if (NzKeyboard::IsKeyPressed(NzKeyboard::Z))
@@ -270,9 +217,6 @@ int main()
 
         NzRenderer::SetMatrix(nzMatrixType_View, NzMatrix4f::LookAt(camera.GetDerivedTranslation(), camera.GetDerivedTranslation() + camera.GetDerivedRotation() * NzVector3f::Forward()));
 
-        // On active le shader et paramètrons le rendu
-		NzRenderer::SetShader(&shader);
-
 		// Notre scène 3D requiert un test de profondeur
 		NzRenderer::Enable(nzRendererParameter_DepthTest, true);
 
@@ -282,16 +226,14 @@ int main()
 		// Et nous effaçons les buffers de couleur et de profondeur
 		NzRenderer::Clear(nzRendererClear_Color | nzRendererClear_Depth);
 
-		NzRenderer::SetFaceFilling(nzFaceFilling_Fill);
-
         // La matrice world est celle qui représente les transformations du modèle
         NzRenderer::SetMatrix(nzMatrixType_World, matrix);
 
         //On met à jour le terrain
         quad.Update(camera.GetTranslation());
+
         //On dessine le terrain
         quad.Render();
-        //dispatcher.DrawAll();
 		// Nous mettons à jour l'écran
 		window.Display();
 
@@ -300,7 +242,7 @@ int main()
 		// Toutes les secondes
 		if (secondClock.GetMilliseconds() >= 1000)
 		{
-			window.SetTitle(windowTitle + " (FPS: " + NzString::Number(fps) + ')' + "( Camera in : " + camera.GetTranslation() + ") (Updated Nodes : " + NzString::Number(quad.GetUpdatedNodeAmountPerFrame()) + ')');
+			window.SetTitle(windowTitle + " (FPS: " + NzString::Number(fps) + ')' + "( Camera in : " + camera.GetTranslation() + ") (Updated Nodes : " + NzString::Number(quad.GetSubdivisionsAmount()) + "/s)");
 			fps = 0;
 			secondClock.Restart();
 		}

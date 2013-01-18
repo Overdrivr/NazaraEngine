@@ -4,23 +4,21 @@
 
 #pragma once
 
-#ifndef DISPATCHER_HPP
-#define DISPATCHER_HPP
+#ifndef NAZARA_DISPATCHER_HPP
+#define NAZARA_DISPATCHER_HPP
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Math/Vector3.hpp>
 #include <Nazara/Utility/VertexBuffer.hpp>
 #include <Nazara/Utility/VertexDeclaration.hpp>
 #include <Nazara/Utility/IndexBuffer.hpp>
-#include "Zone.hpp"
-#include "Enumerations.hpp"
+#include <Nazara/DynaTerrain/Zone.hpp>
+#include <Nazara/DynaTerrain/Enums.hpp>
 #include <vector>
 #include <queue>
 #include <memory>
 
-//FIX ME : Remplacer le vector par un quadtree
-
-class NzDispatcher
+class NAZARA_API NzDispatcher
 {
     public:
         NzDispatcher();
@@ -60,4 +58,4 @@ class NzDispatcher
         NzIndexBuffer* m_indexBuffer;
 };
 
-#endif // DISPATCHER_HPP
+#endif // NAZARA_DISPATCHER_HPP

@@ -4,8 +4,8 @@
 
 #pragma once
 
-#ifndef ENUMERATIONS_HPP
-#define ENUMERATIONS_HPP
+#ifndef NAZARA_ENUMS_DYNATERRAIN_HPP
+#define NAZARA_ENUMS_DYNATERRAIN_HPP
 
 enum nzLocation
 {
@@ -53,4 +53,5 @@ struct TerrainNodeData
     NzHeightSource* heightSource;
     NzDispatcher* dispatcher;
 };
-#endif // ENUMERATIONS_HPP
+
+#endif // NAZARA_ENUMS_DYNATERRAIN_HPP

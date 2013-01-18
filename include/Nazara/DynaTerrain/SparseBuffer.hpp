@@ -4,11 +4,12 @@
 
 #pragma once
 
-#ifndef SPARSEBUFFER_HPP
-#define SPARSEBUFFER_HPP
+#ifndef NAZARA_SPARSEBUFFER_HPP
+#define NAZARA_SPARSEBUFFER_HPP
 
+#include <Nazara/Prerequesites.hpp>
 #include <Nazara/Math/Vector2.hpp>
-#include "Batch.hpp"
+#include <Nazara/DynaTerrain/Batch.hpp>
 #include <vector>
 #include <map>
 #include <list>
@@ -68,4 +69,4 @@ template <typename T> class NzSparseBuffer
 
 #include "SparseBuffer.inl"
 
-#endif // SPARSEBUFFER_HPP
+#endif // NAZARA_SPARSEBUFFER_HPP

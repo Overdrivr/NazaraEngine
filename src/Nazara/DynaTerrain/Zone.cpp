@@ -2,10 +2,13 @@
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include "Zone.hpp"
-#include <iostream>
-#include "Dispatcher.hpp"
+#include <Nazara/Core/Error.hpp>
+#include <Nazara/DynaTerrain/Config.hpp>
+#include <Nazara/DynaTerrain/Zone.hpp>
+#include <Nazara/DynaTerrain/Dispatcher.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
+#include <iostream>
+#include <Nazara/DynaTerrain/Debug.hpp>
 
 NzZone::NzZone(NzDispatcher* dispatcher)
 {

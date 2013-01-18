@@ -4,21 +4,23 @@
 
 #pragma once
 
-#ifndef QUADTREE_HPP
-#define QUADTREE_HPP
+#ifndef NAZARA_TERRAINQUADTREE_HPP
+#define NAZARA_TERRAINQUADTREE_HPP
 
 #include <Nazara/Prerequesites.hpp>
 
 #include <list>
 #include <Nazara/Math/Vector2.hpp>
 #include <Nazara/Math/Vector3.hpp>
-#include "TerrainNode.hpp"
-#include "HeightSource.hpp"
-#include "TerrainQuadTreeConfiguration.hpp"
-#include "Dispatcher.hpp"
-#include "ObjectPool.hpp"
+#include <Nazara/Core/String.hpp>
+#include <Nazara/Renderer/Shader.hpp>
+#include <Nazara/DynaTerrain/TerrainNode.hpp>
+#include <Nazara/DynaTerrain/HeightSource.hpp>
+#include <Nazara/DynaTerrain/TerrainQuadTreeConfiguration.hpp>
+#include <Nazara/DynaTerrain/Dispatcher.hpp>
+#include <Nazara/DynaTerrain/ObjectPool.hpp>
 
-class NzTerrainQuadTree
+class NAZARA_API NzTerrainQuadTree
 {
     public:
         NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& configuration, const NzVector2f& terrainCenter, NzHeightSource* heightSource);
@@ -36,9 +38,11 @@ class NzTerrainQuadTree
         NzPatch* GetPatchFromPool();
         void ReturnPatchToPool(NzPatch* patch);
 
-        void Initialize(const NzVector3f& cameraPosition);
+        void Initialize(const NzString& vertexShader, const NzString& fragmentShader);
 
         void Render();
+
+        bool SetShaders(const NzString& vertexShader, const NzString& fragmentShader);
 
         //FIX ME : ces 3 méthodes doit être private et NzTerrainNode ajouté en friend
         //Vu que quadtree ne sera pas en charge de l'affichage, elles sont même peut être inutiles, y compris maintenir à jour m_leaves
@@ -56,6 +60,8 @@ class NzTerrainQuadTree
         //or the radius index otherwise
         int TransformDistanceToCameraInRadiusIndex(float distance);
     private:
+
+        NzShader m_shader;
         NzTerrainNode* m_root;
         TerrainNodeData m_data;
 
@@ -85,4 +91,4 @@ class NzTerrainQuadTree
         unsigned int m_maxOperationsPerFrame;
 };
 
-#endif // QUADTREE_HPP
+#endif // NAZARA_TERRAINQUADTREE_HPP

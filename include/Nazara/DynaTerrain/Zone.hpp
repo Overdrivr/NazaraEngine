@@ -4,14 +4,14 @@
 
 #pragma once
 
-#ifndef ZONE_HPP
-#define ZONE_HPP
+#ifndef NAZARA_ZONE_HPP
+#define NAZARA_ZONE_HPP
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Utility/VertexBuffer.hpp>
-#include "Enumerations.hpp"
-#include "SparseBuffer.hpp"
-#include "SparseBufferSet.hpp"
+#include <Nazara/DynaTerrain/Enums.hpp>
+#include <Nazara/DynaTerrain/SparseBuffer.hpp>
+#include <Nazara/DynaTerrain/SparseBufferSet.hpp>
 
 #include <queue>
 #include <array>
@@ -19,7 +19,7 @@
 
 class NzDispatcher;
 
-class NzZone
+class NAZARA_API NzZone
 {
     public:
         NzZone(NzDispatcher* dispatcher);
@@ -56,4 +56,4 @@ class NzZone
         std::queue<id> m_unbufferedPatchesIndex;
 };
 
-#endif // ZONE_HPP
+#endif // NAZARA_ZONE_HPP

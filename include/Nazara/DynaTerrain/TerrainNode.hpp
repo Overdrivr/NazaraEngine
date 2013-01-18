@@ -4,23 +4,23 @@
 
 #pragma once
 
-#ifndef QUADCELL_HPP
-#define QUADCELL_HPP
+#ifndef NAZARA_TERRAINNODE_HPP
+#define NAZARA_TERRAINNODE_HPP
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Math/Vector2.hpp>
 #include <Nazara/Math/Vector3.hpp>
 #include <Nazara/Math/Circle.hpp>
-#include "Patch.hpp"
-#include "HeightSource.hpp"
-#include "Enumerations.hpp"
+#include <Nazara/DynaTerrain/Patch.hpp>
+#include <Nazara/DynaTerrain/HeightSource.hpp>
+#include <Nazara/DynaTerrain/Enums.hpp>
 
 class NzTerrainQuadTree;
 class NzHeightSource;
 
 //FIX ME : directement utiliser un NzRect à la place du center/size... Même occupation mémoire & + de facilité pour les tests cam
 
-class NzTerrainNode
+class NAZARA_API NzTerrainNode
 {
     public:
 
@@ -92,4 +92,4 @@ class NzTerrainNode
         bool m_doNotRefine;
 };
 
-#endif // QUADCELL_HPP
+#endif // NAZARA_TERRAINNODE_HPP

@@ -1,3 +1,7 @@
+// Copyright (C) 2012 Rémi Bèges
+// This file is part of the "Nazara Engine".
+// For conditions of distribution and use, see copyright notice in Config.hpp
+
 template<typename T>
 NzObjectPool<T>::NzObjectPool(std::size_t chunkSize)
 {

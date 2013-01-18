@@ -4,14 +4,14 @@
 
 #pragma once
 
-#ifndef HEIGHTSOURCE_HPP
-#define HEIGHTSOURCE_HPP
+#ifndef NAZARA_HEIGHTSOURCE_HPP
+#define NAZARA_HEIGHTSOURCE_HPP
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Core/String.hpp>
 #include <vector>
 
-class NzHeightSource
+class NAZARA_API NzHeightSource
 {
     public:
         NzHeightSource();
@@ -34,4 +34,4 @@ class NzHeightSource
 
 };
 
-#endif // HEIGHTSOURCE_HPP
+#endif // NAZARA_HEIGHTSOURCE_HPP

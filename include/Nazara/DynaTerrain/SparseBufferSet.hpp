@@ -4,10 +4,11 @@
 
 #pragma once
 
-#ifndef NZSPARSEBUFFERSET_HPP
-#define NZSPARSEBUFFERSET_HPP
+#ifndef NAZARA_SPARSEBUFFERSET_HPP
+#define NAZARA_SPARSEBUFFERSET_HPP
 
-#include "SparseBuffer.hpp"
+#include <Nazara/Prerequesites.hpp>
+#include <Nazara/DynaTerrain/SparseBuffer.hpp>
 #include <Nazara/Math/Vector2.hpp>
 #include <Nazara/Math/Vector4.hpp>
 #include <vector>
@@ -52,4 +53,4 @@ template <typename T> class NzSparseBufferSet
 
 #include "SparseBufferSet.inl"
 
-#endif // NZSPARSEBUFFERSET_HPP
+#endif // NAZARA_SPARSEBUFFERSET_HPP

@@ -2,16 +2,13 @@
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include "TerrainNode.hpp"
-#include "TerrainQuadTree.hpp"
+#include <Nazara/Core/Error.hpp>
+#include <Nazara/DynaTerrain/Config.hpp>
+#include <Nazara/DynaTerrain/TerrainNode.hpp>
+#include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
 #include <stack>
 #include <iostream>
-//#include <Nazara/DynaTerrain/QuadCell.hpp>
-//#include <Nazara/DynaTerrain/Error.hpp>
-//#include <Nazara/DynaTerrain/Config.hpp>
-//#include <Nazara/DynaTerrain/Debug.hpp>
-
-using namespace std;
+#include <Nazara/DynaTerrain/Debug.hpp>
 
 int NzTerrainNode::nbNodes = 0;
 
@@ -24,7 +21,6 @@ NzTerrainNode::NzTerrainNode() : antiInfiniteLoop(200)
 
 NzTerrainNode::~NzTerrainNode()
 {
-    //cout<<"Deleting QuadCell : "<<m_nodeID.lvl<<"|"<<m_nodeID.sx<<"|"<<m_nodeID.sy<<"... left "<<nbNodes<<"nodes"<<endl;
     nbNodes--;
     if(m_isInitialized)
         DeletePatch();
@@ -234,7 +230,7 @@ void NzTerrainNode::SlopeBasedHierarchicalSubdivide(unsigned int maxDepth)
         //Si son niveau est inférieur au niveau max de subdivision
             //Et également inférieur au niveau minimum de précision requis par la pente du terrain
                 //Alors on le subdivise
-        if(m_nodeID.lvl < maxDepth && m_nodeID.lvl < static_cast<int>(m_patch->GetGlobalSlope() * m_data->quadtree->GetMaximumHeight()))
+        if(m_nodeID.lvl < maxDepth && m_nodeID.lvl < static_cast<unsigned int>(m_patch->GetGlobalSlope() * m_data->quadtree->GetMaximumHeight()))
         {
             m_doNotRefine = true;
             this->Subdivide();
@@ -279,7 +275,7 @@ bool NzTerrainNode::Subdivide()
         }
         else
         {
-            cout<<"QuadCell::Subdivide topleft problem"<<endl;
+            std::cout<<"QuadCell::Subdivide topleft problem"<<std::endl;
         }
 
         if(m_children[TOPRIGHT] == nullptr)
@@ -296,7 +292,7 @@ bool NzTerrainNode::Subdivide()
         }
         else
         {
-            cout<<"QuadCell::Subdivide topright problem"<<endl;
+            std::cout<<"QuadCell::Subdivide topright problem"<<std::endl;
         }
 
         if(m_children[BOTTOMLEFT] == nullptr)
@@ -312,7 +308,7 @@ bool NzTerrainNode::Subdivide()
         }
         else
         {
-            cout<<"QuadCell::Subdivide bottomleft problem"<<endl;
+            std::cout<<"QuadCell::Subdivide bottomleft problem"<<std::endl;
         }
 
         if(m_children[BOTTOMRIGHT] == nullptr)
@@ -329,7 +325,7 @@ bool NzTerrainNode::Subdivide()
         }
         else
         {
-            cout<<"Node::Subdivide bottomright problem"<<endl;
+            std::cout<<"Node::Subdivide bottomright problem"<<std::endl;
         }
         return true;
     }
@@ -340,7 +336,6 @@ void NzTerrainNode::Refine()
 {
     if(!m_isLeaf && !m_doNotRefine)
     {
-        std::cout<<"refine"<<std::endl;
         if(m_children[0]->m_isLeaf)
         {
             m_isLeaf = true;
@@ -366,7 +361,6 @@ void NzTerrainNode::Refine()
     }
     else if(!m_isLeaf && m_doNotRefine)
     {
-        std::cout<<"not called"<<std::endl;
         //Le node n'est pas refine-able à cause de la pente, mais ses enfants le sont peut être
         for(int i(0) ; i < 4 ; ++i)
                 m_children[i]->Refine();
@@ -439,7 +433,7 @@ void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction)
                 }
                 else
                 {
-                    cout<<"EXCEPTION : NzTerrainNode::HandleNeighborSubdivision ENTREE EN BOUCLE INFINIE"<<endl;
+                    std::cout<<"EXCEPTION : NzTerrainNode::HandleNeighborSubdivision ENTREE EN BOUCLE INFINIE"<<std::endl;
                     return;
                 }
             }

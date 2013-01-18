@@ -2,8 +2,12 @@
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include "TerrainQuadTreeConfiguration.hpp"
+#include <Nazara/Core/Error.hpp>
+#include <Nazara/DynaTerrain/Config.hpp>
+#include <Nazara/DynaTerrain/TerrainQuadTreeConfiguration.hpp>
+#include <Nazara/Math/Rect.hpp>
 #include <cmath>
+#include <Nazara/DynaTerrain/Debug.hpp>
 
 NzTerrainQuadTreeConfiguration::NzTerrainQuadTreeConfiguration()
 {

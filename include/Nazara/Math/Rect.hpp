@@ -9,6 +9,7 @@
 
 #include <Nazara/Core/String.hpp>
 #include <Nazara/Math/Vector2.hpp>
+#include <Nazara/Math/Circle.hpp>
 
 template<typename T>
 class NzRect
@@ -25,6 +26,7 @@ class NzRect
 		bool Contains(T X, T Y) const;
 		bool Contains(const NzVector2<T>& point) const;
 		bool Contains(const NzRect& rect) const;
+		bool Contains(const NzCircle<T>& circle) const;
 
 		NzRect& ExtendTo(const NzVector2<T>& point);
 		NzRect& ExtendTo(const NzRect& rect);

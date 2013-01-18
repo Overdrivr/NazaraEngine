@@ -2,13 +2,12 @@
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-//#include <Nazara/DynaTerrain/HeightSource.hpp>
-//#include <Nazara/DynaTerrain/Error.hpp>
-//#include <Nazara/DynaTerrain/Config.hpp>
-#include "HeightSource.hpp"
+#include <Nazara/Core/Error.hpp>
+#include <Nazara/DynaTerrain/HeightSource.hpp>
+#include <Nazara/DynaTerrain/Config.hpp>
 #include <iostream>
 #include <Nazara/Core/File.hpp>
-//#include <Nazara/DynaTerrain/Debug.hpp>
+#include <Nazara/DynaTerrain/Debug.hpp>
 
 NzHeightSource::NzHeightSource()
 {

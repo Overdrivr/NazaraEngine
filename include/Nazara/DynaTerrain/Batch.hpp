@@ -1,8 +1,15 @@
-#ifndef BATCH_HPP
-#define BATCH_HPP
+// Copyright (C) 2012 Rémi Bèges
+// This file is part of the "Nazara Engine".
+// For conditions of distribution and use, see copyright notice in Config.hpp
 
+#pragma once
 
-class NzBatch
+#ifndef NAZARA_BATCH_HPP
+#define NAZARA_BATCH_HPP
+
+#include <Nazara/Prerequesites.hpp>
+
+class NAZARA_API NzBatch
 {
     public:
         NzBatch(unsigned int start, unsigned int count);
@@ -32,4 +39,4 @@ class NzBatch
         unsigned int m_count;
 };
 
-#endif // BATCH_HPP
+#endif // NAZARA_BATCH_HPP

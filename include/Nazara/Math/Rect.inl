@@ -54,6 +54,12 @@ bool NzRect<T>::Contains(const NzRect<T>& rect) const
 }
 
 template<typename T>
+bool NzRect<T>::Contains(const NzCircle<T>& circle) const
+{
+    return Contains(circle.GetBoundingRect());
+}
+
+template<typename T>
 NzRect<T>& NzRect<T>::ExtendTo(const NzVector2<T>& point)
 {
 	width = std::max(x + width, point.x);

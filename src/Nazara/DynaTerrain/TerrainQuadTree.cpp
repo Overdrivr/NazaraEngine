@@ -3,14 +3,17 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Core/Error.hpp>
+#include <Nazara/DynaTerrain/Config.hpp>
 #include <Nazara/Core/Log.hpp>
 #include <Nazara/Core/String.hpp>
-#include "TerrainQuadTree.hpp"
+#include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
 #include <Nazara/Math/Circle.hpp>
 #include <Nazara/Math/Rect.hpp>
 #include <Nazara/Core/Clock.hpp>
+#include <Nazara/Renderer/Renderer.hpp>
 #include <iostream>
 #include <cmath>
+#include <Nazara/DynaTerrain/Debug.hpp>
 
 using namespace std;
 
@@ -21,7 +24,8 @@ using namespace std;
 
 NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& configuration, const NzVector2f& terrainCenter, NzHeightSource* heightSource)
 {
-    //m_nodesPool.SetChunkSize(20);
+    m_nodesPool.SetChunkSize(200);
+    m_patchesPool.SetChunkSize(200);
 
     if(configuration.IsValid())
         m_configuration = configuration;
@@ -46,8 +50,7 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& confi
     m_currentCameraRadiusIndex = 0;
 
     m_subdivisionsAmount = 0;
-    m_nodesPool.SetChunkSize(500);
-    m_patchesPool.SetChunkSize(500);
+
 //??
     m_poolReallocationSize = 200;
     m_poolAllocatedSpace = 0;
@@ -69,7 +72,10 @@ NzTerrainQuadTree::~NzTerrainQuadTree()
 
 void NzTerrainQuadTree::Render()
 {
+    // On active le shader
+    NzRenderer::SetShader(&m_shader);
     m_data.dispatcher->DrawAll();
+
 }
 
 const std::list<NzTerrainNode*>& NzTerrainQuadTree::GetLeavesList()
@@ -122,22 +128,17 @@ unsigned int NzTerrainQuadTree::GetSubdivisionsAmount()
     return temp;
 }
 
-void NzTerrainQuadTree::Initialize(const NzVector3f& cameraPosition)
+void NzTerrainQuadTree::Initialize(const NzString& vertexShader, const NzString& fragmentShader)
 {
      m_isInitialized = true;
+
+    SetShaders(vertexShader,fragmentShader);
 
     //On subdivise l'arbre équitablement au niveau minimum
     m_root->HierarchicalSubdivide(m_configuration.minimumDepth);
 
     //Si on doit améliorer l'arbre là où la pente est la plus forte, on le fait également
     m_root->SlopeBasedHierarchicalSubdivide(m_configuration.slopeMaxDepth);
-
-    //La partie statique de l'arbre est prête
-    //L'arbre ne pourra plus être refiné en dessous des niveaux définits à ce stade
-
-    //Si la contribution proche de la camera n'est pas 0 (= pas d'optimisations), on prépare le terrain pour la camera
-    //if(closeCameraContribution > 0)
-        //this->Update(cameraPosition);
 
 }
 
@@ -148,6 +149,47 @@ void NzTerrainQuadTree::RegisterLeaf(NzTerrainNode* node)
         m_leaves.push_back(node);
         m_nodesMap[node->GetNodeID()] = node;
     }
+}
+
+///creation du shader
+bool NzTerrainQuadTree::SetShaders(const NzString& vertexShader, const NzString& fragmentShader)
+{
+    if (!m_shader.Create(nzShaderLanguage_GLSL))
+    {
+        std::cout << "Failed to load shader" << std::endl;
+        std::getchar();
+        return false;
+    }
+
+    // Le fragment shader traite la couleur de nos pixels
+    if (!m_shader.LoadFromFile(nzShaderType_Fragment, fragmentShader))
+    {
+        std::cout << "Failed to load fragment shader from file" << std::endl;
+        // À la différence des autres ressources, le shader possède un log qui peut indiquer les erreurs en cas d'échec
+        std::cout << "Log: " << m_shader.GetLog() << std::endl;
+        std::getchar();
+        return false;
+    }
+
+    // Le vertex shader (Transformation des vertices de l'espace 3D vers l'espace écran)
+    if (!m_shader.LoadFromFile(nzShaderType_Vertex, vertexShader))
+    {
+        std::cout << "Failed to load vertex shader from file" << std::endl;
+        std::cout << "Log: " << m_shader.GetLog() << std::endl;
+        std::getchar();
+        return false;
+    }
+
+    // Une fois les codes sources de notre shader chargé, nous pouvons le compiler, afin de le rendre utilisable
+    if (!m_shader.Compile())
+    {
+        std::cout << "Failed to compile shader" << std::endl;
+        std::cout << "Log: " << m_shader.GetLog() << std::endl;
+        std::getchar();
+        return false;
+    }
+
+    return true;
 }
 
 bool NzTerrainQuadTree::UnRegisterLeaf(NzTerrainNode* node)

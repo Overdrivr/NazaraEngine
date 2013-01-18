@@ -2,15 +2,14 @@
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include "Patch.hpp"
-//#include <Nazara/DynaTerrain/Patch.hpp>
-//#include <Nazara/DynaTerrain/Error.hpp>
-//#include <Nazara/DynaTerrain/Config.hpp>
-//#include <Nazara/DynaTerrain/Debug.hpp>
+#include <Nazara/Core/Error.hpp>
+#include <Nazara/DynaTerrain/Config.hpp>
+#include <Nazara/DynaTerrain/Patch.hpp>
+#include <Nazara/DynaTerrain/Dispatcher.hpp>
+#include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
 #include <cmath>
-#include "TerrainQuadTree.hpp"
 #include <iostream>
-#include "Dispatcher.hpp"
+#include <Nazara/DynaTerrain/Debug.hpp>
 
 NzPatch::NzPatch()
 {
@@ -65,15 +64,12 @@ void NzPatch::ComputeNormals()
     NzVector3f sum;
 
     unsigned int i0,j0;
-    unsigned int i1,j1;
 
     for(unsigned int i(0) ; i < 5 ; ++i)
         for(unsigned int j(0) ; j < 5 ; ++j)
         {
             i0 = i + 1;
             j0 = j + 1;
-            i1 = i - 1;
-            j1 = j - 1;
             //Compute four vectors
             v1.x = m_size.x*(0.25*(i0+1)-0.5);
             v1.y = m_size.y*(0.25*j0-0.5);
