@@ -17,20 +17,17 @@ int NzTerrainNode::nbNodes = 0;
 
 NzTerrainNode::NzTerrainNode() : antiInfiniteLoop(200)
 {
-
+    nbNodes++;
+    m_patchMemoryAllocated = false;
+    m_isInitialized = false;
 }
 
 NzTerrainNode::~NzTerrainNode()
 {
-    //cout<<"Deleting QuadCell : "<<m_nodeID.lvl<<"|"<<m_nodeID.sx<<"|"<<m_nodeID.sy<<endl;
+    //cout<<"Deleting QuadCell : "<<m_nodeID.lvl<<"|"<<m_nodeID.sx<<"|"<<m_nodeID.sy<<"... left "<<nbNodes<<"nodes"<<endl;
     nbNodes--;
-    m_data->quadtree->UnRegisterNode(this);
-    if(m_isLeaf)
-        m_data->quadtree->UnRegisterLeaf(this);
-    if(m_patchMemoryAllocated)
-    {
-        delete m_patch;
-    }
+    if(m_isInitialized)
+        DeletePatch();
 }
 
 
@@ -47,8 +44,8 @@ void NzTerrainNode::CleanTree(unsigned int minDepth)
                 else
                     m_children[i]->CleanTree(minDepth);
 
-                //m_data->quadtree->ReturnNodeToPool(m_children[i]);
-                delete m_children[i];
+                m_data->quadtree->ReturnNodeToPool(m_children[i]);
+                //delete m_children[i];
                 m_children[i] = nullptr;
             }
         }
@@ -71,7 +68,7 @@ void NzTerrainNode::CreatePatch()
     if(!m_patchMemoryAllocated)
     {
         m_patchMemoryAllocated = true;
-        m_patch = new NzPatch();
+        m_patch = m_data->quadtree->GetPatchFromPool();
         m_patch->Initialize(m_center,m_size,m_nodeID,m_data);
     }
 }
@@ -83,7 +80,7 @@ void NzTerrainNode::DeletePatch()
         m_patch->UnUploadMesh();
         m_patch->Invalidate();
         m_patchMemoryAllocated = false;
-        delete m_patch;
+        m_data->quadtree->ReturnPatchToPool(m_patch);
     }
 }
 
@@ -172,13 +169,16 @@ void NzTerrainNode::Initialize(TerrainNodeData *data, NzTerrainNode* parent, con
     m_realCenter.z = 0.f;
     m_size = size;
     m_isLeaf = false;
-    m_patchMemoryAllocated = false;
+
+    if(m_patchMemoryAllocated)
+        DeletePatch();//FIX ME : Reutiliser la mémoire au lieu d'en réallouer un, économie d'un PatchPool
+
     m_doNotRefine = false;
 
     for(int i(0) ; i < 4 ; ++i)
         m_children[i] = nullptr;
 
-    if(parent == 0)
+    if(parent == nullptr)
     {
         m_isRoot = true;
         m_isLeaf = true;
@@ -213,7 +213,6 @@ void NzTerrainNode::Initialize(TerrainNodeData *data, NzTerrainNode* parent, con
         m_nodeID.sx = parent->m_nodeID.sx * 2 + offx;
         m_nodeID.sy = parent->m_nodeID.sy * 2 + offy;
     }
-    nbNodes++;
 
     //On crée son patch pour l'affichage
     CreatePatch();
@@ -263,7 +262,8 @@ bool NzTerrainNode::Subdivide()
         if(m_children[TOPLEFT] == nullptr)
         {
             //On crée le premier node fils
-            m_children[TOPLEFT] = new NzTerrainNode();
+            //m_children[TOPLEFT] = new NzTerrainNode();
+            m_children[TOPLEFT] = m_data->quadtree->GetNodeFromPool();
             m_children[TOPLEFT]->Initialize(m_data,this,NzVector2f(m_center.x-m_size.x/4.f,m_center.y+m_size.y/4.f),m_size/2.f,TOPLEFT);
             //C'est une subdivision, le node est forcément une leaf
             m_children[TOPLEFT]->m_isLeaf = true;
@@ -284,7 +284,8 @@ bool NzTerrainNode::Subdivide()
 
         if(m_children[TOPRIGHT] == nullptr)
         {
-            m_children[TOPRIGHT] = new NzTerrainNode();
+            //m_children[TOPRIGHT] = new NzTerrainNode();
+            m_children[TOPRIGHT] = m_data->quadtree->GetNodeFromPool();
             m_children[TOPRIGHT]->Initialize(m_data,this,NzVector2f(m_center.x+m_size.x/4.f,m_center.y+m_size.y/4.f),m_size/2.f,TOPRIGHT);
             m_children[TOPRIGHT]->m_isLeaf = true;
             m_data->quadtree->RegisterLeaf(m_children[TOPRIGHT]);
@@ -300,7 +301,8 @@ bool NzTerrainNode::Subdivide()
 
         if(m_children[BOTTOMLEFT] == nullptr)
         {
-            m_children[BOTTOMLEFT] = new NzTerrainNode();
+            //m_children[BOTTOMLEFT] = new NzTerrainNode();
+            m_children[BOTTOMLEFT] = m_data->quadtree->GetNodeFromPool();
             m_children[BOTTOMLEFT]->Initialize(m_data,this,NzVector2f(m_center.x-m_size.x/4.f,m_center.y-m_size.y/4.f),m_size/2.f,BOTTOMLEFT);
             m_children[BOTTOMLEFT]->m_isLeaf = true;
             m_data->quadtree->RegisterLeaf(m_children[BOTTOMLEFT]);
@@ -315,7 +317,8 @@ bool NzTerrainNode::Subdivide()
 
         if(m_children[BOTTOMRIGHT] == nullptr)
         {
-            m_children[BOTTOMRIGHT] = new NzTerrainNode();
+            //m_children[BOTTOMRIGHT] = new NzTerrainNode();
+            m_children[BOTTOMRIGHT] = m_data->quadtree->GetNodeFromPool();
             m_children[BOTTOMRIGHT]->Initialize(m_data,this,NzVector2f(m_center.x+m_size.x/4.f,m_center.y-m_size.y/4.f),m_size/2.f,BOTTOMRIGHT);
             m_children[BOTTOMRIGHT]->m_isLeaf = true;
             m_data->quadtree->RegisterLeaf(m_children[BOTTOMRIGHT]);
@@ -349,8 +352,8 @@ void NzTerrainNode::Refine()
             for(int i(0) ; i < 4 ; ++i)
             {
                 m_children[i]->DeletePatch();
-                //m_data->quadtree->ReturnNodeToPool(m_children[i])
-                delete m_children[i];
+                m_data->quadtree->ReturnNodeToPool(m_children[i]);
+                //delete m_children[i];
                 m_children[i] = nullptr;
             }
         }

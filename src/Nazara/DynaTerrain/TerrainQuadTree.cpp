@@ -21,6 +21,7 @@ using namespace std;
 
 NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& configuration, const NzVector2f& terrainCenter, NzHeightSource* heightSource)
 {
+    //m_nodesPool.SetChunkSize(20);
 
     if(configuration.IsValid())
         m_configuration = configuration;
@@ -35,8 +36,8 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& confi
 
     m_data.dispatcher->Initialize(m_configuration.minimumDepth,m_buffersAmount);
 
-    m_root = new NzTerrainNode();
-    m_root->Initialize(&m_data,0,terrainCenter,NzVector2f(m_configuration.terrainSize,m_configuration.terrainSize));
+    m_root = m_nodesPool.GetObjectPtr();
+    m_root->Initialize(&m_data,nullptr,terrainCenter,NzVector2f(m_configuration.terrainSize,m_configuration.terrainSize));
     m_leaves.push_back(m_root);
     m_nodesMap[id(0,0,0)] = m_root;
 
@@ -45,7 +46,9 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& confi
     m_currentCameraRadiusIndex = 0;
 
     m_subdivisionsAmount = 0;
-
+    m_nodesPool.SetChunkSize(500);
+    m_patchesPool.SetChunkSize(500);
+//??
     m_poolReallocationSize = 200;
     m_poolAllocatedSpace = 0;
     m_maxOperationsPerFrame = 0;
@@ -54,15 +57,14 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& confi
 NzTerrainQuadTree::~NzTerrainQuadTree()
 {
     cout<<"Maximum amount of operations per frame : "<<m_maxOperationsPerFrame<<std::endl;
-    cout<<"Libération de l'arbre, veuillez patientez..."<<endl;
+    cout<<"Libération de "<<m_nodesPool.GetPoolSize()<<" node(s), veuillez patientez..."<<endl;
     NzClock clk;
     clk.Restart();
-    m_root->CleanTree(0);
+    m_nodesPool.ReleaseAll();
     clk.Pause();
     delete m_data.dispatcher;
     cout<<"Arbre libere en "<<clk.GetMilliseconds()/1000.f<<" s "<<endl;
-    cout<<"NbNodes non supprimes : "<<m_root->GetNodeAmount()-1<< endl;
-    delete m_root;
+    cout<<"NbNodes non supprimes : "<<m_root->GetNodeAmount()<< endl;
 }
 
 void NzTerrainQuadTree::Render()
@@ -91,6 +93,26 @@ float NzTerrainQuadTree::GetMaximumHeight() const
 NzTerrainNode* NzTerrainQuadTree::GetRootPtr()
 {
     return m_root;
+}
+
+NzTerrainNode* NzTerrainQuadTree::GetNodeFromPool()
+{
+    return m_nodesPool.GetObjectPtr();
+}
+
+void NzTerrainQuadTree::ReturnNodeToPool(NzTerrainNode* node)
+{
+    m_nodesPool.ReturnObjectPtr(node);
+}
+
+NzPatch* NzTerrainQuadTree::GetPatchFromPool()
+{
+    return m_patchesPool.GetObjectPtr();
+}
+
+void NzTerrainQuadTree::ReturnPatchToPool(NzPatch* patch)
+{
+    m_patchesPool.ReturnObjectPtr(patch);
 }
 
 unsigned int NzTerrainQuadTree::GetSubdivisionsAmount()
@@ -214,7 +236,7 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
     ///Pas mieux, car la précisions des horloges est limitée, ne pas descendre en dessous d'1 ms
     ///Permet d'estimer grossièrement les performances néanmoins
     NzClock clock;
-    nzUInt64 maxTime = 5;//ms
+    nzUInt64 maxTime = 20;//ms
     clock.Restart();
     while(clock.GetMilliseconds() < maxTime)
     {

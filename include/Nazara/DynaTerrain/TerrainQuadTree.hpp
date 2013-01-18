@@ -16,6 +16,7 @@
 #include "HeightSource.hpp"
 #include "TerrainQuadTreeConfiguration.hpp"
 #include "Dispatcher.hpp"
+#include "ObjectPool.hpp"
 
 class NzTerrainQuadTree
 {
@@ -32,6 +33,8 @@ class NzTerrainQuadTree
 
         NzTerrainNode* GetNodeFromPool();
         void ReturnNodeToPool(NzTerrainNode* node);
+        NzPatch* GetPatchFromPool();
+        void ReturnPatchToPool(NzPatch* patch);
 
         void Initialize(const NzVector3f& cameraPosition);
 
@@ -59,6 +62,8 @@ class NzTerrainQuadTree
         std::list<NzTerrainNode*> m_leaves;//Inutilisé?
 
         std::map<id,NzTerrainNode*> m_nodesMap;
+        NzObjectPool<NzTerrainNode> m_nodesPool;
+        NzObjectPool<NzPatch> m_patchesPool;
 
         std::map<id,NzTerrainNode*> m_cameraList;
         std::map<id,NzTerrainNode*> m_subdivideList;
