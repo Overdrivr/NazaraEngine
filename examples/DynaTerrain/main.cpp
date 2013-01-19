@@ -25,12 +25,12 @@ int main()
     // On instancie notre source de hauteur personnalisée, définissant la hauteur du terrain en tout point
     MyHeightSource source;
     // La source peut charger des données manuelles grâce à cette méthode
-    source.LoadTerrainFile("terrain.hsd");
+    source.LoadTerrainFile("resources/terrain.hsd");
 
     // On créé la configuration du terrain
     NzTerrainQuadTreeConfiguration myConfig;
 
-    myConfig.slopeMaxDepth = 7;//La précision maximale en cas de très forte pente
+    myConfig.slopeMaxDepth = 6;//La précision maximale en cas de très forte pente
     myConfig.minimumDepth = 3;//La précision minimale du terrain
     myConfig.terrainHeight = 1000.f;//La hauteur maximale du terrain
 
@@ -43,7 +43,7 @@ int main()
     NzTerrainQuadTree quad(myConfig,NzVector2f(0.f,0.f),&source);
     cout<<"Initializing terrain, please wait..."<<endl;
     //On initialise le terrain, en lui indiquant les chemins vers les shaders
-    quad.Initialize("resources/slope_shader.vert","resources/slope_shader.frag");
+    quad.Initialize("resources/slope_shader.vert","resources/slope_shader.frag","resources/dt_tiles.jpg");
 
     cout<<"Nombre de feuilles  : "<<quad.GetLeavesList().size()<<endl;
     cout<<"Nombre de triangles : "<<quad.GetLeavesList().size()*32<<endl;
@@ -133,7 +133,7 @@ int main()
 							window.SetCursor(nzWindowCursor_None);
 						}
 					}
-
+                    break;
 				case nzEventType_Resized: // L'utilisateur a changé la taille de la fenêtre, le coquin !
 					NzRenderer::SetViewport(NzRectui(0, 0, event.size.width, event.size.height)); // Adaptons l'affichage
 
