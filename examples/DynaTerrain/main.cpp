@@ -2,6 +2,7 @@
 #include <Nazara/Renderer/Renderer.hpp>
 #include <Nazara/Renderer/RenderWindow.hpp>
 #include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
+#include <Nazara/DynaTerrain/TerrainQuadTreeConfiguration.hpp>
 #include <iostream>
 #include "MyHeightSource.hpp"
 
@@ -29,7 +30,7 @@ int main()
     // On créé la configuration du terrain
     NzTerrainQuadTreeConfiguration myConfig;
 
-    myConfig.slopeMaxDepth = 6;//La précision maximale en cas de très forte pente
+    myConfig.slopeMaxDepth = 7;//La précision maximale en cas de très forte pente
     myConfig.minimumDepth = 3;//La précision minimale du terrain
     myConfig.terrainHeight = 1000.f;//La hauteur maximale du terrain
 
@@ -40,9 +41,9 @@ int main()
 
     //Le terrain en lui-même, aka le quadtree
     NzTerrainQuadTree quad(myConfig,NzVector2f(0.f,0.f),&source);
-
+    cout<<"Initializing terrain, please wait..."<<endl;
     //On initialise le terrain, en lui indiquant les chemins vers les shaders
-    quad.Initialize("slope_shader.vert","slope_shader.frag");
+    quad.Initialize("resources/slope_shader.vert","resources/slope_shader.frag");
 
     cout<<"Nombre de feuilles  : "<<quad.GetLeavesList().size()<<endl;
     cout<<"Nombre de triangles : "<<quad.GetLeavesList().size()*32<<endl;

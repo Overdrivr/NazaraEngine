@@ -24,8 +24,8 @@ using namespace std;
 
 NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& configuration, const NzVector2f& terrainCenter, NzHeightSource* heightSource)
 {
-    m_nodesPool.SetChunkSize(200);
-    m_patchesPool.SetChunkSize(200);
+    m_nodesPool.SetChunkSize(5000);
+    m_patchesPool.SetChunkSize(1000);
 
     if(configuration.IsValid())
         m_configuration = configuration;

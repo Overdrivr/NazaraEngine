@@ -107,67 +107,44 @@ void NzPatch::ComputeSlope()
 {
     if(m_isInitialized)
     {
-    NzVector2f offset;
-    float heightSamples[4];
     float slope[4];
     float dSlope[2];
 
-    float maxdSlope = 0.f;
+    float maxSlope = 0.f;
 
-    //FIX ME : Si la pente change brusquement, l'algo ne le détectera pas
-    //Besoin d'un algorithme plus avancé de calcul de variation de pente
+    float h = m_size.x/20.f;
+    float f1,f2,f3,f4;
 
     for(unsigned int i(0) ; i < 5 ; ++i)
         for(unsigned int j(0) ; j < 5 ; ++j)
         {
-        //Pour chaque point on calcule 4 pentes
-            //On recupère 4 points autour du point à m_size/20 de distance
-            offset.x = 0.f;
-            offset.y = 0.f;
-            //On veut successivement les offsets suivants :
-                //-x  0
-                // x  0
-                // 0 -y
-                // 0  y
-            for(unsigned int k(0) ; k < 2 ; ++k)
-            {
-                offset.x = (2*k-1)*m_size.x/20.f;
-                heightSamples[k] = m_data->heightSource->GetHeight(m_center.x+m_size.x*(0.25*i-0.5)+offset.x,
-                                                             m_center.y+m_size.y*(0.25*j-0.5)+offset.y);
-            }
-            offset.x = 0.f;
-            for(unsigned int k(0) ; k < 2 ; ++k)
-            {
-                offset.y = (2*k-1)*m_size.y/20.f;
-                heightSamples[k+2] = m_data->heightSource->GetHeight(m_center.x+m_size.x*(0.25*i-0.5)+offset.x,
-                                                               m_center.y+m_size.y*(0.25*j-0.5)+offset.y);
-            }
+            f1 = m_data->heightSource->GetHeight(m_center.x+m_size.x*(0.25*i-0.5)+h, m_center.y+m_size.y*(0.25*j-0.5));
+            f2 = m_data->heightSource->GetHeight(m_center.x+m_size.x*(0.25*i-0.5)-h, m_center.y+m_size.y*(0.25*j-0.5));
+            f3 = m_data->heightSource->GetHeight(m_center.x+m_size.x*(0.25*i-0.5),   m_center.y+m_size.y*(0.25*j-0.5)+h);
+            f4 = m_data->heightSource->GetHeight(m_center.x+m_size.x*(0.25*i-0.5),   m_center.y+m_size.y*(0.25*j-0.5)-h);
 
             //On calcule les pentes selon x
-            slope[0] = (heightSamples[0] - m_noiseValues[i+5*j])/(heightSamples[0] + m_noiseValues[i+5*j]);
-            slope[1] = (m_noiseValues[i+5*j] - heightSamples[1])/(heightSamples[1] + m_noiseValues[i+5*j]);
+            slope[0] = std::fabs(f1 - m_noiseValues[i+5*j])/(f1 + m_noiseValues[i+5*j]);
+            slope[1] = std::fabs(m_noiseValues[i+5*j] - f2)/(f2 + m_noiseValues[i+5*j]);
+
             //On calcule les pentes selon y
-            slope[2] = (heightSamples[0] - m_noiseValues[i+5*j])/(heightSamples[2] + m_noiseValues[i+5*j]);
-            slope[3] = (m_noiseValues[i+5*j] - heightSamples[1])/(heightSamples[3] + m_noiseValues[i+5*j]);
-            //On calcule la variation de pente selon x
+            slope[2] = std::fabs(f3 - m_noiseValues[i+5*j])/(f3 + m_noiseValues[i+5*j]);
+            slope[3] = std::fabs(m_noiseValues[i+5*j] - f4)/(f4 + m_noiseValues[i+5*j]);
+
+            //On calcule le "contraste" de pente selon x
             dSlope[0] = std::fabs(slope[1] - slope[0])/std::fabs(slope[1] + slope[0]);
-            //On calcule la variation de pente selon y1
+
+            //On calcule le "contraste" de pente selon y
             dSlope[1] = std::fabs(slope[3] - slope[2])/std::fabs(slope[3] + slope[2]);
 
-            ///Maximum method
-            if(dSlope[0] > maxdSlope)
-                maxdSlope = dSlope[0];
-            if(dSlope[1] > maxdSlope)
-                maxdSlope = dSlope[1];
-            ///Average method
-            /*maxdSlope += dSlope[0];
-            maxdSlope += dSlope[1];*/
+            maxSlope = std::max(dSlope[0],maxSlope);
+            maxSlope = std::max(dSlope[1],maxSlope);
+
         }
-        //maxdSlope /= 50;
-        m_slope = maxdSlope;
-       /* if(//m_center.x > 700.f && m_center.x < 1000.f &&
-           m_center.y > 700.f && m_center.y < 750.f)
-                cout<<"slope : "<<m_center.x<<" : "<<maxdSlope*m_sensitivity<<endl;*/
+
+        float inv_sensitivity = 10;
+        m_slope = std::pow(maxSlope,inv_sensitivity);
+
     }
 }
 

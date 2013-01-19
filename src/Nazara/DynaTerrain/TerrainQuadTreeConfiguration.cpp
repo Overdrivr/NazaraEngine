@@ -11,13 +11,21 @@
 
 NzTerrainQuadTreeConfiguration::NzTerrainQuadTreeConfiguration()
 {
+    //Taille d'un côté du terrain
     terrainSize = 2000.f;
+    //La hauteur maximale du terrain (sous condition que la source de hauteur renvoie des valeurs dans [0;1]
     terrainHeight = 100.f;
+    //La précision minimale du terrain
     minimumDepth = 2;
+    //La précision maximale engendrée par la plus forte variation de pente
     slopeMaxDepth = 6;
+    //La précision au plus près de la caméra
     closeCameraDepth = 7;
+    //La précision au plus loin de la caméra
     farCameraDepth = 4;
+    //La distance sur laquelle la précision de la caméra va décroitre
     effectRadius = 300.f;
+    //Le rayon de précision maximale autour de la caméra (le rayon d'influence de la caméra est donc ici 300 + 30 = 330.f)
     startRadius = 30.f;
 }
 
