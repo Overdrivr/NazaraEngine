@@ -1,6 +1,6 @@
 kind "ConsoleApp"
 
-files "main.cpp"
+files {"main.cpp","MyHeightSource.hpp","MyHeightSource.cpp"}
 
 if (_OPTIONS["united"]) then
 	configuration "DebugStatic"
