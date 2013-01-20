@@ -128,11 +128,23 @@ unsigned int NzTerrainQuadTree::GetSubdivisionsAmount()
     return temp;
 }
 
-void NzTerrainQuadTree::Initialize(const NzString& vertexShader, const NzString& fragmentShader)
+void NzTerrainQuadTree::Initialize(const NzString& vertexShader, const NzString& fragmentShader, const NzString& terrainTilesTexture)
 {
      m_isInitialized = true;
 
     SetShaders(vertexShader,fragmentShader);
+
+    if(!m_terrainTexture.LoadFromFile(terrainTilesTexture))
+        std::cout<<"Could not load texture "<<terrainTilesTexture<<std::endl;
+
+    //m_terrainTexture.EnableMipmapping(false);
+
+    int i = m_shader.GetUniformLocation("terrainTexture");
+
+    if(i == -1)
+        std::cout<<"Could not retrieve uniform location"<<std::endl;
+
+    m_shader.SendTexture(i,&m_terrainTexture);
 
     //On subdivise l'arbre équitablement au niveau minimum
     m_root->HierarchicalSubdivide(m_configuration.minimumDepth);

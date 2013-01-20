@@ -43,7 +43,9 @@ int main()
     NzTerrainQuadTree quad(myConfig,NzVector2f(0.f,0.f),&source);
     cout<<"Initializing terrain, please wait..."<<endl;
     //On initialise le terrain, en lui indiquant les chemins vers les shaders
-    quad.Initialize("resources/slope_shader.vert","resources/slope_shader.frag","resources/dt_tiles.jpg");
+    //quad.Initialize("resources/terrain_shader.vert","resources/terrain_shader.frag","resources/debug_grid2.png");
+    quad.Initialize("resources/terrain_shader.vert","resources/terrain_shader.frag","resources/dt_tiles.jpg");
+
 
     cout<<"Nombre de feuilles  : "<<quad.GetLeavesList().size()<<endl;
     cout<<"Nombre de triangles : "<<quad.GetLeavesList().size()*32<<endl;
@@ -64,8 +66,8 @@ int main()
     NzRenderer::SetMatrix(nzMatrixType_View, NzMatrix4f::LookAt(NzVector3f(0.f,0.f,0.f), NzVector3f::Forward()));
 
 	// Notre caméra
-	NzVector3f camPos(-600.f, 900.f, 1200.f);
-	NzEulerAnglesf camRot(0.f, 0.f, 0.f);
+	NzVector3f camPos(-1000.f, 800.f, 1000.f);
+	NzEulerAnglesf camRot(-30.f, -45.f, 0.f);
 
 	NzNode camera;
 	camera.SetTranslation(camPos);

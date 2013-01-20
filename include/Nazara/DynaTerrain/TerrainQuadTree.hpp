@@ -19,6 +19,7 @@
 #include <Nazara/DynaTerrain/TerrainQuadTreeConfiguration.hpp>
 #include <Nazara/DynaTerrain/Dispatcher.hpp>
 #include <Nazara/DynaTerrain/ObjectPool.hpp>
+#include <Nazara/Renderer/Texture.hpp>
 
 class NAZARA_API NzTerrainQuadTree
 {
@@ -38,7 +39,7 @@ class NAZARA_API NzTerrainQuadTree
         NzPatch* GetPatchFromPool();
         void ReturnPatchToPool(NzPatch* patch);
 
-        void Initialize(const NzString& vertexShader, const NzString& fragmentShader);
+        void Initialize(const NzString& vertexShader, const NzString& fragmentShader, const NzString& terrainTilesTexture);
 
         void Render();
 
@@ -83,6 +84,8 @@ class NAZARA_API NzTerrainQuadTree
         unsigned int m_poolAllocatedSpace;
 
         NzHeightSource* m_heightSource;
+
+        NzTexture m_terrainTexture;
 
         NzTerrainQuadTreeConfiguration m_configuration;
         unsigned int m_buffersAmount;
