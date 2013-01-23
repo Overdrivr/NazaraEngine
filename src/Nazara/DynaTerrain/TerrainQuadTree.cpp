@@ -41,7 +41,7 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& confi
     m_dispatcher.Initialize(m_configuration.minimumDepth,m_buffersAmount);
 
     m_root = m_nodesPool.GetObjectPtr();
-    m_root->Initialize(&m_data,nullptr,terrainCenter,NzVector2f(m_configuration.terrainSize,m_configuration.terrainSize));
+    m_root->Initialize(&m_data,nullptr,terrainCenter,m_configuration.terrainSize);
     m_leaves.push_back(m_root);
     m_nodesMap[id(0,0,0)] = m_root;
 

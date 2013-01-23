@@ -90,7 +90,7 @@ const NzVector2f& NzTerrainNode::GetCenter() const
     return m_center;
 }
 
-const NzVector2f& NzTerrainNode::GetSize() const
+float NzTerrainNode::GetSize() const
 {
     return m_size;
 }
@@ -155,7 +155,7 @@ bool NzTerrainNode::IsRoot() const
     return m_isRoot;
 }
 
-void NzTerrainNode::Initialize(TerrainNodeData *data, NzTerrainNode* parent, const NzVector2f& center, const NzVector2f& size, nzLocation loc)
+void NzTerrainNode::Initialize(TerrainNodeData *data, NzTerrainNode* parent, const NzVector2f& center, float size, nzLocation loc)
 {
     m_data = data;
     m_location = loc;
@@ -260,7 +260,7 @@ bool NzTerrainNode::Subdivide()
             //On crée le premier node fils
             //m_children[TOPLEFT] = new NzTerrainNode();
             m_children[TOPLEFT] = m_data->quadtree->GetNodeFromPool();
-            m_children[TOPLEFT]->Initialize(m_data,this,NzVector2f(m_center.x-m_size.x/4.f,m_center.y+m_size.y/4.f),m_size/2.f,TOPLEFT);
+            m_children[TOPLEFT]->Initialize(m_data,this,NzVector2f(m_center.x-m_size/4.f,m_center.y+m_size/4.f),m_size/2.f,TOPLEFT);
             //C'est une subdivision, le node est forcément une leaf
             m_children[TOPLEFT]->m_isLeaf = true;
 
@@ -282,7 +282,7 @@ bool NzTerrainNode::Subdivide()
         {
             //m_children[TOPRIGHT] = new NzTerrainNode();
             m_children[TOPRIGHT] = m_data->quadtree->GetNodeFromPool();
-            m_children[TOPRIGHT]->Initialize(m_data,this,NzVector2f(m_center.x+m_size.x/4.f,m_center.y+m_size.y/4.f),m_size/2.f,TOPRIGHT);
+            m_children[TOPRIGHT]->Initialize(m_data,this,NzVector2f(m_center.x+m_size/4.f,m_center.y+m_size/4.f),m_size/2.f,TOPRIGHT);
             m_children[TOPRIGHT]->m_isLeaf = true;
             m_data->quadtree->RegisterLeaf(m_children[TOPRIGHT]);
             //cout<<"creating topright "<<m_nodeID.lvl+1<<endl;
@@ -299,7 +299,7 @@ bool NzTerrainNode::Subdivide()
         {
             //m_children[BOTTOMLEFT] = new NzTerrainNode();
             m_children[BOTTOMLEFT] = m_data->quadtree->GetNodeFromPool();
-            m_children[BOTTOMLEFT]->Initialize(m_data,this,NzVector2f(m_center.x-m_size.x/4.f,m_center.y-m_size.y/4.f),m_size/2.f,BOTTOMLEFT);
+            m_children[BOTTOMLEFT]->Initialize(m_data,this,NzVector2f(m_center.x-m_size/4.f,m_center.y-m_size/4.f),m_size/2.f,BOTTOMLEFT);
             m_children[BOTTOMLEFT]->m_isLeaf = true;
             m_data->quadtree->RegisterLeaf(m_children[BOTTOMLEFT]);
             //cout<<"creating bottomleft "<<m_nodeID.lvl+1<<endl;
@@ -315,7 +315,7 @@ bool NzTerrainNode::Subdivide()
         {
             //m_children[BOTTOMRIGHT] = new NzTerrainNode();
             m_children[BOTTOMRIGHT] = m_data->quadtree->GetNodeFromPool();
-            m_children[BOTTOMRIGHT]->Initialize(m_data,this,NzVector2f(m_center.x+m_size.x/4.f,m_center.y-m_size.y/4.f),m_size/2.f,BOTTOMRIGHT);
+            m_children[BOTTOMRIGHT]->Initialize(m_data,this,NzVector2f(m_center.x+m_size/4.f,m_center.y-m_size/4.f),m_size/2.f,BOTTOMRIGHT);
             m_children[BOTTOMRIGHT]->m_isLeaf = true;
             m_data->quadtree->RegisterLeaf(m_children[BOTTOMRIGHT]);
             //cout<<"creating bottomright "<<m_nodeID.lvl+1<<endl;
@@ -448,7 +448,7 @@ void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction)
 
 void NzTerrainNode::HierarchicalAddToCameraList(const NzCirclef& cameraRadius, unsigned int indexRadius)
 {
-    NzRectf tester(m_center - m_size/2.f, m_center + m_size/2.f);
+    NzRectf tester(m_center - NzVector2f(m_size/2.f), m_center + NzVector2f(m_size/2.f));
 
     if(cameraRadius.Contains(tester))
     {

@@ -31,8 +31,8 @@ void NzPatch::ComputeHeights()
         for(int i(0) ; i < 5 ; ++i)
             for(int j(0) ; j < 5 ; ++j)
             {
-                x = m_center.x+m_size.x*(0.25*i-0.5);
-                z = m_center.y+m_size.y*(0.25*j-0.5);
+                x = m_center.x+m_size*(0.25*i-0.5);
+                z = m_center.y+m_size*(0.25*j-0.5);
 
                 //We recover y (altitude) from heightSource
                 m_noiseValues[i+5*j] = m_data->heightSource->GetHeight(x,z);
@@ -45,7 +45,7 @@ void NzPatch::ComputeHeights()
 
         for(int i(-1) ; i < 6 ; ++i)
             for(int j(-1) ; j < 6 ; ++j)
-                m_extraHeightValues.at((i+1)+7*(j+1)) = m_data->heightSource->GetHeight(m_center.x+m_size.x*(0.25*i-0.5),m_center.y+m_size.y*(0.25*j-0.5));
+                m_extraHeightValues.at((i+1)+7*(j+1)) = m_data->heightSource->GetHeight(m_center.x+m_size*(0.25*i-0.5),m_center.y+m_size*(0.25*j-0.5));
     }
 }
 
@@ -69,20 +69,20 @@ void NzPatch::ComputeNormals()
             i0 = i + 1;
             j0 = j + 1;
             //Compute four vectors
-            v1.x = m_size.x*(0.25*(i0+1)-0.5);
-            v1.y = m_size.y*(0.25*j0-0.5);
+            v1.x = m_size * (0.25 * (i0+1) - 0.5);
+            v1.y = m_size * (0.25 *  j0    - 0.5);
             v1.z = m_extraHeightValues.at((i0+1) + 7*j0) * m_data->quadtree->GetMaximumHeight();
 
-            v2.x = m_size.x*(0.25*i0-0.5);
-            v2.y = m_size.y*(0.25*(j0+1)-0.5);
+            v2.x = m_size * (0.25 * i0     - 0.5);
+            v2.y = m_size * (0.25 * (j0+1) - 0.5);
             v2.z = m_extraHeightValues.at(i0     + 7*(j0+1)) * m_data->quadtree->GetMaximumHeight();
 
-            v3.x = m_size.x*(0.25*(i0-1)-0.5);
-            v3.y = m_size.y*(0.25*j0-0.5);
+            v3.x = m_size * (0.25 * (i0-1) - 0.5);
+            v3.y = m_size * (0.25 *  j0    - 0.5);
             v3.z = m_extraHeightValues.at((i0-1) + 7*j0) * m_data->quadtree->GetMaximumHeight();
 
-            v4.x = m_size.x*(0.25*i0-0.5);
-            v4.y = m_size.y*(0.25*(j0-1)-0.5);
+            v4.x = m_size * (0.25 *  i0    - 0.5);
+            v4.y = m_size * (0.25 * (j0-1) - 0.5);
             v4.z = m_extraHeightValues.at(i0     + 7*(j0-1)) * m_data->quadtree->GetMaximumHeight();
 
             v12 = v1.CrossProduct(v2);
@@ -93,12 +93,10 @@ void NzPatch::ComputeNormals()
             sum = v12 + v23 + v34 + v41;
             sum.Normalize();
 
-            if(sum.DotProduct(NzVector3f(0.f,0.f,1.f)) < 0)
+            if(sum.DotProduct(NzVector3f(0.f,0.f,1.f)) < 0)//FIX ME : USEFULL
                 sum *= -1;
-            /*if(i == 0 || j == 0)
-                m_vertexNormals.at(i+5*j) = NzVector3f(1.0,0.0,0.0);
-            else*/
-                m_vertexNormals.at(i+5*j) = sum;
+
+            m_vertexNormals.at(i+5*j) = sum;
         }
     }
 }
@@ -112,16 +110,16 @@ void NzPatch::ComputeSlope()
 
     float maxSlope = 0.f;
 
-    float h = m_size.x/20.f;
+    float h = m_size/20.f;
     float f1,f2,f3,f4;
 
     for(unsigned int i(0) ; i < 5 ; ++i)
         for(unsigned int j(0) ; j < 5 ; ++j)
         {
-            f1 = m_data->heightSource->GetHeight(m_center.x+m_size.x*(0.25*i-0.5)+h, m_center.y+m_size.y*(0.25*j-0.5));
-            f2 = m_data->heightSource->GetHeight(m_center.x+m_size.x*(0.25*i-0.5)-h, m_center.y+m_size.y*(0.25*j-0.5));
-            f3 = m_data->heightSource->GetHeight(m_center.x+m_size.x*(0.25*i-0.5),   m_center.y+m_size.y*(0.25*j-0.5)+h);
-            f4 = m_data->heightSource->GetHeight(m_center.x+m_size.x*(0.25*i-0.5),   m_center.y+m_size.y*(0.25*j-0.5)-h);
+            f1 = m_data->heightSource->GetHeight(m_center.x + m_size * (0.25 * i - 0.5)+h, m_center.y + m_size * (0.25 * j - 0.5));
+            f2 = m_data->heightSource->GetHeight(m_center.x + m_size * (0.25 * i - 0.5)-h, m_center.y + m_size * (0.25 * j - 0.5));
+            f3 = m_data->heightSource->GetHeight(m_center.x + m_size * (0.25 * i - 0.5),   m_center.y + m_size * (0.25 * j - 0.5)+h);
+            f4 = m_data->heightSource->GetHeight(m_center.x + m_size * (0.25 * i - 0.5),   m_center.y + m_size * (0.25 * j - 0.5)-h);
 
             //On calcule les pentes selon x
             slope[0] = std::fabs(f1 - m_noiseValues[i+5*j])/(f1 + m_noiseValues[i+5*j]);
@@ -144,7 +142,6 @@ void NzPatch::ComputeSlope()
 
         float inv_sensitivity = 10;
         m_slope = std::pow(maxSlope,inv_sensitivity);
-
     }
 }
 
@@ -163,7 +160,7 @@ NzVector2f NzPatch::GetCenter() const
     return m_center;
 }
 
-NzVector2f NzPatch::GetSize() const
+float NzPatch::GetSize() const
 {
     return m_size;
 }
@@ -173,7 +170,7 @@ float NzPatch::GetGlobalSlope() const
     return m_slope;
 }
 
-void NzPatch::Initialize(NzVector2f center, NzVector2f size, id nodeID, TerrainNodeData* data)
+void NzPatch::Initialize(NzVector2f center, float size, id nodeID, TerrainNodeData* data)
 {
     m_id = nodeID;
     m_center = center;
@@ -184,8 +181,8 @@ void NzPatch::Initialize(NzVector2f center, NzVector2f size, id nodeID, TerrainN
     m_isInitialized = true;
 
     m_aabb.MakeZero();
-    m_aabb.x = center.x - size.x/2.f;
-    m_aabb.z = center.y - size.y/2.f;
+    m_aabb.x = center.x - size/2.f;
+    m_aabb.z = center.y - size/2.f;
 
 
     for(unsigned int i(0) ; i < 25 ; ++i)
@@ -223,11 +220,10 @@ void NzPatch::UploadMesh()
         for(int j(0) ; j < 5 ; ++j)
         {
             //Position
-            m_uploadedData.at((5*i+j)*6) = m_center.x + m_size.x*(0.25*j-0.5);//X
+            m_uploadedData.at((5*i+j)*6)   = m_center.x + m_size * (0.25 * j - 0.5);//X
             m_uploadedData.at((5*i+j)*6+1) = m_noiseValues.at(5*i+j) * m_data->quadtree->GetMaximumHeight();//Z
-            m_uploadedData.at((5*i+j)*6+2) = m_center.y+m_size.y*(0.25*i-0.5);//Y
+            m_uploadedData.at((5*i+j)*6+2) = m_center.y + m_size * (0.25 * i - 0.5);//Y
             //Normales
-
             m_uploadedData.at((5*i+j)*6+3) = m_vertexNormals.at(5*i+j).x;
             m_uploadedData.at((5*i+j)*6+4) = m_vertexNormals.at(5*i+j).z;
             m_uploadedData.at((5*i+j)*6+5) = m_vertexNormals.at(5*i+j).y;
