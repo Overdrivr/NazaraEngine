@@ -43,8 +43,8 @@ int main()
     NzTerrainQuadTree quad(myConfig,NzVector2f(0.f,0.f),&source);
     cout<<"Initializing terrain, please wait..."<<endl;
     //On initialise le terrain, en lui indiquant les chemins vers les shaders
-    //quad.Initialize("resources/terrain_shader.vert","resources/terrain_shader.frag","resources/debug_grid2.png");
-    quad.Initialize("resources/terrain_shader.vert","resources/terrain_shader.frag","resources/dt_tiles.jpg");
+    quad.Initialize("resources/terrain_shader.vert","resources/terrain_shader.frag","resources/debug_grid2.png");
+    //quad.Initialize("resources/terrain_shader.vert","resources/terrain_shader.frag","resources/dt_tiles.jpg");
 
 
     cout<<"Nombre de feuilles  : "<<quad.GetLeavesList().size()<<endl;

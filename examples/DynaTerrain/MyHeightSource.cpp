@@ -34,6 +34,7 @@ float MyHeightSource::GetNoiseValue(float x, float y)
     //return (std::sin(x/100.f)+1)/2.f;
     //return m_source->GetValue(x,y,0.005);
     //return m_source2->GetValue(x,y,0.0008);
-    return (m_source3->GetValue(x,y,0.0003)+1)/2.f;
-    //return 0.f;
+    //return (m_source3->GetValue(x,y,0.0003)+1)/2.f;
+    //return std::exp(x/100.f);
+    return 0.f;
 }
