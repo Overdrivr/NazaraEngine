@@ -97,6 +97,12 @@ NzCube<T>& NzCube<T>::ExtendTo(const NzCube& cube)
 }
 
 template<typename T>
+NzSphere<T> NzCube<T>::GetBoundingSphere() const
+{
+    return NzSphere(GetCenter(),NzVector3<T>(width/F(2.0), height/F(2.0), depth/F(2.0)).Length())
+}
+
+template<typename T>
 NzVector3<T> NzCube<T>::GetCenter() const
 {
 	return NzVector3<T>(x + width/F(2.0), y + height/F(2.0), z + depth/F(2.0));
@@ -287,6 +293,8 @@ NzCube<T>& NzCube<T>::operator*=(T scalar)
 	width *= scalar;
 	height *= scalar;
 	depth *= scalar;
+
+	return *this;
 }
 
 template<typename T>

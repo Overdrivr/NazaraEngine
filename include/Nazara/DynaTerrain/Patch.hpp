@@ -24,12 +24,12 @@ class NAZARA_API NzPatch
         ~NzPatch();
 
         NzVector2f GetCenter() const;
-        NzVector2f GetSize() const;
+        float GetSize() const;
         NzCubef& GetAABB();
         const NzCubef& GetAABB() const;
         float GetGlobalSlope() const;
 
-        void Initialize(NzVector2f center, NzVector2f size, id nodeID, TerrainNodeData* data);
+        void Initialize(NzVector2f center, float size, id nodeID, TerrainNodeData* data);
         void Invalidate();
 
         void SetConfiguration(bool leftNeighbor, bool topNeighbor, bool rightNeighbor, bool bottomNeighbor);
@@ -48,7 +48,7 @@ class NAZARA_API NzPatch
         id m_id;
         NzVector2f m_center;
         NzCubef m_aabb;
-        NzVector2f m_size;
+        float m_size;
         unsigned short int m_configuration;
         std::array<float,25> m_noiseValues;
         std::array<float,49> m_extraHeightValues;

@@ -10,6 +10,7 @@
 #include <Nazara/Core/String.hpp>
 #include <Nazara/Math/Rect.hpp>
 #include <Nazara/Math/Vector3.hpp>
+#include <Nazara/Math/Sphere.hpp>
 
 template<typename T>
 class NzCube
@@ -31,6 +32,7 @@ class NzCube
 		NzCube& ExtendTo(const NzVector3<T>& point);
 		NzCube& ExtendTo(const NzCube& cube);
 
+        NzSphere<T> GetBoundingSphere() const;
 		NzVector3<T> GetCenter() const;
 		NzVector3<T> GetPosition() const;
 		NzVector3<T> GetSize() const;
@@ -68,7 +70,7 @@ class NzCube
 };
 
 template<typename T>
-std::ostream& operator<<(std::ostream& out, const NzCube<T>& vec);
+std::ostream& operator<<(std::ostream& out, const NzCube<T>& cube);
 
 typedef NzCube<double> NzCubed;
 typedef NzCube<float> NzCubef;

@@ -39,7 +39,7 @@ class NAZARA_API NzTerrainNode
 
         NzTerrainNode* GetChild(nzLocation location);
         const NzVector2f& GetCenter() const;
-        const NzVector2f& GetSize() const;
+        float GetSize() const;
         unsigned int GetLevel() const;
         static int GetNodeAmount();
         const id& GetNodeID() const;
@@ -48,7 +48,7 @@ class NAZARA_API NzTerrainNode
 
         bool IsLeaf() const;
         bool IsRoot() const;
-        void Initialize(TerrainNodeData *data, NzTerrainNode* parent, const NzVector2f& center, const NzVector2f& size, nzLocation loc = TOPLEFT);
+        void Initialize(TerrainNodeData *data, NzTerrainNode* parent, const NzVector2f& center, float size, nzLocation loc = TOPLEFT);
         void Invalidate();
 
         void HierarchicalAddToCameraList(const NzCirclef& cameraRadius, unsigned int indexRadius);
@@ -79,7 +79,7 @@ class NAZARA_API NzTerrainNode
         NzPatch* m_patch;
         NzVector2f m_center;
         NzVector3f m_realCenter;
-        NzVector2f m_size;
+        float m_size;
         nzLocation m_location;
 
         static int nbNodes;
