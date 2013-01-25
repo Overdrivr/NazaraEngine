@@ -48,19 +48,56 @@ bool NzSphere<T>::Contains(const NzVector3<T>& point) const
 template<typename T>
 bool NzSphere<T>::Contains(const NzCube<T>& cube) const
 {
-    return Contains(cube.GetBoundingSphere());
+    if(!Contains(cube.GetBoundingSphere()) && !Intersect(cube.GetBoundingSphere()))
+        return false;
+
+    if(Contains(cube.GetBoundingSphere()))
+        return true;
+
+    //Brute force : il doit être possible de faire mieux (minkowski ?)
+    if(!Contains(cube.GetPosition()))
+        return false;
+    if(!Contains(cube.GetPosition() + NzVector3<T>(cube.width, F(0.0),      F(0.0))))
+        return false;
+    if(!Contains(cube.GetPosition() + NzVector3<T>(cube.width, cube.height, F(0.0))))
+        return false;
+    if(!Contains(cube.GetPosition() + NzVector3<T>(F(0.0),     cube.height, F(0.0))))
+        return false;
+    if(!Contains(cube.GetPosition() + NzVector3<T>(F(0.0),     F(0.0),      cube.depth)))
+        return false;
+    if(!Contains(cube.GetPosition() + NzVector3<T>(cube.width, F(0.0),      cube.depth)))
+        return false;
+    if(!Contains(cube.GetPosition() + NzVector3<T>(cube.width, cube.height, cube.depth)))
+        return false;
+    if(!Contains(cube.GetPosition() + NzVector3<T>(F(0.0),     cube.height, cube.depth)))
+        return false;
+
+    return true;
+
 }
 
 template<typename T>
 bool NzSphere<T>::Contains(const NzSphere& sphere) const
 {
-    return sphere.GetCenter().SquaredDistance(GetCenter()) + sphere.GetSquaredRadius() < GetSquaredRadius();
+    return sphere.GetCenter().Distance(GetCenter()) + sphere.GetRadius() <= GetRadius();
 }
 
 template<typename T>
-NzSphere& NzSphere<T>::ExtendTo(const NzVector3<T>& point)
+NzSphere<T>& NzSphere<T>::ExtendTo(const NzVector3<T>& point)
 {
     radius = std::max(point.Distance(GetCenter()), radius);
+    return *this;
+}
+
+template<typename T>
+NzCube<T> NzSphere<T>::GetBoundingCube() const
+{
+    return NzCube<T>(x - radius,
+                     y - radius,
+                     z - radius,
+                     2 * radius,
+                     2 * radius,
+                     2 * radius);
 }
 
 template<typename T>
@@ -84,15 +121,46 @@ T NzSphere<T>::GetSquaredRadius() const
 template<typename T>
 bool NzSphere<T>::Intersect(const NzCube<T>& cube) const
 {
-    //FIX ME : TO DO (See Minkowski sum ?)
-    return false;
+    T dmin(0.0);
+	T dmax(0.0);
+	bool face = false;
+	T sqrt_radius = std::sqrt(radius);
+	T a,b;
+
+	NzVector3<T> corner(cube.x + cube.width, cube.y + cube.height, cube.z + cube.depth);
+
+	for(unsigned int i(0) ; i < 3 ; ++i)
+	{
+		a = std::sqrt(*(&x+i) - cube[i] );
+		b = std::sqrt(*(&x+i) - corner[i] );
+
+		dmax = std::max(a,b);
+
+		if(*(&x+i) < cube[i])
+		{
+			face = true;
+			dmin = a;
+		}
+		else if(*(&x+i) > corner[i])
+		{
+			face = true;
+			dmin = b;
+		}
+		else if(std::min(a,b) <= sqrt_radius)
+			face = true;
+	}
+
+	if(face && (dmin <= sqrt_radius) && (sqrt_radius <= dmax))
+		return true;
+
+	return false;
 }
 
 template<typename T>
 bool NzSphere<T>::Intersect(const NzSphere& sphere) const
 {
-    //FIX ME : TO DO (See Minkowski sum ?)
-    return false;
+    return sphere.GetCenter().Distance(GetCenter()) - sphere.GetRadius() < GetRadius() &&
+           sphere.GetCenter().Distance(GetCenter()) + sphere.GetRadius() > GetRadius();
 }
 
 template<typename T>
@@ -102,49 +170,54 @@ bool NzSphere<T>::IsValid() const
 }
 
 template<typename T>
-NzSphere& NzSphere<T>::MakeZero()
+NzSphere<T>& NzSphere<T>::MakeZero()
 {
     x = F(0.0);
     y = F(0.0);
     z = F(0.0);
     radius = F(0.0);
+    return *this;
 }
 
 template<typename T>
-NzSphere& NzSphere<T>::Set(T X, T Y, T Z, T Radius)
+NzSphere<T>& NzSphere<T>::Set(T X, T Y, T Z, T Radius)
 {
     x = X;
     y = Y;
     z = Z;
     radius = Radius;
+    return *this;
 }
 
 template<typename T>
-NzSphere& NzSphere<T>::Set(const T sphere[4])
+NzSphere<T>& NzSphere<T>::Set(const T sphere[4])
 {
     x = sphere[0];
     y = sphere[1];
     z = sphere[2];
     radius = sphere[3];
+    return *this;
 }
 
 template<typename T>
-NzSphere& NzSphere<T>::Set(const NzVector3<T>& center, T Radius)
+NzSphere<T>& NzSphere<T>::Set(const NzVector3<T>& center, T Radius)
 {
     x = center.x;
     y = center.y;
     z = center.z;
     radius = Radius;
+    return *this;
 }
 
 template<typename T>
 template<typename U>
-NzSphere& NzSphere<T>::Set(const NzSphere<U>& sphere)
+NzSphere<T>& NzSphere<T>::Set(const NzSphere<U>& sphere)
 {
     x = F(sphere.x);
     y = F(sphere.y);
     z = F(sphere.z);
     radius = F(sphere.radius);
+    return *this;
 }
 
 template<typename T>
@@ -156,10 +229,11 @@ NzString NzSphere<T>::ToString() const
 }
 
 template<typename T>
-operator NzSphere<T>::NzString() const
+NzSphere<T>::operator NzString() const
 {
     return ToString();
 }
+
 
 template<typename T>
 T& NzSphere<T>::operator[](unsigned int i)
@@ -196,13 +270,13 @@ T NzSphere<T>::operator[](unsigned int i) const
 }
 
 template<typename T>
-NzSphere NzSphere<T>::operator*(T scalar) const
+NzSphere<T> NzSphere<T>::operator*(T scalar) const
 {
-    return NzSphere(x,y,z,radius * scalar);
+    return NzSphere<T>(x,y,z,radius * scalar);
 }
 
 template<typename T>
-NzSphere& NzSphere<T>::operator*=(T scalar)
+NzSphere<T>& NzSphere<T>::operator*=(T scalar)
 {
     radius *= scalar;
     return *this;
@@ -250,7 +324,7 @@ NzSphere<T> NzSphere<T>::Zero()
 template<typename T>
 std::ostream& operator<<(std::ostream& out, const NzSphere<T>& sphere)
 {
-    return out << sphere.ToString;
+    return out << sphere.ToString();
 }
 
 #undef F

@@ -7,8 +7,7 @@
 #include <Nazara/Core/Log.hpp>
 #include <Nazara/Core/String.hpp>
 #include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
-#include <Nazara/Math/Circle.hpp>
-#include <Nazara/Math/Rect.hpp>
+#include <Nazara/Math/Sphere.hpp>
 #include <Nazara/Core/Clock.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
 #include <iostream>
@@ -16,11 +15,6 @@
 #include <Nazara/DynaTerrain/Debug.hpp>
 
 using namespace std;
-
-//#include <Nazara/DynaTerrain/HeightSource.hpp>
-//#include <Nazara/DynaTerrain/Error.hpp>
-//#include <Nazara/DynaTerrain/Config.hpp>
-//#include <Nazara/DynaTerrain/Debug.hpp>
 
 NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& configuration, const NzVector2f& terrainCenter, NzHeightSource* heightSource)
 {
@@ -246,13 +240,20 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
     //Cette optimisation sera efficace si traverser l'arbre est plus lent que tester un node contre un périmètre
     //Ce qui est peut probable, mais à tester quand même
 
-    NzCirclef cameraRadius(cameraPosition.x,cameraPosition.z,radius);
+    NzSpheref cameraFOV(cameraPosition,radius);
+
+    if(cameraFOV.GetBoundingCube().Intersect(m_root->GetAABB()))
+        std::cout<<" 1 camera intersects root"<<std::endl;
+    else if(m_root->GetAABB().Contains(cameraFOV.GetBoundingCube()))
+        std::cout<<" 1 root contains camera"<<std::endl;
+    else
+        std::cout<<" 0 nope "<<m_root->GetAABB()<<std::endl;
 
     //m_subdivideList.clear();
     m_removeList.clear();
 
     //A chaque frame, on recalcule quels noeuds sont dans le périmètre de la caméra
-    m_root->HierarchicalAddToCameraList(cameraRadius,8);
+    m_root->HierarchicalAddToCameraList(cameraFOV.GetBoundingCube(),6);
 
     /*if(!m_subdivideList.empty())
         std::cout<<"Subdivisions amount : "<<m_subdivideList.size()<<std::endl;*/

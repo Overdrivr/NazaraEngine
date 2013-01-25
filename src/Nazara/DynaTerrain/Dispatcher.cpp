@@ -140,6 +140,13 @@ bool NzDispatcher::Initialize(unsigned int zoneDepth, unsigned int bufferAmount)
     if(bufferAmount < m_zonesAmountX*m_zonesAmountX*1.5)
         bufferAmount = static_cast<unsigned int>(m_zonesAmountX*m_zonesAmountX*1.5f);
 
+    if(bufferAmount > 50)
+    {
+        //On ne souhaite pas allouer plus de 50 Mio de mémoire vidéo au terrain
+        //FIX ME : régler la taille des buffers en fonction du nombre de zones
+        bufferAmount = 50;
+    }
+
     std::cout<<"Real buffer amount : "<<bufferAmount<<std::endl;
 
     ///------ On alloue le nombre de buffers demandés si possible

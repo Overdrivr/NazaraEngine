@@ -30,8 +30,8 @@ int main()
     // On créé la configuration du terrain
     NzTerrainQuadTreeConfiguration myConfig;
 
-    myConfig.slopeMaxDepth = 6;//La précision maximale en cas de très forte pente
-    myConfig.minimumDepth = 3;//La précision minimale du terrain
+    myConfig.slopeMaxDepth = 2;//La précision maximale en cas de très forte pente
+    myConfig.minimumDepth = 1;//La précision minimale du terrain
     myConfig.terrainHeight = 1000.f;//La hauteur maximale du terrain
 
     //Configurer correctement un terrain est complexe pour l'instant
@@ -66,7 +66,7 @@ int main()
     NzRenderer::SetMatrix(nzMatrixType_View, NzMatrix4f::LookAt(NzVector3f(0.f,0.f,0.f), NzVector3f::Forward()));
 
 	// Notre caméra
-	NzVector3f camPos(-1000.f, 800.f, 1000.f);
+	NzVector3f camPos(-2000.f, 800.f, 2000.f);
 	NzEulerAnglesf camRot(-30.f, -45.f, 0.f);
 
 	NzNode camera;

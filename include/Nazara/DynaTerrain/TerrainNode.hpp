@@ -10,7 +10,7 @@
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Math/Vector2.hpp>
 #include <Nazara/Math/Vector3.hpp>
-#include <Nazara/Math/Circle.hpp>
+#include <Nazara/Math/Sphere.hpp>
 #include <Nazara/DynaTerrain/Patch.hpp>
 #include <Nazara/DynaTerrain/HeightSource.hpp>
 #include <Nazara/DynaTerrain/Enums.hpp>
@@ -37,6 +37,7 @@ class NAZARA_API NzTerrainNode
         void CreatePatch();
         void DeletePatch();
 
+        NzCubef GetAABB() const;
         NzTerrainNode* GetChild(nzLocation location);
         const NzVector2f& GetCenter() const;
         float GetSize() const;
@@ -51,8 +52,9 @@ class NAZARA_API NzTerrainNode
         void Initialize(TerrainNodeData *data, NzTerrainNode* parent, const NzVector2f& center, float size, nzLocation loc = TOPLEFT);
         void Invalidate();
 
-        void HierarchicalAddToCameraList(const NzCirclef& cameraRadius, unsigned int indexRadius);
-        void HierarchicalAddAllChildrenToCameraList(unsigned int indexRadius);
+        //void HierarchicalAddToCameraList(const NzSpheref& cameraFOV, unsigned int maximumDepth);
+        void HierarchicalAddToCameraList(const NzCubef & cameraFOV, unsigned int maximumDepth);
+        void HierarchicalAddAllChildrenToCameraList(unsigned int maximumDepth);
 
         void Refine();//FIX ME : Won't work with camera subdivision because of m_doNotRefine and HierarchicalSubdiv()
 
@@ -75,7 +77,7 @@ class NAZARA_API NzTerrainNode
         bool m_isInitialized;//FIX ME : Améliorer management
 
         id m_nodeID;
-
+        NzCubef m_aabb;
         NzPatch* m_patch;
         NzVector2f m_center;
         NzVector3f m_realCenter;

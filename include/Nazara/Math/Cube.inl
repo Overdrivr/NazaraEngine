@@ -99,7 +99,7 @@ NzCube<T>& NzCube<T>::ExtendTo(const NzCube& cube)
 template<typename T>
 NzSphere<T> NzCube<T>::GetBoundingSphere() const
 {
-    return NzSphere(GetCenter(),NzVector3<T>(width/F(2.0), height/F(2.0), depth/F(2.0)).Length())
+    return NzSphere<T>(GetCenter(),NzVector3<T>(width/F(2.0), height/F(2.0), depth/F(2.0)).Length());
 }
 
 template<typename T>

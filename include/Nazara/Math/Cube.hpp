@@ -12,6 +12,8 @@
 #include <Nazara/Math/Vector3.hpp>
 #include <Nazara/Math/Sphere.hpp>
 
+template <typename T> class NzSphere;
+
 template<typename T>
 class NzCube
 {

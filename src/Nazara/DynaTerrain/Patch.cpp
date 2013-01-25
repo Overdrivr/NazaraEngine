@@ -40,7 +40,7 @@ void NzPatch::ComputeHeights()
                 if(i == 0 && j == 0)
                     m_aabb.z = m_noiseValues[0];
 
-                m_aabb.ExtendTo(NzVector3f(x,m_noiseValues[0],z));
+                m_aabb.ExtendTo(NzVector3f(x,m_noiseValues[i+5*j] * m_data->quadtree->GetMaximumHeight() ,z));
             }
 
         for(int i(-1) ; i < 6 ; ++i)

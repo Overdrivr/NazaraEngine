@@ -66,6 +66,7 @@ void NzTerrainNode::CreatePatch()
         m_patchMemoryAllocated = true;
         m_patch = m_data->quadtree->GetPatchFromPool();
         m_patch->Initialize(m_center,m_size,m_nodeID,m_data);
+        m_aabb = m_patch->GetAABB();
     }
 }
 
@@ -78,6 +79,11 @@ void NzTerrainNode::DeletePatch()
         m_patchMemoryAllocated = false;
         m_data->quadtree->ReturnPatchToPool(m_patch);
     }
+}
+
+NzCubef NzTerrainNode::GetAABB() const
+{
+    return m_aabb;
 }
 
 NzTerrainNode* NzTerrainNode::GetChild(nzLocation location)
@@ -446,75 +452,79 @@ void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction)
     }
 }
 
-void NzTerrainNode::HierarchicalAddToCameraList(const NzCirclef& cameraRadius, unsigned int indexRadius)
+void NzTerrainNode::HierarchicalAddToCameraList(const NzCubef& cameraFOV, unsigned int maximumDepth)
 {
-    NzRectf tester(m_center - NzVector2f(m_size/2.f), m_center + NzVector2f(m_size/2.f));
+    //std::cout<<tester<<std::endl;
+    //std::cout<<cameraFOV<<std::endl;
 
-    if(cameraRadius.Contains(tester))
+    if(cameraFOV.Contains(m_aabb))
     {
-        this->HierarchicalAddAllChildrenToCameraList(indexRadius);
+        //std::cout<<"1"<<std::endl;
+        this->HierarchicalAddAllChildrenToCameraList(maximumDepth);
     }
-    else if(cameraRadius.Intersect(tester))
+    else if(cameraFOV.Intersect(m_aabb))
     {
+        //std::cout<<"2"<<std::endl;
         //Si c'est un node feuille, on l'ajoute à la liste
         if(m_isLeaf)
         {
-            if(m_nodeID.lvl < indexRadius)
+            if(m_nodeID.lvl < maximumDepth)
             {
                 m_data->quadtree->AddLeaveToSubdivisionList(this);
             }
         }
         else
         {
-            if(!(m_nodeID.lvl + 1 > indexRadius))
+            if(!(m_nodeID.lvl + 1 > maximumDepth))
             {
                 //Sinon on teste ses enfants
                 for(int i(0) ; i < 4 ; ++i)
-                    m_children[i]->HierarchicalAddToCameraList(cameraRadius,indexRadius);
+                    m_children[i]->HierarchicalAddToCameraList(cameraFOV,maximumDepth);
             }
         }
     }
-    else if(tester.Contains(cameraRadius))
+    else if(m_aabb.Contains(cameraFOV))
     {
+        //std::cout<<"3"<<std::endl;
         //Le rayon de la caméra est entièrement contenu dans le node
         //Ne se produit qu'en haut de l'arbre
          if(m_isLeaf)
          {
              //Si on est ici, ça veut dire que le node est largement trop peu précis
-             if(m_nodeID.lvl < indexRadius)
+             if(m_nodeID.lvl < maximumDepth)
                 m_data->quadtree->AddLeaveToSubdivisionList(this);
          }
         else
         {
-            if(!(m_nodeID.lvl + 1 > indexRadius))
+            if(!(m_nodeID.lvl + 1 > maximumDepth))
             {
                 //Sinon on teste ses enfants
                 for(int i(0) ; i < 4 ; ++i)
-                    m_children[i]->HierarchicalAddToCameraList(cameraRadius,indexRadius);
+                    m_children[i]->HierarchicalAddToCameraList(cameraFOV,maximumDepth);
             }
         }
     }
     //else la méthode s'arrête là pour le node
 }
 
-void NzTerrainNode::HierarchicalAddAllChildrenToCameraList(unsigned int indexRadius)
+void NzTerrainNode::HierarchicalAddAllChildrenToCameraList(unsigned int maximumDepth)
 {
     //Si c'est un node feuille
     if(m_isLeaf)
     {
         //Si il n'est pas assez subdivisé, on l'ajoute à la liste
-        if(m_nodeID.lvl < indexRadius)
+        if(m_nodeID.lvl < maximumDepth)
         {
             m_data->quadtree->AddLeaveToSubdivisionList(this);
         }
     }
     else
     {
-        if(!(m_nodeID.lvl + 1 > indexRadius))//Il est trop subdivisé, on l'ajoute à la liste de refine
+        if(!(m_nodeID.lvl + 1 > maximumDepth))//Il est trop subdivisé, on l'ajoute à la liste de refine
         {
             //Sinon on teste ses enfants
             for(int i(0) ; i < 4 ; ++i)
-                m_children[i]->HierarchicalAddAllChildrenToCameraList(indexRadius);
+                m_children[i]->HierarchicalAddAllChildrenToCameraList(maximumDepth);
         }
     }
 }

@@ -12,6 +12,8 @@
 #include <Nazara/Math/Rect.hpp>
 #include <Nazara/Math/Vector3.hpp>
 
+template <typename T> class NzCube;
+
 template<typename T>
 class NzSphere
 {
@@ -27,7 +29,7 @@ class NzSphere
 		bool Contains(T X, T Y, T Z) const;
 		bool Contains(const NzVector3<T>& point) const;
 		bool Contains(const NzCube<T>& cube) const;
-		bool Contains(const NzSphere& sphere() const;
+		bool Contains(const NzSphere& sphere) const;
 
 		NzSphere& ExtendTo(const NzVector3<T>& point);
 
@@ -52,8 +54,8 @@ class NzSphere
 
 		operator NzString() const;
 
-		//T& operator[](unsigned int i);//FIX ME : NO SEGFAULT ?
-		//T operator[](unsigned int i) const;
+		T& operator[](unsigned int i);
+		T operator[](unsigned int i) const;
 
 		NzSphere operator*(T scalar) const;
 
@@ -74,7 +76,7 @@ std::ostream& operator<<(std::ostream& out, const NzSphere<T>& sphere);
 typedef NzSphere<double> NzSphered;
 typedef NzSphere<float> NzSpheref;
 typedef NzSphere<int> NzSpherei;
-typedef NzSphere<unsigned int> NzCubeui;
+typedef NzSphere<unsigned int> NzSphereui;
 
 #include <Nazara/Math/Sphere.inl>
 
