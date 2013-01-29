@@ -6,6 +6,7 @@
 #include <Nazara/DynaTerrain/Config.hpp>
 #include <Nazara/DynaTerrain/TerrainNode.hpp>
 #include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
+#include <Nazara/Renderer/DebugDrawer.hpp>
 #include <stack>
 #include <iostream>
 #include <Nazara/DynaTerrain/Debug.hpp>
@@ -24,6 +25,33 @@ NzTerrainNode::~NzTerrainNode()
     nbNodes--;
     if(m_isInitialized)
         DeletePatch();
+}
+
+void NzTerrainNode::DebugDrawAABB(bool leafOnly, int level)
+{
+    if(leafOnly)
+    {
+        if(m_isLeaf)
+        {
+            NzDebugDrawer::Draw(m_aabb);
+        }
+        else
+        {
+            for(int i(0) ;  i < 4 ; ++i)
+                m_children[i]->DebugDrawAABB(leafOnly,level);
+        }
+    }
+    else
+    {
+        if(m_nodeID.lvl == level)
+            NzDebugDrawer::Draw(m_aabb);
+        else if(m_nodeID.lvl < level && m_isLeaf)
+        {
+            for(int i(0) ; i < 4 ; ++i)
+                m_children[i]->DebugDrawAABB(leafOnly,level);
+        }
+
+    }
 }
 
 

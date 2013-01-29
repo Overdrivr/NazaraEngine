@@ -1,5 +1,6 @@
 #include <Nazara/3D.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
+#include <Nazara/Renderer/DebugDrawer.hpp>
 #include <Nazara/Renderer/RenderWindow.hpp>
 #include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
 #include <Nazara/DynaTerrain/TerrainQuadTreeConfiguration.hpp>
@@ -12,14 +13,15 @@ int main()
 {
     // Cette ligne active le mode de compatibilité d'OpenGL lors de l'initialisation de Nazara (Nécessaire pour le shader)
 	NzContextParameters::defaultCompatibilityProfile = true;
-	NzInitializer<NzRenderer> renderer;
-	if (!renderer)
+	NzInitializer<Nz3D> nazara;
+	if (!nazara)
 	{
 		// Ça n'a pas fonctionné, le pourquoi se trouve dans le fichier NazaraLog.log
 		std::cout << "Failed to initialize Nazara, see NazaraLog.log for further informations" << std::endl;
 		std::getchar(); // On laise le temps de voir l'erreur
 		return EXIT_FAILURE;
 	}
+	NzDebugDrawer::Initialize();
 
     ///Initialisation du terrain
     // On instancie notre source de hauteur personnalisée, définissant la hauteur du terrain en tout point
@@ -237,6 +239,7 @@ int main()
 
         //On dessine le terrain
         quad.Render();
+        //quad.DebugDrawAABB(true,4);
 		// Nous mettons à jour l'écran
 		window.Display();
 

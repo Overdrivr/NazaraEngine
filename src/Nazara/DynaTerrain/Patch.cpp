@@ -38,7 +38,15 @@ void NzPatch::ComputeHeights()
                 m_noiseValues[i+5*j] = m_data->heightSource->GetHeight(x,z);
 
                 if(i == 0 && j == 0)
-                    m_aabb.z = m_noiseValues[0];
+                {
+                    m_aabb.x = x;
+                    m_aabb.y = m_noiseValues[0] * m_data->quadtree->GetMaximumHeight();
+                    m_aabb.z = z;
+                    m_aabb.width = 0.1f;
+                    m_aabb.depth = 0.1f;
+                    m_aabb.height = 0.1;
+                }
+
 
                 m_aabb.ExtendTo(NzVector3f(x,m_noiseValues[i+5*j] * m_data->quadtree->GetMaximumHeight() ,z));
             }
@@ -179,10 +187,6 @@ void NzPatch::Initialize(NzVector2f center, float size, id nodeID, TerrainNodeDa
 
     m_isUploaded = false;
     m_isInitialized = true;
-
-    m_aabb.MakeZero();
-    m_aabb.x = center.x - size/2.f;
-    m_aabb.z = center.y - size/2.f;
 
 
     for(unsigned int i(0) ; i < 25 ; ++i)

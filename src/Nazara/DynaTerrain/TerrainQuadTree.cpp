@@ -77,6 +77,11 @@ const std::list<NzTerrainNode*>& NzTerrainQuadTree::GetLeavesList()
     return m_leaves;
 }
 
+void NzTerrainQuadTree::DebugDrawAABB(bool leafOnly, int level)
+{
+    m_root->DebugDrawAABB(leafOnly,level);
+}
+
 NzTerrainNode* NzTerrainQuadTree::GetNode(id nodeID)
 {
     if(m_nodesMap.count(nodeID) == 1)
@@ -230,7 +235,7 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
     NzVector3f centerPoint(cameraPosition.x,cameraPosition.z,cameraPosition.y);
     m_root->HierarchicalDynamicPrecisionAroundPoint(centerPoint);*/
 
-    float radius = 100.f;
+    float radius = 50.f;
 
     //Une optimisation potentielle à mettre en oeuvre : Au lieu de tester l'ensemble de l'arbre contre le périmètre caméra
     //On teste d'abord l'ensemble de l'arbre sur le périmètre le plus grand
@@ -242,18 +247,11 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
 
     NzSpheref cameraFOV(cameraPosition,radius);
 
-    if(cameraFOV.GetBoundingCube().Intersect(m_root->GetAABB()))
-        std::cout<<" 1 camera intersects root"<<std::endl;
-    else if(m_root->GetAABB().Contains(cameraFOV.GetBoundingCube()))
-        std::cout<<" 1 root contains camera"<<std::endl;
-    else
-        std::cout<<" 0 nope "<<m_root->GetAABB()<<std::endl;
-
     //m_subdivideList.clear();
     m_removeList.clear();
 
     //A chaque frame, on recalcule quels noeuds sont dans le périmètre de la caméra
-    m_root->HierarchicalAddToCameraList(cameraFOV.GetBoundingCube(),6);
+    m_root->HierarchicalAddToCameraList(cameraFOV.GetBoundingCube(),7);
 
     /*if(!m_subdivideList.empty())
         std::cout<<"Subdivisions amount : "<<m_subdivideList.size()<<std::endl;*/

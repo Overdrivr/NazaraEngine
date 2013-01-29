@@ -64,6 +64,8 @@ class NAZARA_API NzTerrainNode
 
         bool TestNodeIDIsOutsideQuadTree(id nodeId);
 
+        void DebugDrawAABB(bool leafOnly = true, int level = 0);
+
     private:
         void HandleNeighborSubdivision(nzDirection direction);
         /* Variables pour le fonctionnement basique de l'arbre */
