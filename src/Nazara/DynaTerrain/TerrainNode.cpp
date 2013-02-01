@@ -29,6 +29,12 @@ NzTerrainNode::~NzTerrainNode()
 
 void NzTerrainNode::DebugDrawAABB(bool leafOnly, int level)
 {
+    if(!m_isInitialized)
+    {
+        std::cout<<"NzTerrainNode::DebugDrawAABB : Calling initialized node"<<std::endl;
+        return;
+    }
+
     if(leafOnly)
     {
         if(m_isLeaf)
@@ -57,6 +63,12 @@ void NzTerrainNode::DebugDrawAABB(bool leafOnly, int level)
 
 void NzTerrainNode::CleanTree(unsigned int minDepth)
 {
+    if(!m_isInitialized)
+    {
+        std::cout<<"NzTerrainNode::CleanTree : Calling initialized node"<<std::endl;
+        return;
+    }
+
     if(m_nodeID.lvl >= minDepth)
     {
         if(!m_isLeaf)
@@ -89,6 +101,12 @@ void NzTerrainNode::CleanTree(unsigned int minDepth)
 
 void NzTerrainNode::CreatePatch()
 {
+    if(!m_isInitialized)
+    {
+        std::cout<<"NzTerrainNode::CreatePatch : Calling initialized node"<<std::endl;
+        return;
+    }
+
     if(!m_patchMemoryAllocated)
     {
         m_patchMemoryAllocated = true;
@@ -117,6 +135,14 @@ NzCubef NzTerrainNode::GetAABB() const
 NzTerrainNode* NzTerrainNode::GetChild(nzLocation location)
 {
     return m_children[location];
+}
+
+NzTerrainNode* NzTerrainNode::GetChild(unsigned int i)
+{
+    if(i < 4)
+        return m_children[i];
+    else
+        return nullptr;
 }
 
 const NzVector2f& NzTerrainNode::GetCenter() const
@@ -149,11 +175,6 @@ const NzVector3f& NzTerrainNode::GetRealCenter() const
     return m_realCenter;
 }
 
-bool NzTerrainNode::TestNodeIDIsOutsideQuadTree(id nodeId)
-{
-    return nodeId.lvl < 0 || nodeId.sx < 0 || nodeId.sy < 0 || nodeId.sx > (std::pow(2,nodeId.lvl)-1) || nodeId.sy > (std::pow(2,nodeId.lvl)-1);
-}
-
 NzTerrainNode* NzTerrainNode::GetParent()
 {
     return m_parent;
@@ -161,7 +182,13 @@ NzTerrainNode* NzTerrainNode::GetParent()
 
 void NzTerrainNode::HierarchicalSubdivide(unsigned int maxDepth)
 {
-    if(m_isLeaf == true)
+    if(!m_isInitialized)
+    {
+        std::cout<<"NzTerrainNode::HierarchicalSubdivide : Calling initialized node"<<std::endl;
+        return;
+    }
+
+    if(m_isLeaf)
     {
         if(m_nodeID.lvl < maxDepth)
         {
@@ -184,24 +211,40 @@ bool NzTerrainNode::IsLeaf() const
     return m_isLeaf;
 }
 
+bool NzTerrainNode::IsMinimalPrecision() const
+{
+    return !m_doNotRefine;
+}
+
 bool NzTerrainNode::IsRoot() const
 {
     return m_isRoot;
 }
 
+bool NzTerrainNode::IsRefineable() const
+{
+    return !m_doNotRefine && !m_isLeaf;
+}
+
+bool NzTerrainNode::IsValid() const
+{
+    return m_isInitialized;
+}
+
 void NzTerrainNode::Initialize(TerrainNodeData *data, NzTerrainNode* parent, const NzVector2f& center, float size, nzLocation loc)
 {
+    m_isInitialized = true;
     m_data = data;
     m_location = loc;
     m_center = center;
-    m_realCenter.x = center.x;
-    m_realCenter.y = center.y;
-    m_realCenter.z = 0.f;
+    m_realCenter.x = center.x;//?
+    m_realCenter.y = center.y;//?
+    m_realCenter.z = 0.f;//?
     m_size = size;
     m_isLeaf = false;
 
     if(m_patchMemoryAllocated)
-        DeletePatch();//FIX ME : Reutiliser la mémoire au lieu d'en réallouer un, économie d'un PatchPool
+        DeletePatch();
 
     m_doNotRefine = false;
 
@@ -247,8 +290,6 @@ void NzTerrainNode::Initialize(TerrainNodeData *data, NzTerrainNode* parent, con
     //On crée son patch pour l'affichage
     CreatePatch();
     m_patch->UploadMesh();
-
-    m_isInitialized = true;
 }
 
 void NzTerrainNode::Invalidate()
@@ -256,8 +297,14 @@ void NzTerrainNode::Invalidate()
     m_isInitialized = false;
 }
 
-void NzTerrainNode::SlopeBasedHierarchicalSubdivide(unsigned int maxDepth)
+void NzTerrainNode::HierarchicalSlopeBasedSubdivide(unsigned int maxDepth)
 {
+    if(!m_isInitialized)
+    {
+        std::cout<<"NzTerrainNode::HierarchicalSlopeBasedSubdivide : Calling initialized node"<<std::endl;
+        return;
+    }
+
     //Si la cellule est une feuille
     if(m_isLeaf == true)
     {
@@ -270,23 +317,28 @@ void NzTerrainNode::SlopeBasedHierarchicalSubdivide(unsigned int maxDepth)
             this->Subdivide();
 
             for(int i(0) ; i < 4 ; ++i)
-                m_children[i]->SlopeBasedHierarchicalSubdivide(maxDepth);
+                m_children[i]->HierarchicalSlopeBasedSubdivide(maxDepth);
         }
     }
     else
     {
             for(int i(0) ; i < 4 ; ++i)
-                m_children[i]->SlopeBasedHierarchicalSubdivide(maxDepth);
+                m_children[i]->HierarchicalSlopeBasedSubdivide(maxDepth);
     }
 }
 
 bool NzTerrainNode::Subdivide()
 {
+    if(!m_isInitialized)
+    {
+        std::cout<<"NzTerrainNode::Subdivide : Calling initialized node"<<std::endl;
+        return false;
+    }
+
     if(m_isLeaf)
     {
         m_isLeaf = false;
         m_data->quadtree->UnRegisterLeaf(this);
-
         this->DeletePatch();
 
         if(m_children[TOPLEFT] == nullptr)
@@ -366,23 +418,44 @@ bool NzTerrainNode::Subdivide()
     return false;
 }
 
-void NzTerrainNode::Refine()
+void NzTerrainNode::HierarchicalRefine()
 {
-    if(!m_isLeaf && !m_doNotRefine)
+
+    if(!m_isInitialized)
     {
+        std::cout<<"NzTerrainNode::HierarchicalRefine : Calling initialized node"<<std::endl;
+        return;
+    }
+
+    if(m_isLeaf)
+        return;
+
+    for(int i(0) ; i < 4 ; ++i)
+    {
+        if(!(m_children[i]->IsLeaf()))
+        {
+            m_children[i]->HierarchicalRefine();
+        }
+
+        m_children[i]->DeletePatch();
+        m_data->quadtree->ReturnNodeToPool(m_children[i]);
+        m_children[i] = nullptr;
+    }
+
+    m_isLeaf = true;
+    m_data->quadtree->RegisterLeaf(this);
+    CreatePatch();
+    m_patch->UploadMesh();
+/*
+    if(!m_doNotRefine)
+    {
+        std::cout<<m_nodeID.lvl<<"|"<<m_nodeID.sx<<"|"<<m_nodeID.sy<<std::endl;
         if(m_children[0]->m_isLeaf)
         {
-            m_isLeaf = true;
-            m_data->quadtree->RegisterLeaf(this);
-
-            CreatePatch();
-            m_patch->UploadMesh();
-
             for(int i(0) ; i < 4 ; ++i)
             {
                 m_children[i]->DeletePatch();
                 m_data->quadtree->ReturnNodeToPool(m_children[i]);
-                //delete m_children[i];
                 m_children[i] = nullptr;
             }
         }
@@ -392,17 +465,28 @@ void NzTerrainNode::Refine()
                 m_children[i]->Refine();
         }
 
+        m_isLeaf = true;
+        m_data->quadtree->RegisterLeaf(this);
+        CreatePatch();
+        m_patch->UploadMesh();
+
     }
-    else if(!m_isLeaf && m_doNotRefine)
+    else
     {
         //Le node n'est pas refine-able à cause de la pente, mais ses enfants le sont peut être
         for(int i(0) ; i < 4 ; ++i)
                 m_children[i]->Refine();
-    }
+    }*/
 }
 
 void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction)
 {
+    if(!m_isInitialized)
+    {
+        std::cout<<"NzTerrainNode::HandleNeighborSubdivision : Calling initialized node"<<std::endl;
+        return;
+    }
+
     id tempID;
     NzTerrainNode* tempNode;
     tempID = m_nodeID;
@@ -431,7 +515,7 @@ void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction)
     }
 
     //Si on ne cherche pas à atteindre une case externe
-    if(!TestNodeIDIsOutsideQuadTree(tempID))
+    if(!m_data->quadtree->Contains(tempID))
     {
 
         tempNode = m_data->quadtree->GetNode(tempID);
@@ -482,17 +566,18 @@ void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction)
 
 void NzTerrainNode::HierarchicalAddToCameraList(const NzCubef& cameraFOV, unsigned int maximumDepth)
 {
-    //std::cout<<tester<<std::endl;
-    //std::cout<<cameraFOV<<std::endl;
+    if(!m_isInitialized)
+    {
+        std::cout<<"NzTerrainNode::HierarchicalAddToCameraList : Calling initialized node"<<std::endl;
+        return;
+    }
 
     if(cameraFOV.Contains(m_aabb))
     {
-        //std::cout<<"1"<<std::endl;
         this->HierarchicalAddAllChildrenToCameraList(maximumDepth);
     }
     else if(cameraFOV.Intersect(m_aabb))
     {
-        //std::cout<<"2"<<std::endl;
         //Si c'est un node feuille, on l'ajoute à la liste
         if(m_isLeaf)
         {
@@ -513,7 +598,6 @@ void NzTerrainNode::HierarchicalAddToCameraList(const NzCubef& cameraFOV, unsign
     }
     else if(m_aabb.Contains(cameraFOV))
     {
-        //std::cout<<"3"<<std::endl;
         //Le rayon de la caméra est entièrement contenu dans le node
         //Ne se produit qu'en haut de l'arbre
          if(m_isLeaf)
@@ -537,6 +621,12 @@ void NzTerrainNode::HierarchicalAddToCameraList(const NzCubef& cameraFOV, unsign
 
 void NzTerrainNode::HierarchicalAddAllChildrenToCameraList(unsigned int maximumDepth)
 {
+    if(!m_isInitialized)
+    {
+        std::cout<<"NzTerrainNode::HierarchicalAddAll... : Calling initialized node"<<std::endl;
+        return;
+    }
+
     //Si c'est un node feuille
     if(m_isLeaf)
     {

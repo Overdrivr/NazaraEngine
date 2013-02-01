@@ -218,7 +218,7 @@ void NzPatch::SetConfiguration(bool leftNeighbor, bool topNeighbor, bool rightNe
         m_configuration += 1<<3;
 }
 
-void NzPatch::UploadMesh()
+void NzPatch::UploadMesh(bool firstTime)
 {
     for(int i(0) ; i < 5 ; ++i)
         for(int j(0) ; j < 5 ; ++j)
@@ -234,7 +234,11 @@ void NzPatch::UploadMesh()
         }
     //Le patch classique (une grille carrée de triangles) est constitué de 32 triangles et 25 vertices
     //Mais avec ce patch problèmes aux jonctions entre niveaux. Pour ça, on utilise un patch variable selon les niveaux des patchs voisins
-    m_data->dispatcher->SubmitPatch(m_uploadedData,m_id);
+    if(firstTime)
+        m_data->dispatcher->SubmitPatch(m_uploadedData,m_id);
+    else
+        m_data->dispatcher->UpdatePatch(m_uploadedData,m_id);
+
     m_isUploaded = true;
     //FIX ME : implementer patch variable
     /*switch(m_configuration)

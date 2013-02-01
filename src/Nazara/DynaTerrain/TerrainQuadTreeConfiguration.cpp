@@ -18,7 +18,7 @@ NzTerrainQuadTreeConfiguration::NzTerrainQuadTreeConfiguration()
     //La précision minimale du terrain
     minimumDepth = 2;
     //La précision maximale engendrée par la plus forte variation de pente
-    slopeMaxDepth = 6;
+    slopeMaxDepth = 4;
     //La précision au plus près de la caméra
     closeCameraDepth = 7;
     //La précision au plus loin de la caméra
@@ -80,7 +80,7 @@ unsigned int NzTerrainQuadTreeConfiguration::ComputeMaxPatchNumber() const
 
 bool NzTerrainQuadTreeConfiguration::IsValid() const
 {
-    return minimumDepth < slopeMaxDepth &&
+    return minimumDepth <= slopeMaxDepth &&
            minimumDepth < closeCameraDepth &&
            farCameraDepth < closeCameraDepth &&
            effectRadius > 0.f &&

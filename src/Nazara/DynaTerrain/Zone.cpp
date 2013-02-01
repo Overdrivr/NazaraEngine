@@ -168,7 +168,11 @@ bool NzZone::UpdatePatch(const std::array<float,150>& vertices, const id& ID)
 
     //Si l'emplacement n'a pas été retrouvé, on abandonne
     if(location.x < 0)
+    {
+        std::cout<<"Cannot update patch...Location not found"<<std::endl;
         return false;
+    }
+
 
     if(!m_buffers.at(location.x)->Fill(vertices.data(),location.y*25,25))
     {

@@ -136,7 +136,7 @@ bool NzDispatcher::Initialize(unsigned int zoneDepth, unsigned int bufferAmount)
         std::unique_ptr<NzZone> zone(new NzZone(this));
         m_zones.push_back(std::move(zone));
     }
-
+/*
     if(bufferAmount < m_zonesAmountX*m_zonesAmountX*1.5)
         bufferAmount = static_cast<unsigned int>(m_zonesAmountX*m_zonesAmountX*1.5f);
 
@@ -158,7 +158,7 @@ bool NzDispatcher::Initialize(unsigned int zoneDepth, unsigned int bufferAmount)
         //On met tous ces buffers dans la file de buffers libres
         m_freeBuffers.push(buffer);
         //std::cout<<"buffer capacity "<<m_freeBuffers.back()->GetVertexCount()<<"|"<<i<<std::endl;
-    }
+    }*/
     m_isReady = true;
     return true;
 }
@@ -167,10 +167,15 @@ NzVertexBuffer* NzDispatcher::QueryFreeBuffer()
 {
     NzVertexBuffer* buffer = nullptr;
 
-    if(m_freeBuffers.size() > 0 && m_isReady)
+    if(m_freeBuffers.size() > 0)
     {
         buffer = m_freeBuffers.front();
         m_freeBuffers.pop();
+    }
+    else
+    {
+        buffer = new NzVertexBuffer(&m_declaration,262500, nzBufferStorage_Hardware, nzBufferUsage_Static);
+        m_buffers.push_back(buffer);
     }
 
     return buffer;

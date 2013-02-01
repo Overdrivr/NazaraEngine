@@ -32,7 +32,7 @@ int main()
     // On créé la configuration du terrain
     NzTerrainQuadTreeConfiguration myConfig;
 
-    myConfig.slopeMaxDepth = 2;//La précision maximale en cas de très forte pente
+    myConfig.slopeMaxDepth = 1;//La précision maximale en cas de très forte pente
     myConfig.minimumDepth = 1;//La précision minimale du terrain
     myConfig.terrainHeight = 1000.f;//La hauteur maximale du terrain
 
@@ -48,9 +48,14 @@ int main()
     quad.Initialize("resources/terrain_shader.vert","resources/terrain_shader.frag","resources/debug_grid2.png");
     //quad.Initialize("resources/terrain_shader.vert","resources/terrain_shader.frag","resources/dt_tiles.jpg");
 
+    std::cout<<"refine test"<<std::endl;
+    //quad.GetRootNode()->HierarchicalRefine();
+    std::cout<<"resubdivide test"<<std::endl;
+    //quad.GetRootNode()->HierarchicalSubdivide(3);
 
-    cout<<"Nombre de feuilles  : "<<quad.GetLeavesList().size()<<endl;
-    cout<<"Nombre de triangles : "<<quad.GetLeavesList().size()*32<<endl;
+
+    cout<<"Nombre de feuilles  : "<<quad.GetLeafNodesAmount()<<endl;
+    cout<<"Nombre de triangles : "<<quad.GetLeafNodesAmount()*32<<endl;
     cout<<"---------------------------------------------------------------"<<endl;
 
 

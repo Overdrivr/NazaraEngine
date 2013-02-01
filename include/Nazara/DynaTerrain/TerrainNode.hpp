@@ -27,44 +27,39 @@ class NAZARA_API NzTerrainNode
         NzTerrainNode();
         ~NzTerrainNode();
 
-        //Libère la mémoire à partir du niveau minDepth
-            //Si un node a une profondeur inférieure à minDepth, elle ne sera pas supprimée
         void CleanTree(unsigned int minDepth);
-        //Subdivise l'ensemble de l'arbre jusqu'à atteindre la profondeur demandée
-            //Il sera par la suite impossible de refiner en dessous de minDepth
-        void HierarchicalSubdivide(unsigned int maxDepth);
-        //La classe NzPatch est chargée de communiquer avec le dispatcher (affichage) et de l'utilisation de la source de hauteur
         void CreatePatch();
+
+        void DebugDrawAABB(bool leafOnly = true, int level = 0);
         void DeletePatch();
 
         NzCubef GetAABB() const;
-        NzTerrainNode* GetChild(nzLocation location);
         const NzVector2f& GetCenter() const;
-        float GetSize() const;
+        NzTerrainNode* GetChild(nzLocation location);
+        NzTerrainNode* GetChild(unsigned int i);
         unsigned int GetLevel() const;
         static int GetNodeAmount();
         const id& GetNodeID() const;
         NzTerrainNode* GetParent();
         const NzVector3f& GetRealCenter() const;
-
-        bool IsLeaf() const;
-        bool IsRoot() const;
-        void Initialize(TerrainNodeData *data, NzTerrainNode* parent, const NzVector2f& center, float size, nzLocation loc = TOPLEFT);
-        void Invalidate();
+        float GetSize() const;
 
         //void HierarchicalAddToCameraList(const NzSpheref& cameraFOV, unsigned int maximumDepth);
         void HierarchicalAddToCameraList(const NzCubef & cameraFOV, unsigned int maximumDepth);
         void HierarchicalAddAllChildrenToCameraList(unsigned int maximumDepth);
+        void HierarchicalRefine();//FIX ME : +1 rule and overall behavior
+        void HierarchicalSubdivide(unsigned int maxDepth);
+        void HierarchicalSlopeBasedSubdivide(unsigned int maxDepth);
 
-        void Refine();//FIX ME : Won't work with camera subdivision because of m_doNotRefine and HierarchicalSubdiv()
+        bool IsLeaf() const;
+        bool IsMinimalPrecision() const;
+        bool IsRoot() const;
+        bool IsRefineable() const;
+        bool IsValid() const;
+        void Initialize(TerrainNodeData *data, NzTerrainNode* parent, const NzVector2f& center, float size, nzLocation loc = TOPLEFT);
+        void Invalidate();
 
-        //Subdivise les nodes nécéssaires pour obtenir un terrain suffisamment défini lors des variations importantes de pente
-        void SlopeBasedHierarchicalSubdivide(unsigned int maxDepth);
         bool Subdivide();
-
-        bool TestNodeIDIsOutsideQuadTree(id nodeId);
-
-        void DebugDrawAABB(bool leafOnly = true, int level = 0);
 
     private:
         void HandleNeighborSubdivision(nzDirection direction);

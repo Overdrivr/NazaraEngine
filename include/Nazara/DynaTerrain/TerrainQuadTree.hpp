@@ -24,20 +24,20 @@
 class NAZARA_API NzTerrainQuadTree
 {
     public:
+        friend class NzTerrainNode;
+
         NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& configuration, const NzVector2f& terrainCenter, NzHeightSource* heightSource);
         ~NzTerrainQuadTree();
 
-        const std::list<NzTerrainNode*>& GetLeavesList();
+        bool Contains(id nodeId);
+
+        void DebugDrawAABB(bool leafOnly, int level);
+
+        unsigned int GetLeafNodesAmount() const;
         float GetMaximumHeight() const;
-        unsigned int GetSubdivisionsAmount();
-
         NzTerrainNode* GetNode(id nodeID);
-        NzTerrainNode* GetRootPtr();
-
-        NzTerrainNode* GetNodeFromPool();
-        void ReturnNodeToPool(NzTerrainNode* node);
-        NzPatch* GetPatchFromPool();
-        void ReturnPatchToPool(NzPatch* patch);
+        NzTerrainNode* GetRootNode();
+        unsigned int GetSubdivisionsAmount();
 
         void Initialize(const NzString& vertexShader, const NzString& fragmentShader, const NzString& terrainTilesTexture);
 
@@ -45,22 +45,26 @@ class NAZARA_API NzTerrainQuadTree
 
         bool SetShaders(const NzString& vertexShader, const NzString& fragmentShader);
 
-        //FIX ME : ces 3 méthodes doit être private et NzTerrainNode ajouté en friend
-        //Vu que quadtree ne sera pas en charge de l'affichage, elles sont même peut être inutiles, y compris maintenir à jour m_leaves
+        void Update(const NzVector3f& cameraPosition);
+
+    protected:
+
+        NzTerrainNode* GetNodeFromPool();
+        void ReturnNodeToPool(NzTerrainNode* node);
+        NzPatch* GetPatchFromPool();
+        void ReturnPatchToPool(NzPatch* patch);
+        //Vu que quadtree ne sera pas en charge de l'affichage, elles sont peut être inutiles, y compris maintenir à jour m_leaves
         //Peut éventuellement servir à optimiser Update(..)
         void RegisterLeaf(NzTerrainNode* node);
         bool UnRegisterLeaf(NzTerrainNode* node);//Les feuilles enlevées ici doivent aussi l'être de la camera list
         bool UnRegisterNode(NzTerrainNode* node);
-        //Updates the terrain mesh accordingly to the camera position
-            //If you want a pure static terrain, you must not call this function
-            //Otherwise this function will makes the terrain closer to the camera more precise
-        void Update(const NzVector3f& cameraPosition);
+
         void AddLeaveToSubdivisionList(NzTerrainNode* node);
 
         //Returns -1 if the distance to the camera is too big
         //or the radius index otherwise
         int TransformDistanceToCameraInRadiusIndex(float distance);
-        void DebugDrawAABB(bool leafOnly, int level);
+
     private:
 
         NzShader m_shader;

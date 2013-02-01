@@ -34,7 +34,7 @@ class NAZARA_API NzPatch
 
         void SetConfiguration(bool leftNeighbor, bool topNeighbor, bool rightNeighbor, bool bottomNeighbor);
 
-        void UploadMesh();
+        void UploadMesh(bool firstTime = true);
         void UnUploadMesh();
 
     protected:

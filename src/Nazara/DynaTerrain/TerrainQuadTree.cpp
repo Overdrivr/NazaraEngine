@@ -64,6 +64,11 @@ NzTerrainQuadTree::~NzTerrainQuadTree()
     cout<<"NbNodes non supprimes : "<<m_root->GetNodeAmount()<< endl;
 }
 
+bool NzTerrainQuadTree::Contains(id nodeId)
+{
+    return nodeId.lvl < 0 || nodeId.sx < 0 || nodeId.sy < 0 || nodeId.sx > (std::pow(2,nodeId.lvl)-1) || nodeId.sy > (std::pow(2,nodeId.lvl)-1);
+}
+
 void NzTerrainQuadTree::Render()
 {
     // On active le shader
@@ -72,14 +77,14 @@ void NzTerrainQuadTree::Render()
 
 }
 
-const std::list<NzTerrainNode*>& NzTerrainQuadTree::GetLeavesList()
-{
-    return m_leaves;
-}
-
 void NzTerrainQuadTree::DebugDrawAABB(bool leafOnly, int level)
 {
     m_root->DebugDrawAABB(leafOnly,level);
+}
+
+unsigned int NzTerrainQuadTree::GetLeafNodesAmount() const
+{
+    return m_leaves.size();
 }
 
 NzTerrainNode* NzTerrainQuadTree::GetNode(id nodeID)
@@ -95,7 +100,7 @@ float NzTerrainQuadTree::GetMaximumHeight() const
     return m_configuration.terrainHeight;
 }
 
-NzTerrainNode* NzTerrainQuadTree::GetRootPtr()
+NzTerrainNode* NzTerrainQuadTree::GetRootNode()
 {
     return m_root;
 }
@@ -107,6 +112,11 @@ NzTerrainNode* NzTerrainQuadTree::GetNodeFromPool()
 
 void NzTerrainQuadTree::ReturnNodeToPool(NzTerrainNode* node)
 {
+    std::map<id,NzTerrainNode*>::iterator it = m_removeList.find(node->GetNodeID());
+
+    if(it != m_removeList.end())
+        m_removeList.erase(it);
+
     m_nodesPool.ReturnObjectPtr(node);
 }
 
@@ -149,7 +159,7 @@ void NzTerrainQuadTree::Initialize(const NzString& vertexShader, const NzString&
     m_root->HierarchicalSubdivide(m_configuration.minimumDepth);
 
     //Si on doit améliorer l'arbre là où la pente est la plus forte, on le fait également
-    m_root->SlopeBasedHierarchicalSubdivide(m_configuration.slopeMaxDepth);
+    m_root->HierarchicalSlopeBasedSubdivide(m_configuration.slopeMaxDepth);
 
 }
 
@@ -231,10 +241,6 @@ bool NzTerrainQuadTree::UnRegisterNode(NzTerrainNode* node)
 
 void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
 {
-    /*
-    NzVector3f centerPoint(cameraPosition.x,cameraPosition.z,cameraPosition.y);
-    m_root->HierarchicalDynamicPrecisionAroundPoint(centerPoint);*/
-
     float radius = 50.f;
 
     //Une optimisation potentielle à mettre en oeuvre : Au lieu de tester l'ensemble de l'arbre contre le périmètre caméra
@@ -248,7 +254,7 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
     NzSpheref cameraFOV(cameraPosition,radius);
 
     //m_subdivideList.clear();
-    m_removeList.clear();
+    //m_removeList.clear();
 
     //A chaque frame, on recalcule quels noeuds sont dans le périmètre de la caméra
     m_root->HierarchicalAddToCameraList(cameraFOV.GetBoundingCube(),7);
@@ -260,13 +266,7 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
 
     //On subdivise les nodes nécessaires
     std::map<id,NzTerrainNode*>::iterator it;
-/*
-    for(it = m_subdivideList.begin() ; it != m_subdivideList.end() ; ++it)
-    {
-        it->second->Subdivide();
-    }*/
 
-    it = m_subdivideList.begin();
     int subdivisionsPerFrame = 0;
 
     ///En limitant le nombre de subdivisions par frame
@@ -285,18 +285,48 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
     }
     */
 
+    ///On refine les nodes nécessaires
+    /*it = m_removeList.begin();
+    int cmpt = 2;
+    while(it != m_removeList.end() && cmpt > 0)
+    {
+        if(!(it->second->IsValid()))
+            std::cout<<"problem node not valid"<<std::endl;
+
+        if(it->second == nullptr)
+            std::cout<<"problem node == nullptr"<<std::endl;
+
+        if(!cameraFOV.Contains(it->second->GetAABB()) && !cameraFOV.Intersect(it->second->GetAABB()))
+        {
+            it->second->HierarchicalRefine();
+            m_removeList.erase(it++);
+            std::cout<<"refine : "<<m_removeList.size()<<std::endl;
+            cmpt--;
+        }
+        else
+           it++;
+
+    }*/
+
     ///En limitant le temps accordé au terrain par frame
     ///Pas mieux, car la précisions des horloges est limitée, ne pas descendre en dessous d'1 ms
     ///Permet d'estimer grossièrement les performances néanmoins
     NzClock clock;
     nzUInt64 maxTime = 20;//ms
     clock.Restart();
+
+    it = m_subdivideList.begin();
+
     while(clock.GetMilliseconds() < maxTime)
     {
         if(it == m_subdivideList.end())
             break;
 
         it->second->Subdivide();
+
+        if(it->second->IsMinimalPrecision())
+            m_removeList[it->second->GetNodeID()] = it->second;
+
         m_subdivideList.erase(it);
         it = m_subdivideList.begin();
         subdivisionsPerFrame++;
@@ -307,11 +337,7 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
 
     m_subdivisionsAmount += subdivisionsPerFrame;
 
-    //On refine les nodes nécessaires
-    /*for(it = m_removeList.begin() ; it != m_removeList.end() ; ++it)
-    {
-        it->second->Refine();
-    }*/
+
 
     //Note : cette méthode ne subdivisera pas l'arbre dans la position optimale de caméra dés la première frame
     //A chaque frame, un seul niveau sera subdivisé, ce qui étalera le travail sur plusieurs frames
