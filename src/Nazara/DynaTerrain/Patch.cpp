@@ -188,6 +188,7 @@ void NzPatch::Initialize(NzVector2f center, float size, id nodeID, TerrainNodeDa
     m_isUploaded = false;
     m_isInitialized = true;
 
+    m_configuration = 0;
 
     for(unsigned int i(0) ; i < 25 ; ++i)
         m_noiseValues[i] = 0.f;
@@ -204,53 +205,119 @@ void NzPatch::Invalidate()
     m_isInitialized = false;
 }
 
-void NzPatch::SetConfiguration(bool leftNeighbor, bool topNeighbor, bool rightNeighbor, bool bottomNeighbor)
+void NzPatch::SetConfiguration(nzDirection neighborLocation, unsigned int levelDifference, bool autoUpdate)
 {
-    m_configuration = 0;
+    if(!m_isInitialized)
+    {
+        std::cout<<"NzPatch::SetConfig : invalid patch called : "<<m_id.lvl<<"|"<<m_id.sx<<"|"<<m_id.sy<<std::endl;
+        return;
+    }
 
-    if(leftNeighbor)
-        m_configuration += 1;
-    if(topNeighbor)
-        m_configuration += 1<<1;
-    if(rightNeighbor)
-        m_configuration += 1<<2;
-    if(bottomNeighbor)
-        m_configuration += 1<<3;
+    if(levelDifference > 1)
+    {
+        std::cout<<"Difference of level at interface must be < 1, here : "<<levelDifference<<std::endl;
+        return;
+    }
+
+    unsigned short int newConfiguration = m_configuration;
+    //std::cout<<"previous conf "<<m_configuration<<std::endl;
+    switch(neighborLocation)
+    {
+        case LEFT :
+            if(levelDifference == 1)
+                newConfiguration = newConfiguration | 0x1;
+            else
+                newConfiguration = newConfiguration & 0xE;
+        break;
+
+        case TOP :
+            if(levelDifference)
+                newConfiguration = newConfiguration | 0x2;
+            else
+                newConfiguration = newConfiguration & 0xD;
+        break;
+
+        case RIGHT :
+            if(levelDifference == 1)
+                newConfiguration = newConfiguration | 0x4;
+            else
+                newConfiguration = newConfiguration & 0xB;
+        break;
+
+        /*case BOTTOM :
+            if(levelDifference)
+                newConfiguration = m_configuration | 0x8;
+        break;*/
+
+        /*default :
+                newConfiguration = 0;
+        break;*/
+    }
+
+    if(newConfiguration != m_configuration)
+    {
+        m_configuration = newConfiguration;
+        //std::cout<<"Updating patch "<<m_id.lvl<<"|"<<m_id.sx<<"|"<<m_id.sy<<" to conf "<<m_configuration<<" new direction "<<neighborLocation<<std::endl;
+        UploadMesh(false);
+    }
 }
 
 void NzPatch::UploadMesh(bool firstTime)
 {
+    if(!m_isInitialized)
+    {
+        std::cout<<"NzPatch::SetConfig : invalid patch called"<<std::endl;
+        return;
+    }
+
+    //std::cout<<"Uploading patch "<<m_id.lvl<<"|"<<m_id.sx<<"|"<<m_id.sy<<" Update ? "<<firstTime<<std::endl;
+
+    unsigned int index, index2, i2, j2;
+
     for(int i(0) ; i < 5 ; ++i)
         for(int j(0) ; j < 5 ; ++j)
         {
+            index = 5*i+j;
+            index2 = index;
+            i2 = i;
+            j2 = j;
+
+            if(((m_configuration & 0x1) == 0x1) && (index == 5 || index == 15))
+            {
+                index2 = index + 5;
+                i2 = i + 1;
+            }
+            else if(((m_configuration & 0x4) == 0x4) && (index == 9 || index == 19))
+            {
+                index2 = index - 5;
+                i2 = i - 1;
+            }
+            else if((m_configuration & 0x2) == 0x2 && (index == 1 || index == 3))
+            {
+                index2 = index + 1;
+                j2 = j + 1;
+            }
+            else if((m_configuration & 0x8) == 0x8 && (index == 21 || index == 23))
+            {
+
+            }
+
             //Position
-            m_uploadedData.at((5*i+j)*6)   = m_center.x + m_size * (0.25 * j - 0.5);//X
-            m_uploadedData.at((5*i+j)*6+1) = m_noiseValues.at(5*i+j) * m_data->quadtree->GetMaximumHeight();//Z
-            m_uploadedData.at((5*i+j)*6+2) = m_center.y + m_size * (0.25 * i - 0.5);//Y
+            m_uploadedData.at((index)*6)   = m_center.x + m_size * (0.25 * j2 - 0.5);//X
+            m_uploadedData.at((index)*6+1) = m_noiseValues.at(index2) * m_data->quadtree->GetMaximumHeight();//Z
+            m_uploadedData.at((index)*6+2) = m_center.y + m_size * (0.25 * i2 - 0.5);//Y
             //Normales
-            m_uploadedData.at((5*i+j)*6+3) = m_vertexNormals.at(5*i+j).x;
-            m_uploadedData.at((5*i+j)*6+4) = m_vertexNormals.at(5*i+j).z;
-            m_uploadedData.at((5*i+j)*6+5) = m_vertexNormals.at(5*i+j).y;
+            m_uploadedData.at((index)*6+3) = m_vertexNormals.at(index2).x;
+            m_uploadedData.at((index)*6+4) = m_vertexNormals.at(index2).z;
+            m_uploadedData.at((index)*6+5) = m_vertexNormals.at(index2).y;
         }
-    //Le patch classique (une grille carrée de triangles) est constitué de 32 triangles et 25 vertices
-    //Mais avec ce patch problèmes aux jonctions entre niveaux. Pour ça, on utilise un patch variable selon les niveaux des patchs voisins
+
     if(firstTime)
         m_data->dispatcher->SubmitPatch(m_uploadedData,m_id);
     else
         m_data->dispatcher->UpdatePatch(m_uploadedData,m_id);
 
     m_isUploaded = true;
-    //FIX ME : implementer patch variable
-    /*switch(m_configuration)
-    {
-        case 0 :
-
-        break;
-
-        case 1 :
-
-        break;
-    }*/
 }
 
 void NzPatch::UnUploadMesh()

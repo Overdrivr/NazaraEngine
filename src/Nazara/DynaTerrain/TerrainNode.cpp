@@ -23,15 +23,15 @@ NzTerrainNode::NzTerrainNode() : antiInfiniteLoop(200)
 NzTerrainNode::~NzTerrainNode()
 {
     nbNodes--;
-    if(m_isInitialized)
-        DeletePatch();
+    //if(m_isInitialized)
+    //DeletePatch();
 }
 
 void NzTerrainNode::DebugDrawAABB(bool leafOnly, int level)
 {
     if(!m_isInitialized)
     {
-        std::cout<<"NzTerrainNode::DebugDrawAABB : Calling initialized node"<<std::endl;
+        std::cout<<"NzTerrainNode::DebugDrawAABB : Calling uninitialized node"<<std::endl;
         return;
     }
 
@@ -65,7 +65,7 @@ void NzTerrainNode::CleanTree(unsigned int minDepth)
 {
     if(!m_isInitialized)
     {
-        std::cout<<"NzTerrainNode::CleanTree : Calling initialized node"<<std::endl;
+        std::cout<<"NzTerrainNode::CleanTree : Calling uninitialized node"<<std::endl;
         return;
     }
 
@@ -103,7 +103,7 @@ void NzTerrainNode::CreatePatch()
 {
     if(!m_isInitialized)
     {
-        std::cout<<"NzTerrainNode::CreatePatch : Calling initialized node"<<std::endl;
+        std::cout<<"NzTerrainNode::CreatePatch : Calling uninitialized node"<<std::endl;
         return;
     }
 
@@ -184,7 +184,7 @@ void NzTerrainNode::HierarchicalSubdivide(unsigned int maxDepth)
 {
     if(!m_isInitialized)
     {
-        std::cout<<"NzTerrainNode::HierarchicalSubdivide : Calling initialized node"<<std::endl;
+        std::cout<<"NzTerrainNode::HierarchicalSubdivide : Calling uninitialized node"<<std::endl;
         return;
     }
 
@@ -243,8 +243,7 @@ void NzTerrainNode::Initialize(TerrainNodeData *data, NzTerrainNode* parent, con
     m_size = size;
     m_isLeaf = false;
 
-    if(m_patchMemoryAllocated)
-        DeletePatch();
+    //DeletePatch();
 
     m_doNotRefine = false;
 
@@ -294,6 +293,7 @@ void NzTerrainNode::Initialize(TerrainNodeData *data, NzTerrainNode* parent, con
 
 void NzTerrainNode::Invalidate()
 {
+    DeletePatch();
     m_isInitialized = false;
 }
 
@@ -301,7 +301,7 @@ void NzTerrainNode::HierarchicalSlopeBasedSubdivide(unsigned int maxDepth)
 {
     if(!m_isInitialized)
     {
-        std::cout<<"NzTerrainNode::HierarchicalSlopeBasedSubdivide : Calling initialized node"<<std::endl;
+        std::cout<<"NzTerrainNode::HierarchicalSlopeBasedSubdivide : Calling uninitialized node"<<std::endl;
         return;
     }
 
@@ -331,7 +331,7 @@ bool NzTerrainNode::Subdivide()
 {
     if(!m_isInitialized)
     {
-        std::cout<<"NzTerrainNode::Subdivide : Calling initialized node"<<std::endl;
+        std::cout<<"NzTerrainNode::Subdivide : Calling uninitialized node"<<std::endl;
         return false;
     }
 
@@ -346,7 +346,7 @@ bool NzTerrainNode::Subdivide()
             //On crée le premier node fils
             //m_children[TOPLEFT] = new NzTerrainNode();
             m_children[TOPLEFT] = m_data->quadtree->GetNodeFromPool();
-            m_children[TOPLEFT]->Initialize(m_data,this,NzVector2f(m_center.x-m_size/4.f,m_center.y+m_size/4.f),m_size/2.f,TOPLEFT);
+            m_children[TOPLEFT]->Initialize(m_data,this,NzVector2f(m_center.x-m_size/4.f,m_center.y-m_size/4.f),m_size/2.f,TOPLEFT);
             //C'est une subdivision, le node est forcément une leaf
             m_children[TOPLEFT]->m_isLeaf = true;
 
@@ -368,7 +368,7 @@ bool NzTerrainNode::Subdivide()
         {
             //m_children[TOPRIGHT] = new NzTerrainNode();
             m_children[TOPRIGHT] = m_data->quadtree->GetNodeFromPool();
-            m_children[TOPRIGHT]->Initialize(m_data,this,NzVector2f(m_center.x+m_size/4.f,m_center.y+m_size/4.f),m_size/2.f,TOPRIGHT);
+            m_children[TOPRIGHT]->Initialize(m_data,this,NzVector2f(m_center.x+m_size/4.f,m_center.y-m_size/4.f),m_size/2.f,TOPRIGHT);
             m_children[TOPRIGHT]->m_isLeaf = true;
             m_data->quadtree->RegisterLeaf(m_children[TOPRIGHT]);
             //cout<<"creating topright "<<m_nodeID.lvl+1<<endl;
@@ -385,7 +385,7 @@ bool NzTerrainNode::Subdivide()
         {
             //m_children[BOTTOMLEFT] = new NzTerrainNode();
             m_children[BOTTOMLEFT] = m_data->quadtree->GetNodeFromPool();
-            m_children[BOTTOMLEFT]->Initialize(m_data,this,NzVector2f(m_center.x-m_size/4.f,m_center.y-m_size/4.f),m_size/2.f,BOTTOMLEFT);
+            m_children[BOTTOMLEFT]->Initialize(m_data,this,NzVector2f(m_center.x-m_size/4.f,m_center.y+m_size/4.f),m_size/2.f,BOTTOMLEFT);
             m_children[BOTTOMLEFT]->m_isLeaf = true;
             m_data->quadtree->RegisterLeaf(m_children[BOTTOMLEFT]);
             //cout<<"creating bottomleft "<<m_nodeID.lvl+1<<endl;
@@ -401,7 +401,7 @@ bool NzTerrainNode::Subdivide()
         {
             //m_children[BOTTOMRIGHT] = new NzTerrainNode();
             m_children[BOTTOMRIGHT] = m_data->quadtree->GetNodeFromPool();
-            m_children[BOTTOMRIGHT]->Initialize(m_data,this,NzVector2f(m_center.x+m_size/4.f,m_center.y-m_size/4.f),m_size/2.f,BOTTOMRIGHT);
+            m_children[BOTTOMRIGHT]->Initialize(m_data,this,NzVector2f(m_center.x+m_size/4.f,m_center.y+m_size/4.f),m_size/2.f,BOTTOMRIGHT);
             m_children[BOTTOMRIGHT]->m_isLeaf = true;
             m_data->quadtree->RegisterLeaf(m_children[BOTTOMRIGHT]);
             //cout<<"creating bottomright "<<m_nodeID.lvl+1<<endl;
@@ -423,7 +423,7 @@ void NzTerrainNode::HierarchicalRefine()
 
     if(!m_isInitialized)
     {
-        std::cout<<"NzTerrainNode::HierarchicalRefine : Calling initialized node"<<std::endl;
+        std::cout<<"NzTerrainNode::HierarchicalRefine : Calling uninitialized node"<<std::endl;
         return;
     }
 
@@ -483,7 +483,7 @@ void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction)
 {
     if(!m_isInitialized)
     {
-        std::cout<<"NzTerrainNode::HandleNeighborSubdivision : Calling initialized node"<<std::endl;
+        std::cout<<"NzTerrainNode::HandleNeighborSubdivision : Calling uninitialized node"<<std::endl;
         return;
     }
 
@@ -491,35 +491,43 @@ void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction)
     NzTerrainNode* tempNode;
     tempID = m_nodeID;
     int counter = 0;
+    nzDirection invDirection = direction;
 
+    //CORRECT ?
     switch(direction)
     {
         case TOP :
             tempID.sy -= 1;
+            invDirection = BOTTOM;
         break;
 
         case RIGHT :
             tempID.sx += 1;
+            invDirection = LEFT;
         break;
 
         case BOTTOM :
             tempID.sy += 1;
+            invDirection = TOP;
         break;
 
         case LEFT :
             tempID.sx -= 1;
+            invDirection = RIGHT;
         break;
 
         default:
         break;
     }
 
+    //std::cout<<"direction : "<<direction<<std::endl;
+
     //Si on ne cherche pas à atteindre une case externe
     if(!m_data->quadtree->Contains(tempID))
     {
 
         tempNode = m_data->quadtree->GetNode(tempID);
-        //Si le voisin n'existe pas
+        //Si le voisin n'existe pas (il n'y a pas de node voisin de même profondeur)
         if(tempNode == nullptr)
         {
 
@@ -548,6 +556,9 @@ void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction)
                     //cout<<"Resubdivision de "<<tempID.lvl<<"|"<<tempID.sx<<"|"<<tempID.sy<<" de "<<counter<<" niveau(x)"<<endl;
                     //On subdivise la cellule jusqu'à atteindre le bon niveau
                     tempNode->HierarchicalSubdivide(m_nodeID.lvl-1);
+                    //La subdivision a généré une interface, le node le plus subdivisé (cad this) doit s'adapter
+                    //std::cout<<"Add interface 1 w/ dir"<<direction<<std::endl;
+                    m_patch->SetConfiguration(direction,1);
                 }
                 else
                 {
@@ -555,7 +566,32 @@ void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction)
                     return;
                 }
             }
+            else
+            {
+                //std::cout<<"Add interface 2 w/ dir"<<direction<<std::endl;
+                m_patch->SetConfiguration(direction,1);
+            }
             //else la cellule voisine voisin est suffisamment divisé
+        }
+        else
+        {
+            //La subdivision a supprimé une interface de précision, on l'indique au voisin qu'il n'a plus besoin de s'adapter
+
+                //std::cout<<m_nodeID.lvl<<"|"<<m_nodeID.sx<<"|"<<m_nodeID.sy<<" VS "<<tempNode->m_nodeID.lvl<<"|"<<tempNode->m_nodeID.sx<<"|"<<tempNode->m_nodeID.sy<<std::endl;
+                //std::cout<<"ca va chier"<<tempNode->m_nodeID.lvl<<" vs "<<m_nodeID.lvl<<std::endl;
+
+            //std::cout<<direction<<" : "<<m_center<<" | "<<tempNode->m_center<<std::endl;
+            if(tempNode->m_isLeaf)
+            {
+                //std::cout<<"Deleted interface w/ dir"<<direction<<std::endl;
+                tempNode->m_patch->SetConfiguration(invDirection,0);
+            }
+            else
+            {
+                std::cout<<"Add interface 3!! w/ dir"<<direction<<std::endl;
+                m_patch->SetConfiguration(direction,1);
+            }
+
         }
     }
     else
@@ -568,7 +604,7 @@ void NzTerrainNode::HierarchicalAddToCameraList(const NzCubef& cameraFOV, unsign
 {
     if(!m_isInitialized)
     {
-        std::cout<<"NzTerrainNode::HierarchicalAddToCameraList : Calling initialized node"<<std::endl;
+        std::cout<<"NzTerrainNode::HierarchicalAddToCameraList : Calling uninitialized node"<<std::endl;
         return;
     }
 
@@ -623,7 +659,7 @@ void NzTerrainNode::HierarchicalAddAllChildrenToCameraList(unsigned int maximumD
 {
     if(!m_isInitialized)
     {
-        std::cout<<"NzTerrainNode::HierarchicalAddAll... : Calling initialized node"<<std::endl;
+        std::cout<<"NzTerrainNode::HierarchicalAddAll... : Calling uninitialized node"<<std::endl;
         return;
     }
 

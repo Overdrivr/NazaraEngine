@@ -32,7 +32,7 @@ class NAZARA_API NzPatch
         void Initialize(NzVector2f center, float size, id nodeID, TerrainNodeData* data);
         void Invalidate();
 
-        void SetConfiguration(bool leftNeighbor, bool topNeighbor, bool rightNeighbor, bool bottomNeighbor);
+        void SetConfiguration(nzDirection neighborLocation, unsigned int levelDifference, bool autoUpdate = true);
 
         void UploadMesh(bool firstTime = true);
         void UnUploadMesh();

@@ -167,7 +167,7 @@ bool NzZone::UpdatePatch(const std::array<float,150>& vertices, const id& ID)
     NzVector2i location = m_buffersMap.FindKeyLocation(ID);
 
     //Si l'emplacement n'a pas été retrouvé, on abandonne
-    if(location.x < 0)
+    if(location.x < 0 || location.y < 0)
     {
         std::cout<<"Cannot update patch...Location not found"<<std::endl;
         return false;
