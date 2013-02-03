@@ -244,14 +244,12 @@ void NzPatch::SetConfiguration(nzDirection neighborLocation, unsigned int levelD
                 newConfiguration = newConfiguration & 0xB;
         break;
 
-        /*case BOTTOM :
+        case BOTTOM :
             if(levelDifference)
-                newConfiguration = m_configuration | 0x8;
-        break;*/
-
-        /*default :
-                newConfiguration = 0;
-        break;*/
+                newConfiguration = newConfiguration | 0x8;
+            else
+                newConfiguration = newConfiguration & 0x7;
+        break;
     }
 
     if(newConfiguration != m_configuration)
@@ -299,7 +297,8 @@ void NzPatch::UploadMesh(bool firstTime)
             }
             else if((m_configuration & 0x8) == 0x8 && (index == 21 || index == 23))
             {
-
+                index2 = index - 1;
+                j2 = j - 1;
             }
 
             //Position

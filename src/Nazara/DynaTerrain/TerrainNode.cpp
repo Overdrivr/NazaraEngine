@@ -588,8 +588,8 @@ void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction)
             }
             else
             {
-                std::cout<<"Add interface 3!! w/ dir"<<direction<<std::endl;
-                m_patch->SetConfiguration(direction,1);
+                //std::cout<<"Add interface 3!! w/ dir"<<direction<<std::endl;
+                //m_patch->SetConfiguration(direction,0);
             }
 
         }

@@ -257,7 +257,7 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
     //m_removeList.clear();
 
     //A chaque frame, on recalcule quels noeuds sont dans le périmètre de la caméra
-    m_root->HierarchicalAddToCameraList(cameraFOV.GetBoundingCube(),3);
+    m_root->HierarchicalAddToCameraList(cameraFOV.GetBoundingCube(),5);
 
     /*if(!m_subdivideList.empty())
         std::cout<<"Subdivisions amount : "<<m_subdivideList.size()<<std::endl;*/
