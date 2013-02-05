@@ -38,6 +38,7 @@ class NAZARA_API NzTerrainNode
         NzTerrainNode* GetChild(nzLocation location);
         NzTerrainNode* GetChild(unsigned int i);
         unsigned int GetLevel() const;
+        NzTerrainNode* GetNeighbor(nzDirection direction);
         static int GetNodeAmount();
         const id& GetNodeID() const;
         NzTerrainNode* GetParent();
@@ -47,7 +48,7 @@ class NAZARA_API NzTerrainNode
         //void HierarchicalAddToCameraList(const NzSpheref& cameraFOV, unsigned int maximumDepth);
         void HierarchicalAddToCameraList(const NzCubef & cameraFOV, unsigned int maximumDepth);
         void HierarchicalAddAllChildrenToCameraList(unsigned int maximumDepth);
-        void HierarchicalRefine();//FIX ME : +1 rule and overall behavior
+        bool HierarchicalRefine();
         void HierarchicalSubdivide(unsigned int maxDepth);
         void HierarchicalSlopeBasedSubdivide(unsigned int maxDepth);
 
@@ -58,6 +59,8 @@ class NAZARA_API NzTerrainNode
         bool IsValid() const;
         void Initialize(TerrainNodeData *data, NzTerrainNode* parent, const NzVector2f& center, float size, nzLocation loc = TOPLEFT);
         void Invalidate();
+
+        bool Refine();
 
         bool Subdivide();
 

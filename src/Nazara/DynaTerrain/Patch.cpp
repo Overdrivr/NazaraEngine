@@ -264,7 +264,7 @@ void NzPatch::UploadMesh(bool firstTime)
 {
     if(!m_isInitialized)
     {
-        std::cout<<"NzPatch::SetConfig : invalid patch called"<<std::endl;
+        std::cout<<"NzPatch::SetConfig : invalid patch called : old node : "<<m_id.lvl<<"|"<<m_id.sx<<"|"<<m_id.sy<<std::endl;
         return;
     }
 

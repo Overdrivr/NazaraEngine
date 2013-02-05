@@ -150,6 +150,62 @@ const NzVector2f& NzTerrainNode::GetCenter() const
     return m_center;
 }
 
+NzTerrainNode* NzTerrainNode::GetNeighbor(nzDirection direction)
+{
+     if(!m_isInitialized)
+    {
+        std::cout<<"NzTerrainNode::GetNeighbor : Calling uninitialized node"<<std::endl;
+        return nullptr;
+    }
+
+    ///NE RENVOIE 1 QUE SI IL Y A UN NODE VOISIN DE MEME PROFONDEUR, SINON 0
+
+    id tempID;
+    tempID = m_nodeID;
+    int counter = 0;
+
+    switch(direction)
+    {
+        case TOP :
+            tempID.sy -= 1;
+        break;
+
+        case RIGHT :
+            tempID.sx += 1;
+        break;
+
+        case BOTTOM :
+            tempID.sy += 1;
+        break;
+
+        case LEFT :
+            tempID.sx -= 1;
+        break;
+    }
+
+    NzTerrainNode* neighbor;
+
+    if(!m_data->quadtree->Contains(tempID))
+    {
+
+        neighbor = m_data->quadtree->GetNode(tempID);
+        //Si le voisin n'existe pas (il n'y a pas de node voisin de même profondeur)
+        if(neighbor == nullptr)
+        {
+            return nullptr;
+        }
+        else
+        {
+            return neighbor;
+        }
+    }
+    else
+    {
+        return nullptr;
+        //DANS LE CAS OU PLUSIEURS QUADTREE SONT RATTACHES, IL FAUT RAJOUTER DU CODE ICI
+    }
+}
+
 float NzTerrainNode::GetSize() const
 {
     return m_size;
@@ -418,65 +474,113 @@ bool NzTerrainNode::Subdivide()
     return false;
 }
 
-void NzTerrainNode::HierarchicalRefine()
+bool NzTerrainNode::Refine()
 {
-
     if(!m_isInitialized)
     {
         std::cout<<"NzTerrainNode::HierarchicalRefine : Calling uninitialized node"<<std::endl;
-        return;
+        return false;
     }
 
+    //Impossible de refiner une feuille
     if(m_isLeaf)
-        return;
+        return false;
+
+    //Impossible de refiner autre chose qu'un parent d'une feuille
+    for(int i(0) ; i < 4 ; ++i)
+    {
+        if(!m_children[i]->m_isLeaf)
+            return false;
+    }
+
+    nzDirection first, second;
+    NzTerrainNode* temp = nullptr;
+
+    //Impossible de refiner si les voisins ne sont pas d'accord
+    for(int i(0) ; i < 4 ; ++i)
+    {
+        //FIX ME : LUT !
+        switch(m_location)
+        {
+            case TOPLEFT:
+                first = TOP;
+                second = LEFT;
+            break;
+
+            case TOPRIGHT:
+                first = TOP;
+                second = RIGHT;
+            break;
+
+            case BOTTOMLEFT:
+                first = BOTTOM;
+                second = LEFT;
+            break;
+
+            case BOTTOMRIGHT:
+                first = BOTTOM;
+                second = RIGHT;
+            break;
+
+        }
+        temp = m_children[i]->GetNeighbor(first);
+        //Si il y a un node voisin de niveau égal
+        if(temp != nullptr)
+        {
+             //Si il des fils
+             if(!temp->m_isLeaf)
+                return false;//Abandon, le refine va causer une différence de profondeur > 2
+        }
+        temp = m_children[i]->GetNeighbor(second);
+        //Si il y a un node voisin de niveau égal
+        if(temp != nullptr)
+        {
+             //Si il des fils
+             if(!temp->m_isLeaf)
+                return false;//Abandon, le refine va causer une différence de profondeur > 2
+        }
+    }
 
     for(int i(0) ; i < 4 ; ++i)
     {
-        if(!(m_children[i]->IsLeaf()))
-        {
-            m_children[i]->HierarchicalRefine();
-        }
-
         m_children[i]->DeletePatch();
         m_data->quadtree->ReturnNodeToPool(m_children[i]);
         m_children[i] = nullptr;
     }
-
     m_isLeaf = true;
     m_data->quadtree->RegisterLeaf(this);
     CreatePatch();
     m_patch->UploadMesh();
-/*
-    if(!m_doNotRefine)
+
+    //std::cout<<"Refined : "<<m_nodeID.lvl<<"|"<<m_nodeID.sx<<"|"<<m_nodeID.sy<<std::endl;
+
+    return true;
+
+}
+
+bool NzTerrainNode::HierarchicalRefine()
+{
+    if(!m_isInitialized)
     {
-        std::cout<<m_nodeID.lvl<<"|"<<m_nodeID.sx<<"|"<<m_nodeID.sy<<std::endl;
-        if(m_children[0]->m_isLeaf)
-        {
-            for(int i(0) ; i < 4 ; ++i)
-            {
-                m_children[i]->DeletePatch();
-                m_data->quadtree->ReturnNodeToPool(m_children[i]);
-                m_children[i] = nullptr;
-            }
-        }
-        else
-        {
-            for(int i(0) ; i < 4 ; ++i)
-                m_children[i]->Refine();
-        }
-
-        m_isLeaf = true;
-        m_data->quadtree->RegisterLeaf(this);
-        CreatePatch();
-        m_patch->UploadMesh();
-
+        std::cout<<"NzTerrainNode::HierarchicalRefine : Calling uninitialized node"<<std::endl;
+        return false;
     }
-    else
+
+    //Impossible de refiner une feuille
+    if(m_isLeaf)
+        return false;
+
+    //On refine les enfants d'abord
+    for(int i(0) ; i < 4 ; ++i)
     {
-        //Le node n'est pas refine-able à cause de la pente, mais ses enfants le sont peut être
-        for(int i(0) ; i < 4 ; ++i)
-                m_children[i]->Refine();
-    }*/
+        if(!m_children[i]->m_isLeaf)
+        {
+            m_children[i]->HierarchicalRefine();
+        }
+    }
+
+    return this->Refine();
+
 }
 
 void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction)

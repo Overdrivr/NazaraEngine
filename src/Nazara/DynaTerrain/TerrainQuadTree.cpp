@@ -257,12 +257,12 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
     //m_removeList.clear();
 
     //A chaque frame, on recalcule quels noeuds sont dans le périmètre de la caméra
-    m_root->HierarchicalAddToCameraList(cameraFOV.GetBoundingCube(),5);
+    m_root->HierarchicalAddToCameraList(cameraFOV.GetBoundingCube(),2);
 
     /*if(!m_subdivideList.empty())
         std::cout<<"Subdivisions amount : "<<m_subdivideList.size()<<std::endl;*/
-    /*if(!m_removeList.empty())
-        std::cout<<"Refines amount : "<<m_removeList.size()<<std::endl;*/
+    //if(!m_removeList.empty())
+        //std::cout<<"In Subdivided Nodes List : "<<m_removeList.size()<<std::endl;
 
     //On subdivise les nodes nécessaires
     std::map<id,NzTerrainNode*>::iterator it;
@@ -298,9 +298,12 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
 
         if(!cameraFOV.Contains(it->second->GetAABB()) && !cameraFOV.Intersect(it->second->GetAABB()))
         {
-            it->second->HierarchicalRefine();
-            m_removeList.erase(it++);
-            std::cout<<"refine : "<<m_removeList.size()<<std::endl;
+            //std::cout<<"Starting refine"<<std::endl;
+            if(it->second->HierarchicalRefine())
+            {
+                m_removeList.erase(it++);
+                //std::cout<<"refine : "<<m_removeList.size()<<std::endl;
+            }
             cmpt--;
         }
         else
@@ -324,8 +327,8 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
 
         it->second->Subdivide();
 
-        if(it->second->IsMinimalPrecision())
-            m_removeList[it->second->GetNodeID()] = it->second;
+        //if(it->second->IsMinimalPrecision())
+        //m_removeList[it->second->GetNodeID()] = it->second;
 
         m_subdivideList.erase(it);
         it = m_subdivideList.begin();
