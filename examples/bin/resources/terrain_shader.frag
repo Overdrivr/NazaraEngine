@@ -30,8 +30,8 @@ void main()
 	weights /= vec3(weights.x + weights.y + weights.z);
 	
 	vec2 coord1 = uvw.zy;
-	vec2 coord2 = uvw.xy;
-	vec2 coord3 = uvw.zx;
+	vec2 coord2 = uvw.xz;
+	vec2 coord3 = uvw.yx;
 	
 	vec4 col1 = texture2D(terrainTexture,coord1);
 	vec4 col2 = texture2D(terrainTexture,coord2);

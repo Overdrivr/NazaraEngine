@@ -30,12 +30,12 @@ struct id
     id() : lvl(0), sx(0), sy(0)
     {
     }
-    id(unsigned int level, unsigned int sizex, unsigned int sizey) : lvl(level), sx(sizex), sy(sizey)
+    id(int level, int sizex, int sizey) : lvl(level), sx(sizex), sy(sizey)
     {
     }
-    unsigned int lvl;
-    unsigned int sx;
-    unsigned int sy;
+    int lvl;
+    int sx;
+    int sy;
 
     bool operator<( const id& ID ) const
     {

@@ -61,6 +61,8 @@ class NAZARA_API NzTerrainQuadTree
 
         void AddLeaveToSubdivisionList(NzTerrainNode* node);
 
+        void AddNodeToDynamicList(NzTerrainNode* node);
+
         //Returns -1 if the distance to the camera is too big
         //or the radius index otherwise
         int TransformDistanceToCameraInRadiusIndex(float distance);

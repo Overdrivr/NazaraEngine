@@ -158,8 +158,6 @@ NzTerrainNode* NzTerrainNode::GetNeighbor(nzDirection direction)
         return nullptr;
     }
 
-    ///NE RENVOIE 1 QUE SI IL Y A UN NODE VOISIN DE MEME PROFONDEUR, SINON 0
-
     id tempID;
     tempID = m_nodeID;
     int counter = 0;
@@ -236,7 +234,7 @@ NzTerrainNode* NzTerrainNode::GetParent()
     return m_parent;
 }
 
-void NzTerrainNode::HierarchicalSubdivide(unsigned int maxDepth)
+void NzTerrainNode::HierarchicalSubdivide(unsigned int maxDepth, bool registerAsDynamic)
 {
     if(!m_isInitialized)
     {
@@ -249,16 +247,16 @@ void NzTerrainNode::HierarchicalSubdivide(unsigned int maxDepth)
         if(m_nodeID.lvl < maxDepth)
         {
             //m_doNotRefine = true;
-            this->Subdivide();
+            this->Subdivide(registerAsDynamic);
 
             for(int i(0) ; i < 4 ; ++i)
-                m_children[i]->HierarchicalSubdivide(maxDepth);
+                m_children[i]->HierarchicalSubdivide(maxDepth,registerAsDynamic);
         }
     }
     else
     {
         for(int i(0) ; i < 4 ; ++i)
-            m_children[i]->HierarchicalSubdivide(maxDepth);
+            m_children[i]->HierarchicalSubdivide(maxDepth,registerAsDynamic);
     }
 }
 
@@ -383,7 +381,7 @@ void NzTerrainNode::HierarchicalSlopeBasedSubdivide(unsigned int maxDepth)
     }
 }
 
-bool NzTerrainNode::Subdivide()
+bool NzTerrainNode::Subdivide(bool registerAsDynamic)
 {
     if(!m_isInitialized)
     {
@@ -396,6 +394,9 @@ bool NzTerrainNode::Subdivide()
         m_isLeaf = false;
         m_data->quadtree->UnRegisterLeaf(this);
         this->DeletePatch();
+
+        if(registerAsDynamic)
+            m_data->quadtree->AddNodeToDynamicList(this);
 
         if(m_children[TOPLEFT] == nullptr)
         {
@@ -411,9 +412,9 @@ bool NzTerrainNode::Subdivide()
             //cout<<"creating topleft "<<m_nodeID.lvl+1<<endl;
 
             //On vérifie que le voisin de gauche est suffisamment subdivisé/refiné pour qu'il y ait au max 1 niveau d'écart entre les 2
-            m_children[TOPLEFT]->HandleNeighborSubdivision(LEFT);
+            m_children[TOPLEFT]->HandleNeighborSubdivision(LEFT,registerAsDynamic);
             //Traitement du voisin TOP
-            m_children[TOPLEFT]->HandleNeighborSubdivision(TOP);
+            m_children[TOPLEFT]->HandleNeighborSubdivision(TOP,registerAsDynamic);
         }
         else
         {
@@ -428,8 +429,8 @@ bool NzTerrainNode::Subdivide()
             m_children[TOPRIGHT]->m_isLeaf = true;
             m_data->quadtree->RegisterLeaf(m_children[TOPRIGHT]);
             //cout<<"creating topright "<<m_nodeID.lvl+1<<endl;
-            m_children[TOPRIGHT]->HandleNeighborSubdivision(RIGHT);
-            m_children[TOPRIGHT]->HandleNeighborSubdivision(TOP);
+            m_children[TOPRIGHT]->HandleNeighborSubdivision(RIGHT,registerAsDynamic);
+            m_children[TOPRIGHT]->HandleNeighborSubdivision(TOP,registerAsDynamic);
 
         }
         else
@@ -445,8 +446,8 @@ bool NzTerrainNode::Subdivide()
             m_children[BOTTOMLEFT]->m_isLeaf = true;
             m_data->quadtree->RegisterLeaf(m_children[BOTTOMLEFT]);
             //cout<<"creating bottomleft "<<m_nodeID.lvl+1<<endl;
-            m_children[BOTTOMLEFT]->HandleNeighborSubdivision(LEFT);
-            m_children[BOTTOMLEFT]->HandleNeighborSubdivision(BOTTOM);
+            m_children[BOTTOMLEFT]->HandleNeighborSubdivision(LEFT,registerAsDynamic);
+            m_children[BOTTOMLEFT]->HandleNeighborSubdivision(BOTTOM,registerAsDynamic);
         }
         else
         {
@@ -461,8 +462,8 @@ bool NzTerrainNode::Subdivide()
             m_children[BOTTOMRIGHT]->m_isLeaf = true;
             m_data->quadtree->RegisterLeaf(m_children[BOTTOMRIGHT]);
             //cout<<"creating bottomright "<<m_nodeID.lvl+1<<endl;
-            m_children[BOTTOMRIGHT]->HandleNeighborSubdivision(RIGHT);
-            m_children[BOTTOMRIGHT]->HandleNeighborSubdivision(BOTTOM);
+            m_children[BOTTOMRIGHT]->HandleNeighborSubdivision(RIGHT,registerAsDynamic);
+            m_children[BOTTOMRIGHT]->HandleNeighborSubdivision(BOTTOM,registerAsDynamic);
 
         }
         else
@@ -502,8 +503,7 @@ bool NzTerrainNode::Refine()
     //Impossible de refiner si les voisins ne sont pas d'accord
     for(int i(0) ; i < 4 ; ++i)
     {
-        //FIX ME : LUT !
-        switch(m_location)
+        switch(m_children[i]->m_location)
         {
             case TOPLEFT:
                 first = TOP;
@@ -534,6 +534,7 @@ bool NzTerrainNode::Refine()
              if(!temp->m_isLeaf)
                 return false;//Abandon, le refine va causer une différence de profondeur > 2
         }
+
         temp = m_children[i]->GetNeighbor(second);
         //Si il y a un node voisin de niveau égal
         if(temp != nullptr)
@@ -586,7 +587,7 @@ bool NzTerrainNode::HierarchicalRefine()
 
 }
 
-void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction)
+void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction, bool registerAsDynamic)
 {
     if(!m_isInitialized)
     {
@@ -662,7 +663,7 @@ void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction)
                 {
                     //cout<<"Resubdivision de "<<tempID.lvl<<"|"<<tempID.sx<<"|"<<tempID.sy<<" de "<<counter<<" niveau(x)"<<endl;
                     //On subdivise la cellule jusqu'à atteindre le bon niveau
-                    tempNode->HierarchicalSubdivide(m_nodeID.lvl-1);
+                    tempNode->HierarchicalSubdivide(m_nodeID.lvl-1,registerAsDynamic);
                     //La subdivision a généré une interface, le node le plus subdivisé (cad this) doit s'adapter
                     //std::cout<<"Add interface 1 w/ dir"<<direction<<std::endl;
                     m_patch->SetConfiguration(direction,1);

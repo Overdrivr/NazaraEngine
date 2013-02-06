@@ -263,7 +263,7 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
     //m_removeList.clear();
 
     //A chaque frame, on recalcule quels noeuds sont dans le périmètre de la caméra
-    m_root->HierarchicalAddToCameraList(cameraFOV.GetBoundingCube(),5);
+    m_root->HierarchicalAddToCameraList(cameraFOV.GetBoundingCube(),3);
 
     /*if(!m_subdivideList.empty())
         std::cout<<"Subdivisions amount : "<<m_subdivideList.size()<<std::endl;*/
@@ -332,10 +332,7 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
         if(it == m_subdivideList.end())
             break;
 
-        it->second->Subdivide();
-
-        //if(it->second->IsMinimalPrecision())
-        m_removeList[it->second->GetNodeID()] = it->second;
+        it->second->Subdivide(true);
 
         m_subdivideList.erase(it);
         it = m_subdivideList.begin();
@@ -372,6 +369,11 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
 void NzTerrainQuadTree::AddLeaveToSubdivisionList(NzTerrainNode* node)
 {
     m_subdivideList[node->GetNodeID()] = node;
+}
+
+void NzTerrainQuadTree::AddNodeToDynamicList(NzTerrainNode* node)
+{
+    m_removeList[node->GetNodeID()] = node;
 }
 
 int NzTerrainQuadTree::TransformDistanceToCameraInRadiusIndex(float distance)
