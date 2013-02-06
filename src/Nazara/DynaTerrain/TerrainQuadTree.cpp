@@ -117,6 +117,11 @@ void NzTerrainQuadTree::ReturnNodeToPool(NzTerrainNode* node)
     if(it != m_removeList.end())
         m_removeList.erase(it);
 
+    it = m_nodesMap.find(node->GetNodeID());
+
+    if(it != m_nodesMap.end())
+        m_nodesMap.erase(it);
+
     m_nodesPool.ReturnObjectPtr(node);
 }
 
@@ -241,7 +246,7 @@ bool NzTerrainQuadTree::UnRegisterNode(NzTerrainNode* node)
 
 void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
 {
-    float radius = 50.f;
+    float radius = 100.f;
 
     //Une optimisation potentielle à mettre en oeuvre : Au lieu de tester l'ensemble de l'arbre contre le périmètre caméra
     //On teste d'abord l'ensemble de l'arbre sur le périmètre le plus grand
@@ -252,12 +257,13 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
     //Ce qui est peut probable, mais à tester quand même
 
     NzSpheref cameraFOV(cameraPosition,radius);
+    NzSpheref cameraFOVLarge(cameraPosition,radius*1.7);
 
     //m_subdivideList.clear();
     //m_removeList.clear();
 
     //A chaque frame, on recalcule quels noeuds sont dans le périmètre de la caméra
-    m_root->HierarchicalAddToCameraList(cameraFOV.GetBoundingCube(),2);
+    m_root->HierarchicalAddToCameraList(cameraFOV.GetBoundingCube(),5);
 
     /*if(!m_subdivideList.empty())
         std::cout<<"Subdivisions amount : "<<m_subdivideList.size()<<std::endl;*/
@@ -286,7 +292,7 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
     */
 
     ///On refine les nodes nécessaires
-    /*it = m_removeList.begin();
+    it = m_removeList.begin();
     int cmpt = 2;
     while(it != m_removeList.end() && cmpt > 0)
     {
@@ -296,7 +302,8 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
         if(it->second == nullptr)
             std::cout<<"problem node == nullptr"<<std::endl;
 
-        if(!cameraFOV.Contains(it->second->GetAABB()) && !cameraFOV.Intersect(it->second->GetAABB()))
+        if(!cameraFOVLarge.GetBoundingCube().Contains(it->second->GetAABB()) && !cameraFOVLarge.GetBoundingCube().Intersect(it->second->GetAABB()))
+        //if(!cameraFOV.Contains(it->second->GetAABB().GetCenter()))
         {
             //std::cout<<"Starting refine"<<std::endl;
             if(it->second->HierarchicalRefine())
@@ -309,7 +316,7 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
         else
            it++;
 
-    }*/
+    }
 
     ///En limitant le temps accordé au terrain par frame
     ///Pas mieux, car la précisions des horloges est limitée, ne pas descendre en dessous d'1 ms
@@ -328,7 +335,7 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
         it->second->Subdivide();
 
         //if(it->second->IsMinimalPrecision())
-        //m_removeList[it->second->GetNodeID()] = it->second;
+        m_removeList[it->second->GetNodeID()] = it->second;
 
         m_subdivideList.erase(it);
         it = m_subdivideList.begin();

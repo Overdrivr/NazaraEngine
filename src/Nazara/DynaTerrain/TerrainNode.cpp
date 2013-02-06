@@ -491,6 +491,9 @@ bool NzTerrainNode::Refine()
     {
         if(!m_children[i]->m_isLeaf)
             return false;
+
+        if(m_children[i]->m_doNotRefine)
+            return false;
     }
 
     nzDirection first, second;
