@@ -150,7 +150,7 @@ const NzVector2f& NzTerrainNode::GetCenter() const
     return m_center;
 }
 
-NzTerrainNode* NzTerrainNode::GetNeighbor(nzDirection direction)
+NzTerrainNode* NzTerrainNode::GetDirectNeighbor(nzDirection direction)
 {
      if(!m_isInitialized)
     {
@@ -526,7 +526,7 @@ bool NzTerrainNode::Refine()
             break;
 
         }
-        temp = m_children[i]->GetNeighbor(first);
+        temp = m_children[i]->GetDirectNeighbor(first);
         //Si il y a un node voisin de niveau égal
         if(temp != nullptr)
         {
@@ -535,7 +535,7 @@ bool NzTerrainNode::Refine()
                 return false;//Abandon, le refine va causer une différence de profondeur > 2
         }
 
-        temp = m_children[i]->GetNeighbor(second);
+        temp = m_children[i]->GetDirectNeighbor(second);
         //Si il y a un node voisin de niveau égal
         if(temp != nullptr)
         {
@@ -545,17 +545,58 @@ bool NzTerrainNode::Refine()
         }
     }
 
+    //On supprime les fils
     for(int i(0) ; i < 4 ; ++i)
     {
         m_children[i]->DeletePatch();
         m_data->quadtree->ReturnNodeToPool(m_children[i]);
         m_children[i] = nullptr;
     }
+
+    //Ce node devient leaf
     m_isLeaf = true;
     m_data->quadtree->RegisterLeaf(this);
     CreatePatch();
     m_patch->UploadMesh();
 
+    //On met à jour les interfaces
+    nzDirection dirDirection[4] = {TOP,BOTTOM,LEFT,RIGHT};
+    nzDirection invDirection[4] = {BOTTOM,TOP,RIGHT,LEFT};
+
+    //Contains location of neighbor's children in contact with (*this)
+    nzLocation locLUT[4][2] =  {{BOTTOMLEFT,BOTTOMRIGHT},//TOP Neighbour
+                                {TOPLEFT   ,TOPRIGHT},//BOTTOM Neighbour
+                                {TOPRIGHT  ,BOTTOMRIGHT},//LEFT Neighbour
+                                {TOPLEFT   ,BOTTOMLEFT}};//RIGHT Neighbour
+
+    for(int i(0) ; i < 4 ; ++i)
+    {
+        //On signale aux voisins le refinement
+        temp = this->GetDirectNeighbor(dirDirection[i]);
+
+        if(temp != nullptr)
+        {
+            if(temp->m_isLeaf)
+            {
+                //This et son voisin auront le même niveau, on supprime l'interface ?
+                //temp->m_patch->SetConfiguration(invDirection[i],0);
+            }
+            else
+            {
+                //This aura un niveau inférieur, on indique aux fils du voisin de générer une interface :
+                if(temp->m_children[locLUT[i][0]]->m_isLeaf)
+                {
+                    temp->m_children[locLUT[i][0]]->m_patch->SetConfiguration(invDirection[i],1);
+                }
+
+                if(temp->m_children[locLUT[i][1]]->m_isLeaf)
+                {
+                    temp->m_children[locLUT[i][1]]->m_patch->SetConfiguration(invDirection[i],1);
+                }
+            }
+
+        }
+    }
     //std::cout<<"Refined : "<<m_nodeID.lvl<<"|"<<m_nodeID.sx<<"|"<<m_nodeID.sy<<std::endl;
 
     return true;

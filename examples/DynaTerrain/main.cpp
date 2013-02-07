@@ -32,8 +32,8 @@ int main()
     // On créé la configuration du terrain
     NzTerrainQuadTreeConfiguration myConfig;
 
-    myConfig.slopeMaxDepth = 1;//La précision maximale en cas de très forte pente
-    myConfig.minimumDepth = 1;//La précision minimale du terrain
+    myConfig.slopeMaxDepth = 4;//La précision maximale en cas de très forte pente
+    myConfig.minimumDepth = 2;//La précision minimale du terrain
     myConfig.terrainHeight = 1000.f;//La hauteur maximale du terrain
 
     //Configurer correctement un terrain est complexe pour l'instant
@@ -45,12 +45,14 @@ int main()
     NzTerrainQuadTree quad(myConfig,NzVector2f(0.f,0.f),&source);
     cout<<"Initializing terrain, please wait..."<<endl;
     //On initialise le terrain, en lui indiquant les chemins vers les shaders
+    //quad.Initialize("resources/terrain_shader.vert","resources/terrain_shader.frag","resources/debug_texture_flat.png");
     quad.Initialize("resources/terrain_shader.vert","resources/terrain_shader.frag","resources/debug_grid2.png");
     //quad.Initialize("resources/terrain_shader.vert","resources/terrain_shader.frag","resources/dt_tiles.jpg");
 
-    std::cout<<"refine test"<<std::endl;
+    //std::cout<<"refine : first attempt : "<< quad.GetRootNode()->HierarchicalRefine() <<std::endl;
+    //std::cout<<"refine : second attempt : "<< quad.GetRootNode()->HierarchicalRefine() <<std::endl;
     //quad.GetRootNode()->HierarchicalRefine();
-    std::cout<<"resubdivide test"<<std::endl;
+    //std::cout<<"resubdivide test"<<std::endl;
     //quad.GetRootNode()->HierarchicalSubdivide(3);
 
 
@@ -88,6 +90,7 @@ int main()
 	window.SetCursor(nzWindowCursor_None);
 	bool windowOpen = true;
     bool drawWireframe = false;
+    bool terrainUpdate = true;
 
 
 	// On peut commencer la boucle du programme
@@ -171,6 +174,10 @@ int main()
 							}
 							break;
 
+                        case NzKeyboard::F2:
+                            terrainUpdate = !terrainUpdate;
+                            break;
+
 						default:
 							break;
 					}
@@ -240,7 +247,8 @@ int main()
         NzRenderer::SetMatrix(nzMatrixType_World, matrix);
 
         //On met à jour le terrain
-        quad.Update(camera.GetTranslation());
+        if(terrainUpdate)
+            quad.Update(camera.GetTranslation());
 
         //On dessine le terrain
         quad.Render();

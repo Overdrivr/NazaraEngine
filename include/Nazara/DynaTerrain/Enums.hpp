@@ -17,12 +17,12 @@ enum nzLocation
 
 enum nzDirection
 {
-    TOP,
-    BOTTOM,
-    LEFT,
-    RIGHT,
-    VERTICAL,
-    HORIZONTAL
+    TOP = 0,
+    BOTTOM = 1,
+    LEFT = 2,
+    RIGHT = 3,
+    VERTICAL = 4,
+    HORIZONTAL = 5
 };
 
 struct id

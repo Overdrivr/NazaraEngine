@@ -38,7 +38,7 @@ class NAZARA_API NzTerrainNode
         NzTerrainNode* GetChild(nzLocation location);
         NzTerrainNode* GetChild(unsigned int i);
         unsigned int GetLevel() const;
-        NzTerrainNode* GetNeighbor(nzDirection direction);
+        NzTerrainNode* GetDirectNeighbor(nzDirection direction);
         static int GetNodeAmount();
         const id& GetNodeID() const;
         NzTerrainNode* GetParent();
