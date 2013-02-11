@@ -33,21 +33,13 @@ class NAZARA_API NzWorley2D : public NzAbstract2DNoise
         std::map<float,NzVector2f>::iterator it;
         std::minstd_rand0 randomNumberGenerator;
         float scale[4];
-
         worleyFunction m_function;
 
         int seed;
         int x0, y0;
         int ii, jj;
         float fractx, fracty;
-        /*
-        int gi0,gi1,gi2,gi3;
-        float gradient2[8][2];
-        float s,t,u,v;
-        float Cx,Cy;
-        float Li1, Li2;
-        NzVector2<float> temp;*/
 };
 
-#endif // PERLIN2D_HPP
+#endif // WORLEY2D_HPP
 
