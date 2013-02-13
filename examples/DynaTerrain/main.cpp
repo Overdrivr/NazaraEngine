@@ -5,12 +5,14 @@
 #include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
 #include <Nazara/DynaTerrain/TerrainQuadTreeConfiguration.hpp>
 #include <iostream>
+#include <sstream>
 #include "MyHeightSource.hpp"
 
 using namespace std;
 
 int main()
 {
+
     // Cette ligne active le mode de compatibilité d'OpenGL lors de l'initialisation de Nazara (Nécessaire pour le shader)
 	NzContextParameters::defaultCompatibilityProfile = true;
 	NzInitializer<Nz3D> nazara;
@@ -27,14 +29,18 @@ int main()
     // On instancie notre source de hauteur personnalisée, définissant la hauteur du terrain en tout point
     MyHeightSource source;
     // La source peut charger des données manuelles grâce à cette méthode
-    source.LoadTerrainFile("resources/terrain.hsd");
+    //source.LoadTerrainFile("resources/terrain.hsd");
 
     // On créé la configuration du terrain
     NzTerrainQuadTreeConfiguration myConfig;
 
-    myConfig.slopeMaxDepth = 4;//La précision maximale en cas de très forte pente
+    myConfig.slopeMaxDepth = 6;//La précision maximale en cas de très forte pente
     myConfig.minimumDepth = 2;//La précision minimale du terrain
     myConfig.terrainHeight = 1000.f;//La hauteur maximale du terrain
+    myConfig.closeCameraDepth = 5;
+    myConfig.farCameraDepth = 3;
+    myConfig.startRadius = 20.f;
+    myConfig.effectRadius = 200.f;
 
     //Configurer correctement un terrain est complexe pour l'instant
     //Si la configuration n'est pas bonne, pas de problème on utilise une configuration par défaut
@@ -45,6 +51,7 @@ int main()
     NzTerrainQuadTree quad(myConfig,NzVector2f(0.f,0.f),&source);
     cout<<"Initializing terrain, please wait..."<<endl;
     //On initialise le terrain, en lui indiquant les chemins vers les shaders
+    //quad.Initialize("resources/terrain_shader.vert","resources/terrain_shader.frag","resources/debug_texture2.png");
     //quad.Initialize("resources/terrain_shader.vert","resources/terrain_shader.frag","resources/debug_texture_flat.png");
     quad.Initialize("resources/terrain_shader.vert","resources/terrain_shader.frag","resources/debug_grid2.png");
     //quad.Initialize("resources/terrain_shader.vert","resources/terrain_shader.frag","resources/dt_tiles.jpg");
@@ -66,6 +73,7 @@ int main()
     NzString windowTitle("DynaTerrain example");
 	NzRenderWindow window(NzVideoMode(800,600,32),windowTitle,nzWindowStyle_Default);
 	window.SetFramerateLimit(100);
+	window.EnableVerticalSync(false);
 	NzRenderer::SetMatrix(nzMatrixType_Projection, NzMatrix4f::Perspective(NzDegrees(70.f), static_cast<float>(window.GetWidth())/window.GetHeight(), 1.f, 10000.f));
 
 	NzClock secondClock, updateClock; // Des horloges pour gérer le temps

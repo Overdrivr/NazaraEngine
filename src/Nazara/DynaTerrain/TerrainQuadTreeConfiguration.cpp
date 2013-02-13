@@ -24,9 +24,9 @@ NzTerrainQuadTreeConfiguration::NzTerrainQuadTreeConfiguration()
     //La précision au plus loin de la caméra
     farCameraDepth = 4;
     //La distance sur laquelle la précision de la caméra va décroitre
-    effectRadius = 300.f;
+    effectRadius = 500.f;
     //Le rayon de précision maximale autour de la caméra (le rayon d'influence de la caméra est donc ici 300 + 30 = 330.f)
-    startRadius = 30.f;
+    startRadius = 50.f;
 }
 
 NzTerrainQuadTreeConfiguration::~NzTerrainQuadTreeConfiguration()

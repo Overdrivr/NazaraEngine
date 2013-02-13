@@ -23,13 +23,11 @@ class NAZARA_API NzPatch
         NzPatch();
         ~NzPatch();
 
-        NzVector2f GetCenter() const;
-        float GetSize() const;
         NzCubef& GetAABB();
         const NzCubef& GetAABB() const;
         float GetGlobalSlope() const;
 
-        void Initialize(NzVector2f center, float size, id nodeID, TerrainNodeData* data);
+        void Initialize(id nodeID, TerrainNodeData* data);
         void Invalidate();
 
         void SetConfiguration(nzDirection neighborLocation, unsigned int levelDifference, bool autoUpdate = true);
@@ -46,14 +44,13 @@ class NAZARA_API NzPatch
 
         TerrainNodeData* m_data;
         id m_id;
-        NzVector2f m_center;
         NzCubef m_aabb;
-        float m_size;
         unsigned short int m_configuration;
-        std::array<float,25> m_noiseValues;
-        std::array<float,49> m_extraHeightValues;
+        std::array<NzVector3f,49> m_vertexPositions;
+        //std::array<float,25> m_noiseValues;//!!
+        //std::array<float,49> m_extraHeightValues;//!!
         std::array<NzVector3f,25> m_vertexNormals;
-        std::array<float,150> m_uploadedData;
+        std::array<float,150> m_uploadedData;//Static ?
         float m_slope;
         bool m_isUploaded;
         bool m_isInitialized;

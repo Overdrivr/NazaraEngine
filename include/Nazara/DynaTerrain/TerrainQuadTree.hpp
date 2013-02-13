@@ -38,6 +38,7 @@ class NAZARA_API NzTerrainQuadTree
         NzTerrainNode* GetNode(id nodeID);
         NzTerrainNode* GetRootNode();
         unsigned int GetSubdivisionsAmount();
+        NzVector3f GetVertexPosition(id ID, int x, int y);
 
         void Initialize(const NzString& vertexShader, const NzString& fragmentShader, const NzString& terrainTilesTexture);
 
@@ -100,6 +101,11 @@ class NAZARA_API NzTerrainQuadTree
         bool m_isInitialized;
 
         unsigned int m_maxOperationsPerFrame;
+
+        std::vector<NzCubef> cameraFOVSubdivision;
+        std::vector<NzCubef> cameraFOVRefine;
+
+        NzVector3f m_globalNormal;
 };
 
 #endif // NAZARA_TERRAINQUADTREE_HPP

@@ -12,6 +12,7 @@
 #include <Nazara/Renderer/Renderer.hpp>
 #include <iostream>
 #include <cmath>
+#include <Nazara/Renderer/DebugDrawer.hpp>
 #include <Nazara/DynaTerrain/Debug.hpp>
 
 using namespace std;
@@ -35,7 +36,7 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& confi
     m_dispatcher.Initialize(m_configuration.minimumDepth,m_buffersAmount);
 
     m_root = m_nodesPool.GetObjectPtr();
-    m_root->Initialize(&m_data,nullptr,terrainCenter,m_configuration.terrainSize);
+    m_root->Initialize(&m_data,nullptr);
     m_leaves.push_back(m_root);
     m_nodesMap[id(0,0,0)] = m_root;
 
@@ -44,6 +45,23 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& confi
     m_currentCameraRadiusIndex = 0;
 
     m_subdivisionsAmount = 0;
+
+
+    float pas = m_configuration.effectRadius/(m_configuration.closeCameraDepth - m_configuration.farCameraDepth);
+    std::cout<<"pas = "<<pas<<std::endl;
+    for(int i(0) ; i < m_configuration.closeCameraDepth - m_configuration.farCameraDepth ; ++i)
+    {
+
+        int index = m_configuration.farCameraDepth - 1 + i;
+        float radius = m_configuration.startRadius + m_configuration.effectRadius - i * pas;
+        std::cout<<index<<" : "<<radius<<std::endl;
+
+        NzSpheref cameraFOV(NzVector3f(0.f,0.f,0.f),radius);
+        NzSpheref cameraFOVLarge(NzVector3f(0.f,0.f,0.f),radius * 1.5);
+        cameraFOVSubdivision.push_back(cameraFOV.GetBoundingCube());
+        cameraFOVRefine.push_back(cameraFOVLarge.GetBoundingCube());
+    }
+
 
 //??
     m_poolReallocationSize = 200;
@@ -110,12 +128,28 @@ NzTerrainNode* NzTerrainQuadTree::GetNodeFromPool()
     return m_nodesPool.GetObjectPtr();
 }
 
+NzVector3f NzTerrainQuadTree::GetVertexPosition(id ID, int x, int y)
+{
+    NzVector3f position;
+    position.x = m_configuration.terrainSize * (x * 0.25f + ID.sx) / std::pow(2,ID.lvl) - m_configuration.terrainSize/2.f;//FIX ME : Replace pow by << ?
+    position.z = m_configuration.terrainSize * (y * 0.25f + ID.sy) / std::pow(2,ID.lvl) - m_configuration.terrainSize/2.f;
+    position.y = m_heightSource->GetHeight(position.x,position.z) * m_configuration.terrainHeight;
+
+    return position;
+}
+
 void NzTerrainQuadTree::ReturnNodeToPool(NzTerrainNode* node)
 {
     std::map<id,NzTerrainNode*>::iterator it = m_removeList.find(node->GetNodeID());
 
     if(it != m_removeList.end())
         m_removeList.erase(it);
+
+    //Si la camera se déplace très rapidement, un node peut se retrouver à la fois
+    //dans la liste de subdivision et de fusion
+    it = m_subdivideList.find(node->GetNodeID());
+    if(it != m_subdivideList.end())
+        m_subdivideList.erase(it);
 
     it = m_nodesMap.find(node->GetNodeID());
 
@@ -228,6 +262,7 @@ bool NzTerrainQuadTree::UnRegisterLeaf(NzTerrainNode* node)
 
 bool NzTerrainQuadTree::UnRegisterNode(NzTerrainNode* node)
 {
+    //On supprime un node de la liste active
     std::map<id,NzTerrainNode*>::iterator it = m_nodesMap.find(node->GetNodeID());
     if(it != m_nodesMap.end())
     {
@@ -246,7 +281,7 @@ bool NzTerrainQuadTree::UnRegisterNode(NzTerrainNode* node)
 
 void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
 {
-    float radius = 500.f;
+    float radius = 300.f;
 
     //Une optimisation potentielle à mettre en oeuvre : Au lieu de tester l'ensemble de l'arbre contre le périmètre caméra
     //On teste d'abord l'ensemble de l'arbre sur le périmètre le plus grand
@@ -256,82 +291,47 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
     //Cette optimisation sera efficace si traverser l'arbre est plus lent que tester un node contre un périmètre
     //Ce qui est peut probable, mais à tester quand même
 
-    NzSpheref cameraFOV(cameraPosition,radius);
-    NzSpheref cameraFOVLarge(cameraPosition,radius*1.7);
 
-    //m_subdivideList.clear();
-    //m_removeList.clear();
+    NzClock clock;
+    nzUInt64 maxTime = 15;//ms
+    clock.Restart();
+
 
     //A chaque frame, on recalcule quels noeuds sont dans le périmètre de la caméra
-    m_root->HierarchicalAddToCameraList(cameraFOV.GetBoundingCube(),6);
+    /*for(int i(0) ; i < m_configuration.closeCameraDepth - m_configuration.farCameraDepth ; ++i)
+    {
+        cameraFOVSubdivision[i].x = cameraPosition.x - cameraFOVSubdivision[i].width/2.f;
+        cameraFOVSubdivision[i].y = cameraPosition.y - cameraFOVSubdivision[i].height/2.f;
+        cameraFOVSubdivision[i].z = cameraPosition.z - cameraFOVSubdivision[i].depth/2.f;
 
-    /*if(!m_subdivideList.empty())
-        std::cout<<"Subdivisions amount : "<<m_subdivideList.size()<<std::endl;*/
-    //if(!m_removeList.empty())
-    //std::cout<<"In Subdivided Nodes List : "<<m_removeList.size()<<std::endl;
+        cameraFOVRefine[i].x = cameraPosition.x - cameraFOVRefine[i].width/2.f;
+        cameraFOVRefine[i].y = cameraPosition.y - cameraFOVRefine[i].height/2.f;
+        cameraFOVRefine[i].z = cameraPosition.z - cameraFOVRefine[i].depth/2.f;
+        //m_root->HierarchicalAddToCameraList(cameraFOVSubdivision[0],m_configuration.farCameraDepth);
+        m_root->HierarchicalAddToCameraList(cameraFOVSubdivision[i],i + m_configuration.farCameraDepth);
+    }*/
+
+
+    cameraFOVSubdivision[0].x = cameraPosition.x - cameraFOVSubdivision[0].width/2.f;
+    cameraFOVSubdivision[0].y = cameraPosition.y - cameraFOVSubdivision[0].height/2.f;
+    cameraFOVSubdivision[0].z = cameraPosition.z - cameraFOVSubdivision[0].depth/2.f;
+
+    cameraFOVRefine[0].x = cameraPosition.x - cameraFOVRefine[0].width/2.f;
+    cameraFOVRefine[0].y = cameraPosition.y - cameraFOVRefine[0].height/2.f;
+    cameraFOVRefine[0].z = cameraPosition.z - cameraFOVRefine[0].depth/2.f;
+    m_root->HierarchicalAddToCameraList(cameraFOVSubdivision[0],7);
+
 
     //On subdivise les nodes nécessaires
     std::map<id,NzTerrainNode*>::iterator it;
 
     int subdivisionsPerFrame = 0;
 
-    ///En limitant le nombre de subdivisions par frame
-    /*
-    unsigned int maxSubdivisionsAmountPerFrame = 1;
 
-    while(subdivisionsPerFrame < maxSubdivisionsAmountPerFrame)
-    {
-        if(it == m_subdivideList.end())
-            break;
-
-        it->second->Subdivide();
-        m_subdivideList.erase(it);
-        it = m_subdivideList.begin();
-        subdivisionsPerFrame++;
-    }
-    */
-
-    ///On refine les nodes nécessaires
-    it = m_removeList.begin();
-    int cmpt = 5;
-    while(it != m_removeList.end() && cmpt > 0)
-    {
-        if(!(it->second->IsValid()))
-            std::cout<<"problem node not valid"<<std::endl;
-
-        if(it->second == nullptr)
-            std::cout<<"problem node == nullptr"<<std::endl;
-
-        if(!cameraFOVLarge.GetBoundingCube().Contains(it->second->GetAABB()) && !cameraFOVLarge.GetBoundingCube().Intersect(it->second->GetAABB()))
-        //if(!cameraFOV.Contains(it->second->GetAABB().GetCenter()))
-        {
-            //std::cout<<"Starting refine"<<std::endl;
-            if(it->second->HierarchicalRefine())
-            {
-                m_removeList.erase(it++);
-                cmpt--;
-                //std::cout<<"refine : "<<m_removeList.size()<<std::endl;
-            }
-            else
-                it++;
-
-
-        }
-        else
-           it++;
-
-    }
-
-    ///En limitant le temps accordé au terrain par frame
-    ///Pas mieux, car la précisions des horloges est limitée, ne pas descendre en dessous d'1 ms
-    ///Permet d'estimer grossièrement les performances néanmoins
-    NzClock clock;
-    nzUInt64 maxTime = 20;//ms
-    clock.Restart();
-
+    ///On subdivise les nodes
     it = m_subdivideList.begin();
 
-    while(clock.GetMilliseconds() < maxTime)
+    while(clock.GetMilliseconds() < maxTime/2.f)
     {
         if(it == m_subdivideList.end())
             break;
@@ -349,6 +349,35 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
     m_subdivisionsAmount += subdivisionsPerFrame;
 
 
+    ///On refine les nodes nécessaires
+    it = m_removeList.begin();
+    //int cmpt = 5;
+    while(clock.GetMilliseconds() < maxTime)
+    {
+        if(it == m_removeList.end())
+            break;
+
+        if(!(it->second->IsValid()))
+            std::cout<<"problem node not valid"<<std::endl;
+
+        if(it->second == nullptr)
+            std::cout<<"problem node == nullptr"<<std::endl;
+
+        if(!cameraFOVRefine[0].Contains(it->second->GetAABB()) && !cameraFOVRefine[0].Intersect(it->second->GetAABB()))
+        {
+            if(it->second->HierarchicalRefine())
+            {
+                m_removeList.erase(it++);
+                //cmpt--;
+            }
+            else
+                it++;
+        }
+        else
+           it++;
+
+    }
+
 
     //Note : cette méthode ne subdivisera pas l'arbre dans la position optimale de caméra dés la première frame
     //A chaque frame, un seul niveau sera subdivisé, ce qui étalera le travail sur plusieurs frames
@@ -356,14 +385,7 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
     //Les noeuds manquants ont quitté le périmètre, on tente de les refiner
 
     ///Autre méthode
-    //Chaque node détermine grâce à la position de la caméra :
-        //A quel rayon il appartient
-            //Si il est dans un rayon et que son niveau est trop important
-                //Il demande un refine
-            //Si il est dans un rayon et que son niveau est trop faible
-                //Il demande un subdivide
-            //Si il coupe un rayon, on teste ses enfants contre les mêmes conditions
-            //Si il ne remplit aucune des 3 conditions, on s'arrête là
+
     ///Avantage : une seule traversée de l'arbre
     ///Peut également mettre à jour l'arbre avec la variation de pente dynamique
     ///Inconvénient, l'ensemble des nodes contenus dans un rayon de la caméra seront traversés jusqu'en bas de l'arbre
@@ -384,16 +406,11 @@ int NzTerrainQuadTree::TransformDistanceToCameraInRadiusIndex(float distance)
 {
     std::cout<<distance<<std::endl;
     if(distance > m_configuration.startRadius + m_configuration.effectRadius)
-    {
         return -1;
-    }
-    else if(distance < m_configuration.startRadius)
-    {
+
+    if(distance < m_configuration.startRadius)
         return m_configuration.closeCameraDepth;
-    }
-    else
-    {
-        float pas = m_configuration.effectRadius/(m_configuration.closeCameraDepth - m_configuration.farCameraDepth);
-        return m_configuration.closeCameraDepth - 1 + static_cast<unsigned int>((distance-m_configuration.startRadius)/pas);
-    }
+
+    float pas = m_configuration.effectRadius/(m_configuration.closeCameraDepth - m_configuration.farCameraDepth);
+    return m_configuration.closeCameraDepth - 1 + static_cast<unsigned int>((distance-m_configuration.startRadius)/pas);
 }

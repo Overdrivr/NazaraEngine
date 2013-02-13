@@ -6,7 +6,6 @@ in vec3 normal;
 in vec3 position;
 
 vec2 uvTileConversion(float slope, float altitude, vec2 uv);
-//vec3 triplanarMappingContribution(vec3 normal);
 
 void main()
 {
@@ -19,10 +18,7 @@ void main()
 	
 	//Computing uvw
 	float tex_scale = 512.0;
-	vec3 uvw;
-	uvw.x = fract(position.x/tex_scale);
-	uvw.y = fract(position.y/tex_scale);
-	uvw.z = fract(position.z/tex_scale);
+	vec3 uvw = position/tex_scale;
 	
 	//Triplanar projection
 	vec3 weights = abs(normal);
@@ -44,8 +40,8 @@ void main()
 	
 	out_Color = col1 * weights.xxxx + col2 * weights.yyyy + col3 * weights.zzzz;
 	
-	
 	//out_Color = texture2D(terrainTexture,vec2(uv.y,uv.x));
+	
 	//out_Color = texture2D(terrainTexture,uvTileConversion(slope,altitude,vec2(uv.y,uv.x)));
 	
 	//Pour afficher les normales par pixel
@@ -66,8 +62,8 @@ vec2 uvTileConversion(float slope, float altitude, vec2 uv)
 	else if(slope > 0.5)
 		tile = vec2(2.0,3.0);//Rock
 	
-	vec2 output;
-	output.x = uv.x*0.25 + tile.x*0.25;
-	output.y = uv.y*0.25 + tile.y*0.25;
-	return output;
+	vec2 newUV;
+	newUV.x = uv.x*0.25 + tile.x*0.25;
+	newUV.y = uv.y*0.25 + tile.y*0.25;
+	return newUV;
 }

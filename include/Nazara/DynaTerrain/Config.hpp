@@ -30,7 +30,7 @@
 /// Chaque modification d'un paramètre du module nécessite une recompilation de celui-ci
 
 // Utilise un tracker pour repérer les éventuels leaks (Ralentit l'exécution)
-#define NAZARA_DYNATERRAIN_MEMORYLEAKTRACKER 0
+#define NAZARA_DYNATERRAIN_MEMORYLEAKTRACKER 1
 
 // Active les tests de sécurité basés sur le code (Conseillé pour le développement)
 #define NAZARA_DYNATERRAIN_SAFE 1

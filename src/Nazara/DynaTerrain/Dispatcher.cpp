@@ -174,6 +174,7 @@ NzVertexBuffer* NzDispatcher::QueryFreeBuffer()
     }
     else
     {
+        //std::cout<<"NzDispatcher::QueryFreeBuffer : Allocated New VertexBuffer"<<std::endl;
         buffer = new NzVertexBuffer(&m_declaration,262500, nzBufferStorage_Hardware, nzBufferUsage_Static);
         m_buffers.push_back(buffer);
     }

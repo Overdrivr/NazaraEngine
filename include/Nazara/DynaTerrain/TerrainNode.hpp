@@ -18,8 +18,6 @@
 class NzTerrainQuadTree;
 class NzHeightSource;
 
-//FIX ME : directement utiliser un NzRect à la place du center/size... Même occupation mémoire & + de facilité pour les tests cam
-
 class NAZARA_API NzTerrainNode
 {
     public:
@@ -33,8 +31,7 @@ class NAZARA_API NzTerrainNode
         void DebugDrawAABB(bool leafOnly = true, int level = 0);
         void DeletePatch();
 
-        NzCubef GetAABB() const;
-        const NzVector2f& GetCenter() const;
+        const NzCubef& GetAABB() const;
         NzTerrainNode* GetChild(nzLocation location);
         NzTerrainNode* GetChild(unsigned int i);
         unsigned int GetLevel() const;
@@ -42,8 +39,6 @@ class NAZARA_API NzTerrainNode
         static int GetNodeAmount();
         const id& GetNodeID() const;
         NzTerrainNode* GetParent();
-        const NzVector3f& GetRealCenter() const;
-        float GetSize() const;
 
         //void HierarchicalAddToCameraList(const NzSpheref& cameraFOV, unsigned int maximumDepth);
         void HierarchicalAddToCameraList(const NzCubef & cameraFOV, unsigned int maximumDepth);
@@ -57,7 +52,7 @@ class NAZARA_API NzTerrainNode
         bool IsRoot() const;
         bool IsRefineable() const;
         bool IsValid() const;
-        void Initialize(TerrainNodeData *data, NzTerrainNode* parent, const NzVector2f& center, float size, nzLocation loc = TOPLEFT);
+        void Initialize(TerrainNodeData *data, NzTerrainNode* parent, nzLocation loc = TOPLEFT);
         void Invalidate();
 
         bool Refine();
@@ -74,19 +69,14 @@ class NAZARA_API NzTerrainNode
         bool m_isLeaf;
         bool m_isRoot;
         bool m_patchMemoryAllocated;
-        bool m_isInitialized;//FIX ME : Améliorer management
+        bool m_isInitialized;
 
         id m_nodeID;
         NzCubef m_aabb;
         NzPatch* m_patch;
-        NzVector2f m_center;
-        NzVector3f m_realCenter;
-        float m_size;
         nzLocation m_location;
 
         static int nbNodes;
-
-        const int antiInfiniteLoop;//FIX ME : A supprimer ?
 
         /* Variables pour les fonctionnalités supplémentaires */
 
