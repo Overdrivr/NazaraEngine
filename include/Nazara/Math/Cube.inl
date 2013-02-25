@@ -61,6 +61,105 @@ bool NzCube<T>::Contains(const NzCube<T>& cube) const
 }
 
 template<typename T>
+T NzCube<T>::DistanceTo(const NzVector3<T>& point)
+{
+    int xconf = 0;
+    int yconf = 0;
+    int zconf = 0;
+
+    if(point.x >= x)
+        xconf = -2;
+    if(point.y >= y)
+        yconf = -2;
+    if(point.z >= z)
+        zconf = -2;
+    if(point.x >= x + width)
+        xconf = 1;
+    if(point.y >= y + height)
+        yconf = 1;
+    if(point.z >= z + depth)
+        zconf = 1;
+
+    if(xconf == -2 && yconf == -2 && zconf == -2)
+        return F(0.0);//Le point est dans le cube
+
+    //Distance à un coin
+    if((xconf == 0 || xconf == 1) && (yconf == 0 ||yconf == 1) && (zconf == 0 || zconf == 1))
+        return point.Distance(NzVector3<T>(x + F(xconf) * width,
+                                           y + F(yconf) * height,
+                                           z + F(zconf) * depth));
+
+    //Distance à une arrête
+        //Si il y a une seule configuration == -2, alors cette formule renvoie un chiffre < 0
+        //Si il y en a deux == -2, chiffre > 0
+        //Il ne peut pas y en avoir trois à cause du premier if
+    if((xconf + 1) * (yconf + 1) * (zconf + 1) < 0)
+    {
+        NzVector2<T> p1;
+        if(xconf == -2)
+        {
+            p1.x = point.y;
+            p1.y = point.z;
+            return p1.Distance(NzVector2<T>(y + yconf * height,
+                                            z + zconf * depth));
+        }
+        else if(yconf == -2)
+        {
+            p1.x = point.x;
+            p1.y = point.z;
+            return p1.Distance(NzVector2<T>(x + xconf * width,
+                                            z + zconf * depth));
+        }
+        else if(zconf == -2)
+        {
+            p1.x = point.x;
+            p1.y = point.y;
+            return p1.Distance(NzVector2<T>(x + xconf * width,
+                                            y + yconf * height));
+        }
+
+    }
+
+    //Distance à une face
+    switch(xconf)
+    {
+        case 0 :
+            return x - point.x;
+        break;
+
+        case 1 :
+            return point.x - (x + width);
+        break;
+    }
+
+    switch(yconf)
+    {
+        case 0 :
+            return y - point.y;
+        break;
+
+        case 1 :
+            return point.y - (y + height);
+        break;
+    }
+
+    switch(zconf)
+    {
+        case 0 :
+            return z - point.z;
+        break;
+
+        case 1 :
+            return point.z - (z + depth);
+        break;
+    }
+
+    //Problem ?
+    return F(-1.0);
+
+}
+
+template<typename T>
 NzCube<T>& NzCube<T>::ExtendTo(const NzVector3<T>& point)
 {
 	width = std::max(x + width, point.x);

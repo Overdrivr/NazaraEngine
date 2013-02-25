@@ -31,6 +31,8 @@ class NzCube
 		bool Contains(const NzVector3<T>& point) const;
 		bool Contains(const NzCube& cube) const;
 
+		T DistanceTo(const NzVector3<T>& point);
+
 		NzCube& ExtendTo(const NzVector3<T>& point);
 		NzCube& ExtendTo(const NzCube& cube);
 
