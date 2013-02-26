@@ -73,8 +73,9 @@ class NAZARA_API NzTerrainQuadTree
         TerrainNodeData m_data;
         NzDispatcher m_dispatcher;
 
-        std::vector<float> m_cameraRadiuses;
-        float m_lambda;
+        std::map<float,unsigned int> m_cameraRadiuses;
+        std::map<float,unsigned int>::iterator it;
+
 
         std::list<NzTerrainNode*> m_leaves;//Inutilisé?
 
@@ -87,8 +88,6 @@ class NAZARA_API NzTerrainQuadTree
         std::map<id,NzTerrainNode*> m_subdivideList;
         std::map<id,NzTerrainNode*> m_removeList;
 
-        unsigned int m_currentCameraRadiusIndex;//Inutilisé?
-
         unsigned int m_subdivisionsAmount;
         unsigned int m_poolReallocationSize;
         unsigned int m_poolAllocatedSpace;
@@ -98,7 +97,6 @@ class NAZARA_API NzTerrainQuadTree
         NzTexture m_terrainTexture;
 
         NzTerrainQuadTreeConfiguration m_configuration;
-        unsigned int m_buffersAmount;//Inutilisé
 
         bool m_isInitialized;
 

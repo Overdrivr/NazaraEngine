@@ -30,9 +30,6 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& confi
     m_data.heightSource = m_heightSource;
     m_data.dispatcher = &m_dispatcher;
 
-    //m_buffersAmount = 1+(600*(m_configuration.ComputeMaxPatchNumber()))/1048576;
-    //cout<<"1 Mio buffers amount : "<<m_buffersAmount<<endl;
-
     m_dispatcher.Initialize(m_configuration.minTerrainPrecision,0);
 
     m_root = m_nodesPool.GetObjectPtr();
@@ -41,8 +38,6 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& confi
     m_nodesMap[id(0,0,0)] = m_root;
 
     m_isInitialized = false;
-
-    m_currentCameraRadiusIndex = 0;
 
     m_subdivisionsAmount = 0;
 
@@ -62,18 +57,16 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& confi
         cameraFOVRefine.push_back(cameraFOVLarge.GetBoundingCube());
     }*/
 
-    std::cout<<"inc = "<<m_configuration.radiusSizeIncrement<<std::endl;
-    m_lambda = std::log(1.f / m_configuration.radiusSizeIncrement);
-    std::cout<<"lambda = "<<m_lambda<<std::endl;
+
     float radius = m_configuration.higherCameraPrecisionRadius;
 
     for(int i(0) ; i < m_configuration.cameraRadiusAmount ; ++i)
     {
-        m_cameraRadiuses.push_back(radius);
-        std::cout<<"radius "<<i<<" = "<<radius<<std::endl;
+        m_cameraRadiuses[radius] = m_configuration.higherCameraPrecision - i;
+
+        std::cout<<"radius "<<m_configuration.higherCameraPrecision - i<<" = "<<radius<<std::endl;
         radius *= m_configuration.radiusSizeIncrement;
     }
-
 
 //??
     m_poolReallocationSize = 200;
@@ -404,11 +397,16 @@ void NzTerrainQuadTree::AddNodeToRefinementList(NzTerrainNode* node)
 
 int NzTerrainQuadTree::TransformDistanceToCameraInRadiusIndex(float distance)
 {
-    if(distance > m_cameraRadiuses.back())
+    if(distance > m_cameraRadiuses.rbegin()->first)
         return -1;
 
-    if(distance < m_cameraRadiuses.front())
+    if(distance < m_cameraRadiuses.begin()->first)
         return m_configuration.higherCameraPrecision;
 
-    return static_cast<int>(m_configuration.higherCameraPrecision * std::exp(m_lambda * distance / m_configuration.higherCameraPrecisionRadius));
+    it = m_cameraRadiuses.lower_bound(distance);
+
+    if(it != m_cameraRadiuses.end())
+        return it->second;
+
+    return -2;
 }

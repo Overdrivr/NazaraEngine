@@ -81,6 +81,11 @@ unsigned int NzTerrainQuadTreeConfiguration::ComputeMaxPatchNumber() const
 
 bool NzTerrainQuadTreeConfiguration::IsValid() const
 {
-    if(radiusSizeIncrement < 2.f)
+    if(cameraRadiusAmount == 0)
         return false;
+
+    if(radiusSizeIncrement <= 0.f)
+        return false;
+
+    return true;
 }
