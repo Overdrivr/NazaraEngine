@@ -25,7 +25,6 @@ class NAZARA_API NzTerrainQuadTree
 {
     public:
         friend class NzTerrainNode;
-
         NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& configuration, const NzVector2f& terrainCenter, NzHeightSource* heightSource);
         ~NzTerrainQuadTree();
 
@@ -61,8 +60,7 @@ class NAZARA_API NzTerrainQuadTree
         bool UnRegisterNode(NzTerrainNode* node);
 
         void AddLeaveToSubdivisionList(NzTerrainNode* node);
-
-        void AddNodeToDynamicList(NzTerrainNode* node);
+        void AddNodeToRefinementList(NzTerrainNode* node);
 
         //Returns -1 if the distance to the camera is too big
         //or the radius index otherwise
@@ -75,17 +73,21 @@ class NAZARA_API NzTerrainQuadTree
         TerrainNodeData m_data;
         NzDispatcher m_dispatcher;
 
+        std::vector<float> m_cameraRadiuses;
+        float m_lambda;
+
         std::list<NzTerrainNode*> m_leaves;//Inutilisé?
 
         std::map<id,NzTerrainNode*> m_nodesMap;
         NzObjectPool<NzTerrainNode> m_nodesPool;
         NzObjectPool<NzPatch> m_patchesPool;
 
-        std::map<id,NzTerrainNode*> m_cameraList;
+        std::map<id,NzTerrainNode*> m_cameraList;//Inutilisé?
+
         std::map<id,NzTerrainNode*> m_subdivideList;
         std::map<id,NzTerrainNode*> m_removeList;
 
-        unsigned int m_currentCameraRadiusIndex;
+        unsigned int m_currentCameraRadiusIndex;//Inutilisé?
 
         unsigned int m_subdivisionsAmount;
         unsigned int m_poolReallocationSize;
@@ -96,16 +98,17 @@ class NAZARA_API NzTerrainQuadTree
         NzTexture m_terrainTexture;
 
         NzTerrainQuadTreeConfiguration m_configuration;
-        unsigned int m_buffersAmount;
+        unsigned int m_buffersAmount;//Inutilisé
 
         bool m_isInitialized;
 
         unsigned int m_maxOperationsPerFrame;
-
+/*
         std::vector<NzCubef> cameraFOVSubdivision;
-        std::vector<NzCubef> cameraFOVRefine;
+        std::vector<NzCubef> cameraFOVRefine;*/
 
         NzVector3f m_globalNormal;
+        float cameraRadiusStep;
 };
 
 #endif // NAZARA_TERRAINQUADTREE_HPP

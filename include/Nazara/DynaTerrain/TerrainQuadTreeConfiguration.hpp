@@ -20,21 +20,22 @@ class NAZARA_API NzTerrainQuadTreeConfiguration
     public:
         NzTerrainQuadTreeConfiguration();
         ~NzTerrainQuadTreeConfiguration();
-        float ComputeCameraSlope() const;
-        unsigned int ComputeMaxPatchNumber() const;
+        //float ComputeCameraSlope() const;
+        //unsigned int ComputeMaxPatchNumber() const;
         bool IsValid() const;
 
         //Terrain parameters
         float terrainSize;
-        float terrainHeight;
-        unsigned int minimumDepth;
-        //Distance to camera parameters
-        unsigned int closeCameraDepth;
-        unsigned int farCameraDepth;
-        float effectRadius;
-        //Slope variation parameters
-        unsigned int slopeMaxDepth;
-        float startRadius;
+        float maxTerrainHeight;
+
+        unsigned int minTerrainPrecision;
+
+        unsigned int maxSlopePrecision;
+
+        unsigned int higherCameraPrecision;
+        float higherCameraPrecisionRadius;
+        unsigned int cameraRadiusAmount;
+        float radiusSizeIncrement;
 
     protected:
     private:

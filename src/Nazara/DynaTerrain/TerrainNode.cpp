@@ -227,7 +227,7 @@ void NzTerrainNode::HierarchicalSubdivide(unsigned int maxDepth, bool registerAs
     {
         if(m_nodeID.lvl < maxDepth)
         {
-            //m_doNotRefine = true;//FIX ME : Pourrait être utilisé ?
+            m_doNotRefine = true;//FIX ME : Pourrait être utilisé ?
             this->Subdivide(registerAsDynamic);
 
             for(int i(0) ; i < 4 ; ++i)
@@ -367,8 +367,8 @@ bool NzTerrainNode::Subdivide(bool registerAsDynamic)
     m_data->quadtree->UnRegisterLeaf(this);
     this->DeletePatch();
 
-    if(registerAsDynamic)
-        m_data->quadtree->AddNodeToDynamicList(this);
+    //if(registerAsDynamic)
+      //  m_data->quadtree->AddNodeToDynamicList(this);
 
     if(m_children[TOPLEFT] == nullptr)
     {
@@ -695,19 +695,227 @@ void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction, bool regist
     }
 }
 
-void NzTerrainNode::HierarchicalAddToCameraList(const NzCubef& cameraFOV, unsigned int maximumDepth)
+//void NzTerrainNode::Update(const NzVector3f& cameraPosition, const NzCubef& largerFOV)
+void NzTerrainNode::Update(const NzVector3f& cameraPosition)
 {
     if(!m_isInitialized)
     {
-        std::cout<<"NzTerrainNode::HierarchicalAddToCameraList : Calling uninitialized node"<<std::endl;
+        std::cout<<"NzTerrainNode::Update : Calling uninitialized node"<<std::endl;
         return;
     }
 
+    //A) On calcule la précision optimale du node tenant compte de sa distance à la caméra
+    float distance = m_aabb.DistanceTo(cameraPosition);
+
+    int rayon = m_data->quadtree->TransformDistanceToCameraInRadiusIndex(distance);
+
+    //B) Si la précision optimale est inférieure à la précision actuelle
+        //Si le node est une feuille, on l'ajoute à la liste de subdivision
+        //Sinon on update ses enfants
+
+    //C) Si la précision optimale est (supérieure ou) égale à la précision actuelle
+        //Si le node n'est pas une feuille, on l'ajoute à la liste de fusion
+
+
+
+    //A)
+
+    //Si le node contient le rayon de caméra le plus vaste, il ne sera pas correctement traité
+    //On appelle donc directement ses enfants ou on le subdivise
+  /*  if(m_aabb.Contains(largerFOV))
+    {
+         if(m_isLeaf)
+        {
+            m_data->quadtree->AddLeaveToSubdivisionList(this);
+        }
+        else
+        {
+            for(int i(0) ; i < 4 ; ++i)
+                m_children[i]->Update(cameraPosition,largerFOV);
+        }
+
+    }
+
+    NzVector3f currentPoint = m_aabb.GetPosition();
+    float minDistance = cameraPosition.SquaredDistance(currentPoint);
+    float maxDistance = minDistance;
+
+    for(int i(0) ; i < 2 ; ++i)
+        for(int j(0) ; j < 2 ; ++j)
+            for(int k(0) ; k < 2 ; ++k)
+            {
+                currentPoint = m_aabb.GetPosition();
+                currentPoint.x += i * m_aabb.width;
+                currentPoint.y += j * m_aabb.height;
+                currentPoint.z += k * m_aabb.depth;
+                float distance = cameraPosition.SquaredDistance(currentPoint);
+                minDistance = std::min(minDistance,distance);
+                maxDistance = std::max(maxDistance,distance);
+            }
+
+    minDistance = std::sqrt(minDistance);
+    maxDistance = std::sqrt(maxDistance);
+
+    NzVector3f size = m_aabb.GetSize()/2.f;
+    minDistance = m_aabb.GetCenter().Distance(cameraPosition) - size.Length();
+
+    int rayon = m_data->quadtree->TransformDistanceToCameraInRadiusIndex(minDistance);
+
+    if(minDistance < 0)
+    {
+        //Le node est en contact avec le plus petit rayon de camera
+        std::cout<<minDistance<<" | "<<rayon<<std::endl;
+    }
+
+    if(rayon == -1)
+    {
+        if(m_doNotRefine && !m_isLeaf)
+        {
+            for(int i(0) ; i < 4 ; ++i)
+                m_children[i]->Update(cameraPosition,largerFOV);
+        }
+        else
+            return;
+    }
+*/
+   // if(m_nodeID.lvl == 0)
+        //std::cout<<m_nodeID.lvl<<"|"<<m_nodeID.sx<<"|"<<m_nodeID.sy<<" : "<<rayon<< "|" <<distance<<std::endl;
+
+
+    if(m_nodeID.lvl < rayon)//B)
+    {
+        if(m_isLeaf)
+        {
+            m_data->quadtree->AddLeaveToSubdivisionList(this);
+        }
+        else
+        {
+            for(int i(0) ; i < 4 ; ++i)
+                m_children[i]->Update(cameraPosition);
+        }
+    }
+    else if(m_nodeID.lvl >= rayon)//C)
+    {
+        if(!m_isLeaf)
+        {
+            //std::cout<<"refine : "<<m_nodeID.lvl<<"|"<<m_nodeID.sx<<"|"<<m_nodeID.sy<<std::endl;
+            //m_data->quadtree->AddNodeToRefinementList(this);
+        }
+    }
+}
+/*
+
+    //Pour chaque point de la boite, on détermine le rayon et on garde le rayon max
+    int rayon = -10;
+
+
+    for(int i(0) ; i < 2 ; ++i)
+        for(int j(0) ; j < 2 ; ++j)
+            for(int k(0) ; k < 2 ; ++k)
+            {
+                currentPoint = m_aabb.GetPosition();
+                currentPoint.x += i * m_aabb.width;
+                currentPoint.y += j * m_aabb.height;
+                currentPoint.z += k * m_aabb.depth;
+                float distance = cameraPosition.Distance(currentPoint);
+                rayon = std::max(rayon, m_data->quadtree->TransformDistanceToCameraInRadiusIndex(distance));
+            }
+
+    if(rayon < 0)
+        return;
+
+    rayon = 4;
+
+    std::cout<<m_nodeID.lvl<<"|"<<m_nodeID.sx<<"|"<<m_nodeID.sy<<" : "<<rayon<<std::endl;
+
+    if(m_nodeID.lvl < rayon)//Si le node n'est pas assez profond
+    {
+        if(m_isLeaf)
+        {
+            m_data->quadtree->AddLeaveToSubdivisionList(this);
+        }
+        else
+        {
+            for(int i(0) ; i < 4 ; ++i)
+                m_children[i]->HierarchicalAddToCameraList(cameraPosition);
+        }
+    }
+    else if(m_nodeID.lvl > rayon)//Si le node est trop profond
+    {
+        if(!m_isLeaf)
+        {
+            m_data->quadtree->AddNodeToRefinementList(this);
+        }
+    }*/
+/*
+
+    float distance = cameraFOV.GetCenter().Distance(m_aabb.GetCenter());
+    unsigned int depth = m_data->quadtree->TransformDistanceToCameraInRadiusIndex(distance);
+
+    float smallerDistance = distance - (m_aabb.GetSize()/2.f).Length();
+
+    if(smallerDistance <= 0.f)
+    {
+        //Le node contient "suffisamment" le rayon de caméra entier
+        if(m_nodeID.lvl < depth)
+        {
+            if(m_isLeaf)
+            {
+                m_data->quadtree->AddLeaveToSubdivisionList(this);
+            }
+            else
+            {
+                for(int i(0) ; i < 4 ; ++i)
+                    m_children[i]->HierarchicalAddToCameraList(cameraFOV,maximumDepth);
+            }
+        }
+        return;
+    }
+
+    unsigned int smallerDepth = m_data->quadtree->TransformDistanceToCameraInRadiusIndex(smallerDistance);
+
+    if(smallerDepth == -1)
+        return;
+
+    //Si le node est "suffisamment" contenu dans un rayon de caméra
+    if(smallerDistance == distance)
+    {
+        if(m_nodeID.lvl < depth)
+        {
+            if(m_isLeaf)
+            {
+                m_data->quadtree->AddLeaveToSubdivisionList(this);
+            }
+            else
+            {
+                for(int i(0) ; i < 4 ; ++i)
+                    m_children[i]->HierarchicalAddToCameraList(cameraFOV,maximumDepth);
+            }
+        }
+    }
+    else
+    {
+        //Le node est à cheval sur deux rayons
+        //La priorité est donnée au rayon le plus faible
+        if(m_nodeID.lvl < smallerDepth)
+        {
+            if(m_isLeaf)
+            {
+                m_data->quadtree->AddLeaveToSubdivisionList(this);
+            }
+            else
+            {
+                for(int i(0) ; i < 4 ; ++i)
+                    m_children[i]->HierarchicalAddToCameraList(cameraFOV,maximumDepth);
+            }
+        }
+    }*/
+/*
     if(cameraFOV.Contains(m_aabb))
     {
         this->HierarchicalAddAllChildrenToCameraList(maximumDepth);
     }
-    else if(cameraFOV.Intersect(m_aabb))
+    else if(cameraFOV.Intersect(m_aabb) || m_aabb.Contains(cameraFOV))
     {
         //Si c'est un node feuille, on l'ajoute à la liste
         if(m_isLeaf)
@@ -727,29 +935,9 @@ void NzTerrainNode::HierarchicalAddToCameraList(const NzCubef& cameraFOV, unsign
             }
         }
     }
-    else if(m_aabb.Contains(cameraFOV))
-    {
-        //Le rayon de la caméra est entièrement contenu dans le node
-        //Ne se produit qu'en haut de l'arbre
-         if(m_isLeaf)
-         {
-             //Si on est ici, ça veut dire que le node est largement trop peu précis
-             if(m_nodeID.lvl < maximumDepth)
-                m_data->quadtree->AddLeaveToSubdivisionList(this);
-         }
-        else
-        {
-            if(!(m_nodeID.lvl + 1 > maximumDepth))
-            {
-                //Sinon on teste ses enfants
-                for(int i(0) ; i < 4 ; ++i)
-                    m_children[i]->HierarchicalAddToCameraList(cameraFOV,maximumDepth);
-            }
-        }
-    }
+*/
     //else la méthode s'arrête là pour le node
-}
-
+/*
 void NzTerrainNode::HierarchicalAddAllChildrenToCameraList(unsigned int maximumDepth)
 {
     if(!m_isInitialized)
@@ -777,4 +965,5 @@ void NzTerrainNode::HierarchicalAddAllChildrenToCameraList(unsigned int maximumD
         }
     }
 }
+*/
 

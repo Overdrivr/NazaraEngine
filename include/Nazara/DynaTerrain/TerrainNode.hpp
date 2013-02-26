@@ -40,9 +40,10 @@ class NAZARA_API NzTerrainNode
         const id& GetNodeID() const;
         NzTerrainNode* GetParent();
 
-        //void HierarchicalAddToCameraList(const NzSpheref& cameraFOV, unsigned int maximumDepth);
-        void HierarchicalAddToCameraList(const NzCubef & cameraFOV, unsigned int maximumDepth);
-        void HierarchicalAddAllChildrenToCameraList(unsigned int maximumDepth);
+        //void Update(const NzVector3f& cameraPosition, const NzCubef& largerFOV);
+        void Update(const NzVector3f& cameraPosition);
+        //void HierarchicalAddToCameraList(const NzCubef & cameraFOV, unsigned int maximumDepth);
+        //void HierarchicalAddAllChildrenToCameraList(unsigned int maximumDepth);
         bool HierarchicalRefine();
         void HierarchicalSubdivide(unsigned int maxDepth, bool registerAsDynamic = false);
         void HierarchicalSlopeBasedSubdivide(unsigned int maxDepth);

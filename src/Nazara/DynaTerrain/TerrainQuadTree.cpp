@@ -30,14 +30,14 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& confi
     m_data.heightSource = m_heightSource;
     m_data.dispatcher = &m_dispatcher;
 
-    m_buffersAmount = 1+(600*(m_configuration.ComputeMaxPatchNumber()))/1048576;
-    cout<<"1 Mio buffers amount : "<<m_buffersAmount<<endl;
+    //m_buffersAmount = 1+(600*(m_configuration.ComputeMaxPatchNumber()))/1048576;
+    //cout<<"1 Mio buffers amount : "<<m_buffersAmount<<endl;
 
-    m_dispatcher.Initialize(m_configuration.minimumDepth,m_buffersAmount);
+    m_dispatcher.Initialize(m_configuration.minTerrainPrecision,0);
 
     m_root = m_nodesPool.GetObjectPtr();
     m_root->Initialize(&m_data,nullptr);
-    m_leaves.push_back(m_root);
+    m_leaves.push_back(m_root);//I
     m_nodesMap[id(0,0,0)] = m_root;
 
     m_isInitialized = false;
@@ -46,20 +46,32 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& confi
 
     m_subdivisionsAmount = 0;
 
-
-    float pas = m_configuration.effectRadius/(m_configuration.closeCameraDepth - m_configuration.farCameraDepth);
-    std::cout<<"pas = "<<pas<<std::endl;
+/*
+    cameraRadiusStep = m_configuration.effectRadius/(m_configuration.closeCameraDepth - m_configuration.farCameraDepth);
+    std::cout<<"pas = "<<cameraRadiusStep<<std::endl;
     for(int i(0) ; i < m_configuration.closeCameraDepth - m_configuration.farCameraDepth ; ++i)
     {
 
         int index = m_configuration.farCameraDepth - 1 + i;
-        float radius = m_configuration.startRadius + m_configuration.effectRadius - i * pas;
+        float radius = m_configuration.startRadius + m_configuration.effectRadius - i * cameraRadiusStep;
         std::cout<<index<<" : "<<radius<<std::endl;
 
         NzSpheref cameraFOV(NzVector3f(0.f,0.f,0.f),radius);
         NzSpheref cameraFOVLarge(NzVector3f(0.f,0.f,0.f),radius * 1.5);
         cameraFOVSubdivision.push_back(cameraFOV.GetBoundingCube());
         cameraFOVRefine.push_back(cameraFOVLarge.GetBoundingCube());
+    }*/
+
+    std::cout<<"inc = "<<m_configuration.radiusSizeIncrement<<std::endl;
+    m_lambda = std::log(1.f / m_configuration.radiusSizeIncrement);
+    std::cout<<"lambda = "<<m_lambda<<std::endl;
+    float radius = m_configuration.higherCameraPrecisionRadius;
+
+    for(int i(0) ; i < m_configuration.cameraRadiusAmount ; ++i)
+    {
+        m_cameraRadiuses.push_back(radius);
+        std::cout<<"radius "<<i<<" = "<<radius<<std::endl;
+        radius *= m_configuration.radiusSizeIncrement;
     }
 
 
@@ -115,7 +127,7 @@ NzTerrainNode* NzTerrainQuadTree::GetNode(id nodeID)
 
 float NzTerrainQuadTree::GetMaximumHeight() const
 {
-    return m_configuration.terrainHeight;
+    return m_configuration.maxTerrainHeight;
 }
 
 NzTerrainNode* NzTerrainQuadTree::GetRootNode()
@@ -133,7 +145,7 @@ NzVector3f NzTerrainQuadTree::GetVertexPosition(id ID, int x, int y)
     NzVector3f position;
     position.x = m_configuration.terrainSize * (x * 0.25f + ID.sx) / std::pow(2,ID.lvl) - m_configuration.terrainSize/2.f;//FIX ME : Replace pow by << ?
     position.z = m_configuration.terrainSize * (y * 0.25f + ID.sy) / std::pow(2,ID.lvl) - m_configuration.terrainSize/2.f;
-    position.y = m_heightSource->GetHeight(position.x,position.z) * m_configuration.terrainHeight;
+    position.y = m_heightSource->GetHeight(position.x,position.z) * m_configuration.maxTerrainHeight;
 
     return position;
 }
@@ -195,10 +207,10 @@ void NzTerrainQuadTree::Initialize(const NzString& vertexShader, const NzString&
     m_shader.SendTexture(i,&m_terrainTexture);
 
     //On subdivise l'arbre équitablement au niveau minimum
-    m_root->HierarchicalSubdivide(m_configuration.minimumDepth);
+    m_root->HierarchicalSubdivide(m_configuration.minTerrainPrecision);
 
     //Si on doit améliorer l'arbre là où la pente est la plus forte, on le fait également
-    m_root->HierarchicalSlopeBasedSubdivide(m_configuration.slopeMaxDepth);
+    m_root->HierarchicalSlopeBasedSubdivide(m_configuration.maxSlopePrecision);
 
 }
 
@@ -211,7 +223,6 @@ void NzTerrainQuadTree::RegisterLeaf(NzTerrainNode* node)
     }
 }
 
-///creation du shader
 bool NzTerrainQuadTree::SetShaders(const NzString& vertexShader, const NzString& fragmentShader)
 {
     if (!m_shader.Create(nzShaderLanguage_GLSL))
@@ -221,17 +232,14 @@ bool NzTerrainQuadTree::SetShaders(const NzString& vertexShader, const NzString&
         return false;
     }
 
-    // Le fragment shader traite la couleur de nos pixels
     if (!m_shader.LoadFromFile(nzShaderType_Fragment, fragmentShader))
     {
         std::cout << "Failed to load fragment shader from file" << std::endl;
-        // À la différence des autres ressources, le shader possède un log qui peut indiquer les erreurs en cas d'échec
         std::cout << "Log: " << m_shader.GetLog() << std::endl;
         std::getchar();
         return false;
     }
 
-    // Le vertex shader (Transformation des vertices de l'espace 3D vers l'espace écran)
     if (!m_shader.LoadFromFile(nzShaderType_Vertex, vertexShader))
     {
         std::cout << "Failed to load vertex shader from file" << std::endl;
@@ -240,7 +248,6 @@ bool NzTerrainQuadTree::SetShaders(const NzString& vertexShader, const NzString&
         return false;
     }
 
-    // Une fois les codes sources de notre shader chargé, nous pouvons le compiler, afin de le rendre utilisable
     if (!m_shader.Compile())
     {
         std::cout << "Failed to compile shader" << std::endl;
@@ -256,7 +263,6 @@ bool NzTerrainQuadTree::UnRegisterLeaf(NzTerrainNode* node)
 {
     m_leaves.remove(node);
 
-    //Enlever de la liste de caméra un node si il y est déjà ??
     return true;
 }
 
@@ -293,24 +299,10 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
 
 
     NzClock clock;
-    nzUInt64 maxTime = 15;//ms
+    nzUInt64 maxTime = 100;//ms
     clock.Restart();
 
-
-    //A chaque frame, on recalcule quels noeuds sont dans le périmètre de la caméra
-    /*for(int i(0) ; i < m_configuration.closeCameraDepth - m_configuration.farCameraDepth ; ++i)
-    {
-        cameraFOVSubdivision[i].x = cameraPosition.x - cameraFOVSubdivision[i].width/2.f;
-        cameraFOVSubdivision[i].y = cameraPosition.y - cameraFOVSubdivision[i].height/2.f;
-        cameraFOVSubdivision[i].z = cameraPosition.z - cameraFOVSubdivision[i].depth/2.f;
-
-        cameraFOVRefine[i].x = cameraPosition.x - cameraFOVRefine[i].width/2.f;
-        cameraFOVRefine[i].y = cameraPosition.y - cameraFOVRefine[i].height/2.f;
-        cameraFOVRefine[i].z = cameraPosition.z - cameraFOVRefine[i].depth/2.f;
-        //m_root->HierarchicalAddToCameraList(cameraFOVSubdivision[0],m_configuration.farCameraDepth);
-        m_root->HierarchicalAddToCameraList(cameraFOVSubdivision[i],i + m_configuration.farCameraDepth);
-    }*/
-
+/*
 
     cameraFOVSubdivision[0].x = cameraPosition.x - cameraFOVSubdivision[0].width/2.f;
     cameraFOVSubdivision[0].y = cameraPosition.y - cameraFOVSubdivision[0].height/2.f;
@@ -318,15 +310,13 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
 
     cameraFOVRefine[0].x = cameraPosition.x - cameraFOVRefine[0].width/2.f;
     cameraFOVRefine[0].y = cameraPosition.y - cameraFOVRefine[0].height/2.f;
-    cameraFOVRefine[0].z = cameraPosition.z - cameraFOVRefine[0].depth/2.f;
-    m_root->HierarchicalAddToCameraList(cameraFOVSubdivision[0],7);
+    cameraFOVRefine[0].z = cameraPosition.z - cameraFOVRefine[0].depth/2.f;*/
 
+    //A chaque frame, on recalcule quels noeuds sont dans le périmètre de la caméra
+    m_root->Update(cameraPosition);
 
-    //On subdivise les nodes nécessaires
     std::map<id,NzTerrainNode*>::iterator it;
-
     int subdivisionsPerFrame = 0;
-
 
     ///On subdivise les nodes
     it = m_subdivideList.begin();
@@ -349,8 +339,31 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
     m_subdivisionsAmount += subdivisionsPerFrame;
 
 
-    ///On refine les nodes nécessaires
+     ///On refine les nodes nécessaires
     it = m_removeList.begin();
+    while(clock.GetMilliseconds() < maxTime)
+    {
+        if(it == m_removeList.end())
+            break;
+
+        if(!(it->second->IsValid()))
+            std::cout<<"problem node not valid"<<std::endl;
+
+        if(it->second == nullptr)
+            std::cout<<"problem node == nullptr"<<std::endl;
+
+        if(it->second->HierarchicalRefine())
+        {
+            m_removeList.erase(it++);
+        }
+        else
+            it++;
+    }
+
+    //std::cout<<"remove queue size : "<<m_removeList.size()<<std::endl;
+
+    ///On refine les nodes nécessaires
+    /*it = m_removeList.begin();
     //int cmpt = 5;
     while(clock.GetMilliseconds() < maxTime)
     {
@@ -376,20 +389,7 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
         else
            it++;
 
-    }
-
-
-    //Note : cette méthode ne subdivisera pas l'arbre dans la position optimale de caméra dés la première frame
-    //A chaque frame, un seul niveau sera subdivisé, ce qui étalera le travail sur plusieurs frames
-
-    //Les noeuds manquants ont quitté le périmètre, on tente de les refiner
-
-    ///Autre méthode
-
-    ///Avantage : une seule traversée de l'arbre
-    ///Peut également mettre à jour l'arbre avec la variation de pente dynamique
-    ///Inconvénient, l'ensemble des nodes contenus dans un rayon de la caméra seront traversés jusqu'en bas de l'arbre
-
+    }*/
 }
 
 void NzTerrainQuadTree::AddLeaveToSubdivisionList(NzTerrainNode* node)
@@ -397,20 +397,18 @@ void NzTerrainQuadTree::AddLeaveToSubdivisionList(NzTerrainNode* node)
     m_subdivideList[node->GetNodeID()] = node;
 }
 
-void NzTerrainQuadTree::AddNodeToDynamicList(NzTerrainNode* node)
+void NzTerrainQuadTree::AddNodeToRefinementList(NzTerrainNode* node)
 {
     m_removeList[node->GetNodeID()] = node;
 }
 
 int NzTerrainQuadTree::TransformDistanceToCameraInRadiusIndex(float distance)
 {
-    std::cout<<distance<<std::endl;
-    if(distance > m_configuration.startRadius + m_configuration.effectRadius)
+    if(distance > m_cameraRadiuses.back())
         return -1;
 
-    if(distance < m_configuration.startRadius)
-        return m_configuration.closeCameraDepth;
+    if(distance < m_cameraRadiuses.front())
+        return m_configuration.higherCameraPrecision;
 
-    float pas = m_configuration.effectRadius/(m_configuration.closeCameraDepth - m_configuration.farCameraDepth);
-    return m_configuration.closeCameraDepth - 1 + static_cast<unsigned int>((distance-m_configuration.startRadius)/pas);
+    return static_cast<int>(m_configuration.higherCameraPrecision * std::exp(m_lambda * distance / m_configuration.higherCameraPrecisionRadius));
 }
