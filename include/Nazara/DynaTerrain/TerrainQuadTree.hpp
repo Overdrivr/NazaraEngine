@@ -72,41 +72,29 @@ class NAZARA_API NzTerrainQuadTree
         NzTerrainNode* m_root;
         TerrainNodeData m_data;
         NzDispatcher m_dispatcher;
+        NzHeightSource* m_heightSource;
+        NzTexture m_terrainTexture;
+        NzTerrainQuadTreeConfiguration m_configuration;
 
         std::map<float,unsigned int> m_cameraRadiuses;
         std::map<float,unsigned int>::iterator it;
 
-
-        std::list<NzTerrainNode*> m_leaves;//Inutilisé?
-
         std::map<id,NzTerrainNode*> m_nodesMap;
+        std::list<NzTerrainNode*> m_leaves;
+
         NzObjectPool<NzTerrainNode> m_nodesPool;
         NzObjectPool<NzPatch> m_patchesPool;
 
-        std::map<id,NzTerrainNode*> m_cameraList;//Inutilisé?
-
-        std::map<id,NzTerrainNode*> m_subdivideList;
-        std::map<id,NzTerrainNode*> m_removeList;
+        std::map<id,NzTerrainNode*> m_subdivisionQueue;
+        std::map<id,NzTerrainNode*> m_refinementQueue;
 
         unsigned int m_subdivisionsAmount;
         unsigned int m_poolReallocationSize;
         unsigned int m_poolAllocatedSpace;
 
-        NzHeightSource* m_heightSource;
-
-        NzTexture m_terrainTexture;
-
-        NzTerrainQuadTreeConfiguration m_configuration;
-
         bool m_isInitialized;
 
         unsigned int m_maxOperationsPerFrame;
-/*
-        std::vector<NzCubef> cameraFOVSubdivision;
-        std::vector<NzCubef> cameraFOVRefine;*/
-
-        NzVector3f m_globalNormal;
-        float cameraRadiusStep;
 };
 
 #endif // NAZARA_TERRAINQUADTREE_HPP

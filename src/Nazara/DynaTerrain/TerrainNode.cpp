@@ -736,7 +736,7 @@ void NzTerrainNode::Update(const NzVector3f& cameraPosition)
     {
         if(!m_isLeaf)
         {
-            //std::cout<<"refine : "<<m_nodeID.lvl<<"|"<<m_nodeID.sx<<"|"<<m_nodeID.sy<<std::endl;
+            std::cout<<"refine : "<<m_nodeID.lvl<<"|"<<m_nodeID.sx<<"|"<<m_nodeID.sy<<std::endl;
             //m_data->quadtree->AddNodeToRefinementList(this);
         }
     }
