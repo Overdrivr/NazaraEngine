@@ -45,11 +45,11 @@ class NAZARA_API NzTerrainNode
         //void HierarchicalAddToCameraList(const NzCubef & cameraFOV, unsigned int maximumDepth);
         //void HierarchicalAddAllChildrenToCameraList(unsigned int maximumDepth);
         bool HierarchicalRefine();
-        void HierarchicalSubdivide(unsigned int maxDepth, bool registerAsDynamic = false);
+        void HierarchicalSubdivide(unsigned int maxDepth, bool isNotReversible = false);
         void HierarchicalSlopeBasedSubdivide(unsigned int maxDepth);
 
         bool IsLeaf() const;
-        bool IsMinimalPrecision() const;
+        //bool IsMinimalPrecision() const;
         bool IsRoot() const;
         bool IsRefineable() const;
         bool IsValid() const;
@@ -58,10 +58,10 @@ class NAZARA_API NzTerrainNode
 
         bool Refine();
 
-        bool Subdivide(bool registerAsDynamic = false);
+        bool Subdivide(bool isNotReversible = false);
 
     private:
-        void HandleNeighborSubdivision(nzDirection direction, bool registerAsDynamic = false);
+        void HandleNeighborSubdivision(nzDirection direction, bool isNotReversible = false);
         /* Variables pour le fonctionnement basique de l'arbre */
         TerrainNodeData* m_data;
         NzTerrainNode* m_parent;

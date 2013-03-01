@@ -8,6 +8,8 @@
 #include <sstream>
 #include "MyHeightSource.hpp"
 
+//Ajouter une méthode pour calculer la distance la plus proche d'une AABB
+
 using namespace std;
 
 int main()
@@ -34,13 +36,14 @@ int main()
     // On créé la configuration du terrain
     NzTerrainQuadTreeConfiguration myConfig;
 
-    myConfig.slopeMaxDepth = 6;//La précision maximale en cas de très forte pente
-    myConfig.minimumDepth = 2;//La précision minimale du terrain
-    myConfig.terrainHeight = 1000.f;//La hauteur maximale du terrain
-    myConfig.closeCameraDepth = 5;
-    myConfig.farCameraDepth = 3;
-    myConfig.startRadius = 20.f;
-    myConfig.effectRadius = 200.f;
+    myConfig.maxSlopePrecision = 4;//La précision maximale en cas de très forte pente
+    myConfig.minTerrainPrecision = 1;//La précision minimale du terrain
+    //QD NIVEAU > 1, plus de subdiv du terrain !  WHY ?
+    myConfig.maxTerrainHeight = 800.f;//La hauteur maximale du terrain
+    myConfig.higherCameraPrecision = 8;//La précision maximale engendrée par la caméra
+    myConfig.cameraRadiusAmount =8;
+    myConfig.higherCameraPrecisionRadius = 20.f;
+    myConfig.radiusSizeIncrement = 2.0f;
 
     //Configurer correctement un terrain est complexe pour l'instant
     //Si la configuration n'est pas bonne, pas de problème on utilise une configuration par défaut
@@ -48,7 +51,7 @@ int main()
         std::cout<<"Terrain configuration not valid, falling back to default."<<std::endl;
 
     //Le terrain en lui-même, aka le quadtree
-    NzTerrainQuadTree quad(myConfig,NzVector2f(0.f,0.f),&source);
+    NzTerrainQuadTree quad(myConfig,NzVector2f(500.f,500.f),&source);
     cout<<"Initializing terrain, please wait..."<<endl;
     //On initialise le terrain, en lui indiquant les chemins vers les shaders
     //quad.Initialize("resources/terrain_shader.vert","resources/terrain_shader.frag","resources/debug_texture2.png");

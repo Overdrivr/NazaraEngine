@@ -215,7 +215,7 @@ NzTerrainNode* NzTerrainNode::GetParent()
     return m_parent;
 }
 
-void NzTerrainNode::HierarchicalSubdivide(unsigned int maxDepth, bool registerAsDynamic)
+void NzTerrainNode::HierarchicalSubdivide(unsigned int maxDepth, bool isNotReversible)
 {
     if(!m_isInitialized)
     {
@@ -227,17 +227,20 @@ void NzTerrainNode::HierarchicalSubdivide(unsigned int maxDepth, bool registerAs
     {
         if(m_nodeID.lvl < maxDepth)
         {
-            m_doNotRefine = true;//FIX ME : Pourrait être utilisé ?
-            this->Subdivide(registerAsDynamic);
+            //m_doNotRefine = true;//FIX ME : Pourrait être utilisé ? Doit être affecté aux enfants
+            this->Subdivide(isNotReversible);
 
             for(int i(0) ; i < 4 ; ++i)
-                m_children[i]->HierarchicalSubdivide(maxDepth,registerAsDynamic);
+                m_children[i]->m_doNotRefine = isNotReversible;
+
+            for(int i(0) ; i < 4 ; ++i)
+                m_children[i]->HierarchicalSubdivide(maxDepth,isNotReversible);
         }
     }
     else
     {
         for(int i(0) ; i < 4 ; ++i)
-            m_children[i]->HierarchicalSubdivide(maxDepth,registerAsDynamic);
+            m_children[i]->HierarchicalSubdivide(maxDepth,isNotReversible);
     }
 }
 
@@ -245,12 +248,6 @@ bool NzTerrainNode::IsLeaf() const
 {
     return m_isLeaf;
 }
-
-bool NzTerrainNode::IsMinimalPrecision() const
-{
-    return !m_doNotRefine;
-}
-
 bool NzTerrainNode::IsRoot() const
 {
     return m_isRoot;
@@ -338,7 +335,7 @@ void NzTerrainNode::HierarchicalSlopeBasedSubdivide(unsigned int maxDepth)
                 //Alors on le subdivise
         if(m_nodeID.lvl < maxDepth && m_nodeID.lvl < static_cast<unsigned int>(m_patch->GetGlobalSlope() * m_data->quadtree->GetMaximumHeight()))
         {
-            m_doNotRefine = true;
+            m_doNotRefine = true;//FIX ME : Affecter cette valeur aux enfants plutot ?
             this->Subdivide();
 
             for(int i(0) ; i < 4 ; ++i)
@@ -352,7 +349,7 @@ void NzTerrainNode::HierarchicalSlopeBasedSubdivide(unsigned int maxDepth)
     }
 }
 
-bool NzTerrainNode::Subdivide(bool registerAsDynamic)
+bool NzTerrainNode::Subdivide(bool isNotReversible)
 {
     if(!m_isInitialized)
     {
@@ -367,9 +364,6 @@ bool NzTerrainNode::Subdivide(bool registerAsDynamic)
     m_data->quadtree->UnRegisterLeaf(this);
     this->DeletePatch();
 
-    //if(registerAsDynamic)
-      //  m_data->quadtree->AddNodeToDynamicList(this);
-
     if(m_children[TOPLEFT] == nullptr)
     {
         //On crée le premier node fils
@@ -382,9 +376,9 @@ bool NzTerrainNode::Subdivide(bool registerAsDynamic)
         m_data->quadtree->RegisterLeaf(m_children[TOPLEFT]);
 
         //On vérifie que le voisin de gauche est suffisamment subdivisé/refiné pour qu'il y ait au max 1 niveau d'écart entre les 2
-        m_children[TOPLEFT]->HandleNeighborSubdivision(LEFT,registerAsDynamic);
+        m_children[TOPLEFT]->HandleNeighborSubdivision(LEFT,isNotReversible);
         //Traitement du voisin TOP
-        m_children[TOPLEFT]->HandleNeighborSubdivision(TOP,registerAsDynamic);
+        m_children[TOPLEFT]->HandleNeighborSubdivision(TOP,isNotReversible);
     }
     else
     {
@@ -397,8 +391,8 @@ bool NzTerrainNode::Subdivide(bool registerAsDynamic)
         m_children[TOPRIGHT]->Initialize(m_data,this,TOPRIGHT);
         m_children[TOPRIGHT]->m_isLeaf = true;
         m_data->quadtree->RegisterLeaf(m_children[TOPRIGHT]);
-        m_children[TOPRIGHT]->HandleNeighborSubdivision(RIGHT,registerAsDynamic);
-        m_children[TOPRIGHT]->HandleNeighborSubdivision(TOP,registerAsDynamic);
+        m_children[TOPRIGHT]->HandleNeighborSubdivision(RIGHT,isNotReversible);
+        m_children[TOPRIGHT]->HandleNeighborSubdivision(TOP,isNotReversible);
 
     }
     else
@@ -412,8 +406,8 @@ bool NzTerrainNode::Subdivide(bool registerAsDynamic)
         m_children[BOTTOMLEFT]->Initialize(m_data,this,BOTTOMLEFT);
         m_children[BOTTOMLEFT]->m_isLeaf = true;
         m_data->quadtree->RegisterLeaf(m_children[BOTTOMLEFT]);
-        m_children[BOTTOMLEFT]->HandleNeighborSubdivision(LEFT,registerAsDynamic);
-        m_children[BOTTOMLEFT]->HandleNeighborSubdivision(BOTTOM,registerAsDynamic);
+        m_children[BOTTOMLEFT]->HandleNeighborSubdivision(LEFT,isNotReversible);
+        m_children[BOTTOMLEFT]->HandleNeighborSubdivision(BOTTOM,isNotReversible);
     }
     else
     {
@@ -426,8 +420,8 @@ bool NzTerrainNode::Subdivide(bool registerAsDynamic)
         m_children[BOTTOMRIGHT]->Initialize(m_data,this,BOTTOMRIGHT);
         m_children[BOTTOMRIGHT]->m_isLeaf = true;
         m_data->quadtree->RegisterLeaf(m_children[BOTTOMRIGHT]);
-        m_children[BOTTOMRIGHT]->HandleNeighborSubdivision(RIGHT,registerAsDynamic);
-        m_children[BOTTOMRIGHT]->HandleNeighborSubdivision(BOTTOM,registerAsDynamic);
+        m_children[BOTTOMRIGHT]->HandleNeighborSubdivision(RIGHT,isNotReversible);
+        m_children[BOTTOMRIGHT]->HandleNeighborSubdivision(BOTTOM,isNotReversible);
 
     }
     else
@@ -591,7 +585,7 @@ bool NzTerrainNode::HierarchicalRefine()
 
 }
 
-void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction, bool registerAsDynamic)
+void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction, bool isNotReversible)
 {
     if(!m_isInitialized)
     {
@@ -659,7 +653,7 @@ void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction, bool regist
                 if(counter < 200)
                 {
                     //On subdivise la cellule jusqu'à atteindre le bon niveau
-                    tempNode->HierarchicalSubdivide(m_nodeID.lvl-1,registerAsDynamic);
+                    tempNode->HierarchicalSubdivide(m_nodeID.lvl-1,isNotReversible);
                     //La subdivision a généré une interface, le node le plus subdivisé (cad this) doit s'adapter
                     m_patch->SetConfiguration(direction,1);
                 }
@@ -703,6 +697,15 @@ void NzTerrainNode::Update(const NzVector3f& cameraPosition)
         std::cout<<"NzTerrainNode::Update : Calling uninitialized node"<<std::endl;
         return;
     }
+/*
+    if(m_doNotRefine)
+    {
+        if(!m_isLeaf)
+        {
+            for(int i(0) ; i < 4 ; ++i)
+                m_children[i]->Update(cameraPosition);
+        }
+    }*/
 
     //A) On calcule la précision optimale du node tenant compte de sa distance à la caméra
     float distance = m_aabb.DistanceTo(cameraPosition);
@@ -724,10 +727,12 @@ void NzTerrainNode::Update(const NzVector3f& cameraPosition)
     {
         if(m_isLeaf)
         {
+            //std::cout<<"subdivide : "<<m_nodeID.lvl<<"|"<<m_nodeID.sx<<"|"<<m_nodeID.sy<<" : "<<rayon<< "|" <<distance<<std::endl;
             m_data->quadtree->AddLeaveToSubdivisionList(this);
         }
         else
         {
+            //std::cout<<"qualified : "<<m_nodeID.lvl<<"|"<<m_nodeID.sx<<"|"<<m_nodeID.sy<<" : "<<rayon<< "|" <<distance<<std::endl;
             for(int i(0) ; i < 4 ; ++i)
                 m_children[i]->Update(cameraPosition);
         }
@@ -736,8 +741,8 @@ void NzTerrainNode::Update(const NzVector3f& cameraPosition)
     {
         if(!m_isLeaf)
         {
-            std::cout<<"refine : "<<m_nodeID.lvl<<"|"<<m_nodeID.sx<<"|"<<m_nodeID.sy<<std::endl;
-            //m_data->quadtree->AddNodeToRefinementList(this);
+            //std::cout<<"refine : "<<m_nodeID.lvl<<"|"<<m_nodeID.sx<<"|"<<m_nodeID.sy<<" : "<<rayon<< "|" <<distance<<std::endl;
+            m_data->quadtree->AddNodeToRefinementList(this);
         }
     }
 }

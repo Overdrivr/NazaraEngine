@@ -182,7 +182,7 @@ void NzTerrainQuadTree::Initialize(const NzString& vertexShader, const NzString&
     m_shader.SendTexture(i,&m_terrainTexture);
 
     //On subdivise l'arbre équitablement au niveau minimum
-    m_root->HierarchicalSubdivide(m_configuration.minTerrainPrecision);
+    m_root->HierarchicalSubdivide(m_configuration.minTerrainPrecision,true);
 
     //Si on doit améliorer l'arbre là où la pente est la plus forte, on le fait également
     m_root->HierarchicalSlopeBasedSubdivide(m_configuration.maxSlopePrecision);
@@ -280,7 +280,7 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
         if(it == m_subdivisionQueue.end())
             break;
 
-        it->second->Subdivide(true);
+        it->second->Subdivide();
 
         m_subdivisionQueue.erase(it);
         it = m_subdivisionQueue.begin();
