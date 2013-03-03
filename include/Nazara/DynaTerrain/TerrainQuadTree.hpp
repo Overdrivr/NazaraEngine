@@ -59,8 +59,9 @@ class NAZARA_API NzTerrainQuadTree
         bool UnRegisterLeaf(NzTerrainNode* node);//Les feuilles enlevées ici doivent aussi l'être de la camera list
         bool UnRegisterNode(NzTerrainNode* node);
 
-        void AddLeaveToSubdivisionList(NzTerrainNode* node);
-        void AddNodeToRefinementList(NzTerrainNode* node);
+        void AddLeaveToSubdivisionQueue(NzTerrainNode* node);
+        void AddNodeToRefinementQueue(NzTerrainNode* node);
+        void TryRemoveNodeFromRefinementQueue(NzTerrainNode* node);
 
         //Returns -1 if the distance to the camera is too big
         //or the radius index otherwise

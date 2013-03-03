@@ -689,7 +689,6 @@ void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction, bool isNotR
     }
 }
 
-//void NzTerrainNode::Update(const NzVector3f& cameraPosition, const NzCubef& largerFOV)
 void NzTerrainNode::Update(const NzVector3f& cameraPosition)
 {
     if(!m_isInitialized)
@@ -697,52 +696,40 @@ void NzTerrainNode::Update(const NzVector3f& cameraPosition)
         std::cout<<"NzTerrainNode::Update : Calling uninitialized node"<<std::endl;
         return;
     }
-/*
-    if(m_doNotRefine)
-    {
-        if(!m_isLeaf)
-        {
-            for(int i(0) ; i < 4 ; ++i)
-                m_children[i]->Update(cameraPosition);
-        }
-    }*/
 
     //A) On calcule la précision optimale du node tenant compte de sa distance à la caméra
     float distance = m_aabb.DistanceTo(cameraPosition);
 
     int rayon = m_data->quadtree->TransformDistanceToCameraInRadiusIndex(distance);
 
+
+
+
     //B) Si la précision optimale est inférieure à la précision actuelle
         //Si le node est une feuille, on l'ajoute à la liste de subdivision
         //Sinon on update ses enfants
-
-    //C) Si la précision optimale est (supérieure ou) égale à la précision actuelle
-        //Si le node n'est pas une feuille, on l'ajoute à la liste de fusion
-
-
-    //if(m_nodeID.lvl == 0)
-    //    std::cout<<m_nodeID.lvl<<"|"<<m_nodeID.sx<<"|"<<m_nodeID.sy<<" : "<<rayon<< "|" <<distance<<std::endl;
-
-    if(m_nodeID.lvl < rayon)//B)
+            //Le fusion pouvant échouer, on garantit que le node subdivisé ne reste pas dans la file de fusion
+    if(m_nodeID.lvl < rayon)
     {
         if(m_isLeaf)
         {
-            //std::cout<<"subdivide : "<<m_nodeID.lvl<<"|"<<m_nodeID.sx<<"|"<<m_nodeID.sy<<" : "<<rayon<< "|" <<distance<<std::endl;
-            m_data->quadtree->AddLeaveToSubdivisionList(this);
+            m_data->quadtree->AddLeaveToSubdivisionQueue(this);
         }
         else
         {
-            //std::cout<<"qualified : "<<m_nodeID.lvl<<"|"<<m_nodeID.sx<<"|"<<m_nodeID.sy<<" : "<<rayon<< "|" <<distance<<std::endl;
+            m_data->quadtree->TryRemoveNodeFromRefinementQueue(this);
+
             for(int i(0) ; i < 4 ; ++i)
                 m_children[i]->Update(cameraPosition);
         }
     }
-    else if(m_nodeID.lvl >= rayon)//C)
+    //C) Si la précision optimale est supérieure ou égale à la précision actuelle
+        //Si le node n'est pas une feuille, on l'ajoute à la liste de fusion
+    else if(m_nodeID.lvl >= rayon)
     {
         if(!m_isLeaf)
         {
-            //std::cout<<"refine : "<<m_nodeID.lvl<<"|"<<m_nodeID.sx<<"|"<<m_nodeID.sy<<" : "<<rayon<< "|" <<distance<<std::endl;
-            m_data->quadtree->AddNodeToRefinementList(this);
+            m_data->quadtree->AddNodeToRefinementQueue(this);
         }
     }
 }

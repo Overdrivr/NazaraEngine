@@ -312,19 +312,26 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
         }
         else
             it++;
+
+
     }
 
     //std::cout<<"remove queue size : "<<m_removeList.size()<<std::endl;
 }
 
-void NzTerrainQuadTree::AddLeaveToSubdivisionList(NzTerrainNode* node)
+void NzTerrainQuadTree::AddLeaveToSubdivisionQueue(NzTerrainNode* node)
 {
     m_subdivisionQueue[node->GetNodeID()] = node;
 }
 
-void NzTerrainQuadTree::AddNodeToRefinementList(NzTerrainNode* node)
+void NzTerrainQuadTree::AddNodeToRefinementQueue(NzTerrainNode* node)
 {
     m_refinementQueue[node->GetNodeID()] = node;
+}
+
+void NzTerrainQuadTree::TryRemoveNodeFromRefinementQueue(NzTerrainNode* node)
+{
+    m_refinementQueue.erase(node->GetNodeID());
 }
 
 int NzTerrainQuadTree::TransformDistanceToCameraInRadiusIndex(float distance)
