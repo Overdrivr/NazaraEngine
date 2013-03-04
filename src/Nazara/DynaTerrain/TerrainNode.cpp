@@ -174,24 +174,21 @@ NzTerrainNode* NzTerrainNode::GetDirectNeighbor(nzDirection direction)
 
     NzTerrainNode* neighbor;
 
-    if(!m_data->quadtree->Contains(tempID))
+    if(m_data->quadtree->Contains(tempID))
     {
-
-        neighbor = m_data->quadtree->GetNode(tempID);
-        //Si le voisin n'existe pas (il n'y a pas de node voisin de même profondeur)
-        if(neighbor == nullptr)
-        {
-            return nullptr;
-        }
-        else
-        {
-            return neighbor;
-        }
+        return m_data->quadtree->GetNode(tempID);
     }
     else
     {
-        return nullptr;
-        //DANS LE CAS OU PLUSIEURS QUADTREE SONT RATTACHES, IL FAUT RAJOUTER DU CODE ICI
+        NzTerrainQuadTree* tempQuad = m_data->quadtree->GetContainingQuadTree(tempID);
+
+        if(tempQuad == nullptr)
+            return nullptr;
+
+        //On convertit les coordonnées du node dans celles du quadtree voisin
+        tempID = m_data->quadtree->FixIDForNeighbourQuadTree(tempID);
+
+        return tempQuad->GetNode(tempID);
     }
 }
 
@@ -594,7 +591,6 @@ void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction, bool isNotR
     }
 
     id tempID;
-    NzTerrainNode* tempNode;
     tempID = m_nodeID;
     int counter = 0;
     nzDirection invDirection = direction;
@@ -625,67 +621,80 @@ void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction, bool isNotR
         break;
     }
 
+    NzTerrainQuadTree* tempQuad;
+    NzTerrainNode* tempNode;
+
     //Si on ne cherche pas à atteindre une case externe
-    if(!m_data->quadtree->Contains(tempID))
+    if(m_data->quadtree->Contains(tempID))
     {
-
+        tempQuad = m_data->quadtree;
         tempNode = m_data->quadtree->GetNode(tempID);
-        //Si le voisin n'existe pas (il n'y a pas de node voisin de même profondeur)
-        if(tempNode == nullptr)
-        {
-            //Un niveau d'écart n'est pas suffisant pour demander une subdivision
-            tempID.lvl -= 1;
-            tempID.sx /= 2;
-            tempID.sy /= 2;
-            tempNode = m_data->quadtree->GetNode(tempID);
-
-            if(tempNode == nullptr)
-            {
-                while(tempNode == nullptr && counter < 200)
-                {
-                    counter++;
-                    tempID.lvl -= 1;
-                    tempID.sx /= 2;
-                    tempID.sy /= 2;
-                    tempNode = m_data->quadtree->GetNode(tempID);
-                }
-
-                if(counter < 200)
-                {
-                    //On subdivise la cellule jusqu'à atteindre le bon niveau
-                    tempNode->HierarchicalSubdivide(m_nodeID.lvl-1,isNotReversible);
-                    //La subdivision a généré une interface, le node le plus subdivisé (cad this) doit s'adapter
-                    m_patch->SetConfiguration(direction,1);
-                }
-                else
-                {
-                    std::cout<<"EXCEPTION : NzTerrainNode::HandleNeighborSubdivision ENTREE EN BOUCLE INFINIE"<<std::endl;
-                    return;
-                }
-            }
-            else
-            {
-                m_patch->SetConfiguration(direction,1);
-            }
-            //else la cellule voisine voisin est suffisamment divisé
-        }
-        else
-        {
-            //La subdivision a supprimé une interface de précision, on l'indique au voisin qu'il n'a plus besoin de s'adapter
-            if(tempNode->m_isLeaf)
-            {
-                tempNode->m_patch->SetConfiguration(invDirection,0);
-            }
-            else
-            {
-                //m_patch->SetConfiguration(direction,0);
-            }
-
-        }
     }
     else
     {
-        //DANS LE CAS OU PLUSIEURS QUADTREE SONT RATTACHES, IL FAUT RAJOUTER DU CODE ICI
+        tempQuad = m_data->quadtree->GetContainingQuadTree(tempID);
+
+        if(tempQuad == nullptr)
+        {
+            //Pas de quadtree voisin rattaché, donc pas de voisin à mettre à jour
+            return;
+        }
+        //On convertit les coordonnées du node dans celles du quadtree voisin
+        tempID = m_data->quadtree->FixIDForNeighbourQuadTree(tempID);
+        tempNode = tempQuad->GetNode(tempID);
+    }
+
+
+    //Si le voisin n'existe pas (il n'y a pas de node voisin de même profondeur)
+    if(tempNode == nullptr)
+    {
+        //Un niveau d'écart n'est pas suffisant pour demander une subdivision
+        tempID.lvl -= 1;
+        tempID.sx /= 2;
+        tempID.sy /= 2;
+        tempNode = tempQuad->GetNode(tempID);
+
+        if(tempNode == nullptr)
+        {
+            while(tempNode == nullptr && counter < 200)
+            {
+                counter++;
+                tempID.lvl -= 1;
+                tempID.sx /= 2;
+                tempID.sy /= 2;
+                tempNode = tempQuad->GetNode(tempID);
+            }
+
+            if(counter < 200)
+            {
+                //On subdivise la cellule jusqu'à atteindre le bon niveau
+                tempNode->HierarchicalSubdivide(m_nodeID.lvl-1,isNotReversible);
+                //La subdivision a généré une interface, le node le plus subdivisé (cad this) doit s'adapter
+                m_patch->SetConfiguration(direction,1);
+            }
+            else
+            {
+                std::cout<<"EXCEPTION : NzTerrainNode::HandleNeighborSubdivision ENTREE EN BOUCLE INFINIE"<<std::endl;
+                return;
+            }
+        }
+        else
+        {
+            m_patch->SetConfiguration(direction,1);
+        }
+        //else la cellule voisine voisin est suffisamment divisé
+    }
+    else
+    {
+        //La subdivision a supprimé une interface de précision, on l'indique au voisin qu'il n'a plus besoin de s'adapter
+        if(tempNode->m_isLeaf)
+        {
+            tempNode->m_patch->SetConfiguration(invDirection,0);
+        }
+        else
+        {
+            //m_patch->SetConfiguration(direction,0);
+        }
     }
 }
 

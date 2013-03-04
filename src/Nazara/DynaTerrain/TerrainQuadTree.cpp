@@ -12,6 +12,7 @@
 #include <iostream>
 #include <cmath>
 #include <Nazara/Renderer/DebugDrawer.hpp>
+#include <Nazara/DynaTerrain/Enums.hpp>
 #include <Nazara/DynaTerrain/Debug.hpp>
 
 using namespace std;
@@ -50,6 +51,11 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainConfiguration& configuration
         radius *= m_configuration.radiusSizeIncrement;
     }
 
+    m_neighbours[0] = nullptr;
+    m_neighbours[1] = nullptr;
+    m_neighbours[2] = nullptr;
+    m_neighbours[3] = nullptr;
+
     m_poolReallocationSize = 200;
     m_poolAllocatedSpace = 0;
     m_maxOperationsPerFrame = 0;
@@ -68,10 +74,69 @@ NzTerrainQuadTree::~NzTerrainQuadTree()
     cout<<"NbNodes non supprimes : "<<m_root->GetNodeAmount()<< endl;
 }
 
+void NzTerrainQuadTree::ConnectNeighbor(NzTerrainQuadTree* neighbour, nzDirection direction)
+{
+    nzDirection invDirection = direction;
+    switch(direction)
+    {
+        case TOP :
+            invDirection = BOTTOM;
+        break;
+
+        case RIGHT :
+            invDirection = LEFT;
+        break;
+
+        case BOTTOM :
+            invDirection = TOP;
+        break;
+
+        case LEFT :
+            invDirection = RIGHT;
+        break;
+
+        default:
+            invDirection = BOTTOM;
+        break;
+    }
+
+    m_neighbours[direction] = neighbour;
+    neighbour->m_neighbours[invDirection] = this;
+}
+
 bool NzTerrainQuadTree::Contains(id nodeId)
 {
-    //FIX ME : Wrong ?
-    return nodeId.lvl < 0 || nodeId.sx < 0 || nodeId.sy < 0 || nodeId.sx > (std::pow(2,nodeId.lvl)-1) || nodeId.sy > (std::pow(2,nodeId.lvl)-1);
+    return nodeId.lvl >= 0 && nodeId.sx >= 0 && nodeId.sy >= 0 && nodeId.sx < (std::pow(2,nodeId.lvl)) && nodeId.sy < (std::pow(2,nodeId.lvl));
+}
+
+void NzTerrainQuadTree::DisconnectNeighbor(NzTerrainQuadTree* neighbour, nzDirection direction)
+{
+    nzDirection invDirection = direction;
+    switch(direction)
+    {
+        case TOP :
+            invDirection = BOTTOM;
+        break;
+
+        case RIGHT :
+            invDirection = LEFT;
+        break;
+
+        case BOTTOM :
+            invDirection = TOP;
+        break;
+
+        case LEFT :
+            invDirection = RIGHT;
+        break;
+
+        default:
+            invDirection = BOTTOM;
+        break;
+    }
+
+    m_neighbours[direction] = nullptr;
+    neighbour->m_neighbours[invDirection] = nullptr;
 }
 
 void NzTerrainQuadTree::Render()
@@ -82,6 +147,20 @@ void NzTerrainQuadTree::Render()
 void NzTerrainQuadTree::DebugDrawAABB(bool leafOnly, int level)
 {
     m_root->DebugDrawAABB(leafOnly,level);
+}
+
+NzTerrainQuadTree* NzTerrainQuadTree::GetContainingQuadTree(id nodeID)
+{
+    if(nodeID.sx < 0)
+        return m_neighbours[LEFT];
+    if(nodeID.sy < 0)
+        return m_neighbours[TOP];
+    if(nodeID.sx > (std::pow(2,nodeID.lvl)-1))
+        return m_neighbours[RIGHT];
+    if(nodeID.sy > (std::pow(2,nodeID.lvl)-1))
+        return m_neighbours[BOTTOM];
+
+    return nullptr;
 }
 
 unsigned int NzTerrainQuadTree::GetLeafNodesAmount() const
@@ -115,10 +194,24 @@ NzTerrainNode* NzTerrainQuadTree::GetNodeFromPool()
 NzVector3f NzTerrainQuadTree::GetVertexPosition(id ID, int x, int y)
 {
     NzVector3f position;
-    position.x = m_configuration.terrainSize * (x * 0.25f + ID.sx) / std::pow(2,ID.lvl) - m_configuration.terrainSize/2.f;//FIX ME : Replace pow by << ?
-    position.z = m_configuration.terrainSize * (y * 0.25f + ID.sy) / std::pow(2,ID.lvl) - m_configuration.terrainSize/2.f;
-    position.y = m_heightSource->GetHeight(position.x,position.z) * m_configuration.maxTerrainHeight;
+    position.x = m_configuration.terrainSize * (x * 0.25f + ID.sx) / std::pow(2,ID.lvl) - m_configuration.terrainSize/2.f + m_configuration.terrainCenter.x;
+    position.z = m_configuration.terrainSize * (y * 0.25f + ID.sy) / std::pow(2,ID.lvl) - m_configuration.terrainSize/2.f + m_configuration.terrainCenter.z;
+    position.y = m_heightSource->GetHeight(position.x,position.z) * m_configuration.maxTerrainHeight + m_configuration.terrainCenter.y;
     return position;
+}
+
+id NzTerrainQuadTree::FixIDForNeighbourQuadTree(id nodeID)
+{
+    if(nodeID.sx < 0)
+        nodeID.sx += std::pow(2,nodeID.lvl);
+    if(nodeID.sy < 0)
+        nodeID.sy += std::pow(2,nodeID.lvl);
+    if(nodeID.sx > (std::pow(2,nodeID.lvl)-1))
+        nodeID.sx -= std::pow(2,nodeID.lvl);
+    if(nodeID.sy > (std::pow(2,nodeID.lvl)-1))
+        nodeID.sy -= std::pow(2,nodeID.lvl);
+
+    return nodeID;
 }
 
 void NzTerrainQuadTree::ReturnNodeToPool(NzTerrainNode* node)

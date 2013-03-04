@@ -39,6 +39,7 @@ class NAZARA_API NzDynamicTerrain
 
         NzShader m_shader;
         NzTerrainQuadTree* quadtree;
+        NzTerrainQuadTree* quadtree2;
 };
 
 #endif // NAZARA_DYNAMICTERRAIN_HPP

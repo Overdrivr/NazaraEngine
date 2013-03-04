@@ -22,6 +22,8 @@
 #include <Nazara/Core/Clock.hpp>
 #include <Nazara/Renderer/Texture.hpp>
 
+class NzTerrainQuadTree;
+
 class NAZARA_API NzTerrainQuadTree
 {
     public:
@@ -30,10 +32,15 @@ class NAZARA_API NzTerrainQuadTree
         NzTerrainQuadTree(const NzTerrainConfiguration& configuration, NzHeightSource* heightSource);
         ~NzTerrainQuadTree();
 
+        void ConnectNeighbor(NzTerrainQuadTree* neighbour, nzDirection direction);
         bool Contains(id nodeId);
 
         void DebugDrawAABB(bool leafOnly, int level);
+        void DisconnectNeighbor(NzTerrainQuadTree* neighbour, nzDirection direction);
 
+        id FixIDForNeighbourQuadTree(id nodeID);
+
+        NzTerrainQuadTree* GetContainingQuadTree(id nodeID);
         unsigned int GetLeafNodesAmount() const;
         float GetMaximumHeight() const;
         NzTerrainNode* GetNode(id nodeID);
@@ -75,6 +82,8 @@ class NAZARA_API NzTerrainQuadTree
         NzDispatcher m_dispatcher;
 
         NzTerrainNode* m_root;
+
+        NzTerrainQuadTree* m_neighbours[4];
 
         std::map<float,unsigned int> m_cameraRadiuses;
         std::map<float,unsigned int>::iterator it;

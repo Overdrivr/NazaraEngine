@@ -2,27 +2,22 @@
 #include <Nazara/Renderer/Renderer.hpp>
 #include <Nazara/Renderer/DebugDrawer.hpp>
 #include <Nazara/Renderer/RenderWindow.hpp>
-#include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
-#include <Nazara/DynaTerrain/TerrainQuadTreeConfiguration.hpp>
+#include <Nazara/DynaTerrain/DynamicTerrain.hpp>
+#include <Nazara/DynaTerrain/TerrainConfiguration.hpp>
 #include <iostream>
 #include <sstream>
 #include "MyHeightSource.hpp"
-
-//Ajouter une méthode pour calculer la distance la plus proche d'une AABB
 
 using namespace std;
 
 int main()
 {
-
-    // Cette ligne active le mode de compatibilité d'OpenGL lors de l'initialisation de Nazara (Nécessaire pour le shader)
 	NzContextParameters::defaultCompatibilityProfile = true;
 	NzInitializer<Nz3D> nazara;
 	if (!nazara)
 	{
-		// Ça n'a pas fonctionné, le pourquoi se trouve dans le fichier NazaraLog.log
 		std::cout << "Failed to initialize Nazara, see NazaraLog.log for further informations" << std::endl;
-		std::getchar(); // On laise le temps de voir l'erreur
+		std::getchar();
 		return EXIT_FAILURE;
 	}
 	NzDebugDrawer::Initialize();
@@ -33,46 +28,48 @@ int main()
     // La source peut charger des données manuelles grâce à cette méthode
     //source.LoadTerrainFile("resources/terrain.hsd");
 
-    // On créé la configuration du terrain
-    NzTerrainQuadTreeConfiguration myConfig;
+    /// On créé la configuration du terrain
+    NzTerrainConfiguration myConfig;
 
-    myConfig.maxSlopePrecision = 4;//La précision maximale en cas de très forte pente
-    myConfig.minTerrainPrecision = 1;//La précision minimale du terrain
-    //QD NIVEAU > 1, plus de subdiv du terrain !  WHY ?
+        ///Les paramètres de base
+    myConfig.terrainCenter = NzVector3f(500.f,0.f,500.f);//Le centre du terrain
+    myConfig.terrainOrientation = NzVector3f(0.f, 1.f, 0.f);//L'orientation du terrain
     myConfig.maxTerrainHeight = 800.f;//La hauteur maximale du terrain
-    myConfig.higherCameraPrecision = 8;//La précision maximale engendrée par la caméra
-    myConfig.cameraRadiusAmount =8;
-    myConfig.higherCameraPrecisionRadius = 20.f;
-    myConfig.radiusSizeIncrement = 2.0f;
+    myConfig.minTerrainPrecision = 2;//La précision minimale du terrain
+    myConfig.fragmentShader = "resources/terrain_shader.frag";
+    myConfig.vertexShader = "resources/terrain_shader.vert";
+    myConfig.terrainTexture = "resources/debug_grid2.png";//"resources/debug_texture2.png","resources/debug_texture_flat.png","resources/dt_tiles.jpg"
 
-    //Configurer correctement un terrain est complexe pour l'instant
-    //Si la configuration n'est pas bonne, pas de problème on utilise une configuration par défaut
+        ///Le paramètre lié à la précision des pentes
+    myConfig.maxSlopePrecision = 2;//La précision maximale en cas de très forte pente
+
+        ///Les paramètres liés à la précision autour de la caméra
+    myConfig.higherCameraPrecision = 12;//La précision maximale engendrée par la caméra
+    myConfig.cameraRadiusAmount = 10;//Le nombre max de rayons de précision autour de la caméra
+    myConfig.higherCameraPrecisionRadius = 5.f;//Le rayon du cercle le plus précis (à garder très petit si la précision est importante)
+    myConfig.radiusSizeIncrement = 2.0f;//L'incrément en taille entre deux rayons consécutifs
+
+    //Si la configuration n'est pas bonne, elle sera réparée au plus proche automatiquement ( TODO !)
     if(!myConfig.IsValid())
-        std::cout<<"Terrain configuration not valid, falling back to default."<<std::endl;
+        std::cout<<"Terrain configuration not valid..."<<std::endl;
 
     //Le terrain en lui-même, aka le quadtree
-    NzTerrainQuadTree quad(myConfig,NzVector2f(500.f,500.f),&source);
+    NzDynamicTerrain terrain(myConfig,&source);
+
     cout<<"Initializing terrain, please wait..."<<endl;
-    //On initialise le terrain, en lui indiquant les chemins vers les shaders
-    //quad.Initialize("resources/terrain_shader.vert","resources/terrain_shader.frag","resources/debug_texture2.png");
-    //quad.Initialize("resources/terrain_shader.vert","resources/terrain_shader.frag","resources/debug_texture_flat.png");
-    quad.Initialize("resources/terrain_shader.vert","resources/terrain_shader.frag","resources/debug_grid2.png");
-    //quad.Initialize("resources/terrain_shader.vert","resources/terrain_shader.frag","resources/dt_tiles.jpg");
 
-    //std::cout<<"refine : first attempt : "<< quad.GetRootNode()->HierarchicalRefine() <<std::endl;
-    //std::cout<<"refine : second attempt : "<< quad.GetRootNode()->HierarchicalRefine() <<std::endl;
-    //quad.GetRootNode()->HierarchicalRefine();
-    //std::cout<<"resubdivide test"<<std::endl;
-    //quad.GetRootNode()->HierarchicalSubdivide(3);
+    //On initialise le terrain
+    terrain.Initialize();
 
-
-    cout<<"Nombre de feuilles  : "<<quad.GetLeafNodesAmount()<<endl;
-    cout<<"Nombre de triangles : "<<quad.GetLeafNodesAmount()*32<<endl;
+    cout<<"Terrain initialized successfully !"<<endl;
+    //cout<<"Nombre de feuilles  : "<<quad.GetLeafNodesAmount()<<endl;
+    //cout<<"Nombre de triangles : "<<quad.GetLeafNodesAmount()*32<<endl;
     cout<<"---------------------------------------------------------------"<<endl;
 
 
-    ///Code classique pour ouvrir une fenêtre avec Nazara
 
+
+    ///Code classique pour ouvrir une fenêtre avec Nazara
     NzString windowTitle("DynaTerrain example");
 	NzRenderWindow window(NzVideoMode(800,600,32),windowTitle,nzWindowStyle_Default);
 	window.SetFramerateLimit(100);
@@ -259,10 +256,10 @@ int main()
 
         //On met à jour le terrain
         if(terrainUpdate)
-            quad.Update(camera.GetTranslation());
+            terrain.Update(camera.GetTranslation());
 
         //On dessine le terrain
-        quad.Render();
+        terrain.Render();
         //quad.DebugDrawAABB(true,4);
 		// Nous mettons à jour l'écran
 		window.Display();
@@ -272,7 +269,7 @@ int main()
 		// Toutes les secondes
 		if (secondClock.GetMilliseconds() >= 1000)
 		{
-			window.SetTitle(windowTitle + " (FPS: " + NzString::Number(fps) + ')' + "( Camera in : " + camera.GetTranslation() + ") (Updated Nodes : " + NzString::Number(quad.GetSubdivisionsAmount()) + "/s)");
+			window.SetTitle(windowTitle + " (FPS: " + NzString::Number(fps) + ')' + "( Camera in : " + camera.GetTranslation() + ")");// (Updated Nodes : " + NzString::Number(quad.GetSubdivisionsAmount()) + "/s)");
 			fps = 0;
 			secondClock.Restart();
 		}
