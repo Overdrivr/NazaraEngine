@@ -8,7 +8,6 @@
 #include <Nazara/Core/String.hpp>
 #include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
 #include <Nazara/Math/Sphere.hpp>
-#include <Nazara/Core/Clock.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
 #include <iostream>
 #include <cmath>
@@ -17,7 +16,7 @@
 
 using namespace std;
 
-NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& configuration, const NzVector2f& terrainCenter, NzHeightSource* heightSource)
+NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainConfiguration& configuration, NzHeightSource* heightSource)
 {
     m_nodesPool.SetChunkSize(5000);
     m_patchesPool.SetChunkSize(1000);
@@ -41,7 +40,6 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& confi
 
     m_subdivisionsAmount = 0;
 
-
     float radius = m_configuration.higherCameraPrecisionRadius;
 
     for(int i(0) ; i < m_configuration.cameraRadiusAmount ; ++i)
@@ -52,7 +50,6 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& confi
         radius *= m_configuration.radiusSizeIncrement;
     }
 
-//??
     m_poolReallocationSize = 200;
     m_poolAllocatedSpace = 0;
     m_maxOperationsPerFrame = 0;
@@ -79,7 +76,6 @@ bool NzTerrainQuadTree::Contains(id nodeId)
 
 void NzTerrainQuadTree::Render()
 {
-    NzRenderer::SetShader(&m_shader);
     m_data.dispatcher->DrawAll();
 }
 
@@ -163,23 +159,9 @@ unsigned int NzTerrainQuadTree::GetSubdivisionsAmount()
     return temp;
 }
 
-void NzTerrainQuadTree::Initialize(const NzString& vertexShader, const NzString& fragmentShader, const NzString& terrainTilesTexture)
+void NzTerrainQuadTree::Initialize()
 {
-     m_isInitialized = true;
-
-    SetShaders(vertexShader,fragmentShader);
-
-    if(!m_terrainTexture.LoadFromFile(terrainTilesTexture))
-        std::cout<<"Could not load texture "<<terrainTilesTexture<<std::endl;
-
-    //m_terrainTexture.EnableMipmapping(false);
-
-    int i = m_shader.GetUniformLocation("terrainTexture");
-
-    if(i == -1)
-        std::cout<<"Could not retrieve uniform location"<<std::endl;
-
-    m_shader.SendTexture(i,&m_terrainTexture);
+    m_isInitialized = true;
 
     //On subdivise l'arbre équitablement au niveau minimum
     m_root->HierarchicalSubdivide(m_configuration.minTerrainPrecision,true);
@@ -196,42 +178,6 @@ void NzTerrainQuadTree::RegisterLeaf(NzTerrainNode* node)
         m_leaves.push_back(node);
         m_nodesMap[node->GetNodeID()] = node;
     }
-}
-
-bool NzTerrainQuadTree::SetShaders(const NzString& vertexShader, const NzString& fragmentShader)
-{
-    if (!m_shader.Create(nzShaderLanguage_GLSL))
-    {
-        std::cout << "Failed to load shader" << std::endl;
-        std::getchar();
-        return false;
-    }
-
-    if (!m_shader.LoadFromFile(nzShaderType_Fragment, fragmentShader))
-    {
-        std::cout << "Failed to load fragment shader from file" << std::endl;
-        std::cout << "Log: " << m_shader.GetLog() << std::endl;
-        std::getchar();
-        return false;
-    }
-
-    if (!m_shader.LoadFromFile(nzShaderType_Vertex, vertexShader))
-    {
-        std::cout << "Failed to load vertex shader from file" << std::endl;
-        std::cout << "Log: " << m_shader.GetLog() << std::endl;
-        std::getchar();
-        return false;
-    }
-
-    if (!m_shader.Compile())
-    {
-        std::cout << "Failed to compile shader" << std::endl;
-        std::cout << "Log: " << m_shader.GetLog() << std::endl;
-        std::getchar();
-        return false;
-    }
-
-    return true;
 }
 
 bool NzTerrainQuadTree::UnRegisterLeaf(NzTerrainNode* node)
@@ -262,20 +208,19 @@ bool NzTerrainQuadTree::UnRegisterNode(NzTerrainNode* node)
 
 void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
 {
-    NzClock clock;
+
     nzUInt64 maxTime = 100;//ms
-    clock.Restart();
-
-    //A chaque frame, on recalcule quels noeuds sont dans le périmètre de la caméra
-    m_root->Update(cameraPosition);
-
     std::map<id,NzTerrainNode*>::iterator it;
     int subdivisionsPerFrame = 0;
+    updateClock.Restart();
+
+    ///A chaque frame, on recalcule quels noeuds sont dans le périmètre de la caméra
+    m_root->Update(cameraPosition);
 
     ///On subdivise les nodes
     it = m_subdivisionQueue.begin();
 
-    while(clock.GetMilliseconds() < maxTime/2.f)
+    while(updateClock.GetMilliseconds() < maxTime/2.f)
     {
         if(it == m_subdivisionQueue.end())
             break;
@@ -295,7 +240,7 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
 
      ///On refine les nodes nécessaires
     it = m_refinementQueue.begin();
-    while(clock.GetMilliseconds() < maxTime)
+    while(updateClock.GetMilliseconds() < maxTime)
     {
         if(it == m_refinementQueue.end())
             break;
@@ -312,11 +257,7 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
         }
         else
             it++;
-
-
     }
-
-    //std::cout<<"remove queue size : "<<m_removeList.size()<<std::endl;
 }
 
 void NzTerrainQuadTree::AddLeaveToSubdivisionQueue(NzTerrainNode* node)

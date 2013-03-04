@@ -16,16 +16,18 @@
 #include <Nazara/Renderer/Shader.hpp>
 #include <Nazara/DynaTerrain/TerrainNode.hpp>
 #include <Nazara/DynaTerrain/HeightSource.hpp>
-#include <Nazara/DynaTerrain/TerrainQuadTreeConfiguration.hpp>
+#include <Nazara/DynaTerrain/TerrainConfiguration.hpp>
 #include <Nazara/DynaTerrain/Dispatcher.hpp>
 #include <Nazara/DynaTerrain/ObjectPool.hpp>
+#include <Nazara/Core/Clock.hpp>
 #include <Nazara/Renderer/Texture.hpp>
 
 class NAZARA_API NzTerrainQuadTree
 {
     public:
         friend class NzTerrainNode;
-        NzTerrainQuadTree(const NzTerrainQuadTreeConfiguration& configuration, const NzVector2f& terrainCenter, NzHeightSource* heightSource);
+
+        NzTerrainQuadTree(const NzTerrainConfiguration& configuration, NzHeightSource* heightSource);
         ~NzTerrainQuadTree();
 
         bool Contains(id nodeId);
@@ -39,11 +41,9 @@ class NAZARA_API NzTerrainQuadTree
         unsigned int GetSubdivisionsAmount();
         NzVector3f GetVertexPosition(id ID, int x, int y);
 
-        void Initialize(const NzString& vertexShader, const NzString& fragmentShader, const NzString& terrainTilesTexture);
+        void Initialize();
 
         void Render();
-
-        bool SetShaders(const NzString& vertexShader, const NzString& fragmentShader);
 
         void Update(const NzVector3f& cameraPosition);
 
@@ -54,7 +54,6 @@ class NAZARA_API NzTerrainQuadTree
         NzPatch* GetPatchFromPool();
         void ReturnPatchToPool(NzPatch* patch);
         //Vu que quadtree ne sera pas en charge de l'affichage, elles sont peut être inutiles, y compris maintenir à jour m_leaves
-        //Peut éventuellement servir à optimiser Update(..)
         void RegisterLeaf(NzTerrainNode* node);
         bool UnRegisterLeaf(NzTerrainNode* node);//Les feuilles enlevées ici doivent aussi l'être de la camera list
         bool UnRegisterNode(NzTerrainNode* node);
@@ -69,13 +68,13 @@ class NAZARA_API NzTerrainQuadTree
 
     private:
 
-        NzShader m_shader;
-        NzTerrainNode* m_root;
+        NzHeightSource* m_heightSource;
+        NzTerrainConfiguration m_configuration;
+
         TerrainNodeData m_data;
         NzDispatcher m_dispatcher;
-        NzHeightSource* m_heightSource;
-        NzTexture m_terrainTexture;
-        NzTerrainQuadTreeConfiguration m_configuration;
+
+        NzTerrainNode* m_root;
 
         std::map<float,unsigned int> m_cameraRadiuses;
         std::map<float,unsigned int>::iterator it;
@@ -96,6 +95,8 @@ class NAZARA_API NzTerrainQuadTree
         bool m_isInitialized;
 
         unsigned int m_maxOperationsPerFrame;
+
+        NzClock updateClock;
 };
 
 #endif // NAZARA_TERRAINQUADTREE_HPP
