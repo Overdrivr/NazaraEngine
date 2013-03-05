@@ -13,8 +13,8 @@ NzTerrainConfiguration::NzTerrainConfiguration()
     terrainSize = 2000.f;
     //La hauteur maximale du terrain (sous condition que la source de hauteur renvoie des valeurs dans [0;1]
     maxTerrainHeight = 100.f;
-    //Le vector d'orientation du terrain. (0,1,0) positionne le terrain naturellement vers le haut
-    terrainOrientation = NzVector3f(0.f,1.f,0.f);
+    //La rotation du terrain dans les trois axes exprimé en angles d'euler
+    terrainOrientation = NzEulerAnglesf(0.f,0.f,0.f);
     //Le centre du terrain
     terrainCenter = NzVector3f(0.f,0.f,0.f);
     //La précision minimale du terrain
@@ -30,16 +30,25 @@ NzTerrainConfiguration::NzTerrainConfiguration()
     //Le rayon de précision maximale autour de la caméra
     higherCameraPrecisionRadius = 50.f;
     //Le chemin vers le fichier du vertex shader
-    vertexShader;
+    vertexShader = "unset_path_to_vertex_shader_file/unset_vertex_shader.vert";
     //Le chemin vers le fichier du fragment shader
-    fragmentShader;
+    fragmentShader = "unset_path_to_fragment_shader_file/unset_fragment_shader.frag";
     //Le chemin vers la texture du terrain
-    terrainTexture;
+    terrainTexture = "unset_path_to_terrain_texture_file/unset_terrain_texture.jpg";
 }
 
 NzTerrainConfiguration::~NzTerrainConfiguration()
 {
     //dtor
+}
+
+void NzTerrainConfiguration::AutoFix()
+{
+    if(cameraRadiusAmount == 0)
+        cameraRadiusAmount = 1;
+
+    if(radiusSizeIncrement <= 0.f)
+        radiusSizeIncrement = 1.2f;
 }
 
 bool NzTerrainConfiguration::IsValid() const
@@ -52,3 +61,5 @@ bool NzTerrainConfiguration::IsValid() const
 
     return true;
 }
+
+

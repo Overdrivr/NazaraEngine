@@ -7,7 +7,8 @@
 #include <Nazara/Core/Log.hpp>
 #include <Nazara/Core/String.hpp>
 #include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
-#include <Nazara/Math/Sphere.hpp>
+#include <Nazara/Math/Matrix4.hpp>
+#include <Nazara/Math/Quaternion.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
 #include <iostream>
 #include <cmath>
@@ -29,13 +30,14 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainConfiguration& configuration
     m_data.quadtree = this;
     m_data.heightSource = m_heightSource;
     m_data.dispatcher = &m_dispatcher;
+    m_rotationMatrix.MakeRotation(NzQuaternionf(m_configuration.terrainOrientation));
 
     m_dispatcher.Initialize(m_configuration.minTerrainPrecision,0);
 
     m_root = m_nodesPool.GetObjectPtr();
     m_root->Initialize(&m_data,nullptr);
     m_leaves.push_back(m_root);//I
-    m_nodesMap[id(0,0,0)] = m_root;
+    m_nodesMap[NzTerrainNodeID(0,0,0)] = m_root;
 
     m_isInitialized = false;
 
@@ -104,11 +106,6 @@ void NzTerrainQuadTree::ConnectNeighbor(NzTerrainQuadTree* neighbour, nzDirectio
     neighbour->m_neighbours[invDirection] = this;
 }
 
-bool NzTerrainQuadTree::Contains(id nodeId)
-{
-    return nodeId.lvl >= 0 && nodeId.sx >= 0 && nodeId.sy >= 0 && nodeId.sx < (std::pow(2,nodeId.lvl)) && nodeId.sy < (std::pow(2,nodeId.lvl));
-}
-
 void NzTerrainQuadTree::DisconnectNeighbor(NzTerrainQuadTree* neighbour, nzDirection direction)
 {
     nzDirection invDirection = direction;
@@ -149,15 +146,18 @@ void NzTerrainQuadTree::DebugDrawAABB(bool leafOnly, int level)
     m_root->DebugDrawAABB(leafOnly,level);
 }
 
-NzTerrainQuadTree* NzTerrainQuadTree::GetContainingQuadTree(id nodeID)
+NzTerrainQuadTree* NzTerrainQuadTree::GetContainingQuadTree(const NzTerrainNodeID& nodeID)
 {
-    if(nodeID.sx < 0)
+    if(nodeID.locx < 0)
         return m_neighbours[LEFT];
-    if(nodeID.sy < 0)
+
+    if(nodeID.locy < 0)
         return m_neighbours[TOP];
-    if(nodeID.sx > (std::pow(2,nodeID.lvl)-1))
+
+    if(nodeID.locx > (std::pow(2,nodeID.depth)-1))
         return m_neighbours[RIGHT];
-    if(nodeID.sy > (std::pow(2,nodeID.lvl)-1))
+
+    if(nodeID.locy > (std::pow(2,nodeID.depth)-1))
         return m_neighbours[BOTTOM];
 
     return nullptr;
@@ -168,7 +168,7 @@ unsigned int NzTerrainQuadTree::GetLeafNodesAmount() const
     return m_leaves.size();
 }
 
-NzTerrainNode* NzTerrainQuadTree::GetNode(id nodeID)
+NzTerrainNode* NzTerrainQuadTree::GetNode(const NzTerrainNodeID& nodeID)
 {
     if(m_nodesMap.count(nodeID) == 1)
         return m_nodesMap.at(nodeID);
@@ -191,32 +191,18 @@ NzTerrainNode* NzTerrainQuadTree::GetNodeFromPool()
     return m_nodesPool.GetObjectPtr();
 }
 
-NzVector3f NzTerrainQuadTree::GetVertexPosition(id ID, int x, int y)
+NzVector3f NzTerrainQuadTree::GetVertexPosition(const NzTerrainNodeID& nodeID, int x, int y)
 {
     NzVector3f position;
-    position.x = m_configuration.terrainSize * (x * 0.25f + ID.sx) / std::pow(2,ID.lvl) - m_configuration.terrainSize/2.f + m_configuration.terrainCenter.x;
-    position.z = m_configuration.terrainSize * (y * 0.25f + ID.sy) / std::pow(2,ID.lvl) - m_configuration.terrainSize/2.f + m_configuration.terrainCenter.z;
+    position.x = m_configuration.terrainSize * (x * 0.25f + nodeID.locx) / std::pow(2,nodeID.depth) - m_configuration.terrainSize/2.f + m_configuration.terrainCenter.x;
+    position.z = m_configuration.terrainSize * (y * 0.25f + nodeID.locy) / std::pow(2,nodeID.depth) - m_configuration.terrainSize/2.f + m_configuration.terrainCenter.z;
     position.y = m_heightSource->GetHeight(position.x,position.z) * m_configuration.maxTerrainHeight + m_configuration.terrainCenter.y;
-    return position;
-}
-
-id NzTerrainQuadTree::FixIDForNeighbourQuadTree(id nodeID)
-{
-    if(nodeID.sx < 0)
-        nodeID.sx += std::pow(2,nodeID.lvl);
-    if(nodeID.sy < 0)
-        nodeID.sy += std::pow(2,nodeID.lvl);
-    if(nodeID.sx > (std::pow(2,nodeID.lvl)-1))
-        nodeID.sx -= std::pow(2,nodeID.lvl);
-    if(nodeID.sy > (std::pow(2,nodeID.lvl)-1))
-        nodeID.sy -= std::pow(2,nodeID.lvl);
-
-    return nodeID;
+    return m_rotationMatrix.Transform(position);
 }
 
 void NzTerrainQuadTree::ReturnNodeToPool(NzTerrainNode* node)
 {
-    std::map<id,NzTerrainNode*>::iterator it = m_refinementQueue.find(node->GetNodeID());
+    std::map<NzTerrainNodeID,NzTerrainNode*>::iterator it = m_refinementQueue.find(node->GetNodeID());
 
     if(it != m_refinementQueue.end())
         m_refinementQueue.erase(it);
@@ -282,7 +268,7 @@ bool NzTerrainQuadTree::UnRegisterLeaf(NzTerrainNode* node)
 
 bool NzTerrainQuadTree::UnRegisterNode(NzTerrainNode* node)
 {
-    std::map<id,NzTerrainNode*>::iterator it = m_nodesMap.find(node->GetNodeID());
+    std::map<NzTerrainNodeID,NzTerrainNode*>::iterator it = m_nodesMap.find(node->GetNodeID());
 
     if(it != m_nodesMap.end())
     {
@@ -292,9 +278,9 @@ bool NzTerrainQuadTree::UnRegisterNode(NzTerrainNode* node)
     else
     {
         NazaraError("NzTerrainQuadTree::UnRegisterLeaf : Trying to remove unexisting node" +
-                    NzString::Number(node->GetNodeID().lvl) + "|" +
-                    NzString::Number(node->GetNodeID().sx) + "|" +
-                    NzString::Number(node->GetNodeID().sy));
+                    NzString::Number(node->GetNodeID().depth) + "|" +
+                    NzString::Number(node->GetNodeID().locx) + "|" +
+                    NzString::Number(node->GetNodeID().locy));
         return false;
     }
 }
@@ -303,7 +289,7 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
 {
 
     nzUInt64 maxTime = 100;//ms
-    std::map<id,NzTerrainNode*>::iterator it;
+    std::map<NzTerrainNodeID,NzTerrainNode*>::iterator it;
     int subdivisionsPerFrame = 0;
     updateClock.Restart();
 

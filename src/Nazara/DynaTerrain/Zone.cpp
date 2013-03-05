@@ -47,7 +47,7 @@ void NzZone::AddBuffer(NzVertexBuffer* buffer)
     //std::cout<<"Added Buffer"<<std::endl;
 }
 
-void NzZone::AddPatch(const std::array<float,150>& vertices, const id& ID)
+void NzZone::AddPatch(const std::array<float,150>& vertices, const NzTerrainNodeID& ID)
 {
     //std::cout<<"Adding patch "<<ID.lvl<<"|"<<ID.sx<<"|"<<ID.sy<<std::endl;
 
@@ -145,7 +145,7 @@ bool NzZone::RemoveFreeBuffer(NzVertexBuffer* buffer)
     return false;
 }
 
-bool NzZone::RemovePatch(const id& ID)
+bool NzZone::RemovePatch(const NzTerrainNodeID& ID)
 {
     NzVector2i location = m_buffersMap.RemoveValueKey(ID);
 
@@ -162,7 +162,7 @@ bool NzZone::RemovePatch(const id& ID)
     return true;
 }
 
-bool NzZone::UpdatePatch(const std::array<float,150>& vertices, const id& ID)
+bool NzZone::UpdatePatch(const std::array<float,150>& vertices, const NzTerrainNodeID& ID)
 {
     NzVector2i location = m_buffersMap.FindKeyLocation(ID);
 

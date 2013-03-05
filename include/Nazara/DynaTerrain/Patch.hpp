@@ -12,6 +12,7 @@
 #include <Nazara/Math/Vector3.hpp>
 #include <Nazara/DynaTerrain/HeightSource.hpp>
 #include <Nazara/DynaTerrain/Enums.hpp>
+#include <Nazara/DynaTerrain/TerrainNodeID.hpp>
 #include <array>
 #include <Nazara/Math/Cube.hpp>
 
@@ -27,7 +28,7 @@ class NAZARA_API NzPatch
         const NzCubef& GetAABB() const;
         float GetGlobalSlope() const;
 
-        void Initialize(id nodeID, TerrainNodeData* data);
+        void Initialize(NzTerrainNodeID nodeID, TerrainNodeData* data);
         void Invalidate();
 
         void SetConfiguration(nzDirection neighborLocation, unsigned int levelDifference, bool autoUpdate = true);
@@ -43,7 +44,7 @@ class NAZARA_API NzPatch
         void ComputeHeights();
 
         TerrainNodeData* m_data;
-        id m_id;
+        NzTerrainNodeID m_id;
         NzCubef m_aabb;
         unsigned short int m_configuration;
         std::array<NzVector3f,49> m_vertexPositions;

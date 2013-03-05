@@ -9,7 +9,7 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Utility/VertexBuffer.hpp>
-#include <Nazara/DynaTerrain/Enums.hpp>
+#include <Nazara/DynaTerrain/TerrainNodeID.hpp>
 #include <Nazara/DynaTerrain/SparseBuffer.hpp>
 #include <Nazara/DynaTerrain/SparseBufferSet.hpp>
 
@@ -26,7 +26,7 @@ class NAZARA_API NzZone
         ~NzZone();
 
         void AddBuffer(NzVertexBuffer* buffer);
-        void AddPatch(const std::array<float,150>& vertices, const id& ID);
+        void AddPatch(const std::array<float,150>& vertices, const NzTerrainNodeID& ID);
 
         void DrawBuffers() const;
 
@@ -36,9 +36,9 @@ class NAZARA_API NzZone
         void Optimize(int amount);
 
         bool RemoveFreeBuffer(NzVertexBuffer* buffer);
-        bool RemovePatch(const id& ID);
+        bool RemovePatch(const NzTerrainNodeID& ID);
 
-        bool UpdatePatch(const std::array<float,150>& vertices, const id& ID);
+        bool UpdatePatch(const std::array<float,150>& vertices, const NzTerrainNodeID& ID);
 
     protected:
     private:
@@ -48,12 +48,12 @@ class NAZARA_API NzZone
         //Raw data for rendering
         std::vector<NzVertexBuffer*> m_buffers;
         //Image of the raw data for quick search over patch id & memory fragmentation reduction
-        NzSparseBufferSet<id> m_buffersMap;
+        NzSparseBufferSet<NzTerrainNodeID> m_buffersMap;
 
         //Contient l'ensemble des patches qui n'ont pas pu être mis en mémoire vidéo pour cause d'espace insuffisant
             //Non utilisé : FIX ME : Vraiment Utile ?
         std::queue<float> m_unbufferedPatches;
-        std::queue<id> m_unbufferedPatchesIndex;
+        std::queue<NzTerrainNodeID> m_unbufferedPatchesIndex;
 };
 
 #endif // NAZARA_ZONE_HPP

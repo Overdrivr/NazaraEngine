@@ -84,25 +84,25 @@ unsigned int NzDispatcher::GetFreeBuffersAmount() const
     return m_freeBuffers.size();
 }
 
-bool NzDispatcher::RemovePatch(const id& ID)
+bool NzDispatcher::RemovePatch(const NzTerrainNodeID& ID)
 {
     if(m_isReady)
     {
         //On récupère la zone devant accueillir le patch
-        id temp;
-        temp.sx = ID.sx*m_zonesAmountX/std::pow(2,ID.lvl);
-        temp.sy = ID.sy*m_zonesAmountX/std::pow(2,ID.lvl);
+        NzTerrainNodeID temp;
+        temp.locx = ID.locx * m_zonesAmountX/std::pow(2,ID.depth);
+        temp.locy = ID.locy * m_zonesAmountX/std::pow(2,ID.depth);
 
-        if(temp.sx < m_zonesAmountX && temp.sy < m_zonesAmountX)
+        if(temp.locx < m_zonesAmountX && temp.locy < m_zonesAmountX)
         {
             //std::cout<<"submitting patch to zone "<<temp.sx<<" | "<<temp.sy<<std::endl;
             //std::cout<<"Trying Removing patch "<<ID.lvl<<"|"<<ID.sx<<"|"<<ID.sy<<" in Zone "<<temp.lvl<<"|"<<temp.sx<<"|"<<temp.sy<<" with buf"<<std::endl;
-            m_zones.at(temp.sx + m_zonesAmountX*temp.sy)->RemovePatch(ID);
+            m_zones.at(temp.locx + m_zonesAmountX * temp.locy)->RemovePatch(ID);
             return true;
         }
         else
         {
-            std::cout<<"Removing patch "<<ID.lvl<<"|"<<ID.sx<<"|"<<ID.sy<<" outside supported area :"<<m_zonesAmountX<<std::endl;
+            std::cout<<"Removing patch "<<ID.depth<<"|"<<ID.locx<<"|"<<ID.locy<<" outside supported area :"<<m_zonesAmountX<<std::endl;
             return false;
         }
     }
@@ -131,7 +131,7 @@ bool NzDispatcher::Initialize(unsigned int zoneDepth, unsigned int bufferAmount)
     m_zoneDepth = zoneDepth;
     m_zonesAmountX = std::pow(2,m_zoneDepth);
     //On crée le nombre de zones demandé
-    for(unsigned int i(0) ; i < m_zonesAmountX*m_zonesAmountX ; ++i)
+    for(unsigned int i(0) ; i < m_zonesAmountX * m_zonesAmountX ; ++i)
     {
         std::unique_ptr<NzZone> zone(new NzZone(this));
         m_zones.push_back(std::move(zone));
@@ -187,48 +187,45 @@ void NzDispatcher::ReturnBuffer(NzVertexBuffer* buffer)
     m_freeBuffers.push(buffer);
 }
 
-bool NzDispatcher::SubmitPatch(const std::array<float,150>& subBuffer, const id& ID)
+bool NzDispatcher::SubmitPatch(const std::array<float,150>& subBuffer, const NzTerrainNodeID& ID)
 {
     if(!m_isReady)
         return false;
 
     //On récupère la zone devant accueillir le patch
-    id temp;
-    temp.sx = ID.sx*m_zonesAmountX/std::pow(2,ID.lvl);
-    temp.sy = ID.sy*m_zonesAmountX/std::pow(2,ID.lvl);
+    NzTerrainNodeID temp;
+    temp.locx = ID.locx * m_zonesAmountX / std::pow(2,ID.depth);
+    temp.locy = ID.locy * m_zonesAmountX / std::pow(2,ID.depth);
 
-    if(temp.sx < m_zonesAmountX && temp.sy < m_zonesAmountX)
+    if(temp.locx < m_zonesAmountX && temp.locy < m_zonesAmountX)
     {
-        //std::cout<<"Submitting patch "<<ID.lvl<<"|"<<ID.sx<<"|"<<ID.sy<<" in Zone "<<temp.lvl<<"|"<<temp.sx<<"|"<<temp.sy<<std::endl;
-        m_zones.at(temp.sx + m_zonesAmountX*temp.sy)->AddPatch(subBuffer,ID);
+        m_zones.at(temp.locx + m_zonesAmountX * temp.locy)->AddPatch(subBuffer,ID);
         return true;
     }
     else
     {
-        std::cout<<"Submitting patch "<<ID.lvl<<"|"<<ID.sx<<"|"<<ID.sy<<" outside supported area :"<<m_zonesAmountX<<std::endl;
+        std::cout<<"Submitting patch "<<ID.depth<<"|"<<ID.locx<<"|"<<ID.locy<<" outside supported area :"<<m_zonesAmountX<<std::endl;
         return false;
     }
-
 }
 
-bool NzDispatcher::UpdatePatch(const std::array<float,150>& subBuffer, const id& ID)
+bool NzDispatcher::UpdatePatch(const std::array<float,150>& subBuffer, const NzTerrainNodeID& ID)
 {
     if(m_isReady)
     {
         //On récupère la zone devant accueillir le patch
-        id temp;
-        temp.sx = ID.sx*m_zonesAmountX/std::pow(2,ID.lvl);
-        temp.sy = ID.sy*m_zonesAmountX/std::pow(2,ID.lvl);
+        NzTerrainNodeID temp;
+        temp.locx = ID.locx * m_zonesAmountX / std::pow(2,ID.depth);
+        temp.locy = ID.locy * m_zonesAmountX / std::pow(2,ID.depth);
 
-        if(temp.sx < m_zonesAmountX && temp.sy < m_zonesAmountX)
+        if(temp.locx < m_zonesAmountX && temp.locy < m_zonesAmountX)
         {
-            //std::cout<<"submitting patch "<<ID.lvl<<"|"<<ID.sx<<"|"<<ID.sy<<" to zone "<<temp.sx<<" | "<<temp.sy<<std::endl;
-            m_zones.at(temp.sx + m_zonesAmountX*temp.sy)->UpdatePatch(subBuffer,ID);
+            m_zones.at(temp.locx + m_zonesAmountX * temp.locy)->UpdatePatch(subBuffer,ID);
             return true;
         }
         else
         {
-            std::cout<<"Updating patch "<<ID.lvl<<"|"<<ID.sx<<"|"<<ID.sy<<" outside supported area :"<<m_zonesAmountX<<std::endl;
+            std::cout<<"Updating patch "<<ID.depth<<"|"<<ID.locx<<"|"<<ID.locy<<" outside supported area :"<<m_zonesAmountX<<std::endl;
             return false;
         }
     }

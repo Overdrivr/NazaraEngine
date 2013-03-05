@@ -47,9 +47,9 @@ void NzTerrainNode::DebugDrawAABB(bool leafOnly, int level)
     }
     else
     {
-        if(m_nodeID.lvl == level)
+        if(m_nodeID.depth == level)
             NzDebugDrawer::Draw(m_aabb);
-        else if(m_nodeID.lvl < level && m_isLeaf)
+        else if(m_nodeID.depth < level && m_isLeaf)
         {
             for(int i(0) ; i < 4 ; ++i)
                 m_children[i]->DebugDrawAABB(leafOnly,level);
@@ -66,7 +66,7 @@ void NzTerrainNode::CleanTree(unsigned int minDepth)
         return;
     }
 
-    if(m_nodeID.lvl >= minDepth)
+    if(m_nodeID.depth >= minDepth)
     {
         if(!m_isLeaf)
         {
@@ -88,7 +88,7 @@ void NzTerrainNode::CleanTree(unsigned int minDepth)
             m_children[i]->CleanTree(minDepth);
     }
 
-    if(m_nodeID.lvl == minDepth)
+    if(m_nodeID.depth == minDepth)
     {
         m_isLeaf = true;
         m_data->quadtree->RegisterLeaf(this);
@@ -149,32 +149,31 @@ NzTerrainNode* NzTerrainNode::GetDirectNeighbor(nzDirection direction)
         return nullptr;
     }
 
-    id tempID;
-    tempID = m_nodeID;
+    NzTerrainNodeID tempID = m_nodeID;
     int counter = 0;
 
     switch(direction)
     {
         case TOP :
-            tempID.sy -= 1;
+            tempID.locy -= 1;
         break;
 
         case RIGHT :
-            tempID.sx += 1;
+            tempID.locx += 1;
         break;
 
         case BOTTOM :
-            tempID.sy += 1;
+            tempID.locy += 1;
         break;
 
         case LEFT :
-            tempID.sx -= 1;
+            tempID.locx -= 1;
         break;
     }
 
     NzTerrainNode* neighbor;
 
-    if(m_data->quadtree->Contains(tempID))
+    if(tempID.IsValid())
     {
         return m_data->quadtree->GetNode(tempID);
     }
@@ -186,15 +185,9 @@ NzTerrainNode* NzTerrainNode::GetDirectNeighbor(nzDirection direction)
             return nullptr;
 
         //On convertit les coordonnées du node dans celles du quadtree voisin
-        tempID = m_data->quadtree->FixIDForNeighbourQuadTree(tempID);
-
+        tempID.Normalize();
         return tempQuad->GetNode(tempID);
     }
-}
-
-unsigned int NzTerrainNode::GetLevel() const
-{
-    return m_nodeID.lvl;
 }
 
 int NzTerrainNode::GetNodeAmount()
@@ -202,7 +195,7 @@ int NzTerrainNode::GetNodeAmount()
     return nbNodes;
 }
 
-const id& NzTerrainNode::GetNodeID() const
+const NzTerrainNodeID& NzTerrainNode::GetNodeID() const
 {
     return m_nodeID;
 }
@@ -222,7 +215,7 @@ void NzTerrainNode::HierarchicalSubdivide(unsigned int maxDepth, bool isNotRever
 
     if(m_isLeaf)
     {
-        if(m_nodeID.lvl < maxDepth)
+        if(m_nodeID.depth < maxDepth)
         {
             //m_doNotRefine = true;//FIX ME : Pourrait être utilisé ? Doit être affecté aux enfants
             this->Subdivide(isNotReversible);
@@ -276,13 +269,13 @@ void NzTerrainNode::Initialize(TerrainNodeData *data, NzTerrainNode* parent, nzL
     {
         m_isRoot = true;
         m_isLeaf = true;
-        m_nodeID.lvl = 0;
-        m_nodeID.sx = 0;
-        m_nodeID.sy = 0;
+        m_nodeID.depth = 0;
+        m_nodeID.locx = 0;
+        m_nodeID.locy = 0;
     }
     else
     {
-        m_nodeID.lvl = parent->m_nodeID.lvl + 1;
+        m_nodeID.depth = parent->m_nodeID.depth + 1;
         m_parent = parent;
         m_isRoot = false;
         int offx = 0, offy = 0;
@@ -301,8 +294,8 @@ void NzTerrainNode::Initialize(TerrainNodeData *data, NzTerrainNode* parent, nzL
                 offy = 1;
             break;
         }
-        m_nodeID.sx = parent->m_nodeID.sx * 2 + offx;
-        m_nodeID.sy = parent->m_nodeID.sy * 2 + offy;
+        m_nodeID.locx = parent->m_nodeID.locx * 2 + offx;
+        m_nodeID.locy = parent->m_nodeID.locy * 2 + offy;
     }
 
     CreatePatch();
@@ -330,7 +323,7 @@ void NzTerrainNode::HierarchicalSlopeBasedSubdivide(unsigned int maxDepth)
         //Si son niveau est inférieur au niveau max de subdivision
             //Et également inférieur au niveau minimum de précision requis par la pente du terrain
                 //Alors on le subdivise
-        if(m_nodeID.lvl < maxDepth && m_nodeID.lvl < static_cast<unsigned int>(m_patch->GetGlobalSlope() * m_data->quadtree->GetMaximumHeight()))
+        if(m_nodeID.depth < maxDepth && m_nodeID.depth < static_cast<unsigned int>(m_patch->GetGlobalSlope() * m_data->quadtree->GetMaximumHeight()))
         {
             m_doNotRefine = true;//FIX ME : Affecter cette valeur aux enfants plutot ?
             this->Subdivide();
@@ -551,7 +544,6 @@ bool NzTerrainNode::Refine()
 
         }
     }
-    //std::cout<<"Refined : "<<m_nodeID.lvl<<"|"<<m_nodeID.sx<<"|"<<m_nodeID.sy<<std::endl;
 
     return true;
 
@@ -590,30 +582,29 @@ void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction, bool isNotR
         return;
     }
 
-    id tempID;
-    tempID = m_nodeID;
+    NzTerrainNodeID tempID = m_nodeID;
     int counter = 0;
     nzDirection invDirection = direction;
 
     switch(direction)
     {
         case TOP :
-            tempID.sy -= 1;
+            tempID.locy -= 1;
             invDirection = BOTTOM;
         break;
 
         case RIGHT :
-            tempID.sx += 1;
+            tempID.locx += 1;
             invDirection = LEFT;
         break;
 
         case BOTTOM :
-            tempID.sy += 1;
+            tempID.locy += 1;
             invDirection = TOP;
         break;
 
         case LEFT :
-            tempID.sx -= 1;
+            tempID.locx -= 1;
             invDirection = RIGHT;
         break;
 
@@ -625,7 +616,7 @@ void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction, bool isNotR
     NzTerrainNode* tempNode;
 
     //Si on ne cherche pas à atteindre une case externe
-    if(m_data->quadtree->Contains(tempID))
+    if(tempID.IsValid())
     {
         tempQuad = m_data->quadtree;
         tempNode = m_data->quadtree->GetNode(tempID);
@@ -635,12 +626,10 @@ void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction, bool isNotR
         tempQuad = m_data->quadtree->GetContainingQuadTree(tempID);
 
         if(tempQuad == nullptr)
-        {
-            //Pas de quadtree voisin rattaché, donc pas de voisin à mettre à jour
             return;
-        }
+
         //On convertit les coordonnées du node dans celles du quadtree voisin
-        tempID = m_data->quadtree->FixIDForNeighbourQuadTree(tempID);
+        tempID.Normalize();
         tempNode = tempQuad->GetNode(tempID);
     }
 
@@ -649,9 +638,9 @@ void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction, bool isNotR
     if(tempNode == nullptr)
     {
         //Un niveau d'écart n'est pas suffisant pour demander une subdivision
-        tempID.lvl -= 1;
-        tempID.sx /= 2;
-        tempID.sy /= 2;
+        tempID.depth -= 1;
+        tempID.locx /= 2;
+        tempID.locy /= 2;
         tempNode = tempQuad->GetNode(tempID);
 
         if(tempNode == nullptr)
@@ -659,16 +648,16 @@ void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction, bool isNotR
             while(tempNode == nullptr && counter < 200)
             {
                 counter++;
-                tempID.lvl -= 1;
-                tempID.sx /= 2;
-                tempID.sy /= 2;
+                tempID.depth -= 1;
+                tempID.locx /= 2;
+                tempID.locy /= 2;
                 tempNode = tempQuad->GetNode(tempID);
             }
 
             if(counter < 200)
             {
                 //On subdivise la cellule jusqu'à atteindre le bon niveau
-                tempNode->HierarchicalSubdivide(m_nodeID.lvl-1,isNotReversible);
+                tempNode->HierarchicalSubdivide(m_nodeID.depth-1,isNotReversible);
                 //La subdivision a généré une interface, le node le plus subdivisé (cad this) doit s'adapter
                 m_patch->SetConfiguration(direction,1);
             }
@@ -691,10 +680,6 @@ void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction, bool isNotR
         {
             tempNode->m_patch->SetConfiguration(invDirection,0);
         }
-        else
-        {
-            //m_patch->SetConfiguration(direction,0);
-        }
     }
 }
 
@@ -711,14 +696,11 @@ void NzTerrainNode::Update(const NzVector3f& cameraPosition)
 
     int rayon = m_data->quadtree->TransformDistanceToCameraInRadiusIndex(distance);
 
-
-
-
     //B) Si la précision optimale est inférieure à la précision actuelle
         //Si le node est une feuille, on l'ajoute à la liste de subdivision
         //Sinon on update ses enfants
             //Le fusion pouvant échouer, on garantit que le node subdivisé ne reste pas dans la file de fusion
-    if(m_nodeID.lvl < rayon)
+    if(m_nodeID.depth < rayon)
     {
         if(m_isLeaf)
         {
@@ -734,7 +716,7 @@ void NzTerrainNode::Update(const NzVector3f& cameraPosition)
     }
     //C) Si la précision optimale est supérieure ou égale à la précision actuelle
         //Si le node n'est pas une feuille, on l'ajoute à la liste de fusion
-    else if(m_nodeID.lvl >= rayon)
+    else if(m_nodeID.depth >= rayon)
     {
         if(!m_isLeaf)
         {

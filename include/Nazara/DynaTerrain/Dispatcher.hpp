@@ -32,12 +32,12 @@ class NAZARA_API NzDispatcher
 
         NzVertexBuffer* QueryFreeBuffer();
 
-        bool RemovePatch(const id& ID);
+        bool RemovePatch(const NzTerrainNodeID& ID);
         void ReturnBuffer(NzVertexBuffer* buffer);
 
-        bool SubmitPatch(const std::array<float,150>& subBuffer, const id& ID);
+        bool SubmitPatch(const std::array<float,150>& subBuffer, const NzTerrainNodeID& ID);
 
-        bool UpdatePatch(const std::array<float,150>& subBuffer, const id& ID);
+        bool UpdatePatch(const std::array<float,150>& subBuffer, const NzTerrainNodeID& ID);
 
     protected:
     private:

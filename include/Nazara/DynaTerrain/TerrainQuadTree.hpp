@@ -8,19 +8,15 @@
 #define NAZARA_TERRAINQUADTREE_HPP
 
 #include <Nazara/Prerequesites.hpp>
-
-#include <list>
-#include <Nazara/Math/Vector2.hpp>
-#include <Nazara/Math/Vector3.hpp>
 #include <Nazara/Core/String.hpp>
-#include <Nazara/Renderer/Shader.hpp>
+#include <Nazara/Math/Matrix4.hpp>
 #include <Nazara/DynaTerrain/TerrainNode.hpp>
 #include <Nazara/DynaTerrain/HeightSource.hpp>
 #include <Nazara/DynaTerrain/TerrainConfiguration.hpp>
 #include <Nazara/DynaTerrain/Dispatcher.hpp>
 #include <Nazara/DynaTerrain/ObjectPool.hpp>
 #include <Nazara/Core/Clock.hpp>
-#include <Nazara/Renderer/Texture.hpp>
+#include <Nazara/DynaTerrain/TerrainNodeID.hpp>
 
 class NzTerrainQuadTree;
 
@@ -33,20 +29,20 @@ class NAZARA_API NzTerrainQuadTree
         ~NzTerrainQuadTree();
 
         void ConnectNeighbor(NzTerrainQuadTree* neighbour, nzDirection direction);
-        bool Contains(id nodeId);
+        //bool Contains(NzTerrainNodeID& nodeId);
 
         void DebugDrawAABB(bool leafOnly, int level);
         void DisconnectNeighbor(NzTerrainQuadTree* neighbour, nzDirection direction);
 
-        id FixIDForNeighbourQuadTree(id nodeID);
+        //id FixIDForNeighbourQuadTree(id nodeID);
 
-        NzTerrainQuadTree* GetContainingQuadTree(id nodeID);
+        NzTerrainQuadTree* GetContainingQuadTree(const NzTerrainNodeID& nodeID);
         unsigned int GetLeafNodesAmount() const;
         float GetMaximumHeight() const;
-        NzTerrainNode* GetNode(id nodeID);
+        NzTerrainNode* GetNode(const NzTerrainNodeID& nodeID);
         NzTerrainNode* GetRootNode();
         unsigned int GetSubdivisionsAmount();
-        NzVector3f GetVertexPosition(id ID, int x, int y);
+        NzVector3f GetVertexPosition(const NzTerrainNodeID& nodeID, int x, int y);
 
         void Initialize();
 
@@ -77,6 +73,7 @@ class NAZARA_API NzTerrainQuadTree
 
         NzHeightSource* m_heightSource;
         NzTerrainConfiguration m_configuration;
+        NzMatrix4f m_rotationMatrix;
 
         TerrainNodeData m_data;
         NzDispatcher m_dispatcher;
@@ -88,14 +85,14 @@ class NAZARA_API NzTerrainQuadTree
         std::map<float,unsigned int> m_cameraRadiuses;
         std::map<float,unsigned int>::iterator it;
 
-        std::map<id,NzTerrainNode*> m_nodesMap;
+        std::map<NzTerrainNodeID,NzTerrainNode*> m_nodesMap;
         std::list<NzTerrainNode*> m_leaves;
 
         NzObjectPool<NzTerrainNode> m_nodesPool;
         NzObjectPool<NzPatch> m_patchesPool;
 
-        std::map<id,NzTerrainNode*> m_subdivisionQueue;
-        std::map<id,NzTerrainNode*> m_refinementQueue;
+        std::map<NzTerrainNodeID,NzTerrainNode*> m_subdivisionQueue;
+        std::map<NzTerrainNodeID,NzTerrainNode*> m_refinementQueue;
 
         unsigned int m_subdivisionsAmount;
         unsigned int m_poolReallocationSize;

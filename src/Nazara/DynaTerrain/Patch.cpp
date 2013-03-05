@@ -83,9 +83,6 @@ void NzPatch::ComputeNormals()
             sum = v12 + v23 + v34 + v41;
             sum.Normalize();
 
-            if(sum.DotProduct(NzVector3f(0.f,1.f,0.f)) < 0)//FIX ME : USEFULL ?
-                sum *= -1;
-
             m_vertexNormals.at(i+5*j) = sum;
         }
     }
@@ -134,7 +131,7 @@ float NzPatch::GetGlobalSlope() const
     return m_slope;
 }
 
-void NzPatch::Initialize(id nodeID, TerrainNodeData* data)
+void NzPatch::Initialize(NzTerrainNodeID nodeID, TerrainNodeData* data)
 {
     m_id = nodeID;
     m_data = data;
@@ -160,7 +157,7 @@ void NzPatch::SetConfiguration(nzDirection neighborLocation, unsigned int levelD
 {
     if(!m_isInitialized)
     {
-        std::cout<<"NzPatch::SetConfig : invalid patch called : "<<m_id.lvl<<"|"<<m_id.sx<<"|"<<m_id.sy<<std::endl;
+        std::cout<<"NzPatch::SetConfig : invalid patch called : "<<m_id.depth<<"|"<<m_id.locx<<"|"<<m_id.locy<<std::endl;
         return;
     }
 
@@ -214,7 +211,7 @@ void NzPatch::UploadMesh(bool firstTime)
 {
     if(!m_isInitialized)
     {
-        std::cout<<"NzPatch::SetConfig : invalid patch called : old node : "<<m_id.lvl<<"|"<<m_id.sx<<"|"<<m_id.sy<<std::endl;
+        std::cout<<"NzPatch::SetConfig : invalid patch called : old node : "<<m_id.depth<<"|"<<m_id.locx<<"|"<<m_id.locy<<std::endl;
         return;
     }
 

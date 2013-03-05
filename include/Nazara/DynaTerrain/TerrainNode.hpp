@@ -14,6 +14,7 @@
 #include <Nazara/DynaTerrain/Patch.hpp>
 #include <Nazara/DynaTerrain/HeightSource.hpp>
 #include <Nazara/DynaTerrain/Enums.hpp>
+#include <Nazara/DynaTerrain/TerrainNodeID.hpp>
 
 class NzTerrainQuadTree;
 class NzHeightSource;
@@ -37,13 +38,10 @@ class NAZARA_API NzTerrainNode
         unsigned int GetLevel() const;
         NzTerrainNode* GetDirectNeighbor(nzDirection direction);
         static int GetNodeAmount();
-        const id& GetNodeID() const;
+        const NzTerrainNodeID& GetNodeID() const;
         NzTerrainNode* GetParent();
 
-        //void Update(const NzVector3f& cameraPosition, const NzCubef& largerFOV);
         void Update(const NzVector3f& cameraPosition);
-        //void HierarchicalAddToCameraList(const NzCubef & cameraFOV, unsigned int maximumDepth);
-        //void HierarchicalAddAllChildrenToCameraList(unsigned int maximumDepth);
         bool HierarchicalRefine();
         void HierarchicalSubdivide(unsigned int maxDepth, bool isNotReversible = false);
         void HierarchicalSlopeBasedSubdivide(unsigned int maxDepth);
@@ -72,7 +70,7 @@ class NAZARA_API NzTerrainNode
         bool m_patchMemoryAllocated;
         bool m_isInitialized;
 
-        id m_nodeID;
+        NzTerrainNodeID m_nodeID;
         NzCubef m_aabb;
         NzPatch* m_patch;
         nzLocation m_location;

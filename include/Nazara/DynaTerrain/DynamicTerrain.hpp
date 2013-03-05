@@ -9,6 +9,7 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/DynaTerrain/HeightSource.hpp>
+#include <Nazara/Renderer/Shader.hpp>
 #include <Nazara/DynaTerrain/TerrainConfiguration.hpp>
 #include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
 #include <Nazara/DynaTerrain/Dispatcher.hpp>

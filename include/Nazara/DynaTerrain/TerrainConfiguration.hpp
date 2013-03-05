@@ -9,6 +9,7 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Math/Vector3.hpp>
+#include <Nazara/Math/EulerAngles.hpp>
 
 class NAZARA_API NzTerrainConfiguration
 {
@@ -21,13 +22,15 @@ class NAZARA_API NzTerrainConfiguration
         NzTerrainConfiguration();
         ~NzTerrainConfiguration();
 
+        void AutoFix();
+
         bool IsValid() const;
 
         //Terrain parameters
 
         float terrainSize;
         float maxTerrainHeight;
-        NzVector3f terrainOrientation;
+        NzEulerAnglesf terrainOrientation;
         NzVector3f terrainCenter;
 
         unsigned int minTerrainPrecision;

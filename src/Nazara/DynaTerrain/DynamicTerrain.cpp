@@ -52,7 +52,10 @@ void NzDynamicTerrain::Initialize()
     quadtree->Initialize();
 
     NzTerrainConfiguration second = m_configuration;
-    second.terrainCenter += NzVector3f(second.terrainSize,0.f,0.f);
+
+    second.terrainCenter += NzVector3f(m_configuration.terrainSize,0.f,0.f);
+   //second.terrainOrientation.roll = 90.f;
+
 
     quadtree2 = new NzTerrainQuadTree(second,m_heightSource);
     quadtree2->Initialize();

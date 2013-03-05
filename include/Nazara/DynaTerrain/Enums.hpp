@@ -20,27 +20,7 @@ enum nzDirection
     TOP = 0,
     BOTTOM = 1,
     LEFT = 2,
-    RIGHT = 3,
-    VERTICAL = 4,
-    HORIZONTAL = 5
-};
-
-struct id
-{
-    id() : lvl(0), sx(0), sy(0)
-    {
-    }
-    id(int level, int sizex, int sizey) : lvl(level), sx(sizex), sy(sizey)
-    {
-    }
-    int lvl;
-    int sx;
-    int sy;
-
-    bool operator<( const id& ID ) const
-    {
-        return (this->lvl != ID.lvl) ? this->lvl < ID.lvl : (this->sx != ID.sx) ? this->sx < ID.sx : this->sy < ID.sy;
-    }
+    RIGHT = 3
 };
 
 class NzTerrainQuadTree;
