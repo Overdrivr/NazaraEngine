@@ -141,11 +141,6 @@ void NzTerrainQuadTree::Render()
     m_data.dispatcher->DrawAll();
 }
 
-void NzTerrainQuadTree::DebugDrawAABB(bool leafOnly, int level)
-{
-    m_root->DebugDrawAABB(leafOnly,level);
-}
-
 NzTerrainQuadTree* NzTerrainQuadTree::GetContainingQuadTree(const NzTerrainNodeID& nodeID)
 {
     if(nodeID.locx < 0)

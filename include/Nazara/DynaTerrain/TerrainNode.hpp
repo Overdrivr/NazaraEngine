@@ -29,7 +29,6 @@ class NAZARA_API NzTerrainNode
         void CleanTree(unsigned int minDepth);
         void CreatePatch();
 
-        void DebugDrawAABB(bool leafOnly = true, int level = 0);
         void DeletePatch();
 
         const NzCubef& GetAABB() const;

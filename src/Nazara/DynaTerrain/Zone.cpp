@@ -151,14 +151,7 @@ bool NzZone::RemovePatch(const NzTerrainNodeID& ID)
 
     if(location.x < 0 || location.y < 0)
         return false;
-/*
-    float vertices[150] = {0};
 
-    if(!m_buffers.at(location.x)->Fill(vertices,location.y*25,25))
-    {
-        std::cout<<"Cannot fill buffer"<<std::endl;
-        return false;
-    }*/
     return true;
 }
 

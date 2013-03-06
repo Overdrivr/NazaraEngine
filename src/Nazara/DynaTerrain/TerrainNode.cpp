@@ -25,39 +25,6 @@ NzTerrainNode::~NzTerrainNode()
     nbNodes--;
 }
 
-void NzTerrainNode::DebugDrawAABB(bool leafOnly, int level)
-{
-    if(!m_isInitialized)
-    {
-        std::cout<<"NzTerrainNode::DebugDrawAABB : Calling uninitialized node"<<std::endl;
-        return;
-    }
-
-    if(leafOnly)
-    {
-        if(m_isLeaf)
-        {
-            NzDebugDrawer::Draw(m_aabb);
-        }
-        else
-        {
-            for(int i(0) ;  i < 4 ; ++i)
-                m_children[i]->DebugDrawAABB(leafOnly,level);
-        }
-    }
-    else
-    {
-        if(m_nodeID.depth == level)
-            NzDebugDrawer::Draw(m_aabb);
-        else if(m_nodeID.depth < level && m_isLeaf)
-        {
-            for(int i(0) ; i < 4 ; ++i)
-                m_children[i]->DebugDrawAABB(leafOnly,level);
-        }
-
-    }
-}
-
 void NzTerrainNode::CleanTree(unsigned int minDepth)
 {
     if(!m_isInitialized)

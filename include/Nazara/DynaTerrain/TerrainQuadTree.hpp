@@ -29,12 +29,8 @@ class NAZARA_API NzTerrainQuadTree
         ~NzTerrainQuadTree();
 
         void ConnectNeighbor(NzTerrainQuadTree* neighbour, nzDirection direction);
-        //bool Contains(NzTerrainNodeID& nodeId);
 
-        void DebugDrawAABB(bool leafOnly, int level);
         void DisconnectNeighbor(NzTerrainQuadTree* neighbour, nzDirection direction);
-
-        //id FixIDForNeighbourQuadTree(id nodeID);
 
         NzTerrainQuadTree* GetContainingQuadTree(const NzTerrainNodeID& nodeID);
         unsigned int GetLeafNodesAmount() const;
@@ -42,7 +38,7 @@ class NAZARA_API NzTerrainQuadTree
         NzTerrainNode* GetNode(const NzTerrainNodeID& nodeID);
         NzTerrainNode* GetRootNode();
         unsigned int GetSubdivisionsAmount();
-        NzVector3f GetVertexPosition(const NzTerrainNodeID& nodeID, int x, int y);
+        virtual NzVector3f GetVertexPosition(const NzTerrainNodeID& nodeID, int x, int y);
 
         void Initialize();
 
@@ -68,8 +64,6 @@ class NAZARA_API NzTerrainQuadTree
         //Returns -1 if the distance to the camera is too big
         //or the radius index otherwise
         int TransformDistanceToCameraInRadiusIndex(float distance);
-
-    private:
 
         NzHeightSource* m_heightSource;
         NzTerrainConfiguration m_configuration;
@@ -103,6 +97,10 @@ class NAZARA_API NzTerrainQuadTree
         unsigned int m_maxOperationsPerFrame;
 
         NzClock updateClock;
+
+    private:
+
+
 };
 
 #endif // NAZARA_TERRAINQUADTREE_HPP
