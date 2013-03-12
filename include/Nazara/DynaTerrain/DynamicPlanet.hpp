@@ -8,23 +8,21 @@
 #define NAZARA_DYNAMICPLANET_HPP
 
 #include <Nazara/Prerequesites.hpp>
-#include <Nazara/DynaTerrain/HeightSource.hpp>
+#include <Nazara/DynaTerrain/HeightSource3D.hpp>
 #include <Nazara/Renderer/Shader.hpp>
 #include <Nazara/DynaTerrain/TerrainConfiguration.hpp>
-#include <Nazara/DynaTerrain/PlanetQuadTree.hpp>
+#include <Nazara/DynaTerrain/DynaTerrainQuadTreeBase.hpp>
 #include <Nazara/DynaTerrain/Dispatcher.hpp>
 #include <Nazara/DynaTerrain/ObjectPool.hpp>
 #include <Nazara/Renderer/Texture.hpp>
 
-//TODO : HeightSource 2D et 3D
-//TODO : Configuration pour planète
 //TODO : modifier shader du terrain pour qu'il fonctionne avec n'importe quelle direction (slope, altitude)
 
 class NAZARA_API NzDynamicPlanet
 {
     public:
 
-        NzDynamicPlanet(const NzTerrainConfiguration& configuration, NzHeightSource* heightSource);
+        NzDynamicPlanet(const NzPlanetConfiguration& configuration, NzHeightSource3D* heightSource);
         ~NzDynamicPlanet();
 
         void Initialize();
@@ -37,13 +35,13 @@ class NAZARA_API NzDynamicPlanet
 
     private:
 
-        NzTerrainConfiguration m_configuration;
-        NzHeightSource* m_heightSource;
+        NzPlanetConfiguration m_configuration;
+        NzHeightSource3D* m_heightSource;
         NzTexture m_terrainTexture;
 
         NzShader m_shader;
-        NzPlanetQuadTree* quadtree;
-        NzPlanetQuadTree* quadtree2;
+        NzDynaTerrainQuadTreeBase* quadtree;
+        NzDynaTerrainQuadTreeBase* quadtree2;
 };
 
 #endif // NAZARA_DYNAMICPLANET_HPP

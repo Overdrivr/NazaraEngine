@@ -11,7 +11,7 @@
 
 using namespace std;
 
-NzDynamicTerrain::NzDynamicTerrain(const NzTerrainConfiguration& configuration, NzHeightSource* heightSource)
+NzDynamicTerrain::NzDynamicTerrain(const NzTerrainConfiguration& configuration, NzHeightSource2D* heightSource)
 {
    if(configuration.IsValid())
         m_configuration = configuration;
@@ -36,8 +36,8 @@ void NzDynamicTerrain::Initialize()
 {
     SetShaders(m_configuration.vertexShader,m_configuration.fragmentShader);
 
-    if(!m_terrainTexture.LoadFromFile(m_configuration.terrainTexture))
-        std::cout<<"Could not load texture "<<m_configuration.terrainTexture<<std::endl;
+    if(!m_terrainTexture.LoadFromFile(m_configuration.groundTextures))
+        std::cout<<"Could not load texture "<<m_configuration.groundTextures<<std::endl;
 
     //m_terrainTexture.EnableMipmapping(false);
 
@@ -48,16 +48,17 @@ void NzDynamicTerrain::Initialize()
 
     m_shader.SendTexture(i,&m_terrainTexture);
 
-    quadtree = new NzTerrainQuadTree(m_configuration,m_heightSource);
+    quadtree = new NzDynaTerrainQuadTreeBase(m_configuration,m_heightSource);
     quadtree->Initialize();
+
 
     NzTerrainConfiguration second = m_configuration;
 
-    second.terrainCenter += NzVector3f(m_configuration.terrainSize,0.f,0.f);
+    second.center += NzVector3f(m_configuration.terrainSize,0.f,0.f);
    //second.terrainOrientation.roll = 90.f;
 
 
-    quadtree2 = new NzTerrainQuadTree(second,m_heightSource);
+    quadtree2 = new NzDynaTerrainQuadTreeBase(second,m_heightSource);
     quadtree2->Initialize();
 
     quadtree->ConnectNeighbor(quadtree2,RIGHT);

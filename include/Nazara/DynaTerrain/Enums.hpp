@@ -23,15 +23,18 @@ enum nzDirection
     RIGHT = 3
 };
 
-class NzTerrainQuadTree;
-class NzHeightSource;
+enum nzQuadTreeType
+{
+    TERRAIN,
+    PLANET
+};
+
+class NzDynaTerrainQuadTreeBase;
 class NzDispatcher;
 
 struct TerrainNodeData
 {
-    NzTerrainQuadTree* quadtree;
-    NzHeightSource* heightSource;
+    NzDynaTerrainQuadTreeBase* quadtree;
     NzDispatcher* dispatcher;
 };
-
 #endif // NAZARA_ENUMS_DYNATERRAIN_HPP

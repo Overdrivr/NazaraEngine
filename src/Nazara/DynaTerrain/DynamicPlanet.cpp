@@ -11,7 +11,7 @@
 
 using namespace std;
 
-NzDynamicPlanet::NzDynamicPlanet(const NzTerrainConfiguration& configuration, NzHeightSource* heightSource)
+NzDynamicPlanet::NzDynamicPlanet(const NzPlanetConfiguration& configuration, NzHeightSource3D* heightSource)
 {
    if(configuration.IsValid())
         m_configuration = configuration;
@@ -36,8 +36,8 @@ void NzDynamicPlanet::Initialize()
 {
     SetShaders(m_configuration.vertexShader,m_configuration.fragmentShader);
 
-    if(!m_terrainTexture.LoadFromFile(m_configuration.terrainTexture))
-        std::cout<<"Could not load texture "<<m_configuration.terrainTexture<<std::endl;
+    if(!m_terrainTexture.LoadFromFile(m_configuration.groundTextures))
+        std::cout<<"Could not load texture "<<m_configuration.groundTextures<<std::endl;
 
     //m_terrainTexture.EnableMipmapping(false);
 
@@ -48,20 +48,19 @@ void NzDynamicPlanet::Initialize()
 
     m_shader.SendTexture(i,&m_terrainTexture);
 
-    float radius = 2000.f;
+    //float radius = 2000.f;
 
-    m_configuration.terrainCenter += NzVector3f(0.f,radius,0.f);
-
-    quadtree = new NzPlanetQuadTree(m_configuration,m_heightSource);
+    //m_configuration.center += NzVector3f(-m_configuration.planetRadius,m_configuration.planetRadius,-m_configuration.planetRadius);
+    std::cout<<m_configuration.center<<std::endl;
+    quadtree = new NzDynaTerrainQuadTreeBase(m_configuration,m_heightSource);
     quadtree->Initialize();
 
-    NzTerrainConfiguration second = m_configuration;
+    NzPlanetConfiguration second = m_configuration;
 
-    second.terrainCenter += NzVector3f(m_configuration.terrainSize/2.f,-m_configuration.terrainSize/2.f,0.f);
-    second.terrainOrientation.roll = -90.f;
+    //second.center += NzVector3f(0.f,-m_configuration.planetRadius/4.f,0.f);
+    std::cout<<second.center<<std::endl;
 
-
-    quadtree2 = new NzPlanetQuadTree(second,m_heightSource);
+    quadtree2 = new NzDynaTerrainQuadTreeBase(second,m_heightSource,NzEulerAnglesf(0.f,0.f,-90.f));
     quadtree2->Initialize();
 
     quadtree->ConnectNeighbor(quadtree2,RIGHT);

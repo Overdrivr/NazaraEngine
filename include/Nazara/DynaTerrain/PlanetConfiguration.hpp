@@ -4,29 +4,28 @@
 
 #pragma once
 
-#ifndef NAZARA_TERRAINCONFIGURATION_HPP
-#define NAZARA_TERRAINCONFIGURATION_HPP
+#ifndef NAZARA_PLANETCONFIGURATION_HPP
+#define NAZARA_PLANETCONFIGURATION_HPP
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/DynaTerrain/DynaTerrainConfigurationBase.hpp>
 #include <Nazara/Math/EulerAngles.hpp>
 
-class NAZARA_API NzTerrainConfiguration : public NzDynaTerrainConfigurationBase
+class NAZARA_API NzPlanetConfiguration : public NzDynaTerrainConfigurationBase
 {
     public:
-        NzTerrainConfiguration();
-        ~NzTerrainConfiguration();
+        NzPlanetConfiguration();
+        ~NzPlanetConfiguration();
 
         void AutoFix();
 
         bool IsValid() const;
 
-        //Terrain parameters
+        //Planet parameters
+        float planetRadius;
 
-        float terrainSize;
-        NzEulerAnglesf terrainOrientation;
     protected:
     private:
 };
 
-#endif // NAZARA_TERRAINCONFIGURATION_HPP
+#endif // NAZARA_PLANETCONFIGURATION_HPP

@@ -12,7 +12,6 @@
 #include <Nazara/Math/Vector3.hpp>
 #include <Nazara/Math/Sphere.hpp>
 #include <Nazara/DynaTerrain/Patch.hpp>
-#include <Nazara/DynaTerrain/HeightSource.hpp>
 #include <Nazara/DynaTerrain/Enums.hpp>
 #include <Nazara/DynaTerrain/TerrainNodeID.hpp>
 

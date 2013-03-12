@@ -38,7 +38,7 @@ class NzSphere
 		T GetRadius() const;
 		T GetSquaredRadius() const;
 
-		bool Intersect(const NzCube<T>& cube) const;
+		bool Intersect(const NzCube<T>& cube) const;//FIX ME
 		bool Intersect(const NzSphere& sphere) const;
 
 		bool IsValid() const;

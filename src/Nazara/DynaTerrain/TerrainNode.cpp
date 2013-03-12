@@ -5,7 +5,7 @@
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/DynaTerrain/Config.hpp>
 #include <Nazara/DynaTerrain/TerrainNode.hpp>
-#include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
+#include <Nazara/DynaTerrain/DynaTerrainQuadTreeBase.hpp>
 #include <Nazara/Renderer/DebugDrawer.hpp>
 #include <stack>
 #include <iostream>
@@ -146,7 +146,7 @@ NzTerrainNode* NzTerrainNode::GetDirectNeighbor(nzDirection direction)
     }
     else
     {
-        NzTerrainQuadTree* tempQuad = m_data->quadtree->GetContainingQuadTree(tempID);
+        NzDynaTerrainQuadTreeBase* tempQuad = m_data->quadtree->GetContainingQuadTree(tempID);
 
         if(tempQuad == nullptr)
             return nullptr;
@@ -264,9 +264,7 @@ void NzTerrainNode::Initialize(TerrainNodeData *data, NzTerrainNode* parent, nzL
         m_nodeID.locx = parent->m_nodeID.locx * 2 + offx;
         m_nodeID.locy = parent->m_nodeID.locy * 2 + offy;
     }
-
     CreatePatch();
-
     m_patch->UploadMesh();
 }
 
@@ -579,7 +577,7 @@ void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction, bool isNotR
         break;
     }
 
-    NzTerrainQuadTree* tempQuad;
+    NzDynaTerrainQuadTreeBase* tempQuad;
     NzTerrainNode* tempNode;
 
     //Si on ne cherche pas à atteindre une case externe

@@ -10,7 +10,6 @@
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Math/Vector2.hpp>
 #include <Nazara/Math/Vector3.hpp>
-#include <Nazara/DynaTerrain/HeightSource.hpp>
 #include <Nazara/DynaTerrain/Enums.hpp>
 #include <Nazara/DynaTerrain/TerrainNodeID.hpp>
 #include <array>
