@@ -13,16 +13,19 @@
 #include <Nazara/Core/ResourceListener.hpp>
 #include <Nazara/Core/ResourceLoader.hpp>
 #include <Nazara/Core/String.hpp>
-#include <Nazara/Utility/AxisAlignedBox.hpp>
+#include <Nazara/Math/Cube.hpp>
 #include <Nazara/Utility/Skeleton.hpp>
 #include <Nazara/Utility/SubMesh.hpp>
 #include <Nazara/Utility/VertexStruct.hpp>
 
 struct NAZARA_API NzMeshParams
 {
-	NzMeshParams(); // Vérifie que le storage indiqué un peu plus bas est supporté
+	NzMeshParams(); // Vérifie que le storage par défaut est supporté (software autrement)
 
+	// Si ceci sera le stockage choisi par le loader
 	nzBufferStorage storage = nzBufferStorage_Hardware;
+
+	// Le loader doit-il charger une version animée du mesh si possible ?
 	bool animated = true;
 
 	bool IsValid() const;
@@ -48,14 +51,15 @@ class NAZARA_API NzMesh : public NzResource, NzResourceListener
 		bool AddSubMesh(NzSubMesh* subMesh);
 		bool AddSubMesh(const NzString& identifier, NzSubMesh* subMesh);
 
-		void Animate(const NzAnimation* animation, unsigned int frameA, unsigned int frameB, float interpolation, NzSkeleton* skeleton) const;
-
-		bool CreateKeyframe();
 		bool CreateSkeletal(unsigned int jointCount);
 		bool CreateStatic();
 		void Destroy();
 
-		const NzAxisAlignedBox& GetAABB() const;
+		void GenerateNormals();
+		void GenerateNormalsAndTangents();
+		void GenerateTangents();
+
+		const NzCubef& GetAABB() const;
 		NzString GetAnimation() const;
 		nzAnimationType GetAnimationType() const;
 		unsigned int GetJointCount() const;
@@ -89,8 +93,6 @@ class NAZARA_API NzMesh : public NzResource, NzResourceListener
 		void SetAnimation(const NzString& animationPath);
 		void SetMaterial(unsigned int matIndex, const NzString& materialPath);
 		void SetMaterialCount(unsigned int matCount);
-
-		void Skin(const NzSkeleton* skeleton) const;
 
 		static const NzVertexDeclaration* GetDeclaration();
 

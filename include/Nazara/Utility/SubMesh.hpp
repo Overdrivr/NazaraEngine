@@ -9,7 +9,7 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Core/Resource.hpp>
-#include <Nazara/Utility/AxisAlignedBox.hpp>
+#include <Nazara/Math/Cube.hpp>
 #include <Nazara/Utility/Enums.hpp>
 #include <Nazara/Utility/IndexBuffer.hpp>
 #include <Nazara/Utility/VertexBuffer.hpp>
@@ -27,15 +27,13 @@ class NAZARA_API NzSubMesh : public NzResource
 
 		virtual void Finish() = 0; ///DOC: Mets le mesh dans sa position d'origine et calcule son AABB
 
-		virtual const NzAxisAlignedBox& GetAABB() const = 0;
+		virtual const NzCubef& GetAABB() const = 0;
 		virtual nzAnimationType GetAnimationType() const = 0;
 		virtual const NzIndexBuffer* GetIndexBuffer() const = 0;
 		unsigned int GetMaterialIndex() const;
 		const NzMesh* GetParent() const;
 		nzPrimitiveType GetPrimitiveType() const;
-		virtual NzVertexBuffer* GetVertexBuffer() = 0;
-		virtual const NzVertexBuffer* GetVertexBuffer() const = 0;
-		virtual unsigned int GetVertexCount() const;
+		virtual unsigned int GetVertexCount() const = 0;
 
 		virtual bool IsAnimated() const = 0;
 

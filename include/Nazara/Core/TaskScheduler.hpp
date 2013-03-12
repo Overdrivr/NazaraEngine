@@ -9,15 +9,19 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Core/Functor.hpp>
+#include <Nazara/Core/Thread.hpp>
 
 class NAZARA_API NzTaskScheduler
 {
 	public:
+		NzTaskScheduler() = delete;
+		~NzTaskScheduler() = delete;
+
 		template<typename F> static void AddTask(F function);
 		template<typename F, typename... Args> static void AddTask(F function, Args... args);
 		template<typename C> static void AddTask(void (C::*function)(), C* object);
 		static unsigned int GetWorkerCount();
-		static bool Initialize();
+		static bool Initialize(unsigned int workerCount = NzThread::HardwareConcurrency());
 		static void Uninitialize();
 		static void WaitForTasks();
 

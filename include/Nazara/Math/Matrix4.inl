@@ -11,7 +11,6 @@
 #include <Nazara/Math/Vector2.hpp>
 #include <Nazara/Math/Vector3.hpp>
 #include <Nazara/Math/Vector4.hpp>
-#include <cmath>
 #include <cstring>
 #include <limits>
 #include <stdexcept>
@@ -472,13 +471,13 @@ NzMatrix4<T>& NzMatrix4<T>::MakeIdentity()
 }
 
 template<typename T>
-NzMatrix4<T>& NzMatrix4<T>::MakeOrtho(T left, T top, T width, T height, T zNear, T zFar)
+NzMatrix4<T>& NzMatrix4<T>::MakeOrtho(T left, T right, T top, T bottom, T zNear, T zFar)
 {
-	// http://msdn.microsoft.com/en-us/library/windows/desktop/bb204941(v=vs.85).aspx
-	Set(F(2.0)/(width-left), F(0.0), F(0.0), -(width+left)/(width-left),
-	    F(0.0), F(2.0)/(top-height), F(0.0), -(top+height)/(top-height),
-	    F(0.0), F(0.0), F(-2.0)/(zFar-zNear), -(zFar+zNear)/(zFar-zNear),
-	    F(0.0), F(0.0), F(0.0), F(1.0));
+	// http://www.opengl.org/sdk/docs/man2/xhtml/glOrtho.xml
+	Set(F(2.0) / (right - left), F(0.0), F(0.0), F(0.0),
+	    F(0.0), F(2.0) / (top - bottom), F(0.0), F(0.0),
+	    F(0.0), F(0.0), F(1.0) / (zFar - zNear), F(0.0),
+	    (left + right) / (left - right), (top + bottom) / (bottom - top), zNear/(zNear - zFar), F(1.0));
 
 	return *this;
 }
@@ -502,11 +501,11 @@ NzMatrix4<T>& NzMatrix4<T>::MakeLookAt(const NzVector3<T>& eye, const NzVector3<
 template<typename T>
 NzMatrix4<T>& NzMatrix4<T>::MakePerspective(T angle, T ratio, T zNear, T zFar)
 {
-	// http://msdn.microsoft.com/en-us/library/windows/desktop/bb204944(v=vs.85).aspx
+	// http://msdn.microsoft.com/en-us/library/windows/desktop/bb204945(v=vs.85).aspx
 	#if NAZARA_MATH_ANGLE_RADIAN
-	angle /= F(2.0);
+	angle *= F(0.5);
 	#else
-	angle = NzDegreeToRadian(angle/F(2.0));
+	angle = NzDegreeToRadian(angle * F(0.5));
 	#endif
 
 	T yScale = F(1.0) / std::tan(angle);
@@ -626,7 +625,7 @@ NzMatrix4<T>& NzMatrix4<T>::Set(const T matrix[16])
 template<typename T>
 NzMatrix4<T>& NzMatrix4<T>::Set(const NzMatrix4& matrix)
 {
-	std::memcpy(&m11, &matrix.m11, 16*sizeof(T));
+	std::memcpy(this, &matrix, sizeof(NzMatrix4));
 
 	return *this;
 }
@@ -742,12 +741,6 @@ NzMatrix4<T>& NzMatrix4<T>::Transpose()
 }
 
 template<typename T>
-NzMatrix4<T>::operator NzString() const
-{
-	return ToString();
-}
-
-template<typename T>
 NzMatrix4<T>::operator T*()
 {
 	return &m11;
@@ -776,7 +769,7 @@ T& NzMatrix4<T>::operator()(unsigned int x, unsigned int y)
 }
 
 template<typename T>
-const T& NzMatrix4<T>::operator()(unsigned int x, unsigned int y) const
+T NzMatrix4<T>::operator()(unsigned int x, unsigned int y) const
 {
 	#if NAZARA_MATH_SAFE
 	if (x > 3 || y > 3)

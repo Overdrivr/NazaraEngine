@@ -5,6 +5,7 @@
 #include <Nazara/Renderer/Material.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
 #include <Nazara/Renderer/Shader.hpp>
+#include <Nazara/Renderer/ShaderBuilder.hpp>
 #include <cstring>
 #include <Nazara/Renderer/Debug.hpp>
 
@@ -14,7 +15,10 @@ bool NzMaterialParams::IsValid() const
 }
 
 NzMaterial::NzMaterial() :
+m_customShader(nullptr),
 m_diffuseMap(nullptr),
+m_heightMap(nullptr),
+m_normalMap(nullptr),
 m_specularMap(nullptr)
 {
 	Reset();
@@ -25,8 +29,18 @@ NzResource()
 {
 	std::memcpy(this, &material, sizeof(NzMaterial)); // Autorisé dans notre cas, et plus rapide
 
+	// Cependant comme nous sommes une entité à part nous devons ajouter les références aux ressources
+	if (m_customShader)
+		m_customShader->AddResourceReference();
+
 	if (m_diffuseMap)
 		m_diffuseMap->AddResourceReference();
+
+	if (m_heightMap)
+		m_heightMap->AddResourceReference();
+
+	if (m_normalMap)
+		m_normalMap->AddResourceReference();
 
 	if (m_specularMap)
 		m_specularMap->AddResourceReference();
@@ -34,39 +48,36 @@ NzResource()
 
 NzMaterial::NzMaterial(NzMaterial&& material)
 {
-	if (m_diffuseMap)
-		m_diffuseMap->RemoveResourceReference();
-
-	if (m_specularMap)
-		m_specularMap->RemoveResourceReference();
-
 	std::memcpy(this, &material, sizeof(NzMaterial)); // Autorisé dans notre cas, et plus rapide
 
-	// Comme ça nous volons la référence du matériau
+	// Nous "volons" la référence du matériau
+	material.m_customShader = nullptr;
 	material.m_diffuseMap = nullptr;
+	material.m_heightMap = nullptr;
+	material.m_normalMap = nullptr;
 	material.m_specularMap = nullptr;
 }
 
 NzMaterial::~NzMaterial()
 {
+	if (m_customShader)
+		m_customShader->RemoveResourceReference();
+
 	if (m_diffuseMap)
 		m_diffuseMap->RemoveResourceReference();
+
+	if (m_heightMap)
+		m_heightMap->RemoveResourceReference();
+
+	if (m_normalMap)
+		m_normalMap->RemoveResourceReference();
 
 	if (m_specularMap)
 		m_specularMap->RemoveResourceReference();
 }
 
-void NzMaterial::Apply() const
+void NzMaterial::Apply(const NzShader* shader) const
 {
-	const NzShader* shader = NzRenderer::GetShader();
-	#if NAZARA_RENDERER_SAFE
-	if (!shader)
-	{
-		NazaraError("No shader bound");
-		return;
-	}
-	#endif
-
 	int ambientColorLocation = shader->GetUniformLocation("MaterialAmbient");
 	int diffuseColorLocation = shader->GetUniformLocation("MaterialDiffuse");
 	int shininessLocation = shader->GetUniformLocation("MaterialShininess");
@@ -91,6 +102,32 @@ void NzMaterial::Apply() const
 		}
 	}
 
+	if (m_heightMap)
+	{
+		int heightMapLocation = shader->GetUniformLocation("MaterialHeightMap");
+		if (heightMapLocation != -1)
+		{
+			nzUInt8 textureUnit;
+			if (shader->SendTexture(heightMapLocation, m_heightMap, &textureUnit))
+				NzRenderer::SetTextureSampler(textureUnit, m_diffuseSampler);
+			else
+				NazaraWarning("Failed to send height map");
+		}
+	}
+
+	if (m_normalMap)
+	{
+		int normalMapLocation = shader->GetUniformLocation("MaterialNormalMap");
+		if (normalMapLocation != -1)
+		{
+			nzUInt8 textureUnit;
+			if (shader->SendTexture(normalMapLocation, m_normalMap, &textureUnit))
+				NzRenderer::SetTextureSampler(textureUnit, m_diffuseSampler);
+			else
+				NazaraWarning("Failed to send normal map");
+		}
+	}
+
 	if (shininessLocation != -1)
 		shader->SendFloat(shininessLocation, m_shininess);
 
@@ -106,7 +143,7 @@ void NzMaterial::Apply() const
 			if (shader->SendTexture(specularMapLocation, m_specularMap, &textureUnit))
 				NzRenderer::SetTextureSampler(textureUnit, m_specularSampler);
 			else
-				NazaraWarning("Failed to send diffuse map");
+				NazaraWarning("Failed to send specular map");
 		}
 	}
 
@@ -117,6 +154,16 @@ void NzMaterial::Apply() const
 	}
 	else
 		NzRenderer::Enable(nzRendererParameter_Blend, false);
+
+	if (m_faceCullingEnabled)
+	{
+		NzRenderer::Enable(nzRendererParameter_FaceCulling, true);
+		NzRenderer::SetFaceCulling(m_faceCulling);
+	}
+	else
+		NzRenderer::Enable(nzRendererParameter_FaceCulling, false);
+
+	NzRenderer::SetFaceFilling(m_faceFilling);
 
 	if (m_zTestEnabled)
 	{
@@ -131,6 +178,20 @@ void NzMaterial::Apply() const
 void NzMaterial::EnableAlphaBlending(bool alphaBlending)
 {
 	m_alphaBlendingEnabled = alphaBlending;
+}
+
+void NzMaterial::EnableFaceCulling(bool faceCulling)
+{
+	m_faceCullingEnabled = faceCulling;
+}
+
+void NzMaterial::EnableLighting(bool lighting)
+{
+	m_lightingEnabled = lighting;
+	if (m_lightingEnabled)
+		m_shaderFlags |= nzShaderFlags_Lighting;
+	else
+		m_shaderFlags &= ~nzShaderFlags_Lighting;
 }
 
 void NzMaterial::EnableZTest(bool zTest)
@@ -163,7 +224,7 @@ const NzTextureSampler& NzMaterial::GetDiffuseSampler() const
 	return m_diffuseSampler;
 }
 
-const NzTexture* NzMaterial::GetDiffuseMap() const
+NzTexture* NzMaterial::GetDiffuseMap() const
 {
 	return m_diffuseMap;
 }
@@ -183,6 +244,26 @@ nzFaceFilling NzMaterial::GetFaceFilling() const
 	return m_faceFilling;
 }
 
+NzTexture* NzMaterial::GetHeightMap() const
+{
+	return m_diffuseMap;
+}
+
+NzTexture* NzMaterial::GetNormalMap() const
+{
+	return m_diffuseMap;
+}
+
+const NzShader* NzMaterial::GetCustomShader() const
+{
+	return m_customShader;
+}
+
+nzUInt32 NzMaterial::GetShaderFlags() const
+{
+	return m_shaderFlags;
+}
+
 float NzMaterial::GetShininess() const
 {
 	return m_shininess;
@@ -193,7 +274,7 @@ NzColor NzMaterial::GetSpecularColor() const
 	return m_specularColor;
 }
 
-const NzTexture* NzMaterial::GetSpecularMap() const
+NzTexture* NzMaterial::GetSpecularMap() const
 {
 	return m_specularMap;
 }
@@ -218,9 +299,24 @@ nzRendererComparison NzMaterial::GetZTestCompare() const
 	return m_zTestCompareFunc;
 }
 
+bool NzMaterial::HasCustomShader() const
+{
+	return m_customShader != nullptr;
+}
+
 bool NzMaterial::IsAlphaBlendingEnabled() const
 {
 	return m_alphaBlendingEnabled;
+}
+
+bool NzMaterial::IsFaceCullingEnabled() const
+{
+	return m_faceCullingEnabled;
+}
+
+bool NzMaterial::IsLightingEnabled() const
+{
+	return m_lightingEnabled;
 }
 
 bool NzMaterial::IsZTestEnabled() const
@@ -250,10 +346,28 @@ bool NzMaterial::LoadFromStream(NzInputStream& stream, const NzMaterialParams& p
 
 void NzMaterial::Reset()
 {
+	if (m_customShader)
+	{
+		m_customShader->RemoveResourceReference();
+		m_customShader = nullptr;
+	}
+
 	if (m_diffuseMap)
 	{
 		m_diffuseMap->RemoveResourceReference();
 		m_diffuseMap = nullptr;
+	}
+
+	if (m_heightMap)
+	{
+		m_heightMap->RemoveResourceReference();
+		m_heightMap = nullptr;
+	}
+
+	if (m_normalMap)
+	{
+		m_normalMap->RemoveResourceReference();
+		m_normalMap = nullptr;
 	}
 
 	if (m_specularMap)
@@ -268,7 +382,10 @@ void NzMaterial::Reset()
 	m_diffuseSampler = NzTextureSampler();
 	m_dstBlend = nzBlendFunc_Zero;
 	m_faceCulling = nzFaceCulling_Back;
+	m_faceCullingEnabled = true;
 	m_faceFilling = nzFaceFilling_Fill;
+	m_lightingEnabled = true;
+	m_shaderFlags = nzShaderFlags_Lighting;
 	m_shininess = 50.f;
 	m_specularColor = NzColor::White;
 	m_specularSampler = NzTextureSampler();
@@ -283,19 +400,41 @@ void NzMaterial::SetAmbientColor(const NzColor& ambient)
 	m_ambientColor = ambient;
 }
 
+void NzMaterial::SetCustomShader(const NzShader* shader)
+{
+	if (m_customShader != shader)
+	{
+		if (m_customShader)
+			m_customShader->RemoveResourceReference();
+
+		m_customShader = shader;
+		if (m_customShader)
+			m_customShader->AddResourceReference();
+	}
+}
+
 void NzMaterial::SetDiffuseColor(const NzColor& diffuse)
 {
 	m_diffuseColor = diffuse;
 }
 
-void NzMaterial::SetDiffuseMap(const NzTexture* map)
+void NzMaterial::SetDiffuseMap(NzTexture* map)
 {
-	if (m_diffuseMap)
-		m_diffuseMap->RemoveResourceReference();
+	if (m_diffuseMap != map)
+	{
+		if (m_diffuseMap)
+		{
+			m_diffuseMap->RemoveResourceReference();
+			m_shaderFlags &= ~nzShaderFlags_DiffuseMapping;
+		}
 
-	m_diffuseMap = map;
-	if (m_diffuseMap)
-		m_diffuseMap->AddResourceReference();
+		m_diffuseMap = map;
+		if (m_diffuseMap)
+		{
+			m_diffuseMap->AddResourceReference();
+			m_shaderFlags |= nzShaderFlags_DiffuseMapping;
+		}
+	}
 }
 
 void NzMaterial::SetDiffuseSampler(const NzTextureSampler& sampler)
@@ -318,6 +457,38 @@ void NzMaterial::SetFaceFilling(nzFaceFilling filling)
 	m_faceFilling = filling;
 }
 
+void NzMaterial::SetHeightMap(NzTexture* map)
+{
+	if (m_heightMap != map)
+	{
+		if (m_heightMap)
+			m_heightMap->RemoveResourceReference();
+
+		m_heightMap = map;
+		if (m_heightMap)
+			m_heightMap->AddResourceReference();
+	}
+}
+
+void NzMaterial::SetNormalMap(NzTexture* map)
+{
+	if (m_normalMap != map)
+	{
+		if (m_normalMap)
+		{
+			m_normalMap->RemoveResourceReference();
+			m_shaderFlags &= ~nzShaderFlags_NormalMapping;
+		}
+
+		m_normalMap = map;
+		if (m_normalMap)
+		{
+			m_normalMap->AddResourceReference();
+			m_shaderFlags |= nzShaderFlags_NormalMapping;
+		}
+	}
+}
+
 void NzMaterial::SetShininess(float shininess)
 {
 	m_shininess = shininess;
@@ -328,14 +499,23 @@ void NzMaterial::SetSpecularColor(const NzColor& specular)
 	m_specularColor = specular;
 }
 
-void NzMaterial::SetSpecularMap(const NzTexture* map)
+void NzMaterial::SetSpecularMap(NzTexture* map)
 {
-	if (m_specularMap)
-		m_specularMap->RemoveResourceReference();
+	if (m_specularMap != map)
+	{
+		if (m_specularMap)
+		{
+			m_specularMap->RemoveResourceReference();
+			m_shaderFlags &= ~nzShaderFlags_SpecularMapping;
+		}
 
-	m_specularMap = map;
-	if (m_specularMap)
-		m_specularMap->AddResourceReference();
+		m_specularMap = map;
+		if (m_specularMap)
+		{
+			m_specularMap->AddResourceReference();
+			m_shaderFlags |= nzShaderFlags_SpecularMapping;
+		}
+	}
 }
 
 void NzMaterial::SetSpecularSampler(const NzTextureSampler& sampler)
@@ -355,16 +535,35 @@ void NzMaterial::SetZTestCompare(nzRendererComparison compareFunc)
 
 NzMaterial& NzMaterial::operator=(const NzMaterial& material)
 {
+	if (m_customShader)
+		m_customShader->RemoveResourceReference();
+
 	if (m_diffuseMap)
 		m_diffuseMap->RemoveResourceReference();
+
+	if (m_heightMap)
+		m_heightMap->RemoveResourceReference();
+
+	if (m_normalMap)
+		m_normalMap->RemoveResourceReference();
 
 	if (m_specularMap)
 		m_specularMap->RemoveResourceReference();
 
 	std::memcpy(this, &material, sizeof(NzMaterial)); // Autorisé dans notre cas, et plus rapide
 
+	// Cependant comme nous sommes une entité à part nous devons ajouter les références aux ressources
+	if (m_customShader)
+		m_customShader->AddResourceReference();
+
 	if (m_diffuseMap)
 		m_diffuseMap->AddResourceReference();
+
+	if (m_heightMap)
+		m_heightMap->AddResourceReference();
+
+	if (m_normalMap)
+		m_normalMap->AddResourceReference();
 
 	if (m_specularMap)
 		m_specularMap->AddResourceReference();
@@ -374,8 +573,17 @@ NzMaterial& NzMaterial::operator=(const NzMaterial& material)
 
 NzMaterial& NzMaterial::operator=(NzMaterial&& material)
 {
+	if (m_customShader)
+		m_customShader->RemoveResourceReference();
+
 	if (m_diffuseMap)
 		m_diffuseMap->RemoveResourceReference();
+
+	if (m_heightMap)
+		m_heightMap->RemoveResourceReference();
+
+	if (m_normalMap)
+		m_normalMap->RemoveResourceReference();
 
 	if (m_specularMap)
 		m_specularMap->RemoveResourceReference();
@@ -383,19 +591,23 @@ NzMaterial& NzMaterial::operator=(NzMaterial&& material)
 	std::memcpy(this, &material, sizeof(NzMaterial)); // Autorisé dans notre cas, et plus rapide
 
 	// Comme ça nous volons la référence du matériau
+	material.m_customShader = nullptr;
 	material.m_diffuseMap = nullptr;
+	material.m_heightMap = nullptr;
+	material.m_normalMap = nullptr;
 	material.m_specularMap = nullptr;
 
 	return *this;
 }
 
-const NzMaterial* NzMaterial::GetDefault()
+NzMaterial* NzMaterial::GetDefault()
 {
 	static NzMaterial defaultMaterial;
 	static bool initialized = false;
 
 	if (!initialized)
 	{
+		defaultMaterial.EnableLighting(false);
 		defaultMaterial.SetFaceCulling(nzFaceCulling_FrontAndBack);
 		defaultMaterial.SetFaceFilling(nzFaceFilling_Line);
 		defaultMaterial.SetDiffuseColor(NzColor::White);

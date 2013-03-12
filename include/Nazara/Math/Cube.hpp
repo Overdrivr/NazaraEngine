@@ -8,7 +8,10 @@
 #define NAZARA_CUBE_HPP
 
 #include <Nazara/Core/String.hpp>
+#include <Nazara/Math/Enums.hpp>
+#include <Nazara/Math/Matrix4.hpp>
 #include <Nazara/Math/Rect.hpp>
+#include <Nazara/Math/Sphere.hpp>
 #include <Nazara/Math/Vector3.hpp>
 #include <Nazara/Math/Sphere.hpp>
 
@@ -33,13 +36,19 @@ class NzCube
 
 		T DistanceTo(const NzVector3<T>& point);
 
+		NzCube& ExtendTo(T X, T Y, T Z);
 		NzCube& ExtendTo(const NzVector3<T>& point);
 		NzCube& ExtendTo(const NzCube& cube);
 
-        NzSphere<T> GetBoundingSphere() const;
+		NzSphere<T> GetBoundingSphere() const;
+		NzVector3<T> GetCorner(nzCorner corner) const;
 		NzVector3<T> GetCenter() const;
+		NzVector3<T> GetNegativeVertex(const NzVector3<T>& normal) const;
 		NzVector3<T> GetPosition() const;
+		NzVector3<T> GetPositiveVertex(const NzVector3<T>& normal) const;
+		T GetRadius() const;
 		NzVector3<T> GetSize() const;
+		T GetSquaredRadius() const;
 
 		bool Intersect(const NzCube& cube, NzCube* intersection = nullptr) const;
 
@@ -49,13 +58,14 @@ class NzCube
 
 		NzCube& Set(T X, T Y, T Z, T Width, T Height, T Depth);
 		NzCube& Set(const T cube[6]);
+		NzCube& Set(const NzCube& cube);
 		NzCube& Set(const NzRect<T>& rect);
 		NzCube& Set(const NzVector3<T>& vec1, const NzVector3<T>& vec2);
 		template<typename U> NzCube& Set(const NzCube<U>& cube);
 
 		NzString ToString() const;
 
-		operator NzString() const;
+		NzCube& Transform(const NzMatrix4<T>& matrix, bool applyTranslation = true);
 
 		T& operator[](unsigned int i);
 		T operator[](unsigned int i) const;

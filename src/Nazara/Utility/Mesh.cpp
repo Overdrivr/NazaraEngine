@@ -7,10 +7,11 @@
 #include <Nazara/Utility/Animation.hpp>
 #include <Nazara/Utility/Buffer.hpp>
 #include <Nazara/Utility/Config.hpp>
-#include <Nazara/Utility/KeyframeMesh.hpp>
 #include <Nazara/Utility/SkeletalMesh.hpp>
 #include <Nazara/Utility/Skeleton.hpp>
 #include <Nazara/Utility/SubMesh.hpp>
+#include <Nazara/Utility/TriangleIterator.hpp>
+#include <Nazara/Utility/VertexMapper.hpp>
 #include <cstring>
 #include <deque>
 #include <map>
@@ -39,10 +40,11 @@ struct NzMeshImpl
 	std::vector<NzString> materials;
 	std::vector<NzSubMesh*> subMeshes;
 	nzAnimationType animationType;
-	NzAxisAlignedBox aabb;
-	NzSkeleton skeleton; // Uniquement pour les animations squelettiques
+	NzCubef aabb;
+	NzSkeleton skeleton; // Uniquement pour les meshs squelettiques
 	NzString animationPath;
-	unsigned int jointCount; // Uniquement pour les animations squelettiques
+	bool aabbUpdated = false;
+	unsigned int jointCount; // Uniquement pour les meshs squelettiques
 };
 
 NzMesh::~NzMesh()
@@ -75,7 +77,7 @@ bool NzMesh::AddSubMesh(NzSubMesh* subMesh)
 	subMesh->AddResourceListener(this, m_impl->subMeshes.size());
 	subMesh->Finish();
 
-	m_impl->aabb.SetNull(); // On invalide l'AABB
+	m_impl->aabbUpdated = false; // On invalide l'AABB
 	m_impl->subMeshes.push_back(subMesh);
 
 	return true;
@@ -121,100 +123,10 @@ bool NzMesh::AddSubMesh(const NzString& identifier, NzSubMesh* subMesh)
 	subMesh->AddResourceListener(this, index);
 	subMesh->Finish();
 
-	m_impl->aabb.SetNull(); // On invalide l'AABB
+	m_impl->aabbUpdated = false; // On invalide l'AABB
 	m_impl->subMeshes.push_back(subMesh);
 	m_impl->subMeshMap[identifier] = index;
 
-	return true;
-}
-
-void NzMesh::Animate(const NzAnimation* animation, unsigned int frameA, unsigned int frameB, float interpolation, NzSkeleton* skeleton) const
-{
-	#if NAZARA_UTILITY_SAFE
-	if (!m_impl)
-	{
-		NazaraError("Mesh not created");
-		return;
-	}
-
-	if (!animation || !animation->IsValid())
-	{
-		NazaraError("Animation must be valid");
-		return;
-	}
-
-	if (animation->GetType() != m_impl->animationType)
-	{
-		NazaraError("Animation type must match mesh animation type");
-		return;
-	}
-
-	unsigned int frameCount = animation->GetFrameCount();
-	if (frameA >= frameCount)
-	{
-		NazaraError("Frame A is out of range (" + NzString::Number(frameA) + " >= " + NzString::Number(frameCount) + ')');
-		return;
-	}
-
-	if (frameB >= frameCount)
-	{
-		NazaraError("Frame B is out of range (" + NzString::Number(frameB) + " >= " + NzString::Number(frameCount) + ')');
-		return;
-	}
-	#endif
-
-	#ifdef NAZARA_DEBUG
-	if (interpolation < 0.f || interpolation > 1.f)
-	{
-		NazaraError("Interpolation must be in range [0..1] (Got " + NzString::Number(interpolation) + ')');
-		return;
-	}
-	#endif
-
-	switch (m_impl->animationType)
-	{
-		case nzAnimationType_Keyframe:
-			for (NzSubMesh* subMesh : m_impl->subMeshes)
-			{
-				NzKeyframeMesh* keyframeMesh = static_cast<NzKeyframeMesh*>(subMesh);
-				keyframeMesh->InterpolateImpl(frameA, frameB, interpolation);
-			}
-			break;
-
-		case nzAnimationType_Skeletal:
-			#if NAZARA_UTILITY_SAFE
-			if (!skeleton)
-			{
-				NazaraError("Skeleton must be valid for skeletal animation");
-				return;
-			}
-			#endif
-
-			animation->AnimateSkeleton(skeleton, frameA, frameB, interpolation);
-			for (NzSubMesh* subMesh : m_impl->subMeshes)
-			{
-				NzSkeletalMesh* skeletalMesh = static_cast<NzSkeletalMesh*>(subMesh);
-				skeletalMesh->Skin(skeleton);
-			}
-			break;
-
-		case nzAnimationType_Static:
-			// Le safe mode est censé nous protéger de cet appel
-			NazaraInternalError("Static mesh has no animation, please enable safe mode");
-			break;
-	}
-
-	m_impl->aabb.SetNull(); // On invalide l'AABB
-}
-
-bool NzMesh::CreateKeyframe()
-{
-	Destroy();
-
-	m_impl = new NzMeshImpl;
-	m_impl->animationType = nzAnimationType_Keyframe;
-
-	NotifyCreated();
 	return true;
 }
 
@@ -262,20 +174,179 @@ void NzMesh::Destroy()
 	}
 }
 
-const NzAxisAlignedBox& NzMesh::GetAABB() const
+void NzMesh::GenerateNormals()
 {
 	#if NAZARA_UTILITY_SAFE
 	if (!m_impl)
 	{
 		NazaraError("Mesh not created");
-		return NzAxisAlignedBox::Null;
+		return;
 	}
 	#endif
 
-	if (m_impl->aabb.IsNull())
+	for (NzSubMesh* subMesh : m_impl->subMeshes)
 	{
+		NzVertexMapper mapper1(subMesh);
+		unsigned int vertexCount = mapper1.GetVertexCount();
+		for (unsigned int i = 0; i < vertexCount; ++i)
+			mapper1.SetNormal(i, NzVector3f::Zero());
+
+		mapper1.Unmap();
+
+		NzTriangleIterator iterator(subMesh);
+		do
+		{
+			NzVector3f pos0 = iterator.GetPosition(0);
+
+			NzVector3f dv[2];
+			dv[0] = iterator.GetPosition(1) - pos0;
+			dv[1] = iterator.GetPosition(2) - pos0;
+
+			NzVector3f normal = dv[0].CrossProduct(dv[1]);
+
+			for (unsigned int i = 0; i < 3; ++i)
+				iterator.SetNormal(i, iterator.GetNormal(i) + normal);
+		}
+		while (iterator.Advance());
+
+		NzVertexMapper mapper2(subMesh);
+		for (unsigned int i = 0; i < vertexCount; ++i)
+			mapper2.SetNormal(i, NzVector3f::Normalize(mapper2.GetNormal(i)));
+	}
+}
+
+void NzMesh::GenerateNormalsAndTangents()
+{
+	#if NAZARA_UTILITY_SAFE
+	if (!m_impl)
+	{
+		NazaraError("Mesh not created");
+		return;
+	}
+	#endif
+
+	for (NzSubMesh* subMesh : m_impl->subMeshes)
+	{
+		NzVertexMapper mapper1(subMesh);
+		unsigned int vertexCount = mapper1.GetVertexCount();
+		for (unsigned int i = 0; i < vertexCount; ++i)
+		{
+			mapper1.SetNormal(i, NzVector3f::Zero());
+			mapper1.SetTangent(i, NzVector3f::Zero());
+		}
+
+		mapper1.Unmap();
+
+		NzTriangleIterator iterator(subMesh);
+		do
+		{
+			NzVector3f pos0 = iterator.GetPosition(0);
+			NzVector2f uv0 = iterator.GetTexCoords(0);
+
+			NzVector3f dv[2];
+			dv[0] = iterator.GetPosition(1) - pos0;
+			dv[1] = iterator.GetPosition(2) - pos0;
+
+			NzVector3f normal = dv[0].CrossProduct(dv[1]);
+
+			NzVector2f duv[2];
+			duv[0] = iterator.GetTexCoords(1) - uv0;
+			duv[1] = iterator.GetTexCoords(2) - uv0;
+
+			float coef = 1.f / (duv[0].x*duv[1].y - duv[1].x*duv[0].y);
+
+			NzVector3f tangent;
+			tangent.x = coef * (dv[0].x*duv[1].y + dv[1].x*(-duv[0].y));
+			tangent.y = coef * (dv[0].y*duv[1].y + dv[1].y*(-duv[0].y));
+			tangent.z = coef * (dv[0].z*duv[1].y + dv[1].z*(-duv[0].y));
+
+			for (unsigned int i = 0; i < 3; ++i)
+			{
+				iterator.SetNormal(i, iterator.GetNormal(i) + normal);
+				iterator.SetTangent(i, iterator.GetTangent(i) + tangent);
+			}
+		}
+		while (iterator.Advance());
+
+		NzVertexMapper mapper2(subMesh);
+		for (unsigned int i = 0; i < vertexCount; ++i)
+		{
+			mapper2.SetNormal(i, NzVector3f::Normalize(mapper2.GetNormal(i)));
+			mapper2.SetTangent(i, NzVector3f::Normalize(mapper2.GetTangent(i)));
+		}
+	}
+}
+
+void NzMesh::GenerateTangents()
+{
+	#if NAZARA_UTILITY_SAFE
+	if (!m_impl)
+	{
+		NazaraError("Mesh not created");
+		return;
+	}
+	#endif
+
+	for (NzSubMesh* subMesh : m_impl->subMeshes)
+	{
+		NzTriangleIterator iterator(subMesh);
+		do
+		{
+			NzVector3f pos0 = iterator.GetPosition(0);
+			NzVector2f uv0 = iterator.GetTexCoords(0);
+
+			NzVector3f dv[2];
+			dv[0] = iterator.GetPosition(1) - pos0;
+			dv[1] = iterator.GetPosition(2) - pos0;
+
+			NzVector2f duv[2];
+			duv[0] = iterator.GetTexCoords(1) - uv0;
+			duv[1] = iterator.GetTexCoords(2) - uv0;
+
+			float ds[2];
+			ds[0] = iterator.GetTexCoords(1).x - uv0.x;
+			ds[1] = iterator.GetTexCoords(2).x - uv0.x;
+
+			NzVector3f ppt;
+			ppt.x = ds[0]*dv[1].x - dv[0].x*ds[1];
+			ppt.y = ds[0]*dv[1].y - dv[0].y*ds[1];
+			ppt.z = ds[0]*dv[1].z - dv[0].z*ds[1];
+			ppt.Normalize();
+
+			for (unsigned int i = 0; i < 3; ++i)
+			{
+				NzVector3f normal = iterator.GetNormal(i);
+				float d = ppt.DotProduct(normal);
+
+				NzVector3f tangent = ppt - (d * normal);
+
+				iterator.SetTangent(i, tangent);
+			}
+		}
+		while (iterator.Advance());
+	}
+}
+
+const NzCubef& NzMesh::GetAABB() const
+{
+	#if NAZARA_UTILITY_SAFE
+	if (!m_impl)
+	{
+		NazaraError("Mesh not created");
+
+		static NzCubef dummy;
+		return dummy;
+	}
+	#endif
+
+	if (!m_impl->aabbUpdated)
+	{
+		m_impl->aabb.MakeZero();
+
 		for (NzSubMesh* subMesh : m_impl->subMeshes)
 			m_impl->aabb.ExtendTo(subMesh->GetAABB());
+
+		m_impl->aabbUpdated = true;
 	}
 
 	return m_impl->aabb;
@@ -543,7 +614,7 @@ void NzMesh::InvalidateAABB() const
 	}
 	#endif
 
-	m_impl->aabb.SetNull();
+	m_impl->aabbUpdated = false;
 }
 
 bool NzMesh::HasSubMesh(const NzString& identifier) const
@@ -634,7 +705,7 @@ void NzMesh::RemoveSubMesh(const NzString& identifier)
 	(*it2)->RemoveResourceListener(this);
 	m_impl->subMeshes.erase(it2);
 
-	m_impl->aabb.SetNull(); // On invalide l'AABB
+	m_impl->aabbUpdated = false; // On invalide l'AABB
 }
 
 void NzMesh::RemoveSubMesh(unsigned int index)
@@ -661,7 +732,7 @@ void NzMesh::RemoveSubMesh(unsigned int index)
 	(*it)->RemoveResourceListener(this);
 	m_impl->subMeshes.erase(it);
 
-	m_impl->aabb.SetNull(); // On invalide l'AABB
+	m_impl->aabbUpdated = false; // On invalide l'AABB
 }
 
 void NzMesh::SetAnimation(const NzString& animationPath)
@@ -716,29 +787,6 @@ void NzMesh::SetMaterialCount(unsigned int matCount)
 			NazaraWarning("SubMesh " + NzString::Pointer(subMesh) + " material index is over mesh new material count (" + NzString::Number(matIndex) + " >= " + NzString::Number(matCount));
 	}
 	#endif
-}
-
-void NzMesh::Skin(const NzSkeleton* skeleton) const
-{
-	#if NAZARA_UTILITY_SAFE
-	if (!m_impl)
-	{
-		NazaraError("Mesh not created");
-		return;
-	}
-
-	if (m_impl->animationType != nzAnimationType_Skeletal)
-	{
-		NazaraError("Mesh's animation type is not skeletal");
-		return;
-	}
-	#endif
-
-	for (NzSubMesh* subMesh : m_impl->subMeshes)
-	{
-		NzSkeletalMesh* skeletalMesh = static_cast<NzSkeletalMesh*>(subMesh);
-		skeletalMesh->Skin(skeleton);
-	}
 }
 
 const NzVertexDeclaration* NzMesh::GetDeclaration()

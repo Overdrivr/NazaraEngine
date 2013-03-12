@@ -9,10 +9,10 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Core/InputStream.hpp>
+#include <Nazara/Math/Cube.hpp>
 #include <Nazara/Math/Quaternion.hpp>
 #include <Nazara/Math/Vector3.hpp>
 #include <Nazara/Utility/Animation.hpp>
-#include <Nazara/Utility/AxisAlignedBox.hpp>
 #include <vector>
 
 class NzMD5AnimParser
@@ -34,7 +34,7 @@ class NzMD5AnimParser
 			};
 
 			std::vector<Joint> joints;
-			NzAxisAlignedBox aabb;
+			NzCubef aabb;
 		};
 
 		struct Joint

@@ -25,12 +25,12 @@ class NAZARA_API NzBuffer : public NzResource, NzNonCopyable
 		NzBuffer(nzBufferType type, unsigned int length, nzUInt8 typeSize, nzBufferStorage storage = nzBufferStorage_Software, nzBufferUsage usage = nzBufferUsage_Static);
 		~NzBuffer();
 
-		bool CopyContent(NzBuffer& buffer);
+		bool CopyContent(const NzBuffer& buffer);
 
 		bool Create(unsigned int length, nzUInt8 typeSize, nzBufferStorage storage = nzBufferStorage_Software, nzBufferUsage usage = nzBufferUsage_Static);
 		void Destroy();
 
-		bool Fill(const void* data, unsigned int offset, unsigned int length);
+		bool Fill(const void* data, unsigned int offset, unsigned int length, bool forceDiscard = false);
 
 		NzBufferImpl* GetImpl() const;
 		unsigned int GetLength() const;

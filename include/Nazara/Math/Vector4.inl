@@ -4,8 +4,7 @@
 
 #include <Nazara/Core/StringStream.hpp>
 #include <Nazara/Math/Basic.hpp>
-#include <cmath>
-#include <cstdlib>
+#include <cstring>
 #include <stdexcept>
 #include <Nazara/Core/Debug.hpp>
 
@@ -66,6 +65,15 @@ template<typename T>
 T NzVector4<T>::DotProduct(const NzVector4& vec) const
 {
 	return x*vec.x + y*vec.y + z*vec.z + w*vec.w;
+}
+
+template<typename T>
+NzVector4<T> NzVector4<T>::GetNormal(T* length) const
+{
+	NzVector4<T> vec(*this);
+	vec.Normalize(length);
+
+	return vec;
 }
 
 template<typename T>
@@ -131,14 +139,15 @@ NzVector4<T>& NzVector4<T>::Minimize(const NzVector4& vec)
 template<typename T>
 NzVector4<T>& NzVector4<T>::Normalize(T* length)
 {
-	x /= w;
-	y /= w;
-	z /= w;
-
-	w = F(1.0);
+	T invLength = F(1.0)/w;
+	x *= invLength; // Attention, briser cette logique casserait Frustum::Extract
+	y *= invLength;
+	z *= invLength;
 
 	if (length)
 		*length = w;
+
+	w = F(1.0);
 
 	return *this;
 }
@@ -185,6 +194,14 @@ NzVector4<T>& NzVector4<T>::Set(const NzVector3<T>& vec, T W)
 }
 
 template<typename T>
+NzVector4<T>& NzVector4<T>::Set(const NzVector4& vec)
+{
+	std::memcpy(this, &vec, sizeof(NzVector4));
+
+	return *this;
+}
+
+template<typename T>
 template<typename U>
 NzVector4<T>& NzVector4<T>::Set(const NzVector4<U>& vec)
 {
@@ -202,12 +219,6 @@ NzString NzVector4<T>::ToString() const
 	NzStringStream ss;
 
 	return ss << "Vector4(" << x << ", " << y << ", " << z << ", " << w << ')';
-}
-
-template<typename T>
-NzVector4<T>::operator NzString() const
-{
-	return ToString();
 }
 
 template<typename T>

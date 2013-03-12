@@ -9,7 +9,6 @@
 
 #include <Nazara/Core/String.hpp>
 #include <Nazara/Math/Cube.hpp>
-#include <Nazara/Math/Rect.hpp>
 #include <Nazara/Math/Vector3.hpp>
 
 template <typename T> class NzCube;
@@ -20,25 +19,32 @@ class NzSphere
 	public:
 		NzSphere() = default;
 		NzSphere(T X, T Y, T Z, T Radius);
+		//NzSphere(const NzCircle<T>& circle);
+		NzSphere(const NzVector3<T>& pos, T Radius);
 		NzSphere(const T sphere[4]);
-		NzSphere(const NzVector3<T>& center, T Radius);
 		template<typename U> explicit NzSphere(const NzSphere<U>& sphere);
 		NzSphere(const NzSphere& sphere) = default;
 		~NzSphere() = default;
 
 		bool Contains(T X, T Y, T Z) const;
-		bool Contains(const NzVector3<T>& point) const;
-		bool Contains(const NzCube<T>& cube) const;
 		bool Contains(const NzSphere& sphere) const;
+		//bool Contains(const NzCube<T>& cube) const;
+		bool Contains(const NzVector3<T>& point) const;
 
+		T Distance(T X, T Y, T Z) const;
+		T Distance(const NzVector3<T>& point) const;
+
+		NzSphere& ExtendTo(T X, T Y, T Z);
 		NzSphere& ExtendTo(const NzVector3<T>& point);
-
-        NzCube<T> GetBoundingCube() const;
+		
+		NzCube<T> GetBoundingCube() const;
 		NzVector3<T> GetCenter() const;
-		T GetRadius() const;
+		NzVector3<T> GetNegativeVertex(const NzVector3<T>& normal) const;
+		NzVector3<T> GetPosition() const;
+		NzVector3<T> GetPositiveVertex(const NzVector3<T>& normal) const;
 		T GetSquaredRadius() const;
 
-		bool Intersect(const NzCube<T>& cube) const;//FIX ME
+		//bool Intersect(const NzCube<T>& cube) const;
 		bool Intersect(const NzSphere& sphere) const;
 
 		bool IsValid() const;
@@ -46,13 +52,16 @@ class NzSphere
 		NzSphere& MakeZero();
 
 		NzSphere& Set(T X, T Y, T Z, T Radius);
+		//NzSphere& Set(const NzCircle<T>& circle);
+		NzSphere& Set(const NzSphere& sphere);
+		NzSphere& Set(const NzVector3<T>& pos, T Radius);
 		NzSphere& Set(const T sphere[4]);
-		NzSphere& Set(const NzVector3<T>& center, T Radius);
 		template<typename U> NzSphere& Set(const NzSphere<U>& sphere);
 
-		NzString ToString() const;
+		T SquaredDistance(T X, T Y, T Z) const;
+		T SquaredDistance(const NzVector3<T>& point) const;
 
-		operator NzString() const;
+		NzString ToString() const;
 
 		T& operator[](unsigned int i);
 		T operator[](unsigned int i) const;
@@ -81,4 +90,3 @@ typedef NzSphere<unsigned int> NzSphereui;
 #include <Nazara/Math/Sphere.inl>
 
 #endif // NAZARA_SPHERE_HPP
-

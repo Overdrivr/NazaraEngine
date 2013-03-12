@@ -28,11 +28,14 @@ class NzRect
 		bool Contains(const NzRect& rect) const;
 		bool Contains(const NzCircle<T>& circle) const;
 
+		NzRect& ExtendTo(T X, T Y);
 		NzRect& ExtendTo(const NzVector2<T>& point);
 		NzRect& ExtendTo(const NzRect& rect);
 
 		NzVector2<T> GetCenter() const;
+		NzVector2<T> GetNegativeVertex(const NzVector2<T>& normal) const;
 		NzVector2<T> GetPosition() const;
+		NzVector2<T> GetPositiveVertex(const NzVector2<T>& normal) const;
 		NzVector2<T> GetSize() const;
 
 		bool Intersect(const NzRect& rect, NzRect* intersection = nullptr) const;
@@ -43,12 +46,11 @@ class NzRect
 
 		NzRect& Set(T X, T Y, T Width, T Height);
 		NzRect& Set(const T rect[4]);
+		NzRect& Set(const NzRect<T>& rect);
 		NzRect& Set(const NzVector2<T>& vec1, const NzVector2<T>& vec2);
 		template<typename U> NzRect& Set(const NzRect<U>& rect);
 
 		NzString ToString() const;
-
-		operator NzString() const;
 
 		T& operator[](unsigned int i);
 		T operator[](unsigned int i) const;
@@ -67,7 +69,7 @@ class NzRect
 };
 
 template<typename T>
-std::ostream& operator<<(std::ostream& out, const NzRect<T>& vec);
+std::ostream& operator<<(std::ostream& out, const NzRect<T>& rect);
 
 typedef NzRect<double> NzRectd;
 typedef NzRect<float> NzRectf;

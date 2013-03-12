@@ -27,7 +27,7 @@ int main()
 		// 2) Le concepteur du processeur, accessible via une énumération (GetProcessorVendor) ou une chaîne de caractère (GetProcessorVendorName)
 		// 3) Le nombre de processeurs, alias bien souvent le nombre de coeurs, cette valeur est renvoyée par l'OS (Le SMT multiplie donc la valeur réelle)
 		oss << "Identification: " << NzHardwareInfo::GetProcessorBrandString() << std::endl;
-		oss << "Vendeur: " << NzHardwareInfo::GetProcessorVendorName() << std::endl;
+		oss << "Concepteur: " << NzHardwareInfo::GetProcessorVendorName() << std::endl;
 		oss << "Nombre de coeurs: " << NzHardwareInfo::GetProcessorCount() << std::endl;
 		oss << std::endl;
 
@@ -47,7 +47,7 @@ int main()
 		printCap(oss, "-SSE4.a", NzHardwareInfo::HasCapability(nzProcessorCap_SSE4a));
 	}
 	else
-		oss << "Impossible de retrouver les informations de la carte graphique" << std::endl;
+		oss << "Impossible de retrouver les informations du processeur" << std::endl;
 
 	oss << std::endl << "--Carte graphique--" << std::endl;
 	// La classe NzOpenGL nous donne accès à des informations sur la carte graphique
@@ -64,7 +64,7 @@ int main()
 		// 2) La chaîne d'identification du concepteur ("Vendor name")
 		// 3) La version d'OpenGL
 		oss << "Identification: " << NzOpenGL::GetRendererName() << std::endl;
-		oss << "Vendeur: " << NzOpenGL::GetVendorName() << std::endl;
+		oss << "Concepteur: " << NzOpenGL::GetVendorName() << std::endl;
 		oss << "Version d'OpenGL: " << openglVersion/100 << '.' << openglVersion%100 << std::endl;
 		oss << std::endl;
 
@@ -77,7 +77,7 @@ int main()
 		printCap(oss, "-Mode debug", NzOpenGL::IsSupported(nzOpenGLExtension_DebugOutput));
 		printCap(oss, "-Pixelbuffer Object", NzOpenGL::IsSupported(nzOpenGLExtension_PixelBufferObject));
 		printCap(oss, "-Samplers Object", NzOpenGL::IsSupported(nzOpenGLExtension_SamplerObjects));
-		printCap(oss, "-Separate shader objects", NzOpenGL::IsSupported(nzOpenGLExtension_SamplerObjects));
+		printCap(oss, "-Separate shader objects", NzOpenGL::IsSupported(nzOpenGLExtension_SeparateShaderObjects));
 		printCap(oss, "-Texture array", NzOpenGL::IsSupported(nzOpenGLExtension_TextureArray));
 		printCap(oss, "-Texture storage", NzOpenGL::IsSupported(nzOpenGLExtension_TextureStorage));
 		printCap(oss, "-Vertex array objects", NzOpenGL::IsSupported(nzOpenGLExtension_VertexArrayObjects));
@@ -100,9 +100,7 @@ int main()
 		std::cout << "Un fichier (RapportHardwareInfo.txt) contenant le rapport a " << accent << 't' << accent << " cr" << accent << accent << std::endl;
 	}
 	else
-	{
 		std::cout << "Impossible de sauvegarder le rapport" << std::endl;
-	}
 
 	std::getchar();
 

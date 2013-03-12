@@ -22,20 +22,30 @@ class NzMaterial;
 class NzRenderTarget;
 class NzShader;
 class NzVertexBuffer;
-class NzVertexDeclaration;
 
 class NAZARA_API NzRenderer
 {
 	public:
+		struct InstancingData
+		{
+			NzMatrix4f worldMatrix;
+		};
+
 		NzRenderer() = delete;
 		~NzRenderer() = delete;
 
 		static void Clear(unsigned long flags = nzRendererClear_Color | nzRendererClear_Depth);
 
 		static void DrawIndexedPrimitives(nzPrimitiveType primitive, unsigned int firstIndex, unsigned int indexCount);
+		static void DrawIndexedPrimitivesInstanced(unsigned int instanceCount, nzPrimitiveType primitive, unsigned int firstIndex, unsigned int indexCount);
 		static void DrawPrimitives(nzPrimitiveType primitive, unsigned int firstVertex, unsigned int vertexCount);
+		static void DrawPrimitivesInstanced(unsigned int instanceCount, nzPrimitiveType primitive, unsigned int firstVertex, unsigned int vertexCount);
 
 		static void Enable(nzRendererParameter parameter, bool enable);
+
+		static void FillInstancingBuffer(const InstancingData* instancingData, unsigned int instanceCount);
+
+		static void Flush();
 
 		static float GetLineWidth();
 		//static NzMatrix4f GetMatrix(nzMatrixCombination combination);
@@ -45,7 +55,7 @@ class NAZARA_API NzRenderer
 		static unsigned int GetMaxTextureUnits();
 		static float GetPointSize();
 		static const NzShader* GetShader();
-		static NzRenderTarget* GetTarget();
+		static const NzRenderTarget* GetTarget();
 		static NzRectui GetViewport();
 
 		static bool HasCapability(nzRendererCap capability);
@@ -74,7 +84,7 @@ class NAZARA_API NzRenderer
 		static void SetStencilPassOperation(nzStencilOperation passOperation);
 		static void SetStencilReferenceValue(unsigned int refValue);
 		static void SetStencilZFailOperation(nzStencilOperation zfailOperation);
-		static bool SetTarget(NzRenderTarget* target);
+		static bool SetTarget(const NzRenderTarget* target);
 		static void SetTexture(nzUInt8 unit, const NzTexture* texture);
 		static void SetTextureSampler(nzUInt8 textureUnit, const NzTextureSampler& sampler);
 		static bool SetVertexBuffer(const NzVertexBuffer* vertexBuffer);
@@ -83,7 +93,7 @@ class NAZARA_API NzRenderer
 		static void Uninitialize();
 
 	private:
-		static bool EnsureStateUpdate();
+		static bool EnsureStateUpdate(bool instancing);
 
 		static unsigned int s_moduleReferenceCounter;
 };

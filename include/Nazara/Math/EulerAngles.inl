@@ -7,6 +7,7 @@
 #include <Nazara/Math/Config.hpp>
 #include <Nazara/Math/Quaternion.hpp>
 #include <Nazara/Math/Vector3.hpp>
+#include <cstring>
 #include <Nazara/Core/Debug.hpp>
 
 #define F(a) static_cast<T>(a)
@@ -69,9 +70,7 @@ void NzEulerAngles<T>::Set(const T angles[3])
 template<typename T>
 void NzEulerAngles<T>::Set(const NzEulerAngles& angles)
 {
-	pitch = angles.pitch;
-	yaw = angles.yaw;
-	roll = angles.roll;
+	std::memcpy(this, &angles, sizeof(NzEulerAngles));
 }
 
 template<typename T>
@@ -108,25 +107,19 @@ NzString NzEulerAngles<T>::ToString() const
 }
 
 template<typename T>
-NzEulerAngles<T>::operator NzString() const
-{
-	return ToString();
-}
-
-template<typename T>
 NzEulerAngles<T> NzEulerAngles<T>::operator+(const NzEulerAngles& angles) const
 {
 	return NzEulerAngles(pitch + angles.pitch,
-						 yaw + angles.yaw,
-						 roll + angles.roll);
+	                     yaw + angles.yaw,
+	                     roll + angles.roll);
 }
 
 template<typename T>
 NzEulerAngles<T> NzEulerAngles<T>::operator-(const NzEulerAngles& angles) const
 {
 	return NzEulerAngles(pitch - angles.pitch,
-						 yaw - angles.yaw,
-						 roll - angles.roll);
+	                     yaw - angles.yaw,
+	                     roll - angles.roll);
 }
 
 template<typename T>
@@ -153,8 +146,8 @@ template<typename T>
 bool NzEulerAngles<T>::operator==(const NzEulerAngles& angles) const
 {
 	return NzNumberEquals(pitch, angles.pitch) &&
-		   NzNumberEquals(yaw, angles.yaw) &&
-		   NzNumberEquals(roll, angles.roll);
+	       NzNumberEquals(yaw, angles.yaw) &&
+	       NzNumberEquals(roll, angles.roll);
 }
 
 template<typename T>

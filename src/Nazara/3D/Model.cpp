@@ -4,24 +4,40 @@
 
 #include <Nazara/3D/Model.hpp>
 #include <Nazara/3D/Config.hpp>
+#include <Nazara/Utility/SkeletalMesh.hpp>
+#include <Nazara/Utility/StaticMesh.hpp>
 #include <memory>
+#include <tuple>
 #include <Nazara/3D/Debug.hpp>
 
 NzModel::NzModel() :
 m_animation(nullptr),
 m_mesh(nullptr),
 m_currentSequence(nullptr),
+m_animationEnabled(true),
+m_boundingBoxUpdated(false),
+m_drawEnabled(true),
 m_matCount(0),
-m_skinCount(0)
+m_skin(0),
+m_skinCount(1)
 {
 }
 
 NzModel::NzModel(const NzModel& model) :
+NzSceneNode(model),
 m_materials(model.m_materials),
+m_boundingBox(model.m_boundingBox),
 m_animation(model.m_animation),
 m_mesh(model.m_mesh),
 m_currentSequence(model.m_currentSequence),
+m_animationEnabled(model.m_animationEnabled),
+m_boundingBoxUpdated(model.m_boundingBoxUpdated),
+m_drawEnabled(model.m_drawEnabled),
+m_interpolation(model.m_interpolation),
+m_currentFrame(model.m_currentFrame),
 m_matCount(model.m_matCount),
+m_nextFrame(model.m_nextFrame),
+m_skin(model.m_skin),
 m_skinCount(model.m_skinCount)
 {
 	if (m_mesh)
@@ -30,6 +46,9 @@ m_skinCount(model.m_skinCount)
 			m_animation->AddResourceReference();
 
 		m_mesh->AddResourceReference();
+
+		if (m_mesh->GetAnimationType() == nzAnimationType_Skeletal)
+			m_skeleton = model.m_skeleton;
 
 		// Nous n'avons des matériaux que si nous avons un mesh
 		for (const NzMaterial* material : m_materials)
@@ -42,25 +61,122 @@ NzModel::~NzModel()
 	Reset();
 }
 
-const NzAnimation* NzModel::GetAnimation() const
+void NzModel::AddToRenderQueue(NzRenderQueue& renderQueue) const
+{
+	if (!m_transformMatrixUpdated)
+		UpdateTransformMatrix();
+
+	unsigned int subMeshCount = m_mesh->GetSubMeshCount();
+	for (unsigned int i = 0; i < subMeshCount; ++i)
+	{
+		NzSubMesh* subMesh = m_mesh->GetSubMesh(i);
+		NzMaterial* material = m_materials[m_skin*m_matCount + subMesh->GetMaterialIndex()];
+
+		switch (subMesh->GetAnimationType())
+		{
+			case nzAnimationType_Skeletal:
+			{
+				NzSkeletalMesh* skeletalMesh = static_cast<NzSkeletalMesh*>(subMesh);
+				std::vector<NzRenderQueue::SkeletalData>& data = renderQueue.visibleSkeletalModels[material][skeletalMesh];
+
+				///TODO: Corriger cette abomination
+				data.resize(data.size()+1);
+				NzRenderQueue::SkeletalData& skeletalData = data.back();
+
+				skeletalData.skinnedVertices.resize(skeletalMesh->GetVertexCount());
+				skeletalData.transformMatrix = m_transformMatrix;
+
+				skeletalMesh->Skin(&skeletalData.skinnedVertices[0], &m_skeleton);
+				break;
+			}
+
+			case nzAnimationType_Static:
+			{
+				NzStaticMesh* staticMesh = static_cast<NzStaticMesh*>(subMesh);
+				std::vector<NzMatrix4f>& matrices = renderQueue.visibleStaticModels[material][staticMesh];
+
+				matrices.push_back(m_transformMatrix);
+				break;
+			}
+		}
+	}
+}
+
+void NzModel::AdvanceAnimation(float elapsedTime)
+{
+	#if NAZARA_3D_SAFE
+	if (!m_animation)
+	{
+		NazaraError("Model has no animation");
+		return;
+	}
+	#endif
+
+	m_interpolation += m_currentSequence->frameRate * elapsedTime;
+	while (m_interpolation > 1.f)
+	{
+		m_interpolation -= 1.f;
+
+		unsigned lastFrame = m_currentSequence->firstFrame + m_currentSequence->frameCount - 1;
+		if (m_nextFrame+1 > lastFrame)
+		{
+			if (m_animation->IsLoopPointInterpolationEnabled())
+			{
+				m_currentFrame = m_nextFrame;
+				m_nextFrame = m_currentSequence->firstFrame;
+			}
+			else
+			{
+				m_currentFrame = m_currentSequence->firstFrame;
+				m_nextFrame = m_currentFrame+1;
+			}
+		}
+		else
+		{
+			m_currentFrame = m_nextFrame;
+			m_nextFrame++;
+		}
+	}
+
+	m_animation->AnimateSkeleton(&m_skeleton, m_currentFrame, m_nextFrame, m_interpolation);
+	m_boundingBox.MakeNull();
+	m_boundingBoxUpdated = false;
+}
+
+void NzModel::EnableAnimation(bool animation)
+{
+	m_animationEnabled = animation;
+}
+
+void NzModel::EnableDraw(bool draw)
+{
+	m_drawEnabled = draw;
+}
+
+NzAnimation* NzModel::GetAnimation() const
 {
 	return m_animation;
 }
 
-const NzAxisAlignedBox& NzModel::GetAABB() const
+const NzBoundingBoxf& NzModel::GetBoundingBox() const
 {
 	#if NAZARA_3D_SAFE
 	if (!m_mesh)
 	{
 		NazaraError("Model has no mesh");
-		return NzAxisAlignedBox::Null;
+
+		static NzBoundingBoxf dummy(nzExtend_Null);
+		return dummy;
 	}
 	#endif
 
-	return m_mesh->GetAABB();
+	if (!m_boundingBoxUpdated)
+		UpdateBoundingBox();
+
+	return m_boundingBox;
 }
 
-const NzMaterial* NzModel::GetMaterial(unsigned int matIndex) const
+NzMaterial* NzModel::GetMaterial(unsigned int matIndex) const
 {
 	#if NAZARA_3D_SAFE
 	if (matIndex >= m_matCount)
@@ -70,10 +186,10 @@ const NzMaterial* NzModel::GetMaterial(unsigned int matIndex) const
 	}
 	#endif
 
-	return m_materials[matIndex];
+	return m_materials[m_skin*m_matCount + matIndex];
 }
 
-const NzMaterial* NzModel::GetMaterial(unsigned int skinIndex, unsigned int matIndex) const
+NzMaterial* NzModel::GetMaterial(unsigned int skinIndex, unsigned int matIndex) const
 {
 	#if NAZARA_3D_SAFE
 	if (skinIndex >= m_skinCount)
@@ -89,7 +205,7 @@ const NzMaterial* NzModel::GetMaterial(unsigned int skinIndex, unsigned int matI
 	}
 	#endif
 
-	return m_materials[matIndex];
+	return m_materials[skinIndex*m_matCount + matIndex];
 }
 
 unsigned int NzModel::GetMaterialCount() const
@@ -97,12 +213,7 @@ unsigned int NzModel::GetMaterialCount() const
 	return m_matCount;
 }
 
-unsigned int NzModel::GetSkinCount() const
-{
-	return m_skinCount;
-}
-
-const NzMesh* NzModel::GetMesh() const
+NzMesh* NzModel::GetMesh() const
 {
 	return m_mesh;
 }
@@ -122,16 +233,36 @@ const NzSkeleton* NzModel::GetSkeleton() const
 	return &m_skeleton;
 }
 
+unsigned int NzModel::GetSkin() const
+{
+	return m_skin;
+}
+
+unsigned int NzModel::GetSkinCount() const
+{
+	return m_skinCount;
+}
+
 bool NzModel::HasAnimation() const
 {
 	return m_animation != nullptr;
 }
 
-bool NzModel::LoadFromFile(const NzString& meshPath, const NzMeshParams& meshParameters, const NzModelParameters& modelParameters)
+bool NzModel::IsAnimationEnabled() const
+{
+	return m_animationEnabled;
+}
+
+bool NzModel::IsDrawEnabled() const
+{
+	return m_drawEnabled;
+}
+
+bool NzModel::LoadFromFile(const NzString& meshPath, const NzModelParameters& modelParameters)
 {
 	///TODO: ResourceManager
 	std::unique_ptr<NzMesh> mesh(new NzMesh);
-	if (!mesh->LoadFromFile(meshPath, meshParameters))
+	if (!mesh->LoadFromFile(meshPath, modelParameters.mesh))
 	{
 		NazaraError("Failed to load mesh");
 		return false;
@@ -143,10 +274,10 @@ bool NzModel::LoadFromFile(const NzString& meshPath, const NzMeshParams& meshPar
 	return true;
 }
 
-bool NzModel::LoadFromMemory(const void* data, std::size_t size, const NzMeshParams& meshParameters, const NzModelParameters& modelParameters)
+bool NzModel::LoadFromMemory(const void* data, std::size_t size, const NzModelParameters& modelParameters)
 {
 	std::unique_ptr<NzMesh> mesh(new NzMesh);
-	if (!mesh->LoadFromMemory(data, size, meshParameters))
+	if (!mesh->LoadFromMemory(data, size, modelParameters.mesh))
 	{
 		NazaraError("Failed to load mesh");
 		return false;
@@ -158,10 +289,10 @@ bool NzModel::LoadFromMemory(const void* data, std::size_t size, const NzMeshPar
 	return true;
 }
 
-bool NzModel::LoadFromStream(NzInputStream& stream, const NzMeshParams& meshParameters, const NzModelParameters& modelParameters)
+bool NzModel::LoadFromStream(NzInputStream& stream, const NzModelParameters& modelParameters)
 {
 	std::unique_ptr<NzMesh> mesh(new NzMesh);
-	if (!mesh->LoadFromStream(stream, meshParameters))
+	if (!mesh->LoadFromStream(stream, modelParameters.mesh))
 	{
 		NazaraError("Failed to load mesh");
 		return false;
@@ -175,6 +306,9 @@ bool NzModel::LoadFromStream(NzInputStream& stream, const NzMeshParams& meshPara
 
 void NzModel::Reset()
 {
+	if (m_scene)
+		m_scene->UnregisterForUpdate(this);
+
 	m_matCount = 0;
 	m_skinCount = 0;
 
@@ -199,7 +333,7 @@ void NzModel::Reset()
 	}
 }
 
-bool NzModel::SetAnimation(const NzAnimation* animation)
+bool NzModel::SetAnimation(NzAnimation* animation)
 {
 	#if NAZARA_3D_SAFE
 	if (!m_mesh)
@@ -238,12 +372,17 @@ bool NzModel::SetAnimation(const NzAnimation* animation)
 		m_interpolation = 0.f;
 
 		SetSequence(0);
+
+		if (m_scene)
+			m_scene->RegisterForUpdate(this);
 	}
+	else if (m_scene)
+		m_scene->UnregisterForUpdate(this);
 
 	return true;
 }
 
-void NzModel::SetMaterial(unsigned int matIndex, const NzMaterial* material)
+void NzModel::SetMaterial(unsigned int matIndex, NzMaterial* material)
 {
 	#if NAZARA_3D_SAFE
 	if (matIndex >= m_matCount)
@@ -253,17 +392,19 @@ void NzModel::SetMaterial(unsigned int matIndex, const NzMaterial* material)
 	}
 	#endif
 
-	m_materials[matIndex]->RemoveResourceReference();
+	unsigned int index = m_skin*m_matCount + matIndex;
+
+	m_materials[index]->RemoveResourceReference();
 
 	if (material)
-		m_materials[matIndex] = material;
+		m_materials[index] = material;
 	else
-		m_materials[matIndex] = NzMaterial::GetDefault();
+		m_materials[index] = NzMaterial::GetDefault();
 
-	m_materials[matIndex]->AddResourceReference();
+	m_materials[index]->AddResourceReference();
 }
 
-void NzModel::SetMaterial(unsigned int skinIndex, unsigned int matIndex, const NzMaterial* material)
+void NzModel::SetMaterial(unsigned int skinIndex, unsigned int matIndex, NzMaterial* material)
 {
 	#if NAZARA_3D_SAFE
 	if (skinIndex >= m_skinCount)
@@ -291,12 +432,13 @@ void NzModel::SetMaterial(unsigned int skinIndex, unsigned int matIndex, const N
 	m_materials[index]->AddResourceReference();
 }
 
-void NzModel::SetMesh(const NzMesh* mesh, const NzModelParameters& modelParameters)
+void NzModel::SetMesh(NzMesh* mesh, const NzModelParameters& modelParameters)
 {
 	Reset();
 
 	if (mesh)
 	{
+		m_boundingBoxUpdated = false;
 		m_mesh = mesh;
 		m_mesh->AddResourceReference();
 
@@ -309,7 +451,7 @@ void NzModel::SetMesh(const NzMesh* mesh, const NzModelParameters& modelParamete
 			if (!animationPath.IsEmpty())
 			{
 				std::unique_ptr<NzAnimation> animation(new NzAnimation);
-				if (animation->LoadFromFile(animationPath, modelParameters.animationParams) && SetAnimation(animation.get()))
+				if (animation->LoadFromFile(animationPath, modelParameters.animation) && SetAnimation(animation.get()))
 				{
 					animation->SetPersistent(false);
 					animation.release();
@@ -329,7 +471,7 @@ void NzModel::SetMesh(const NzMesh* mesh, const NzModelParameters& modelParamete
 				if (!mat.IsEmpty())
 				{
 					std::unique_ptr<NzMaterial> material(new NzMaterial);
-					if (material->LoadFromFile(mat, modelParameters.materialParams))
+					if (material->LoadFromFile(mat, modelParameters.material))
 					{
 						material->SetPersistent(false, false); // Pas de vérification des références car nous n'y avons pas encore accroché de référence
 						m_materials[i] = material.release();
@@ -343,20 +485,6 @@ void NzModel::SetMesh(const NzMesh* mesh, const NzModelParameters& modelParamete
 		for (const NzMaterial* material : m_materials)
 			material->AddResourceReference();
 	}
-}
-
-void NzModel::SetSkinCount(unsigned int skinCount)
-{
-	#if NAZARA_3D_SAFE
-	if (skinCount == 0)
-	{
-		NazaraError("Skin count must be over 0");
-		return;
-	}
-	#endif
-
-	m_materials.resize(m_matCount*skinCount, NzMaterial::GetDefault());
-	m_skinCount = skinCount;
 }
 
 bool NzModel::SetSequence(const NzString& sequenceName)
@@ -406,41 +534,89 @@ void NzModel::SetSequence(unsigned int sequenceIndex)
 	m_nextFrame = m_currentSequence->firstFrame;
 }
 
-void NzModel::Update(float elapsedTime)
+void NzModel::SetSkin(unsigned int skin)
 {
 	#if NAZARA_3D_SAFE
-	if (!m_animation)
+	if (skin >= m_skinCount)
 	{
-		NazaraError("Model has no animation");
+		NazaraError("Skin index out of range (" + NzString::Number(skin) + " >= " + NzString::Number(m_skinCount));
 		return;
 	}
 	#endif
 
-	m_interpolation += m_currentSequence->frameRate * elapsedTime;
-	while (m_interpolation > 1.f)
-	{
-		m_interpolation -= 1.f;
+	m_skin = skin;
+}
 
-		unsigned lastFrame = m_currentSequence->firstFrame + m_currentSequence->frameCount - 1;
-		if (m_nextFrame+1 > lastFrame)
-		{
-			if (m_animation->IsLoopPointInterpolationEnabled())
-			{
-				m_currentFrame = m_nextFrame;
-				m_nextFrame = m_currentSequence->firstFrame;
-			}
-			else
-			{
-				m_currentFrame = m_currentSequence->firstFrame;
-				m_nextFrame = m_currentFrame+1;
-			}
-		}
+void NzModel::SetSkinCount(unsigned int skinCount)
+{
+	#if NAZARA_3D_SAFE
+	if (skinCount == 0)
+	{
+		NazaraError("Skin count must be over 0");
+		return;
+	}
+	#endif
+
+	m_materials.resize(m_matCount*skinCount, NzMaterial::GetDefault());
+	m_skinCount = skinCount;
+}
+
+void NzModel::Invalidate()
+{
+	NzSceneNode::Invalidate();
+
+	m_boundingBoxUpdated = false;
+}
+
+void NzModel::Register()
+{
+	if (m_animation)
+		m_scene->RegisterForUpdate(this);
+}
+
+void NzModel::Unregister()
+{
+	m_scene->UnregisterForUpdate(this);
+}
+
+void NzModel::Update()
+{
+	if (m_animationEnabled && m_animation)
+		AdvanceAnimation(m_scene->GetUpdateTime());
+}
+
+void NzModel::UpdateBoundingBox() const
+{
+	if (m_boundingBox.IsNull())
+	{
+		if (m_mesh->GetAnimationType() == nzAnimationType_Skeletal)
+			m_boundingBox.Set(m_skeleton.GetAABB());
 		else
-		{
-			m_currentFrame = m_nextFrame;
-			m_nextFrame++;
-		}
+			m_boundingBox.Set(m_mesh->GetAABB());
 	}
 
-	m_mesh->Animate(m_animation, m_currentFrame, m_nextFrame, m_interpolation, &m_skeleton);
+	if (!m_transformMatrixUpdated)
+		UpdateTransformMatrix();
+
+	m_boundingBox.Update(m_transformMatrix);
+	m_boundingBoxUpdated = true;
+}
+
+bool NzModel::VisibilityTest(const NzFrustumf& frustum)
+{
+	#if NAZARA_3D_SAFE
+	if (!m_mesh)
+	{
+		NazaraError("Model has no mesh");
+		return false;
+	}
+	#endif
+
+	if (!m_drawEnabled)
+		return false;
+
+	if (!m_boundingBoxUpdated)
+		UpdateBoundingBox();
+
+	return frustum.Contains(m_boundingBox);
 }

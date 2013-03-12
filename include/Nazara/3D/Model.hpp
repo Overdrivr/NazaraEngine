@@ -9,6 +9,7 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/3D/SceneNode.hpp>
+#include <Nazara/Core/Updatable.hpp>
 #include <Nazara/Renderer/Material.hpp>
 #include <Nazara/Utility/Animation.hpp>
 #include <Nazara/Utility/Mesh.hpp>
@@ -17,56 +18,80 @@ struct NzModelParameters
 {
 	bool loadAnimation = true;
 	bool loadMaterials = true;
-	NzAnimationParams animationParams;
-	NzMaterialParams materialParams;
+	NzAnimationParams animation;
+	NzMaterialParams material;
+	NzMeshParams mesh;
 };
 
-class NAZARA_API NzModel : public NzSceneNode
+class NAZARA_API NzModel : public NzSceneNode, public NzUpdatable
 {
+	friend class NzScene;
+
 	public:
 		NzModel();
 		NzModel(const NzModel& model);
 		~NzModel();
 
-		const NzAnimation* GetAnimation() const;
-		const NzAxisAlignedBox& GetAABB() const;
-		const NzMaterial* GetMaterial(unsigned int matIndex) const;
-		const NzMaterial* GetMaterial(unsigned int skinIndex, unsigned int matIndex) const;
+		void AddToRenderQueue(NzRenderQueue& renderQueue) const;
+		void AdvanceAnimation(float elapsedTime);
+
+		void EnableAnimation(bool animation);
+		void EnableDraw(bool draw);
+
+		NzAnimation* GetAnimation() const;
+		const NzBoundingBoxf& GetBoundingBox() const;
+		NzMaterial* GetMaterial(unsigned int matIndex) const;
+		NzMaterial* GetMaterial(unsigned int skinIndex, unsigned int matIndex) const;
 		unsigned int GetMaterialCount() const;
+		unsigned int GetSkin() const;
 		unsigned int GetSkinCount() const;
-		const NzMesh* GetMesh() const;
+		NzMesh* GetMesh() const;
 		nzSceneNodeType GetSceneNodeType() const override;
 		NzSkeleton* GetSkeleton();
 		const NzSkeleton* GetSkeleton() const;
 
 		bool HasAnimation() const;
 
-		bool LoadFromFile(const NzString& meshPath, const NzMeshParams& meshParameters = NzMeshParams(), const NzModelParameters& modelParameters = NzModelParameters());
-		bool LoadFromMemory(const void* data, std::size_t size, const NzMeshParams& meshParameters = NzMeshParams(), const NzModelParameters& modelParameters = NzModelParameters());
-		bool LoadFromStream(NzInputStream& stream, const NzMeshParams& meshParameters = NzMeshParams(), const NzModelParameters& modelParameters = NzModelParameters());
+		bool IsAnimationEnabled() const;
+		bool IsDrawEnabled() const;
+
+		bool LoadFromFile(const NzString& meshPath, const NzModelParameters& modelParameters = NzModelParameters());
+		bool LoadFromMemory(const void* data, std::size_t size, const NzModelParameters& modelParameters = NzModelParameters());
+		bool LoadFromStream(NzInputStream& stream, const NzModelParameters& modelParameters = NzModelParameters());
 
 		void Reset();
 
-		bool SetAnimation(const NzAnimation* animation);
-		void SetMaterial(unsigned int matIndex, const NzMaterial* material);
-		void SetMaterial(unsigned int skinIndex, unsigned int matIndex, const NzMaterial* material);
-		void SetMesh(const NzMesh* mesh, const NzModelParameters& parameters = NzModelParameters());
+		bool SetAnimation(NzAnimation* animation);
+		void SetMaterial(unsigned int matIndex, NzMaterial* material);
+		void SetMaterial(unsigned int skinIndex, unsigned int matIndex, NzMaterial* material);
+		void SetMesh(NzMesh* mesh, const NzModelParameters& parameters = NzModelParameters());
+		void SetSkin(unsigned int skin);
 		void SetSkinCount(unsigned int skinCount);
 		bool SetSequence(const NzString& sequenceName);
 		void SetSequence(unsigned int sequenceIndex);
 
-		void Update(float elapsedTime);
-
 	private:
-		std::vector<const NzMaterial*> m_materials;
+		void Invalidate() override;
+		void Register() override;
+		void Unregister() override;
+		void Update() override;
+		void UpdateBoundingBox() const;
+		bool VisibilityTest(const NzFrustumf& frustum) override;
+
+		std::vector<NzMaterial*> m_materials;
+		mutable NzBoundingBoxf m_boundingBox;
 		NzSkeleton m_skeleton; // Uniquement pour les animations squelettiques
-		const NzAnimation* m_animation;
-		const NzMesh* m_mesh;
+		NzAnimation* m_animation;
+		NzMesh* m_mesh;
 		const NzSequence* m_currentSequence;
+		bool m_animationEnabled;
+		mutable bool m_boundingBoxUpdated;
+		bool m_drawEnabled;
 		float m_interpolation;
 		unsigned int m_currentFrame;
 		unsigned int m_matCount;
 		unsigned int m_nextFrame;
+		unsigned int m_skin;
 		unsigned int m_skinCount;
 };
 

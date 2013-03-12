@@ -9,7 +9,6 @@
 
 enum nzAnimationType
 {
-	nzAnimationType_Keyframe,
 	nzAnimationType_Skeletal,
 	nzAnimationType_Static,
 
@@ -57,20 +56,6 @@ enum nzCoordSys
 	nzCoordSys_Local,
 
 	nzCoordSys_Max = nzCoordSys_Local
-};
-
-enum nzCorner
-{
-	nzCorner_FarLeftBottom,
-	nzCorner_FarLeftTop,
-	nzCorner_FarRightBottom,
-	nzCorner_FarRightTop,
-	nzCorner_NearLeftBottom,
-	nzCorner_NearLeftTop,
-	nzCorner_NearRightBottom,
-	nzCorner_NearRightTop,
-
-	nzCorner_Max = nzCorner_FarRightTop
 };
 
 enum nzCubemapFace
@@ -142,15 +127,6 @@ enum nzEventType
 	nzEventType_Max = nzEventType_TextEntered
 };
 
-enum nzExtend
-{
-	nzExtend_Finite,
-	nzExtend_Infinite,
-	nzExtend_Null,
-
-	nzExtend_Max = nzExtend_Null
-};
-
 enum nzImageType
 {
 	nzImageType_1D,
@@ -161,6 +137,15 @@ enum nzImageType
 	nzImageType_Cubemap,
 
 	nzImageType_Max = nzImageType_Cubemap
+};
+
+enum nzNodeType
+{
+	nzNodeType_Default,
+	nzNodeType_Scene,
+	nzNodeType_Skeletal,
+
+	nzNodeType_Max = nzNodeType_Skeletal
 };
 
 enum nzPixelFormat
@@ -184,9 +169,9 @@ enum nzPixelFormat
 	nzPixelFormat_RGBA32F,
 	nzPixelFormat_RGBA32I,         // 4*nzUInt32
 	*/
-	nzPixelFormat_RGBA4,           // 1*nzUInt16
 	nzPixelFormat_RGB5A1,          // 1*nzUInt16
 	nzPixelFormat_RGB8,            // 3*nzUInt8
+	nzPixelFormat_RGBA4,           // 1*nzUInt16
 	nzPixelFormat_RGBA8,           // 4*nzUInt8
 	nzPixelFormat_Depth16,
 	nzPixelFormat_Depth24,

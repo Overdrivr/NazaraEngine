@@ -3,7 +3,9 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Core/StringStream.hpp>
+#include <Nazara/Math/Basic.hpp>
 #include <algorithm>
+#include <cstring>
 #include <Nazara/Core/Debug.hpp>
 
 #define F(a) static_cast<T>(a)
@@ -60,18 +62,24 @@ bool NzRect<T>::Contains(const NzCircle<T>& circle) const
 }
 
 template<typename T>
-NzRect<T>& NzRect<T>::ExtendTo(const NzVector2<T>& point)
+NzRect<T>& NzRect<T>::ExtendTo(T X, T Y)
 {
-	width = std::max(x + width, point.x);
-	height = std::max(y + height, point.y);
+	width = std::max(x + width, X);
+	height = std::max(y + height, Y);
 
-	x = std::min(x, point.x);
-	y = std::min(y, point.y);
+	x = std::min(x, X);
+	y = std::min(y, Y);
 
 	width -= x;
 	height -= y;
 
 	return *this;
+}
+
+template<typename T>
+NzRect<T>& NzRect<T>::ExtendTo(const NzVector2<T>& point)
+{
+	return ExtendTo(point.x, point.y);
 }
 
 template<typename T>
@@ -96,9 +104,37 @@ NzVector2<T> NzRect<T>::GetCenter() const
 }
 
 template<typename T>
+NzVector2<T> NzRect<T>::GetNegativeVertex(const NzVector2<T>& normal) const
+{
+	NzVector2<T> neg(GetPosition());
+
+	if (normal.x < F(0.0))
+		neg.x += width;
+
+	if (normal.y < F(0.0))
+		neg.y += height;
+
+	return neg;
+}
+
+template<typename T>
 NzVector2<T> NzRect<T>::GetPosition() const
 {
 	return NzVector2<T>(x, y);
+}
+
+template<typename T>
+NzVector2<T> NzRect<T>::GetPositiveVertex(const NzVector2<T>& normal) const
+{
+	NzVector2<T> pos(GetPosition());
+
+	if (normal.x > F(0.0))
+		pos.x += width;
+
+	if (normal.y > F(0.0))
+		pos.y += height;
+
+	return pos;
 }
 
 template<typename T>
@@ -171,6 +207,14 @@ NzRect<T>& NzRect<T>::Set(const T rect[4])
 }
 
 template<typename T>
+NzRect<T>& NzRect<T>::Set(const NzRect<T>& rect)
+{
+	std::memcpy(this, &rect, sizeof(NzRect));
+
+	return *this;
+}
+
+template<typename T>
 NzRect<T>& NzRect<T>::Set(const NzVector2<T>& vec1, const NzVector2<T>& vec2)
 {
 	x = std::min(vec1.x, vec2.x);
@@ -199,12 +243,6 @@ NzString NzRect<T>::ToString() const
 	NzStringStream ss;
 
 	return ss << "Rect(" << x << ", " << y << ", " << width << ", " << height << ')';
-}
-
-template<typename T>
-NzRect<T>::operator NzString() const
-{
-	return ToString();
 }
 
 template<typename T>

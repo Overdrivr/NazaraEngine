@@ -7,6 +7,7 @@
 #include <Nazara/Math/Config.hpp>
 #include <Nazara/Math/EulerAngles.hpp>
 #include <Nazara/Math/Vector3.hpp>
+#include <cstring>
 #include <limits>
 #include <Nazara/Core/Debug.hpp>
 
@@ -221,10 +222,7 @@ NzQuaternion<T>& NzQuaternion<T>::Set(const NzQuaternion<U>& quat)
 template<typename T>
 NzQuaternion<T>& NzQuaternion<T>::Set(const NzQuaternion& quat)
 {
-	w = quat.w;
-	x = quat.x;
-	y = quat.y;
-	z = quat.z;
+	std::memcpy(this, &quat, sizeof(NzQuaternion));
 
 	return *this;
 }
@@ -257,12 +255,6 @@ NzString NzQuaternion<T>::ToString() const
 	NzStringStream ss;
 
 	return ss << "Quaternion(" << w << " | " << x << ", " << y << ", " << z << ')';
-}
-
-template<typename T>
-NzQuaternion<T>::operator NzString() const
-{
-	return ToString();
 }
 
 template<typename T>

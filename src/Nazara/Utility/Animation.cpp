@@ -148,30 +148,10 @@ void NzAnimation::AnimateSkeleton(NzSkeleton* targetSkeleton, unsigned int frame
 		NzSequenceJoint& sequenceJointA = m_impl->sequenceJoints[frameA*m_impl->jointCount + i];
 		NzSequenceJoint& sequenceJointB = m_impl->sequenceJoints[frameB*m_impl->jointCount + i];
 
+		joint->SetPosition(NzVector3f::Lerp(sequenceJointA.position, sequenceJointB.position, interpolation));
 		joint->SetRotation(NzQuaternionf::Slerp(sequenceJointA.rotation, sequenceJointB.rotation, interpolation));
 		joint->SetScale(NzVector3f::Lerp(sequenceJointA.scale, sequenceJointB.scale, interpolation));
-		joint->SetTranslation(NzVector3f::Lerp(sequenceJointA.translation, sequenceJointB.translation, interpolation));
 	}
-}
-
-bool NzAnimation::CreateKeyframe(unsigned int frameCount)
-{
-	Destroy();
-
-	#if NAZARA_UTILITY_SAFE
-	if (frameCount == 0)
-	{
-		NazaraError("Frame count must be over zero");
-		return false;
-	}
-	#endif
-
-	m_impl = new NzAnimationImpl;
-	m_impl->frameCount = frameCount;
-	m_impl->type = nzAnimationType_Keyframe;
-
-	NotifyCreated();
-	return true;
 }
 
 bool NzAnimation::CreateSkeletal(unsigned int frameCount, unsigned int jointCount)

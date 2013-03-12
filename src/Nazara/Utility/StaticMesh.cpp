@@ -39,8 +39,6 @@ bool NzStaticMesh::Create(NzVertexBuffer* vertexBuffer)
 
 void NzStaticMesh::Destroy()
 {
-	m_aabb.SetNull();
-
 	if (m_indexBuffer)
 	{
 		m_indexBuffer->RemoveResourceListener(this);
@@ -62,11 +60,10 @@ void NzStaticMesh::Finish()
 
 bool NzStaticMesh::GenerateAABB()
 {
-	if (!m_aabb.IsNull())
-		return true;
-
 	// On lock le buffer pour itérer sur toutes les positions et composer notre AABB
 	NzBufferMapper<NzVertexBuffer> mapper(m_vertexBuffer, nzBufferAccess_ReadOnly);
+
+	m_aabb.MakeZero();
 
 	NzMeshVertex* vertex = reinterpret_cast<NzMeshVertex*>(mapper.GetPointer());
 	unsigned int vertexCount = m_vertexBuffer->GetVertexCount();
@@ -79,7 +76,7 @@ bool NzStaticMesh::GenerateAABB()
 	return true;
 }
 
-const NzAxisAlignedBox& NzStaticMesh::GetAABB() const
+const NzCubef& NzStaticMesh::GetAABB() const
 {
 	return m_aabb;
 }
@@ -104,6 +101,11 @@ const NzVertexBuffer* NzStaticMesh::GetVertexBuffer() const
 	return m_vertexBuffer;
 }
 
+unsigned int NzStaticMesh::GetVertexCount() const
+{
+	return m_vertexBuffer->GetVertexCount();
+}
+
 bool NzStaticMesh::IsAnimated() const
 {
 	return false;
@@ -114,7 +116,7 @@ bool NzStaticMesh::IsValid() const
 	return m_vertexBuffer != nullptr;
 }
 
-void NzStaticMesh::SetAABB(const NzAxisAlignedBox& aabb)
+void NzStaticMesh::SetAABB(const NzCubef& aabb)
 {
 	m_aabb = aabb;
 }

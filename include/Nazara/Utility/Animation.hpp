@@ -16,7 +16,9 @@
 
 struct NAZARA_API NzAnimationParams
 {
+	// La frame de fin à charger
 	unsigned int endFrame = static_cast<unsigned int>(-1);
+	// La frame de début à charger
 	unsigned int startFrame = 0;
 
 	bool IsValid() const;
@@ -40,7 +42,6 @@ class NAZARA_API NzAnimation : public NzResource
 		bool AddSequence(const NzSequence& sequence);
 		void AnimateSkeleton(NzSkeleton* targetSkeleton, unsigned int frameA, unsigned int frameB, float interpolation) const;
 
-		bool CreateKeyframe(unsigned int frameCount);
 		bool CreateSkeletal(unsigned int frameCount, unsigned int jointCount);
 		void Destroy();
 

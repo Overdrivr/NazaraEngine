@@ -342,6 +342,7 @@ bool NzOpenGL::Initialize()
 
 	glGetStringi = reinterpret_cast<PFNGLGETSTRINGIPROC>(LoadEntry("glGetStringi", false));
 	glMapBufferRange = reinterpret_cast<PFNGLMAPBUFFERRANGEPROC>(LoadEntry("glMapBufferRange", false));
+	glInvalidateBufferData = reinterpret_cast<PFNGLINVALIDATEBUFFERDATAPROC>(LoadEntry("glInvalidateBufferData", false));
 
 	#if defined(NAZARA_PLATFORM_WINDOWS)
 	wglGetExtensionsStringARB = reinterpret_cast<PFNWGLGETEXTENSIONSSTRINGARBPROC>(LoadEntry("wglGetExtensionsStringARB", false));
@@ -413,6 +414,37 @@ bool NzOpenGL::Initialize()
 		}
 	}
 
+	// DrawInstanced
+	if (s_openglVersion >= 330)
+	{
+		try
+		{
+			glDrawArraysInstanced = reinterpret_cast<PFNGLDRAWARRAYSINSTANCEDPROC>(LoadEntry("glDrawArraysInstanced"));
+			glDrawElementsInstanced = reinterpret_cast<PFNGLDRAWELEMENTSINSTANCEDPROC>(LoadEntry("glDrawElementsInstanced"));
+
+			s_openGLextensions[nzOpenGLExtension_DrawInstanced] = true;
+		}
+		catch (const std::exception& e)
+		{
+			NazaraWarning("Failed to load GL_ARB_draw_instanced: " + NzString(e.what()));
+		}
+	}
+
+	if (!s_openGLextensions[nzOpenGLExtension_DrawInstanced] && IsSupported("GL_ARB_draw_instanced"))
+	{
+		try
+		{
+			glDrawArraysInstanced = reinterpret_cast<PFNGLDRAWARRAYSINSTANCEDARBPROC>(LoadEntry("glDrawArraysInstancedARB"));
+			glDrawElementsInstanced = reinterpret_cast<PFNGLDRAWELEMENTSINSTANCEDARBPROC>(LoadEntry("glDrawElementsInstancedARB"));
+
+			s_openGLextensions[nzOpenGLExtension_DrawInstanced] = true;
+		}
+		catch (const std::exception& e)
+		{
+			NazaraWarning("Failed to load GL_ARB_draw_instanced: " + NzString(e.what()));
+		}
+	}
+
 	// FP64
 	if (s_openglVersion >= 400 || IsSupported("GL_ARB_gpu_shader_fp64"))
 	{
@@ -457,6 +489,35 @@ bool NzOpenGL::Initialize()
 		catch (const std::exception& e)
 		{
 			NazaraWarning("Failed to load ARB_framebuffer_object: (" + NzString(e.what()) + ")");
+		}
+	}
+
+	// InstancedArray
+	if (s_openglVersion >= 330)
+	{
+		try
+		{
+			glVertexAttribDivisor = reinterpret_cast<PFNGLVERTEXATTRIBDIVISORPROC>(LoadEntry("glVertexAttribDivisor"));
+
+			s_openGLextensions[nzOpenGLExtension_InstancedArray] = true;
+		}
+		catch (const std::exception& e)
+		{
+			NazaraWarning("Failed to load GL_ARB_instanced_arrays: " + NzString(e.what()));
+		}
+	}
+
+	if (!s_openGLextensions[nzOpenGLExtension_InstancedArray] && IsSupported("GL_ARB_instanced_arrays"))
+	{
+		try
+		{
+			glVertexAttribDivisor = reinterpret_cast<PFNGLVERTEXATTRIBDIVISORARBPROC>(LoadEntry("glVertexAttribDivisorARB"));
+
+			s_openGLextensions[nzOpenGLExtension_InstancedArray] = true;
+		}
+		catch (const std::exception& e)
+		{
+			NazaraWarning("Failed to load GL_ARB_instanced_arrays: " + NzString(e.what()));
 		}
 	}
 
@@ -980,9 +1041,11 @@ PFNGLDEPTHMASKPROC                glDepthMask                = nullptr;
 PFNGLDISABLEPROC                  glDisable                  = nullptr;
 PFNGLDISABLEVERTEXATTRIBARRAYPROC glDisableVertexAttribArray = nullptr;
 PFNGLDRAWARRAYSPROC               glDrawArrays               = nullptr;
+PFNGLDRAWARRAYSINSTANCEDPROC      glDrawArraysInstanced      = nullptr;
 PFNGLDRAWBUFFERPROC               glDrawBuffer               = nullptr;
 PFNGLDRAWBUFFERSPROC              glDrawBuffers              = nullptr;
 PFNGLDRAWELEMENTSPROC             glDrawElements             = nullptr;
+PFNGLDRAWELEMENTSINSTANCEDPROC    glDrawElementsInstanced    = nullptr;
 PFNGLENABLEPROC                   glEnable                   = nullptr;
 PFNGLENABLEVERTEXATTRIBARRAYPROC  glEnableVertexAttribArray  = nullptr;
 PFNGLENDQUERYPROC                 glEndQuery                 = nullptr;
@@ -1023,6 +1086,7 @@ PFNGLGETTEXLEVELPARAMETERIVPROC   glGetTexLevelParameteriv   = nullptr;
 PFNGLGETTEXPARAMETERFVPROC        glGetTexParameterfv        = nullptr;
 PFNGLGETTEXPARAMETERIVPROC        glGetTexParameteriv        = nullptr;
 PFNGLGETUNIFORMLOCATIONPROC       glGetUniformLocation       = nullptr;
+PFNGLINVALIDATEBUFFERDATAPROC     glInvalidateBufferData     = nullptr;
 PFNGLISENABLEDPROC                glIsEnabled                = nullptr;
 PFNGLLINEWIDTHPROC                glLineWidth                = nullptr;
 PFNGLLINKPROGRAMPROC              glLinkProgram              = nullptr;
@@ -1075,6 +1139,7 @@ PFNGLUNIFORMMATRIX4FVPROC         glUniformMatrix4fv         = nullptr;
 PFNGLUNMAPBUFFERPROC              glUnmapBuffer              = nullptr;
 PFNGLUSEPROGRAMPROC               glUseProgram               = nullptr;
 PFNGLVERTEXATTRIB4FPROC           glVertexAttrib4f           = nullptr;
+PFNGLVERTEXATTRIBDIVISORPROC      glVertexAttribDivisor      = nullptr;
 PFNGLVERTEXATTRIBPOINTERPROC      glVertexAttribPointer      = nullptr;
 PFNGLVIEWPORTPROC                 glViewport                 = nullptr;
 #if defined(NAZARA_PLATFORM_WINDOWS)
