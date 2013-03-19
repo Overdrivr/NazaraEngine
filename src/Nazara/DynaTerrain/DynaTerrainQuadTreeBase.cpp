@@ -199,7 +199,7 @@ float NzDynaTerrainQuadTreeBase::GetMaximumHeight() const
     return m_commonConfiguration.maxHeight;
 }
 
-NzTerrainNode* NzDynaTerrainQuadTreeBase::GetNode(const NzTerrainNodeID& nodeID)
+NzTerrainInternalNode* NzDynaTerrainQuadTreeBase::GetNode(const NzTerrainNodeID& nodeID)
 {
     if(m_nodesMap.count(nodeID) == 1)
         return m_nodesMap.at(nodeID);
@@ -207,19 +207,19 @@ NzTerrainNode* NzDynaTerrainQuadTreeBase::GetNode(const NzTerrainNodeID& nodeID)
         return nullptr;
 }
 
-NzTerrainNode* NzDynaTerrainQuadTreeBase::GetRootNode()
+NzTerrainInternalNode* NzDynaTerrainQuadTreeBase::GetRootNode()
 {
     return m_root;
 }
 
-NzTerrainNode* NzDynaTerrainQuadTreeBase::GetNodeFromPool()
+NzTerrainInternalNode* NzDynaTerrainQuadTreeBase::GetNodeFromPool()
 {
     return m_nodesPool.GetObjectPtr();
 }
 
-void NzDynaTerrainQuadTreeBase::ReturnNodeToPool(NzTerrainNode* node)
+void NzDynaTerrainQuadTreeBase::ReturnNodeToPool(NzTerrainInternalNode* node)
 {
-    std::map<NzTerrainNodeID,NzTerrainNode*>::iterator it = m_refinementQueue.find(node->GetNodeID());
+    std::map<NzTerrainNodeID,NzTerrainInternalNode*>::iterator it = m_refinementQueue.find(node->GetNodeID());
 
     if(it != m_refinementQueue.end())
         m_refinementQueue.erase(it);
@@ -296,7 +296,7 @@ NzVector3f NzDynaTerrainQuadTreeBase::GetVertexPosition(const NzTerrainNodeID& n
 
 }
 
-void NzDynaTerrainQuadTreeBase::RegisterLeaf(NzTerrainNode* node)
+void NzDynaTerrainQuadTreeBase::RegisterLeaf(NzTerrainInternalNode* node)
 {
     if(m_nodesMap.count(node->GetNodeID()) == 0)
     {
@@ -305,16 +305,16 @@ void NzDynaTerrainQuadTreeBase::RegisterLeaf(NzTerrainNode* node)
     }
 }
 
-bool NzDynaTerrainQuadTreeBase::UnRegisterLeaf(NzTerrainNode* node)
+bool NzDynaTerrainQuadTreeBase::UnRegisterLeaf(NzTerrainInternalNode* node)
 {
     m_leaves.remove(node);
 
     return true;
 }
 
-bool NzDynaTerrainQuadTreeBase::UnRegisterNode(NzTerrainNode* node)
+bool NzDynaTerrainQuadTreeBase::UnRegisterNode(NzTerrainInternalNode* node)
 {
-    std::map<NzTerrainNodeID,NzTerrainNode*>::iterator it = m_nodesMap.find(node->GetNodeID());
+    std::map<NzTerrainNodeID,NzTerrainInternalNode*>::iterator it = m_nodesMap.find(node->GetNodeID());
 
     if(it != m_nodesMap.end())
     {
@@ -335,7 +335,7 @@ void NzDynaTerrainQuadTreeBase::Update(const NzVector3f& cameraPosition)
 {
 
     nzUInt64 maxTime = 100;//ms
-    std::map<NzTerrainNodeID,NzTerrainNode*>::iterator it;
+    std::map<NzTerrainNodeID,NzTerrainInternalNode*>::iterator it;
     int subdivisionsPerFrame = 0;
     updateClock.Restart();
 
@@ -385,17 +385,17 @@ void NzDynaTerrainQuadTreeBase::Update(const NzVector3f& cameraPosition)
     }
 }
 
-void NzDynaTerrainQuadTreeBase::AddLeaveToSubdivisionQueue(NzTerrainNode* node)
+void NzDynaTerrainQuadTreeBase::AddLeaveToSubdivisionQueue(NzTerrainInternalNode* node)
 {
     m_subdivisionQueue[node->GetNodeID()] = node;
 }
 
-void NzDynaTerrainQuadTreeBase::AddNodeToRefinementQueue(NzTerrainNode* node)
+void NzDynaTerrainQuadTreeBase::AddNodeToRefinementQueue(NzTerrainInternalNode* node)
 {
     m_refinementQueue[node->GetNodeID()] = node;
 }
 
-void NzDynaTerrainQuadTreeBase::TryRemoveNodeFromRefinementQueue(NzTerrainNode* node)
+void NzDynaTerrainQuadTreeBase::TryRemoveNodeFromRefinementQueue(NzTerrainInternalNode* node)
 {
     m_refinementQueue.erase(node->GetNodeID());
 }

@@ -19,10 +19,11 @@
 
 class NzDispatcher;
 
+//FIX ME : Renommer en NzDynaTerrainSceneNode ?
 class NAZARA_API NzZone
 {
     public:
-        NzZone(NzDispatcher* dispatcher);
+        NzZone(NzDispatcher* dispatcher, unsigned int freeSpotsAmount);
         ~NzZone();
 
         void AddBuffer(NzVertexBuffer* buffer);
@@ -54,6 +55,7 @@ class NAZARA_API NzZone
             //Non utilisé : FIX ME : Vraiment Utile ?
         std::queue<float> m_unbufferedPatches;
         std::queue<NzTerrainNodeID> m_unbufferedPatchesIndex;
+        unsigned int m_freeSpotsAmount;
 };
 
 #endif // NAZARA_ZONE_HPP

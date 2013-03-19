@@ -27,26 +27,17 @@ NzDynamicPlanet::~NzDynamicPlanet()
 
 void NzDynamicPlanet::Render()
 {
-    NzRenderer::SetShader(&m_shader);
+    NzDynaTerrainMainClassBase::Render();
     quadtree->Render();
     quadtree2->Render();
 }
 
 void NzDynamicPlanet::Initialize()
 {
-    SetShaders(m_configuration.vertexShader,m_configuration.fragmentShader);
+    NzDynaTerrainMainClassBase::Initialize(static_cast<NzDynaTerrainConfigurationBase>(m_configuration));
 
-    if(!m_terrainTexture.LoadFromFile(m_configuration.groundTextures))
-        std::cout<<"Could not load texture "<<m_configuration.groundTextures<<std::endl;
-
-    //m_terrainTexture.EnableMipmapping(false);
-
-    int i = m_shader.GetUniformLocation("terrainTexture");
-
-    if(i == -1)
-        std::cout<<"Could not retrieve uniform location"<<std::endl;
-
-    m_shader.SendTexture(i,&m_terrainTexture);
+    //FIXME : Construire l'index buffer, en coordination avec le dispatcher
+    NzDynaTerrainMainClassBase::CreateIndexBuffer(256);
 
     //float radius = 2000.f;
 
@@ -64,42 +55,6 @@ void NzDynamicPlanet::Initialize()
     quadtree2->Initialize();
 
     quadtree->ConnectNeighbor(quadtree2,RIGHT);
-}
-
-bool NzDynamicPlanet::SetShaders(const NzString& vertexShader, const NzString& fragmentShader)
-{
-    if (!m_shader.Create(nzShaderLanguage_GLSL))
-    {
-        std::cout << "Failed to load shader" << std::endl;
-        std::getchar();
-        return false;
-    }
-
-    if (!m_shader.LoadFromFile(nzShaderType_Fragment, fragmentShader))
-    {
-        std::cout << "Failed to load fragment shader from file" << std::endl;
-        std::cout << "Log: " << m_shader.GetLog() << std::endl;
-        std::getchar();
-        return false;
-    }
-
-    if (!m_shader.LoadFromFile(nzShaderType_Vertex, vertexShader))
-    {
-        std::cout << "Failed to load vertex shader from file" << std::endl;
-        std::cout << "Log: " << m_shader.GetLog() << std::endl;
-        std::getchar();
-        return false;
-    }
-
-    if (!m_shader.Compile())
-    {
-        std::cout << "Failed to compile shader" << std::endl;
-        std::cout << "Log: " << m_shader.GetLog() << std::endl;
-        std::getchar();
-        return false;
-    }
-
-    return true;
 }
 
 void NzDynamicPlanet::Update(const NzVector3f& cameraPosition)

@@ -12,13 +12,14 @@
 #include <Nazara/Renderer/Shader.hpp>
 #include <Nazara/DynaTerrain/TerrainConfiguration.hpp>
 #include <Nazara/DynaTerrain/DynaTerrainQuadTreeBase.hpp>
+#include <Nazara/DynaTerrain/DynaTerrainMainClassBase.hpp>
 #include <Nazara/DynaTerrain/Dispatcher.hpp>
 #include <Nazara/DynaTerrain/ObjectPool.hpp>
 #include <Nazara/Renderer/Texture.hpp>
 
 //TODO : modifier shader du terrain pour qu'il fonctionne avec n'importe quelle direction (slope, altitude)
 
-class NAZARA_API NzDynamicPlanet
+class NAZARA_API NzDynamicPlanet : public NzDynaTerrainMainClassBase
 {
     public:
 
@@ -28,8 +29,6 @@ class NAZARA_API NzDynamicPlanet
         void Initialize();
 
         void Render();
-
-        bool SetShaders(const NzString& vertexShader, const NzString& fragmentShader);
 
         void Update(const NzVector3f& cameraPosition);
 

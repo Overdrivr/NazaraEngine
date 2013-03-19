@@ -18,10 +18,11 @@
 #include <queue>
 #include <memory>
 
+//FIX ME : Renommer en NzDynaTerrainMasterNode ?
 class NAZARA_API NzDispatcher
 {
     public:
-        NzDispatcher();
+        NzDispatcher(unsigned int patchBufferSize = 256);
         ~NzDispatcher();
 
         void DrawAll(bool viewFrustumCullingEnabled = true);
@@ -37,6 +38,9 @@ class NAZARA_API NzDispatcher
 
         bool SubmitPatch(const std::array<float,150>& subBuffer, const NzTerrainNodeID& ID);
 
+        //FIX ME : Il n'est pas utile de réenvoyer toutes les vertices lors d'un update
+        //Avec un index buffer 16 fois plus grand contenant les 16 configuration
+        //il est possible en donnant un offset à la donnée d'utiliser un différent index de ses vertices
         bool UpdatePatch(const std::array<float,150>& subBuffer, const NzTerrainNodeID& ID);
 
     protected:
@@ -55,7 +59,11 @@ class NAZARA_API NzDispatcher
         NzVertexElement m_elements[2];
         NzVertexDeclaration m_declaration;
 
-        NzIndexBuffer* m_indexBuffer;
+        //NzIndexBuffer* m_indexBuffer;
+
+        unsigned int m_bufferSize;
+        unsigned int m_patchSize;
+        unsigned int m_patchAmount;
 };
 
 #endif // NAZARA_DISPATCHER_HPP

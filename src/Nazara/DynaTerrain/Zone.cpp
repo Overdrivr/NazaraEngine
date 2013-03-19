@@ -10,9 +10,10 @@
 #include <iostream>
 #include <Nazara/DynaTerrain/Debug.hpp>
 
-NzZone::NzZone(NzDispatcher* dispatcher)
+NzZone::NzZone(NzDispatcher* dispatcher, unsigned int freeSpotsAmount)
 {
     m_dispatcher = dispatcher;
+    m_freeSpotsAmount = freeSpotsAmount;
 }
 
 NzZone::~NzZone()
@@ -23,7 +24,7 @@ NzZone::~NzZone()
 void NzZone::AddBuffer(NzVertexBuffer* buffer)
 {
     m_buffers.push_back(buffer);
-    m_buffersMap.AddEmptyBuffer(1750);
+    m_buffersMap.AddEmptyBuffer(m_freeSpotsAmount);
 
     //Un buffer contient 1750 emplacements
 

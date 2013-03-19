@@ -11,6 +11,8 @@
 #include <iostream>
 #include <Nazara/DynaTerrain/Debug.hpp>
 
+//Gestion de m_firstTime ?
+
 NzPatch::NzPatch()
 {
     m_isInitialized = false;

@@ -10,7 +10,7 @@
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Core/String.hpp>
 #include <Nazara/Math/Matrix4.hpp>
-#include <Nazara/DynaTerrain/TerrainNode.hpp>
+#include <Nazara/DynaTerrain/TerrainInternalNode.hpp>
 #include <Nazara/DynaTerrain/Dispatcher.hpp>
 #include <Nazara/DynaTerrain/ObjectPool.hpp>
 #include <Nazara/DynaTerrain/TerrainNodeID.hpp>
@@ -24,7 +24,7 @@
 class NAZARA_API NzDynaTerrainQuadTreeBase
 {
     public:
-        friend class NzTerrainNode;
+        friend class NzTerrainInternalNode;
 
         NzDynaTerrainQuadTreeBase(const NzTerrainConfiguration& configuration, NzHeightSource2D* heightSource);
         NzDynaTerrainQuadTreeBase(const NzPlanetConfiguration& configuration, NzHeightSource3D* heightSource, const NzEulerAnglesf& quadtreeOrientation = NzEulerAnglesf(0.f,0.f,0.f));
@@ -37,8 +37,8 @@ class NAZARA_API NzDynaTerrainQuadTreeBase
         NzDynaTerrainQuadTreeBase* GetContainingQuadTree(const NzTerrainNodeID& nodeID);
         unsigned int GetLeafNodesAmount() const;
         float GetMaximumHeight() const;
-        NzTerrainNode* GetNode(const NzTerrainNodeID& nodeID);
-        NzTerrainNode* GetRootNode();
+        NzTerrainInternalNode* GetNode(const NzTerrainNodeID& nodeID);
+        NzTerrainInternalNode* GetRootNode();
         unsigned int GetSubdivisionsAmount();
         virtual NzVector3f GetVertexPosition(const NzTerrainNodeID& nodeID, int x, int y);
 
@@ -50,18 +50,18 @@ class NAZARA_API NzDynaTerrainQuadTreeBase
 
     protected:
         nzQuadTreeType m_type;
-        NzTerrainNode* GetNodeFromPool();
-        void ReturnNodeToPool(NzTerrainNode* node);
+        NzTerrainInternalNode* GetNodeFromPool();
+        void ReturnNodeToPool(NzTerrainInternalNode* node);
         NzPatch* GetPatchFromPool();
         void ReturnPatchToPool(NzPatch* patch);
         //Vu que quadtree ne sera pas en charge de l'affichage, elles sont peut être inutiles, y compris maintenir à jour m_leaves
-        void RegisterLeaf(NzTerrainNode* node);
-        bool UnRegisterLeaf(NzTerrainNode* node);//Les feuilles enlevées ici doivent aussi l'être de la camera list
-        bool UnRegisterNode(NzTerrainNode* node);
+        void RegisterLeaf(NzTerrainInternalNode* node);
+        bool UnRegisterLeaf(NzTerrainInternalNode* node);//Les feuilles enlevées ici doivent aussi l'être de la camera list
+        bool UnRegisterNode(NzTerrainInternalNode* node);
 
-        void AddLeaveToSubdivisionQueue(NzTerrainNode* node);
-        void AddNodeToRefinementQueue(NzTerrainNode* node);
-        void TryRemoveNodeFromRefinementQueue(NzTerrainNode* node);
+        void AddLeaveToSubdivisionQueue(NzTerrainInternalNode* node);
+        void AddNodeToRefinementQueue(NzTerrainInternalNode* node);
+        void TryRemoveNodeFromRefinementQueue(NzTerrainInternalNode* node);
 
         //Returns -1 if the distance to the camera is too big
         //or the radius index otherwise
@@ -76,7 +76,7 @@ class NAZARA_API NzDynaTerrainQuadTreeBase
         NzHeightSource2D* m_heightSource2D;
         NzHeightSource3D* m_heightSource3D;
 
-        NzTerrainNode* m_root;
+        NzTerrainInternalNode* m_root;
         TerrainNodeData m_data;
 
         NzMatrix4f m_rotationMatrix;
@@ -87,14 +87,14 @@ class NAZARA_API NzDynaTerrainQuadTreeBase
         std::map<float,unsigned int> m_cameraRadiuses;
         std::map<float,unsigned int>::iterator it;
 
-        std::map<NzTerrainNodeID,NzTerrainNode*> m_nodesMap;
-        std::list<NzTerrainNode*> m_leaves;
+        std::map<NzTerrainNodeID,NzTerrainInternalNode*> m_nodesMap;
+        std::list<NzTerrainInternalNode*> m_leaves;
 
-        NzObjectPool<NzTerrainNode> m_nodesPool;
+        NzObjectPool<NzTerrainInternalNode> m_nodesPool;
         NzObjectPool<NzPatch> m_patchesPool;
 
-        std::map<NzTerrainNodeID,NzTerrainNode*> m_subdivisionQueue;
-        std::map<NzTerrainNodeID,NzTerrainNode*> m_refinementQueue;
+        std::map<NzTerrainNodeID,NzTerrainInternalNode*> m_subdivisionQueue;
+        std::map<NzTerrainNodeID,NzTerrainInternalNode*> m_refinementQueue;
 
         unsigned int m_subdivisionsAmount;
         unsigned int m_poolReallocationSize;

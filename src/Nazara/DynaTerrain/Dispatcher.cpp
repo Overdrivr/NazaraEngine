@@ -7,51 +7,12 @@
 #include <iostream>
 #include <cmath>
 
-NzDispatcher::NzDispatcher()
+NzDispatcher::NzDispatcher(unsigned int patchBufferSize)
 {
+    m_patchSize = 600;
+    m_bufferSize = patchBufferSize * m_patchSize;
+    m_patchAmount = patchBufferSize;
     m_isReady = false;
-
-    //On construit l'index buffer
-    //taille totale : 1750 * 96 = 168000
-    //taille atomique : 96
-    //32 triangles
-
-    unsigned int rowIndex[24];
-    for(int i(0) ; i < 4 ; ++i)
-    {
-        rowIndex[i*6] = i;
-        rowIndex[i*6+1] = i + 1;
-        rowIndex[i*6+2] = i + 6;
-        rowIndex[i*6+3] = i;
-        rowIndex[i*6+4] = i + 5;
-        rowIndex[i*6+5] = i + 6;
-    }
-    unsigned int indexes[96];
-
-
-    for(unsigned int i(0) ; i < 4 ; ++i)
-        for(unsigned int j(0) ; j < 24 ; ++j)
-        {
-            indexes[i*24+j] = rowIndex[j] + i*5;
-        }
-
-    //L'index entier
-    unsigned int allIndexes[168000];
-
-    for(int i(0) ; i < 1750 ; ++i)
-    {
-        for(int j(0) ; j < 96 ; ++j)
-        {
-            allIndexes[i*96+j] = indexes[j] + 25*i;
-        }
-    }
-
-	m_indexBuffer = new NzIndexBuffer(168000, true, nzBufferStorage_Hardware);
-	if (!m_indexBuffer->Fill(allIndexes, 0, 168000)) // FIX ME : Que faire en cas d'échec
-	{
-		std::cout << "Failed to fill indexbuffer" << std::endl;
-	}
-
 }
 
 NzDispatcher::~NzDispatcher()
@@ -62,16 +23,12 @@ NzDispatcher::~NzDispatcher()
         m_buffers.at(i) = nullptr;
     }
     m_buffers.clear();
-
-    delete m_indexBuffer;
 }
 
 void NzDispatcher::DrawAll(bool viewFrustumCullingEnabled)
 {
     if(m_isReady)
     {
-        NzRenderer::SetIndexBuffer(m_indexBuffer);
-
         for(unsigned int i(0) ; i < m_zones.size() ; ++i)
         {
             m_zones.at(i)->DrawBuffers();
@@ -133,7 +90,7 @@ bool NzDispatcher::Initialize(unsigned int zoneDepth, unsigned int bufferAmount)
     //On crée le nombre de zones demandé
     for(unsigned int i(0) ; i < m_zonesAmountX * m_zonesAmountX ; ++i)
     {
-        std::unique_ptr<NzZone> zone(new NzZone(this));
+        std::unique_ptr<NzZone> zone(new NzZone(this,m_patchAmount));
         m_zones.push_back(std::move(zone));
     }
 /*
@@ -175,7 +132,7 @@ NzVertexBuffer* NzDispatcher::QueryFreeBuffer()
     else
     {
         //std::cout<<"NzDispatcher::QueryFreeBuffer : Allocated New VertexBuffer"<<std::endl;
-        buffer = new NzVertexBuffer(&m_declaration,262500, nzBufferStorage_Hardware, nzBufferUsage_Static);
+        buffer = new NzVertexBuffer(&m_declaration,m_bufferSize, nzBufferStorage_Hardware, nzBufferUsage_Static);
         m_buffers.push_back(buffer);
     }
 
