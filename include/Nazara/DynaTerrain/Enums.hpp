@@ -30,11 +30,11 @@ enum nzQuadTreeType
 };
 
 class NzDynaTerrainQuadTreeBase;
-class NzDispatcher;
+class NzTerrainMasterNode;
 
 struct TerrainNodeData
 {
     NzDynaTerrainQuadTreeBase* quadtree;
-    NzDispatcher* dispatcher;
+    NzTerrainMasterNode* dispatcher;
 };
 #endif // NAZARA_ENUMS_DYNATERRAIN_HPP

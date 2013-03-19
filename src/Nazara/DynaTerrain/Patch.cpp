@@ -5,7 +5,7 @@
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/DynaTerrain/Config.hpp>
 #include <Nazara/DynaTerrain/Patch.hpp>
-#include <Nazara/DynaTerrain/Dispatcher.hpp>
+#include <Nazara/DynaTerrain/TerrainMasterNode.hpp>
 #include <Nazara/DynaTerrain/DynaTerrainQuadTreeBase.hpp>
 #include <cmath>
 #include <iostream>

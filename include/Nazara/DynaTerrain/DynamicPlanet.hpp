@@ -9,13 +9,9 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/DynaTerrain/HeightSource3D.hpp>
-#include <Nazara/Renderer/Shader.hpp>
 #include <Nazara/DynaTerrain/TerrainConfiguration.hpp>
 #include <Nazara/DynaTerrain/DynaTerrainQuadTreeBase.hpp>
 #include <Nazara/DynaTerrain/DynaTerrainMainClassBase.hpp>
-#include <Nazara/DynaTerrain/Dispatcher.hpp>
-#include <Nazara/DynaTerrain/ObjectPool.hpp>
-#include <Nazara/Renderer/Texture.hpp>
 
 //TODO : modifier shader du terrain pour qu'il fonctionne avec n'importe quelle direction (slope, altitude)
 

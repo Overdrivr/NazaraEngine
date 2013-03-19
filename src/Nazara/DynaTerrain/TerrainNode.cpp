@@ -5,12 +5,12 @@
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/DynaTerrain/Config.hpp>
 #include <Nazara/DynaTerrain/TerrainNode.hpp>
-#include <Nazara/DynaTerrain/Dispatcher.hpp>
+#include <Nazara/DynaTerrain/TerrainMasterNode.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
 #include <iostream>
 #include <Nazara/DynaTerrain/Debug.hpp>
 
-NzTerrainNode::NzTerrainNode(NzDispatcher* dispatcher, unsigned int freeSpotsAmount)
+NzTerrainNode::NzTerrainNode(NzTerrainMasterNode* dispatcher, unsigned int freeSpotsAmount)
 {
     m_dispatcher = dispatcher;
     m_freeSpotsAmount = freeSpotsAmount;

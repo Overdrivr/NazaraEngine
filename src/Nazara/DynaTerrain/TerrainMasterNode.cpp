@@ -2,12 +2,12 @@
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <Nazara/DynaTerrain/Dispatcher.hpp>
+#include <Nazara/DynaTerrain/TerrainMasterNode.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
 #include <iostream>
 #include <cmath>
 
-NzDispatcher::NzDispatcher(unsigned int patchBufferSize)
+NzTerrainMasterNode::NzTerrainMasterNode(unsigned int patchBufferSize)
 {
     m_patchSize = 600;
     m_bufferSize = patchBufferSize * m_patchSize;
@@ -15,7 +15,7 @@ NzDispatcher::NzDispatcher(unsigned int patchBufferSize)
     m_isReady = false;
 }
 
-NzDispatcher::~NzDispatcher()
+NzTerrainMasterNode::~NzTerrainMasterNode()
 {
     for(unsigned int i(0) ; i < m_buffers.size() ; ++i)
     {
@@ -25,7 +25,7 @@ NzDispatcher::~NzDispatcher()
     m_buffers.clear();
 }
 
-void NzDispatcher::DrawAll(bool viewFrustumCullingEnabled)
+void NzTerrainMasterNode::DrawAll(bool viewFrustumCullingEnabled)
 {
     if(m_isReady)
     {
@@ -36,12 +36,12 @@ void NzDispatcher::DrawAll(bool viewFrustumCullingEnabled)
     }
 }
 
-unsigned int NzDispatcher::GetFreeBuffersAmount() const
+unsigned int NzTerrainMasterNode::GetFreeBuffersAmount() const
 {
     return m_freeBuffers.size();
 }
 
-bool NzDispatcher::RemovePatch(const NzTerrainNodeID& ID)
+bool NzTerrainMasterNode::RemovePatch(const NzTerrainNodeID& ID)
 {
     if(m_isReady)
     {
@@ -67,7 +67,7 @@ bool NzDispatcher::RemovePatch(const NzTerrainNodeID& ID)
     return false;
 }
 
-bool NzDispatcher::Initialize(unsigned int zoneDepth, unsigned int bufferAmount)
+bool NzTerrainMasterNode::Initialize(unsigned int zoneDepth, unsigned int bufferAmount)
 {
     ///---- On crée la déclaration de vertices
     m_elements[0].usage = nzElementUsage_Position;
@@ -120,7 +120,7 @@ bool NzDispatcher::Initialize(unsigned int zoneDepth, unsigned int bufferAmount)
     return true;
 }
 
-NzVertexBuffer* NzDispatcher::QueryFreeBuffer()
+NzVertexBuffer* NzTerrainMasterNode::QueryFreeBuffer()
 {
     NzVertexBuffer* buffer = nullptr;
 
@@ -139,12 +139,12 @@ NzVertexBuffer* NzDispatcher::QueryFreeBuffer()
     return buffer;
 }
 
-void NzDispatcher::ReturnBuffer(NzVertexBuffer* buffer)
+void NzTerrainMasterNode::ReturnBuffer(NzVertexBuffer* buffer)
 {
     m_freeBuffers.push(buffer);
 }
 
-bool NzDispatcher::SubmitPatch(const std::array<float,150>& subBuffer, const NzTerrainNodeID& ID)
+bool NzTerrainMasterNode::SubmitPatch(const std::array<float,150>& subBuffer, const NzTerrainNodeID& ID)
 {
     if(!m_isReady)
         return false;
@@ -166,7 +166,7 @@ bool NzDispatcher::SubmitPatch(const std::array<float,150>& subBuffer, const NzT
     }
 }
 
-bool NzDispatcher::UpdatePatch(const std::array<float,150>& subBuffer, const NzTerrainNodeID& ID)
+bool NzTerrainMasterNode::UpdatePatch(const std::array<float,150>& subBuffer, const NzTerrainNodeID& ID)
 {
     if(m_isReady)
     {

@@ -11,7 +11,7 @@
 #include <Nazara/Core/String.hpp>
 #include <Nazara/Math/Matrix4.hpp>
 #include <Nazara/DynaTerrain/TerrainInternalNode.hpp>
-#include <Nazara/DynaTerrain/Dispatcher.hpp>
+#include <Nazara/DynaTerrain/TerrainMasterNode.hpp>
 #include <Nazara/DynaTerrain/ObjectPool.hpp>
 #include <Nazara/DynaTerrain/TerrainNodeID.hpp>
 #include <Nazara/DynaTerrain/TerrainConfiguration.hpp>
@@ -67,7 +67,7 @@ class NAZARA_API NzDynaTerrainQuadTreeBase
         //or the radius index otherwise
         virtual int TransformDistanceToCameraInRadiusIndex(float distance);
 
-        NzDispatcher m_dispatcher;
+        NzTerrainMasterNode m_dispatcher;
 
         NzTerrainConfiguration m_terrainConfiguration;
         NzPlanetConfiguration m_planetConfiguration;

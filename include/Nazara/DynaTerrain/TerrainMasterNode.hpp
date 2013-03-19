@@ -4,8 +4,8 @@
 
 #pragma once
 
-#ifndef NAZARA_DISPATCHER_HPP
-#define NAZARA_DISPATCHER_HPP
+#ifndef NAZARA_TERRAINMASTERNODE_HPP
+#define NAZARA_TERRAINMASTERNODE_HPP
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Math/Vector3.hpp>
@@ -18,13 +18,12 @@
 #include <queue>
 #include <memory>
 
-//FIX ME : Renommer en NzTerrainMasterNode ?
 //FIX ME 2 : Utiliser un arbre en structure interne pour le fast culling
-class NAZARA_API NzDispatcher
+class NAZARA_API NzTerrainMasterNode
 {
     public:
-        NzDispatcher(unsigned int patchBufferSize = 256);
-        ~NzDispatcher();
+        NzTerrainMasterNode(unsigned int patchBufferSize = 256);
+        ~NzTerrainMasterNode();
 
         void DrawAll(bool viewFrustumCullingEnabled = true);
 
@@ -68,4 +67,4 @@ class NAZARA_API NzDispatcher
         unsigned int m_patchAmount;
 };
 
-#endif // NAZARA_DISPATCHER_HPP
+#endif // NAZARA_TERRAINMASTERNODE_HPP

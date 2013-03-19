@@ -17,14 +17,14 @@
 #include <array>
 #include <vector>
 
-class NzDispatcher;
+class NzTerrainMasterNode;
 
 ///The Terrain Node dedicated purely to display, and interfaced with the scene manager
 
 class NAZARA_API NzTerrainNode
 {
     public:
-        NzTerrainNode(NzDispatcher* dispatcher, unsigned int freeSpotsAmount);
+        NzTerrainNode(NzTerrainMasterNode* dispatcher, unsigned int freeSpotsAmount);
         ~NzTerrainNode();
 
         void AddBuffer(NzVertexBuffer* buffer);
@@ -47,7 +47,7 @@ class NAZARA_API NzTerrainNode
     private:
 
 
-        NzDispatcher* m_dispatcher;
+        NzTerrainMasterNode* m_dispatcher;
         //Raw data for rendering
         std::vector<NzVertexBuffer*> m_buffers;
         //Image of the raw data for quick search over patch id & memory fragmentation reduction
