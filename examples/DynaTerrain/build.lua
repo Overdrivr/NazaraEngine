@@ -1,6 +1,6 @@
 kind "ConsoleApp"
 
-files {"main.cpp","MyHeightSource.hpp","MyHeightSource.cpp"}
+files {"main.cpp","MyHeightSource2D.hpp","MyHeightSource2D.cpp","MyHeightSource3D.hpp","MyHeightSource3D.cpp"}
 
 if (_OPTIONS["united"]) then
 	configuration "DebugStatic"

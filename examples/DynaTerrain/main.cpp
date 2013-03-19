@@ -3,10 +3,12 @@
 #include <Nazara/Renderer/DebugDrawer.hpp>
 #include <Nazara/Renderer/RenderWindow.hpp>
 #include <Nazara/DynaTerrain/DynamicTerrain.hpp>
+#include <Nazara/DynaTerrain/DynamicPlanet.hpp>
 #include <Nazara/DynaTerrain/TerrainConfiguration.hpp>
 #include <iostream>
 #include <sstream>
-#include "MyHeightSource.hpp"
+#include "MyHeightSource2D.hpp"
+#include "MyHeightSource3D.hpp"
 
 using namespace std;
 
@@ -24,7 +26,8 @@ int main()
 
     ///Initialisation du terrain
     // On instancie notre source de hauteur personnalisée, définissant la hauteur du terrain en tout point
-    MyHeightSource source;
+    MyHeightSource2D source2;
+    MyHeightSource3D source3;
     // La source peut charger des données manuelles grâce à cette méthode
     //source.LoadTerrainFile("resources/terrain.hsd");
 
@@ -32,13 +35,13 @@ int main()
     NzTerrainConfiguration myConfig;
 
         ///Les paramètres de base
-    myConfig.terrainCenter = NzVector3f(500.f,0.f,500.f);//Le centre du terrain
-    myConfig.terrainOrientation = NzVector3f(0.f, 1.f, 0.f);//L'orientation du terrain
-    myConfig.maxTerrainHeight = 800.f;//La hauteur maximale du terrain
-    myConfig.minTerrainPrecision = 2;//La précision minimale du terrain
+    myConfig.center = NzVector3f(0.f,0.f,0.f);//Le centre du terrain
+    myConfig.terrainOrientation = NzEulerAnglesf(0.f, 0.f, 0.f);//L'orientation du terrain
+    myConfig.maxHeight = 800.f;//La hauteur maximale du terrain
+    myConfig.minPrecision = 2;//La précision minimale du terrain
     myConfig.fragmentShader = "resources/terrain_shader.frag";
     myConfig.vertexShader = "resources/terrain_shader.vert";
-    myConfig.terrainTexture = "resources/debug_grid2.png";//"resources/debug_texture2.png","resources/debug_texture_flat.png","resources/dt_tiles.jpg"
+    myConfig.groundTextures = "resources/debug_grid2.png";//"resources/debug_grid2.png";//"resources/debug_texture2.png";//"resources/debug_texture_flat.png";"resources/dt_tiles.jpg"
 
         ///Le paramètre lié à la précision des pentes
     myConfig.maxSlopePrecision = 2;//La précision maximale en cas de très forte pente
@@ -53,20 +56,45 @@ int main()
     if(!myConfig.IsValid())
         std::cout<<"Terrain configuration not valid..."<<std::endl;
 
+    /*NzPlanetConfiguration myConfig;
+
+        ///Les paramètres de base
+    myConfig.center = NzVector3f(0.f,0.f,0.f);//Le centre du terrain
+    myConfig.planetRadius = 2000.f;
+    myConfig.maxHeight = 1000.f;//La hauteur maximale du terrain
+    myConfig.minPrecision = 2;//La précision minimale du terrain
+    myConfig.fragmentShader = "resources/terrain_shader.frag";
+    myConfig.vertexShader = "resources/terrain_shader.vert";
+    myConfig.groundTextures = "resources/debug_grid2.png";//"resources/debug_grid2.png";//"resources/debug_texture2.png";//"resources/debug_texture_flat.png";"resources/dt_tiles.jpg"
+
+        ///Le paramètre lié à la précision des pentes
+    myConfig.maxSlopePrecision = 2;//La précision maximale en cas de très forte pente
+
+        ///Les paramètres liés à la précision autour de la caméra
+    myConfig.higherCameraPrecision = 10;//La précision maximale engendrée par la caméra
+    myConfig.cameraRadiusAmount = 8;//Le nombre max de rayons de précision autour de la caméra
+    myConfig.higherCameraPrecisionRadius = 10.f;//Le rayon du cercle le plus précis (à garder très petit si la précision est importante)
+    myConfig.radiusSizeIncrement = 2.5f;//L'incrément en taille entre deux rayons consécutifs
+*/
+    //Si la configuration n'est pas bonne, elle sera réparée au plus proche automatiquement ( TODO !)
+    if(!myConfig.IsValid())
+        std::cout<<"Terrain configuration not valid..."<<std::endl;
+
     //Le terrain en lui-même, aka le quadtree
-    NzDynamicTerrain terrain(myConfig,&source);
+    NzDynamicTerrain terrain(myConfig,&source2);
+    //NzDynamicPlanet planet(myConfig,&source3);
 
     cout<<"Initializing terrain, please wait..."<<endl;
 
     //On initialise le terrain
     terrain.Initialize();
+    //planet.Initialize();
 
-    cout<<"Terrain initialized successfully !"<<endl;
+    //cout<<"Terrain initialized successfully !"<<endl;
+    cout<<"Planet initialized successfully !"<<endl;
     //cout<<"Nombre de feuilles  : "<<quad.GetLeafNodesAmount()<<endl;
     //cout<<"Nombre de triangles : "<<quad.GetLeafNodesAmount()*32<<endl;
     cout<<"---------------------------------------------------------------"<<endl;
-
-
 
 
     ///Code classique pour ouvrir une fenêtre avec Nazara
@@ -74,7 +102,7 @@ int main()
 	NzRenderWindow window(NzVideoMode(800,600,32),windowTitle,nzWindowStyle_Default);
 	window.SetFramerateLimit(100);
 	window.EnableVerticalSync(false);
-	NzRenderer::SetMatrix(nzMatrixType_Projection, NzMatrix4f::Perspective(NzDegrees(70.f), static_cast<float>(window.GetWidth())/window.GetHeight(), 1.f, 10000.f));
+	NzRenderer::SetMatrix(nzMatrixType_Projection, NzMatrix4f::Perspective(NzDegrees(70.f), static_cast<float>(window.GetWidth())/window.GetHeight(), 1.f, 100000.f));
 
 	NzClock secondClock, updateClock; // Des horloges pour gérer le temps
 	unsigned int fps = 0; // Compteur de FPS
@@ -83,7 +111,7 @@ int main()
     NzRenderer::SetMatrix(nzMatrixType_View, NzMatrix4f::LookAt(NzVector3f(0.f,0.f,0.f), NzVector3f::Forward()));
 
 	// Notre caméra
-	NzVector3f camPos(-2000.f, 800.f, 2000.f);
+	NzVector3f camPos(-2000.f, 1800.f, 2000.f);
 	NzEulerAnglesf camRot(-30.f, -45.f, 0.f);
 
 	NzNode camera;
@@ -256,11 +284,15 @@ int main()
 
         //On met à jour le terrain
         if(terrainUpdate)
+        {
+            //planet.Update(camera.GetTranslation());
             terrain.Update(camera.GetTranslation());
+        }
 
         //On dessine le terrain
         terrain.Render();
-        //quad.DebugDrawAABB(true,4);
+        //planet.Render();
+
 		// Nous mettons à jour l'écran
 		window.Display();
 

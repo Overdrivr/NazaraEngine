@@ -1,7 +1,7 @@
 #include <cmath>
-#include "MyHeightSource.hpp"
+#include "MyHeightSource2D.hpp"
 
-MyHeightSource::MyHeightSource()
+MyHeightSource2D::MyHeightSource2D()
 {
     m_source = new NzSimplex2D(15954);
     m_source2 = new NzFBM2D(SIMPLEX,15954);
@@ -15,14 +15,14 @@ MyHeightSource::MyHeightSource()
     resolution = 1/2800.f;
 }
 
-MyHeightSource::~MyHeightSource()
+MyHeightSource2D::~MyHeightSource2D()
 {
     delete m_source;
     delete m_source2;
     delete m_source3;
 }
 
-float MyHeightSource::GetNoiseValue(float x, float y)
+float MyHeightSource2D::GetNoiseValue(float x, float y)
 {
     /*
     if(x > 100)

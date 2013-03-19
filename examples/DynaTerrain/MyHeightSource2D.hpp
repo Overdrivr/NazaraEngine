@@ -1,17 +1,17 @@
-#ifndef MYHEIGHTSOURCE_HPP
-#define MYHEIGHTSOURCE_HPP
+#ifndef MYHEIGHTSOURCE2D_HPP
+#define MYHEIGHTSOURCE2D_HPP
 
 #include <Nazara/Noise/FBM2D.hpp>
 #include <Nazara/Noise/HybridMultiFractal2D.hpp>
 #include <Nazara/Noise/Simplex2D.hpp>
 #include <Nazara/Noise/Worley2D.hpp>
-#include <Nazara/DynaTerrain/HeightSource.hpp>
+#include <Nazara/DynaTerrain/HeightSource2D.hpp>
 
-class MyHeightSource : public NzHeightSource
+class MyHeightSource2D : public NzHeightSource2D
 {
     public:
-        MyHeightSource();
-        ~MyHeightSource();
+        MyHeightSource2D();
+        ~MyHeightSource2D();
         float GetNoiseValue(float x, float y);
     protected:
     private:
@@ -22,4 +22,4 @@ class MyHeightSource : public NzHeightSource
         float resolution;
 };
 
-#endif // MYHEIGHTSOURCE_HPP
+#endif // MYHEIGHTSOURCE2D_HPP
