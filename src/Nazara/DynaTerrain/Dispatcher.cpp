@@ -90,7 +90,7 @@ bool NzDispatcher::Initialize(unsigned int zoneDepth, unsigned int bufferAmount)
     //On crée le nombre de zones demandé
     for(unsigned int i(0) ; i < m_zonesAmountX * m_zonesAmountX ; ++i)
     {
-        std::unique_ptr<NzZone> zone(new NzZone(this,m_patchAmount));
+        std::unique_ptr<NzTerrainNode> zone(new NzTerrainNode(this,m_patchAmount));
         m_zones.push_back(std::move(zone));
     }
 /*

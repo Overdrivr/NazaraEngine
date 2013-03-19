@@ -12,13 +12,14 @@
 #include <Nazara/Utility/VertexBuffer.hpp>
 #include <Nazara/Utility/VertexDeclaration.hpp>
 #include <Nazara/Utility/IndexBuffer.hpp>
-#include <Nazara/DynaTerrain/Zone.hpp>
+#include <Nazara/DynaTerrain/TerrainNode.hpp>
 #include <Nazara/DynaTerrain/Enums.hpp>
 #include <vector>
 #include <queue>
 #include <memory>
 
-//FIX ME : Renommer en NzDynaTerrainMasterNode ?
+//FIX ME : Renommer en NzTerrainMasterNode ?
+//FIX ME 2 : Utiliser un arbre en structure interne pour le fast culling
 class NAZARA_API NzDispatcher
 {
     public:
@@ -36,6 +37,7 @@ class NAZARA_API NzDispatcher
         bool RemovePatch(const NzTerrainNodeID& ID);
         void ReturnBuffer(NzVertexBuffer* buffer);
 
+        //FIX ME : Renommer en AddMesh
         bool SubmitPatch(const std::array<float,150>& subBuffer, const NzTerrainNodeID& ID);
 
         //FIX ME : Il n'est pas utile de réenvoyer toutes les vertices lors d'un update
@@ -49,7 +51,7 @@ class NAZARA_API NzDispatcher
         unsigned int m_zoneDepth;
         unsigned int m_zonesAmountX;
         //Contient l'ensemble des zones
-        std::vector<std::unique_ptr<NzZone>> m_zones;
+        std::vector<std::unique_ptr<NzTerrainNode>> m_zones;
         //Contient l'ensemble des buffers
             //Un buffer pèse 1 050 000 octets, il peut contenir 1750 patches de 25 vertices,(150 float | 600 octets), soit 262500 vertices
         std::vector<NzVertexBuffer*> m_buffers;

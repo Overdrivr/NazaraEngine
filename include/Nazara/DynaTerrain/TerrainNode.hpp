@@ -8,77 +8,56 @@
 #define NAZARA_TERRAINNODE_HPP
 
 #include <Nazara/Prerequesites.hpp>
-#include <Nazara/Math/Vector2.hpp>
-#include <Nazara/Math/Vector3.hpp>
-#include <Nazara/Math/Sphere.hpp>
-#include <Nazara/DynaTerrain/Patch.hpp>
-#include <Nazara/DynaTerrain/Enums.hpp>
+#include <Nazara/Utility/VertexBuffer.hpp>
 #include <Nazara/DynaTerrain/TerrainNodeID.hpp>
+#include <Nazara/DynaTerrain/SparseBuffer.hpp>
+#include <Nazara/DynaTerrain/SparseBufferSet.hpp>
 
-class NzTerrainQuadTree;
-class NzHeightSource;
+#include <queue>
+#include <array>
+#include <vector>
+
+class NzDispatcher;
+
+///The Terrain Node dedicated purely to display, and interfaced with the scene manager
 
 class NAZARA_API NzTerrainNode
 {
     public:
-
-        NzTerrainNode();
+        NzTerrainNode(NzDispatcher* dispatcher, unsigned int freeSpotsAmount);
         ~NzTerrainNode();
 
-        void CleanTree(unsigned int minDepth);
-        void CreatePatch();
+        void AddBuffer(NzVertexBuffer* buffer);
+        //FIX ME : Rename into AddMesh
+        void AddPatch(const std::array<float,150>& vertices, const NzTerrainNodeID& ID);
 
-        void DeletePatch();
+        void DrawBuffers() const;
 
-        const NzCubef& GetAABB() const;
-        NzTerrainNode* GetChild(nzLocation location);
-        NzTerrainNode* GetChild(unsigned int i);
-        unsigned int GetLevel() const;
-        NzTerrainNode* GetDirectNeighbor(nzDirection direction);
-        static int GetNodeAmount();
-        const NzTerrainNodeID& GetNodeID() const;
-        NzTerrainNode* GetParent();
+        unsigned int GetFreeBuffersAmount();
+        unsigned int GetFreeSlotsAmount();
 
-        void Update(const NzVector3f& cameraPosition);
-        bool HierarchicalRefine();
-        void HierarchicalSubdivide(unsigned int maxDepth, bool isNotReversible = false);
-        void HierarchicalSlopeBasedSubdivide(unsigned int maxDepth);
+        void Optimize(int amount);
 
-        bool IsLeaf() const;
-        //bool IsMinimalPrecision() const;
-        bool IsRoot() const;
-        bool IsRefineable() const;
-        bool IsValid() const;
-        void Initialize(TerrainNodeData *data, NzTerrainNode* parent, nzLocation loc = TOPLEFT);
-        void Invalidate();
+        bool RemoveFreeBuffer(NzVertexBuffer* buffer);
+        bool RemovePatch(const NzTerrainNodeID& ID);
 
-        bool Refine();
+        bool UpdatePatch(const std::array<float,150>& vertices, const NzTerrainNodeID& ID);
 
-        bool Subdivide(bool isNotReversible = false);
-
+    protected:
     private:
-        void HandleNeighborSubdivision(nzDirection direction, bool isNotReversible = false);
-        /* Variables pour le fonctionnement basique de l'arbre */
-        TerrainNodeData* m_data;
-        NzTerrainNode* m_parent;
-        NzTerrainNode* m_children[4];
 
-        bool m_isLeaf;
-        bool m_isRoot;
-        bool m_patchMemoryAllocated;
-        bool m_isInitialized;
 
-        NzTerrainNodeID m_nodeID;
-        NzCubef m_aabb;
-        NzPatch* m_patch;
-        nzLocation m_location;
+        NzDispatcher* m_dispatcher;
+        //Raw data for rendering
+        std::vector<NzVertexBuffer*> m_buffers;
+        //Image of the raw data for quick search over patch id & memory fragmentation reduction
+        NzSparseBufferSet<NzTerrainNodeID> m_buffersMap;
 
-        static int nbNodes;
-
-        /* Variables pour les fonctionnalités supplémentaires */
-
-        //Indique que le node ne doit pas être refiné, pour conserver une précision du terrain lors de variation de pente
-        bool m_doNotRefine;
+        //Contient l'ensemble des patches qui n'ont pas pu être mis en mémoire vidéo pour cause d'espace insuffisant
+            //Non utilisé : FIX ME : Vraiment Utile ?
+        std::queue<float> m_unbufferedPatches;
+        std::queue<NzTerrainNodeID> m_unbufferedPatchesIndex;
+        unsigned int m_freeSpotsAmount;
 };
 
 #endif // NAZARA_TERRAINNODE_HPP
