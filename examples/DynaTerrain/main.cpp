@@ -102,21 +102,28 @@ int main()
 	NzRenderWindow window(NzVideoMode(800,600,32),windowTitle,nzWindowStyle_Default);
 	window.SetFramerateLimit(100);
 	window.EnableVerticalSync(false);
-	NzRenderer::SetMatrix(nzMatrixType_Projection, NzMatrix4f::Perspective(NzDegrees(70.f), static_cast<float>(window.GetWidth())/window.GetHeight(), 1.f, 100000.f));
+
 
 	NzClock secondClock, updateClock; // Des horloges pour gérer le temps
 	unsigned int fps = 0; // Compteur de FPS
-    NzMatrix4f matrix;
-    matrix.MakeIdentity();
-    NzRenderer::SetMatrix(nzMatrixType_View, NzMatrix4f::LookAt(NzVector3f(0.f,0.f,0.f), NzVector3f::Forward()));
+
 
 	// Notre caméra
 	NzVector3f camPos(-2000.f, 1800.f, 2000.f);
 	NzEulerAnglesf camRot(-30.f, -45.f, 0.f);
 
-	NzNode camera;
-	camera.SetTranslation(camPos);
+	NzCamera camera;
+	camera.SetPosition(camPos);
 	camera.SetRotation(camRot);
+	camera.SetFOV(70.f);
+	camera.SetZFar(100000.f);
+	camera.SetZNear(1.f);
+	camera.SetTarget(window);
+
+	//NzRenderer::SetMatrix(nzMatrixType_Projection, NzMatrix4f::Perspective(NzDegrees(70.f), static_cast<float>(window.GetWidth())/window.GetHeight(), 1.f, 100000.f));
+    NzMatrix4f matrix;
+    matrix.MakeIdentity();
+    //NzRenderer::SetMatrix(nzMatrixType_View, NzMatrix4f::LookAt(NzVector3f(0.f,0.f,0.f), NzVector3f::Forward()));
 
 	float camSpeed = 80.f;
 	float sensitivity = 0.2f;
@@ -247,30 +254,30 @@ int main()
                 NzVector3f speed(speed2,speed2,speed2);
 
 				if (NzKeyboard::IsKeyPressed(NzKeyboard::Z))
-					camera.Translate(forward * speed * elapsedTime);
+					camera.Move(forward * speed * elapsedTime);
 
 				if (NzKeyboard::IsKeyPressed(NzKeyboard::S))
-					camera.Translate(-forward * speed * elapsedTime);
+					camera.Move(-forward * speed * elapsedTime);
 
 				if (NzKeyboard::IsKeyPressed(NzKeyboard::Q))
-					camera.Translate(left * speed * elapsedTime);
+					camera.Move(left * speed * elapsedTime);
 
 				if (NzKeyboard::IsKeyPressed(NzKeyboard::D))
-					camera.Translate(-left * speed * elapsedTime);
+					camera.Move(-left * speed * elapsedTime);
 
 				// En revanche, ici la hauteur est toujours la même, peu importe notre orientation
 				if (NzKeyboard::IsKeyPressed(NzKeyboard::Space))
-					camera.Translate(up * speed * elapsedTime, nzCoordSys_Global);
+					camera.Move(up * speed * elapsedTime, nzCoordSys_Global);
 
 				if (NzKeyboard::IsKeyPressed(NzKeyboard::LControl))
-					camera.Translate(up * speed * elapsedTime, nzCoordSys_Global);
+					camera.Move(up * speed * elapsedTime, nzCoordSys_Global);
 
 			updateClock.Restart();
 		}
 
-        NzRenderer::SetMatrix(nzMatrixType_View, NzMatrix4f::LookAt(camera.GetDerivedTranslation(), camera.GetDerivedTranslation() + camera.GetDerivedRotation() * NzVector3f::Forward()));
+        camera.Activate();
 
-		// Notre scène 3D requiert un test de profondeur
+        // Notre scène 3D requiert un test de profondeur
 		NzRenderer::Enable(nzRendererParameter_DepthTest, true);
 
 		// Nous voulons avoir un fond noir
@@ -286,7 +293,7 @@ int main()
         if(terrainUpdate)
         {
             //planet.Update(camera.GetTranslation());
-            terrain.Update(camera.GetTranslation());
+            terrain.Update(camera.GetPosition());
         }
 
         //On dessine le terrain
@@ -301,7 +308,7 @@ int main()
 		// Toutes les secondes
 		if (secondClock.GetMilliseconds() >= 1000)
 		{
-			window.SetTitle(windowTitle + " (FPS: " + NzString::Number(fps) + ')' + "( Camera in : " + camera.GetTranslation() + ")");// (Updated Nodes : " + NzString::Number(quad.GetSubdivisionsAmount()) + "/s)");
+			window.SetTitle(windowTitle + " (FPS: " + NzString::Number(fps) + ')' + "( Camera in : " + camera.GetPosition().ToString() + ")");// (Updated Nodes : " + NzString::Number(quad.GetSubdivisionsAmount()) + "/s)");
 			fps = 0;
 			secondClock.Restart();
 		}

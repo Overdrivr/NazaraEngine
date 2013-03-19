@@ -10,8 +10,6 @@ MyHeightSource2D::MyHeightSource2D()
     m_source3->SetLacunarity(2.7);
     m_source3->SetHurstParameter(0.28);
 
-    m_worley.SetNewSeed(254862213);
-    m_worley.ShufflePermutationTable();
     resolution = 1/2800.f;
 }
 
@@ -34,7 +32,6 @@ float MyHeightSource2D::GetNoiseValue(float x, float y)
         return (x-30.f)/100.f;
     else
         return 0.f;*/
-    //return m_worley.GetValue(x,y,resolution);
     //return (std::sin(x/100.f)+1)/2.f;
     //return m_source->GetValue(x,y,0.005);
     //return m_source2->GetValue(x,y,0.0008);

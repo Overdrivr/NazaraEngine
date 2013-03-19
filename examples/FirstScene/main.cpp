@@ -223,6 +223,7 @@ int main()
 		// On active la caméra (Qui s'occupera de préparer la fenêtre au rendu)
 		camera.Activate();
 
+
 		// On vide le buffer de couleur et de profondeur pour réinitialiser le rendu
 		// À l'avenir, ceci sera fait automatiquement par la scène via les backgrounds
 		NzRenderer::Clear(nzRendererClear_Color | nzRendererClear_Depth);

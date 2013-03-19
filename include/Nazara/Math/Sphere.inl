@@ -3,13 +3,9 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Core/StringStream.hpp>
-<<<<<<< HEAD
-#include <algorithm>
-=======
 #include <Nazara/Math/Basic.hpp>
 #include <algorithm>
 #include <cstring>
->>>>>>> upstream/master
 #include <Nazara/Core/Debug.hpp>
 
 #define F(a) static_cast<T>(a)
@@ -54,7 +50,7 @@ bool NzSphere<T>::Contains(T X, T Y, T Z) const
 template<typename T>
 bool NzSphere<T>::Contains(const NzSphere& sphere) const
 {
-    return sphere.GetCenter().Distance(GetCenter()) + sphere.GetRadius() <= GetRadius();
+    return sphere.GetCenter().Distance(GetCenter()) + sphere.radius <= radius;
 }
 
 template<typename T>
@@ -170,7 +166,7 @@ T NzSphere<T>::GetSquaredRadius() const
 {
     return radius * radius;
 }
-
+/*
 template<typename T>
 bool NzSphere<T>::Intersect(const NzCube<T>& cube) const
 {
@@ -208,7 +204,7 @@ bool NzSphere<T>::Intersect(const NzCube<T>& cube) const
 
 	return false;
 }
-
+*/
 template<typename T>
 bool NzSphere<T>::Intersect(const NzSphere& sphere) const
 {
