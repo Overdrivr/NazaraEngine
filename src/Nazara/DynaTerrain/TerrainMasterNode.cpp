@@ -24,8 +24,13 @@ NzTerrainMasterNode::~NzTerrainMasterNode()
     }
     m_buffers.clear();
 }
-
-void NzTerrainMasterNode::DrawAll(bool viewFrustumCullingEnabled)
+/*
+void NzTerrainMasterNode::AddToRenderQueue(NzRenderQueue& renderQueue) const
+{
+    renderQueue.otherDrawables.push_back(static_cast<NzDrawable>(this));
+}
+*/
+void NzTerrainMasterNode::Draw() const
 {
     if(m_isReady)
     {
@@ -35,11 +40,21 @@ void NzTerrainMasterNode::DrawAll(bool viewFrustumCullingEnabled)
         }
     }
 }
-
+/*
+const NzBoundingBoxf& NzTerrainMasterNode::GetBoundingBox() const
+{
+    return m_aabb;
+}
+*/
 unsigned int NzTerrainMasterNode::GetFreeBuffersAmount() const
 {
     return m_freeBuffers.size();
 }
+/*
+nzSceneNodeType NzTerrainMasterNode::GetSceneNodeType() const
+{
+    return nzSceneNodeType_User;
+}*/
 
 bool NzTerrainMasterNode::RemovePatch(const NzTerrainNodeID& ID)
 {
@@ -67,7 +82,7 @@ bool NzTerrainMasterNode::RemovePatch(const NzTerrainNodeID& ID)
     return false;
 }
 
-bool NzTerrainMasterNode::Initialize(unsigned int zoneDepth, unsigned int bufferAmount)
+bool NzTerrainMasterNode::Initialize(unsigned int zoneDepth)
 {
     ///---- On crée la déclaration de vertices
     m_elements[0].usage = nzElementUsage_Position;
@@ -93,29 +108,7 @@ bool NzTerrainMasterNode::Initialize(unsigned int zoneDepth, unsigned int buffer
         std::unique_ptr<NzTerrainNode> zone(new NzTerrainNode(this,m_patchAmount));
         m_zones.push_back(std::move(zone));
     }
-/*
-    if(bufferAmount < m_zonesAmountX*m_zonesAmountX*1.5)
-        bufferAmount = static_cast<unsigned int>(m_zonesAmountX*m_zonesAmountX*1.5f);
 
-    if(bufferAmount > 50)
-    {
-        //On ne souhaite pas allouer plus de 50 Mio de mémoire vidéo au terrain
-        //FIX ME : régler la taille des buffers en fonction du nombre de zones
-        bufferAmount = 50;
-    }
-
-    std::cout<<"Real buffer amount : "<<bufferAmount<<std::endl;
-
-    ///------ On alloue le nombre de buffers demandés si possible
-    //FIX ME : Que se passe t'il si on demande trop de mémoire vidéo ?
-    for(unsigned int i(0) ; i < bufferAmount ; ++i)
-    {
-        NzVertexBuffer* buffer = new NzVertexBuffer(&m_declaration,262500, nzBufferStorage_Hardware, nzBufferUsage_Static);
-        m_buffers.push_back(buffer);
-        //On met tous ces buffers dans la file de buffers libres
-        m_freeBuffers.push(buffer);
-        //std::cout<<"buffer capacity "<<m_freeBuffers.back()->GetVertexCount()<<"|"<<i<<std::endl;
-    }*/
     m_isReady = true;
     return true;
 }
@@ -189,3 +182,10 @@ bool NzTerrainMasterNode::UpdatePatch(const std::array<float,150>& subBuffer, co
     else
         return false;
 }
+/*
+virtual bool NzTerrainMasterNode::VisibilityTest(const NzFrustumf& frustum)
+{
+    //FIX ME
+    return true;
+}
+*/

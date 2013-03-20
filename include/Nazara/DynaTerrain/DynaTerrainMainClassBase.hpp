@@ -13,22 +13,29 @@
 #include <Nazara/DynaTerrain/DynaTerrainQuadTreeBase.hpp>
 #include <Nazara/Utility/IndexBuffer.hpp>
 #include <Nazara/Renderer/Texture.hpp>
+#include <Nazara/3D/SceneNode.hpp>
+#include <Nazara/2D/Drawable.hpp>
 
 /// BASE CLASS OF THE TERRAIN/PLANET
 
 //TODO : modifier shader du terrain pour qu'il fonctionne avec n'importe quelle direction (slope, altitude)
 //FIX ME : Nommage des méthodes innaproprié, renforcer la sécurité
+//FIX ME : sortir les shaders d'ici
 
-class NAZARA_API NzDynaTerrainMainClassBase
+class NAZARA_API NzDynaTerrainMainClassBase : public NzDrawable, public NzSceneNode
 {
     public:
-
         NzDynaTerrainMainClassBase();
         ~NzDynaTerrainMainClassBase();
 
-        virtual void Initialize(const NzDynaTerrainConfigurationBase& configuration);
+        virtual void AddToRenderQueue(NzRenderQueue& renderQueue) const;
 
-        virtual void Render();
+        virtual const NzBoundingBoxf& GetBoundingBox() const;
+		virtual nzSceneNodeType GetSceneNodeType() const;
+
+		virtual void Draw() const;
+
+        virtual void Initialize(const NzDynaTerrainConfigurationBase& configuration);
 
         bool SetShaders(const NzString& vertexShader, const NzString& fragmentShader);
 
@@ -37,6 +44,10 @@ class NAZARA_API NzDynaTerrainMainClassBase
     protected:
 
         void CreateIndexBuffer(unsigned int bufferCapacity, bool appendConfigurations = false);
+
+        virtual bool VisibilityTest(const NzFrustumf& frustum);
+
+        NzBoundingBoxf m_aabb;
     private:
 
         NzTexture m_terrainTexture;

@@ -25,9 +25,9 @@ NzDynamicPlanet::~NzDynamicPlanet()
     delete quadtree2;
 }
 
-void NzDynamicPlanet::Render()
+void NzDynamicPlanet::Draw() const
 {
-    NzDynaTerrainMainClassBase::Render();
+    NzDynaTerrainMainClassBase::Draw();
     quadtree->Render();
     quadtree2->Render();
 }

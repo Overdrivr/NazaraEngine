@@ -92,4 +92,5 @@ void NzRenderQueue::Clear()
 	visibleLights.clear();
 	visibleSkeletalModels.clear();
 	visibleStaticModels.clear();
+	otherDrawables.clear();
 }

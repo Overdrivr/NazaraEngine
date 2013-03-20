@@ -52,7 +52,7 @@ void NzDynaTerrainQuadTreeBase::Construct()
     m_patchesPool.SetChunkSize(1000);
 
 
-    m_dispatcher.Initialize(m_commonConfiguration.minPrecision,0);
+    m_dispatcher.Initialize(m_commonConfiguration.minPrecision);
     m_data.quadtree = this;
     m_data.dispatcher = &m_dispatcher;
     m_root = m_nodesPool.GetObjectPtr();
@@ -169,7 +169,7 @@ void NzDynaTerrainQuadTreeBase::Initialize()
 
 void NzDynaTerrainQuadTreeBase::Render()
 {
-    m_dispatcher.DrawAll();
+    m_dispatcher.Draw();
 }
 
 NzDynaTerrainQuadTreeBase* NzDynaTerrainQuadTreeBase::GetContainingQuadTree(const NzTerrainNodeID& nodeID)

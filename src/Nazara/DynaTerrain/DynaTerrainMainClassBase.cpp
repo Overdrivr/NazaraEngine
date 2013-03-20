@@ -21,6 +21,11 @@ NzDynaTerrainMainClassBase::~NzDynaTerrainMainClassBase()
     delete m_indexBuffer;
 }
 
+void NzDynaTerrainMainClassBase::AddToRenderQueue(NzRenderQueue& renderQueue) const
+{
+    renderQueue.otherDrawables.push_back(this);
+}
+
 void NzDynaTerrainMainClassBase::CreateIndexBuffer(unsigned int bufferCapacity, bool appendConfigurations)
 {
     std::cout<<"Creating index buffer with capacity : "<<bufferCapacity<<std::endl;
@@ -67,7 +72,17 @@ void NzDynaTerrainMainClassBase::CreateIndexBuffer(unsigned int bufferCapacity, 
 	}
 }
 
-void NzDynaTerrainMainClassBase::Render()
+const NzBoundingBoxf& NzDynaTerrainMainClassBase::GetBoundingBox() const
+{
+    return m_aabb;
+}
+
+nzSceneNodeType NzDynaTerrainMainClassBase::GetSceneNodeType() const
+{
+    return nzSceneNodeType_User;
+}
+
+void NzDynaTerrainMainClassBase::Draw() const
 {
     NzRenderer::SetShader(&m_shader);
     NzRenderer::SetIndexBuffer(m_indexBuffer);
@@ -137,4 +152,10 @@ bool NzDynaTerrainMainClassBase::SetShaders(const NzString& vertexShader, const 
 void NzDynaTerrainMainClassBase::Update(const NzVector3f& cameraPosition)
 {
 
+}
+
+bool NzDynaTerrainMainClassBase::VisibilityTest(const NzFrustumf& frustum)
+{
+    //FIX ME
+    return true;
 }

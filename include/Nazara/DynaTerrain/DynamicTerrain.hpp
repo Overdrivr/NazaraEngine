@@ -22,7 +22,7 @@ class NAZARA_API NzDynamicTerrain : public NzDynaTerrainMainClassBase
 
         void Initialize();
 
-        void Render();
+        virtual void Draw() const;
 
         void Update(const NzVector3f& cameraPosition);
 

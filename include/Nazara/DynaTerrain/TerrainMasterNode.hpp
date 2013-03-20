@@ -14,22 +14,32 @@
 #include <Nazara/Utility/IndexBuffer.hpp>
 #include <Nazara/DynaTerrain/TerrainNode.hpp>
 #include <Nazara/DynaTerrain/Enums.hpp>
+#include <Nazara/2D/Drawable.hpp>
+#include <Nazara/3D/SceneNode.hpp>
+#include <Nazara/Math/BoundingBox.hpp>
 #include <vector>
 #include <queue>
 #include <memory>
 
 //FIX ME 2 : Utiliser un arbre en structure interne pour le fast culling
-class NAZARA_API NzTerrainMasterNode
+//FIX ME : Renommer m_zones, zoneDepth
+//FIX ME : Gérer l'aabb
+class NAZARA_API NzTerrainMasterNode// : public NzSceneNode
 {
     public:
         NzTerrainMasterNode(unsigned int patchBufferSize = 256);
         ~NzTerrainMasterNode();
 
-        void DrawAll(bool viewFrustumCullingEnabled = true);
+        //virtual void AddToRenderQueue(NzRenderQueue& renderQueue) const;
 
-        unsigned int GetFreeBuffersAmount() const;
+        virtual void Draw() const;
 
-        bool Initialize(unsigned int zoneDepth, unsigned int bufferAmount);
+		//virtual const NzBoundingBoxf& GetBoundingBox() const;
+		unsigned int GetFreeBuffersAmount() const;
+		//virtual nzSceneNodeType GetSceneNodeType() const;
+
+
+        bool Initialize(unsigned int zoneDepth);
 
         NzVertexBuffer* QueryFreeBuffer();
 
@@ -45,22 +55,20 @@ class NAZARA_API NzTerrainMasterNode
         bool UpdatePatch(const std::array<float,150>& subBuffer, const NzTerrainNodeID& ID);
 
     protected:
+        //virtual bool VisibilityTest(const NzFrustumf& frustum);
+
+        //NzBoundingBoxf m_aabb;
     private:
         bool m_isReady;
         unsigned int m_zoneDepth;
         unsigned int m_zonesAmountX;
-        //Contient l'ensemble des zones
+
         std::vector<std::unique_ptr<NzTerrainNode>> m_zones;
-        //Contient l'ensemble des buffers
-            //Un buffer pèse 1 050 000 octets, il peut contenir 1750 patches de 25 vertices,(150 float | 600 octets), soit 262500 vertices
         std::vector<NzVertexBuffer*> m_buffers;
-        //Contient les buffers libres
         std::queue<NzVertexBuffer*> m_freeBuffers;
 
         NzVertexElement m_elements[2];
         NzVertexDeclaration m_declaration;
-
-        //NzIndexBuffer* m_indexBuffer;
 
         unsigned int m_bufferSize;
         unsigned int m_patchSize;
