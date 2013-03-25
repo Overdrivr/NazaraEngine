@@ -6,10 +6,10 @@
 #include <Nazara/DynaTerrain/Config.hpp>
 #include <Nazara/DynaTerrain/TerrainInternalNode.hpp>
 #include <Nazara/DynaTerrain/DynaTerrainQuadTreeBase.hpp>
-#include <Nazara/Renderer/DebugDrawer.hpp>
 #include <stack>
 #include <iostream>
 #include <Nazara/DynaTerrain/Debug.hpp>
+
 
 int NzTerrainInternalNode::nbNodes = 0;
 
@@ -326,10 +326,8 @@ bool NzTerrainInternalNode::Subdivide(bool isNotReversible)
         m_children[TOPLEFT]->Initialize(m_data,this,TOPLEFT);
         //C'est une subdivision, le node est forcément une leaf
         m_children[TOPLEFT]->m_isLeaf = true;
-
         //Et on l'enregistre auprès du quadtree
         m_data->quadtree->RegisterLeaf(m_children[TOPLEFT]);
-
         //On vérifie que le voisin de gauche est suffisamment subdivisé/refiné pour qu'il y ait au max 1 niveau d'écart entre les 2
         m_children[TOPLEFT]->HandleNeighborSubdivision(LEFT,isNotReversible);
         //Traitement du voisin TOP

@@ -15,8 +15,6 @@
 #include <array>
 #include <Nazara/Math/Cube.hpp>
 
-//FIX ME : Eliminer tableau redondant debug
-
 class NAZARA_API NzPatch
 {
     public:
@@ -47,10 +45,8 @@ class NAZARA_API NzPatch
         NzCubef m_aabb;
         unsigned short int m_configuration;
         std::array<NzVector3f,49> m_vertexPositions;
-        //std::array<float,25> m_noiseValues;//!!
-        //std::array<float,49> m_extraHeightValues;//!!
         std::array<NzVector3f,25> m_vertexNormals;
-        std::array<float,150> m_uploadedData;//Static ?
+        std::array<float,150> m_uploadedData;
         float m_slope;
         bool m_isUploaded;
         bool m_isInitialized;

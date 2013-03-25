@@ -70,6 +70,7 @@ class NAZARA_API NzDynaTerrainQuadTreeBase
         NzTerrainMasterNode m_dispatcher;
 
         NzTerrainConfiguration m_terrainConfiguration;
+        float m_halfTerrainSize;
         NzPlanetConfiguration m_planetConfiguration;
         NzDynaTerrainConfigurationBase m_commonConfiguration;
         //-------

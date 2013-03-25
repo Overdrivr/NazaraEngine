@@ -22,6 +22,7 @@ NzDynaTerrainQuadTreeBase::NzDynaTerrainQuadTreeBase(const NzTerrainConfiguratio
 
     m_heightSource2D = heightSource;
     m_terrainConfiguration = configuration;
+    m_halfTerrainSize = m_terrainConfiguration.terrainSize / 2.f;
     m_commonConfiguration = static_cast<NzDynaTerrainConfigurationBase>(configuration);
 
     m_isInitialized = false;
@@ -37,6 +38,7 @@ NzDynaTerrainQuadTreeBase::NzDynaTerrainQuadTreeBase(const NzPlanetConfiguration
 
     m_heightSource3D = heightSource;
     m_planetConfiguration = configuration;
+    //m_halfTerrainSize = m_planetConfiguration.terrainSize / 2.f;
     m_commonConfiguration = static_cast<NzDynaTerrainConfigurationBase>(configuration);
 
     m_rotationMatrix.MakeRotation(NzQuaternionf(quadtreeOrientation));
@@ -257,12 +259,14 @@ unsigned int NzDynaTerrainQuadTreeBase::GetSubdivisionsAmount()
 
 NzVector3f NzDynaTerrainQuadTreeBase::GetVertexPosition(const NzTerrainNodeID& nodeID, int x, int y)
 {
+    //Note : nodeID.depth should never be < 0
+    float power = 1.f/(1 << nodeID.depth);
     NzVector3f position;
     switch(m_type)
     {
         case TERRAIN:
-            position.x = m_terrainConfiguration.terrainSize * (x * 0.25f + nodeID.locx) / std::pow(2,nodeID.depth) - m_terrainConfiguration.terrainSize/2.f + m_commonConfiguration.center.x;
-            position.z = m_terrainConfiguration.terrainSize * (y * 0.25f + nodeID.locy) / std::pow(2,nodeID.depth) - m_terrainConfiguration.terrainSize/2.f + m_commonConfiguration.center.z;
+            position.x = m_terrainConfiguration.terrainSize * (x * 0.25f + nodeID.locx) * power - m_halfTerrainSize + m_commonConfiguration.center.x;
+            position.z = m_terrainConfiguration.terrainSize * (y * 0.25f + nodeID.locy) * power - m_halfTerrainSize + m_commonConfiguration.center.z;
             position.y = m_heightSource2D->GetHeight(position.x,position.z) * m_commonConfiguration.maxHeight + m_commonConfiguration.center.y;
             return m_rotationMatrix.Transform(position);
         break;
@@ -334,7 +338,7 @@ bool NzDynaTerrainQuadTreeBase::UnRegisterNode(NzTerrainInternalNode* node)
 void NzDynaTerrainQuadTreeBase::Update(const NzVector3f& cameraPosition)
 {
 
-    nzUInt64 maxTime = 100;//ms
+    nzUInt64 maxTime = 5000;//ms
     std::map<NzTerrainNodeID,NzTerrainInternalNode*>::iterator it;
     int subdivisionsPerFrame = 0;
     updateClock.Restart();
@@ -344,7 +348,6 @@ void NzDynaTerrainQuadTreeBase::Update(const NzVector3f& cameraPosition)
 
     ///On subdivise les nodes
     it = m_subdivisionQueue.begin();
-
     while(updateClock.GetMilliseconds() < maxTime/2.f)
     {
         if(it == m_subdivisionQueue.end())
@@ -356,7 +359,6 @@ void NzDynaTerrainQuadTreeBase::Update(const NzVector3f& cameraPosition)
         it = m_subdivisionQueue.begin();
         subdivisionsPerFrame++;
     }
-
     if(subdivisionsPerFrame > m_maxOperationsPerFrame)
         m_maxOperationsPerFrame = subdivisionsPerFrame;
 

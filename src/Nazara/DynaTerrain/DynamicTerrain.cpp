@@ -22,14 +22,14 @@ NzDynamicTerrain::NzDynamicTerrain(const NzTerrainConfiguration& configuration, 
 NzDynamicTerrain::~NzDynamicTerrain()
 {
     delete quadtree;
-    delete quadtree2;
+    //delete quadtree2;
 }
 
 void NzDynamicTerrain::Draw() const
 {
     NzDynaTerrainMainClassBase::Draw();
     quadtree->Render();
-    quadtree2->Render();
+    //quadtree2->Render();
 }
 
 void NzDynamicTerrain::Initialize()
@@ -42,7 +42,7 @@ void NzDynamicTerrain::Initialize()
     quadtree = new NzDynaTerrainQuadTreeBase(m_configuration,m_heightSource);
     quadtree->Initialize();
 
-    NzTerrainConfiguration second = m_configuration;
+    /*NzTerrainConfiguration second = m_configuration;
 
     second.center += NzVector3f(m_configuration.terrainSize,0.f,0.f);
    //second.terrainOrientation.roll = 90.f;
@@ -51,11 +51,11 @@ void NzDynamicTerrain::Initialize()
     quadtree2 = new NzDynaTerrainQuadTreeBase(second,m_heightSource);
     quadtree2->Initialize();
 
-    quadtree->ConnectNeighbor(quadtree2,RIGHT);
+    quadtree->ConnectNeighbor(quadtree2,RIGHT);*/
 }
 
 void NzDynamicTerrain::Update(const NzVector3f& cameraPosition)
 {
     quadtree->Update(cameraPosition);
-    quadtree2->Update(cameraPosition);
+    //quadtree2->Update(cameraPosition);
 }

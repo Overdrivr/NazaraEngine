@@ -11,8 +11,6 @@
 #include <iostream>
 #include <Nazara/DynaTerrain/Debug.hpp>
 
-//Gestion de m_firstTime ?
-
 NzPatch::NzPatch()
 {
     m_isInitialized = false;
@@ -26,33 +24,36 @@ NzPatch::~NzPatch()
 
 void NzPatch::ComputeHeights()
 {
-    if(m_isInitialized)
+    for(int j(0) ; j < 7 ; ++j)
     {
-        for(int i(0) ; i < 7 ; ++i)
-            for(int j(0) ; j < 7 ; ++j)
-            {
-                m_vertexPositions.at(i+7*j) = m_data->quadtree->GetVertexPosition(m_id,i-1,j-1);
+        m_vertexPositions.at(0+7*j) = m_data->quadtree->GetVertexPosition(m_id,-1,j-1);
+        m_vertexPositions.at(1+7*j) = m_data->quadtree->GetVertexPosition(m_id,0,j-1);
+        m_vertexPositions.at(2+7*j) = m_data->quadtree->GetVertexPosition(m_id,1,j-1);
+        m_vertexPositions.at(3+7*j) = m_data->quadtree->GetVertexPosition(m_id,2,j-1);
+        m_vertexPositions.at(4+7*j) = m_data->quadtree->GetVertexPosition(m_id,3,j-1);
+        m_vertexPositions.at(5+7*j) = m_data->quadtree->GetVertexPosition(m_id,4,j-1);
+        m_vertexPositions.at(6+7*j) = m_data->quadtree->GetVertexPosition(m_id,5,j-1);
+    }
 
-                if(i == 1 && j == 1)
-                {
-                    m_aabb.x = m_vertexPositions.at(i+7*j).x;
-                    m_aabb.y = m_vertexPositions.at(i+7*j).y;
-                    m_aabb.z = m_vertexPositions.at(i+7*j).z;
-                    m_aabb.width = 0.1f;
-                    m_aabb.depth = 0.1f;
-                    m_aabb.height = 0.1f;
-                }
+    m_aabb.x = m_vertexPositions.at(8).x;
+    m_aabb.y = m_vertexPositions.at(8).y;
+    m_aabb.z = m_vertexPositions.at(8).z;
+    m_aabb.width = 0.1f;
+    m_aabb.depth = 0.1f;
+    m_aabb.height = 0.1f;
 
-                if(i > 0 && i < 6 && j > 0 && j < 6)
-                    m_aabb.ExtendTo(m_vertexPositions.at(i+7*j));
-            }
+    for(int j(1) ; j < 6 ; ++j)
+    {
+        m_aabb.ExtendTo(m_vertexPositions.at(1+7*j));
+        m_aabb.ExtendTo(m_vertexPositions.at(2+7*j));
+        m_aabb.ExtendTo(m_vertexPositions.at(3+7*j));
+        m_aabb.ExtendTo(m_vertexPositions.at(4+7*j));
+        m_aabb.ExtendTo(m_vertexPositions.at(5+7*j));
     }
 }
 
 void NzPatch::ComputeNormals()
 {
-    if(m_isInitialized)
-    {
     //top, right, bottom, left
     NzVector3f v1,v2,v3,v4;
     NzVector3f v12;
@@ -87,17 +88,10 @@ void NzPatch::ComputeNormals()
 
             m_vertexNormals.at(i+5*j) = sum;
         }
-    }
 }
 
 void NzPatch::ComputeSlope()
 {
-    if(!m_isInitialized)
-    {
-        std::cout<<"NzPatch::ComputeSlope : Calling Unitialized Patch"<<std::endl;
-        return;
-    }
-
     float slope[25];
     NzVector3f upVector(0.f,1.f,0.f);
 
@@ -144,9 +138,7 @@ void NzPatch::Initialize(NzTerrainNodeID nodeID, TerrainNodeData* data)
     m_configuration = 0;
 
     ComputeHeights();
-
     ComputeNormals();
-
     ComputeSlope();
 }
 
