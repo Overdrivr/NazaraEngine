@@ -14,6 +14,7 @@
 #include <Nazara/DynaTerrain/TerrainNodeID.hpp>
 #include <array>
 #include <Nazara/Math/Cube.hpp>
+#include <Nazara/DynaTerrain/TerrainVertex.hpp>
 
 class NAZARA_API NzPatch
 {
@@ -50,6 +51,8 @@ class NAZARA_API NzPatch
         float m_slope;
         bool m_isUploaded;
         bool m_isInitialized;
+
+        std::array<NzTerrainVertex*, 25> m_vertices;
 };
 
 #endif // NAZARA_PATCH_HPP

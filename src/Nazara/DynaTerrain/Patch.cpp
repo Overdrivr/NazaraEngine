@@ -108,7 +108,7 @@ void NzPatch::ComputeSlope()
 
         //On calcule le contraste absolu entre la pente la plus forte et la plus faible
         m_slope = (maxSlope - minSlope)/(maxSlope + minSlope);
-        float inv_sensitivity = 5;
+        float inv_sensitivity = 2;
         m_slope = std::pow(m_slope,inv_sensitivity);
 }
 
