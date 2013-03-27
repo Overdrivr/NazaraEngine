@@ -6,7 +6,7 @@
 #include <Nazara/DynaTerrain/Config.hpp>
 #include <Nazara/DynaTerrain/Patch.hpp>
 #include <Nazara/DynaTerrain/TerrainMasterNode.hpp>
-#include <Nazara/DynaTerrain/DynaTerrainQuadTreeBase.hpp>
+#include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
 #include <cmath>
 #include <iostream>
 #include <Nazara/DynaTerrain/Debug.hpp>

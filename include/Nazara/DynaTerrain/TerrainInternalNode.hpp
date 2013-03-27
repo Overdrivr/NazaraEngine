@@ -45,9 +45,7 @@ class NAZARA_API NzTerrainInternalNode
         void HierarchicalSlopeBasedSubdivide(unsigned int maxDepth);
 
         bool IsLeaf() const;
-        //bool IsMinimalPrecision() const;
         bool IsRoot() const;
-        bool IsRefineable() const;
         bool IsValid() const;
         void Initialize(TerrainNodeData *data, NzTerrainInternalNode* parent, nzLocation loc = TOPLEFT);
         void Invalidate();

@@ -10,7 +10,7 @@
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/DynaTerrain/HeightSource2D.hpp>
 #include <Nazara/DynaTerrain/TerrainConfiguration.hpp>
-#include <Nazara/DynaTerrain/DynaTerrainQuadTreeBase.hpp>
+#include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
 #include <Nazara/DynaTerrain/DynaTerrainMainClassBase.hpp>
 
 class NAZARA_API NzDynamicTerrain : public NzDynaTerrainMainClassBase
@@ -34,8 +34,8 @@ class NAZARA_API NzDynamicTerrain : public NzDynaTerrainMainClassBase
         NzTexture m_terrainTexture;
 
         NzShader m_shader;
-        NzDynaTerrainQuadTreeBase* quadtree;
-        NzDynaTerrainQuadTreeBase* quadtree2;
+        NzTerrainQuadTree* quadtree;
+        NzTerrainQuadTree* quadtree2;
 };
 
 #endif // NAZARA_DYNAMICTERRAIN_HPP

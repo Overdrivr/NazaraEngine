@@ -29,12 +29,12 @@ enum nzQuadTreeType
     PLANET
 };
 
-class NzDynaTerrainQuadTreeBase;
+class NzTerrainQuadTree;
 class NzTerrainMasterNode;
 
 struct TerrainNodeData
 {
-    NzDynaTerrainQuadTreeBase* quadtree;
+    NzTerrainQuadTree* quadtree;
     NzTerrainMasterNode* dispatcher;
 };
 #endif // NAZARA_ENUMS_DYNATERRAIN_HPP

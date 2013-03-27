@@ -5,7 +5,7 @@
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/DynaTerrain/Config.hpp>
 #include <Nazara/DynaTerrain/TerrainVertex.hpp>
-#include <Nazara/DynaTerrain/DynaTerrainQuadTreeBase.hpp>
+#include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
 #include <Nazara/DynaTerrain/TerrainNodeID.hpp>
 #include <Nazara/DynaTerrain/Debug.hpp>
 
@@ -47,7 +47,7 @@ void NzTerrainVertex::ComputeNormal(const NzTerrainVertex& v1, const NzTerrainVe
     }
 }
 
-void NzTerrainVertex::ComputePosition(NzDynaTerrainQuadTreeBase* quadtree, const NzTerrainNodeID& ID, const NzVector2i& offset)
+void NzTerrainVertex::ComputePosition(NzTerrainQuadTree* quadtree, const NzTerrainNodeID& ID, const NzVector2i& offset)
 {
     if(!m_isPositionInitialized)
     {

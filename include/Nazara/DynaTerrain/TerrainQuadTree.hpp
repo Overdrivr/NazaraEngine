@@ -21,20 +21,20 @@
 #include <Nazara/DynaTerrain/Enums.hpp>
 #include <Nazara/Core/Clock.hpp>
 
-class NAZARA_API NzDynaTerrainQuadTreeBase
+class NAZARA_API NzTerrainQuadTree
 {
     public:
         friend class NzTerrainInternalNode;
 
-        NzDynaTerrainQuadTreeBase(const NzTerrainConfiguration& configuration, NzHeightSource2D* heightSource);
-        NzDynaTerrainQuadTreeBase(const NzPlanetConfiguration& configuration, NzHeightSource3D* heightSource, const NzEulerAnglesf& quadtreeOrientation = NzEulerAnglesf(0.f,0.f,0.f));
-        ~NzDynaTerrainQuadTreeBase();
+        NzTerrainQuadTree(const NzTerrainConfiguration& configuration, NzHeightSource2D* heightSource);
+        NzTerrainQuadTree(const NzPlanetConfiguration& configuration, NzHeightSource3D* heightSource, const NzEulerAnglesf& quadtreeOrientation = NzEulerAnglesf(0.f,0.f,0.f));
+        ~NzTerrainQuadTree();
 
-        void ConnectNeighbor(NzDynaTerrainQuadTreeBase* neighbour, nzDirection direction);
+        void ConnectNeighbor(NzTerrainQuadTree* neighbour, nzDirection direction);
 
-        void DisconnectNeighbor(NzDynaTerrainQuadTreeBase* neighbour, nzDirection direction);
+        void DisconnectNeighbor(NzTerrainQuadTree* neighbour, nzDirection direction);
 
-        NzDynaTerrainQuadTreeBase* GetContainingQuadTree(const NzTerrainNodeID& nodeID);
+        NzTerrainQuadTree* GetContainingQuadTree(const NzTerrainNodeID& nodeID);
         unsigned int GetLeafNodesAmount() const;
         float GetMaximumHeight() const;
         NzTerrainInternalNode* GetNode(const NzTerrainNodeID& nodeID);
@@ -54,6 +54,8 @@ class NAZARA_API NzDynaTerrainQuadTreeBase
         void ReturnNodeToPool(NzTerrainInternalNode* node);
         NzPatch* GetPatchFromPool();
         void ReturnPatchToPool(NzPatch* patch);
+        NzTerrainVertex* GetVertexFromPool();
+        void ReturnVertexToPool(NzTerrainVertex* vertex);
         //Vu que quadtree ne sera pas en charge de l'affichage, elles sont peut être inutiles, y compris maintenir à jour m_leaves
         void RegisterLeaf(NzTerrainInternalNode* node);
         bool UnRegisterLeaf(NzTerrainInternalNode* node);//Les feuilles enlevées ici doivent aussi l'être de la camera list
@@ -83,7 +85,7 @@ class NAZARA_API NzDynaTerrainQuadTreeBase
         NzMatrix4f m_rotationMatrix;
         //-------
 
-        NzDynaTerrainQuadTreeBase* m_neighbours[4];
+        NzTerrainQuadTree* m_neighbours[4];
 
         std::map<float,unsigned int> m_cameraRadiuses;
         std::map<float,unsigned int>::iterator it;
@@ -93,6 +95,7 @@ class NAZARA_API NzDynaTerrainQuadTreeBase
 
         NzObjectPool<NzTerrainInternalNode> m_nodesPool;
         NzObjectPool<NzPatch> m_patchesPool;
+        NzObjectPool<NzTerrainVertex> m_verticesPool;
 
         std::map<NzTerrainNodeID,NzTerrainInternalNode*> m_subdivisionQueue;
         std::map<NzTerrainNodeID,NzTerrainInternalNode*> m_refinementQueue;
@@ -112,4 +115,4 @@ class NAZARA_API NzDynaTerrainQuadTreeBase
 
 };
 
-#endif // NAZARA_DYNATERRAINQUADTREEBASE_HPP
+#endif // NAZARA_TERRAINQUADTREE_HPP

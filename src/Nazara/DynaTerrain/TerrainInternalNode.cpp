@@ -5,7 +5,7 @@
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/DynaTerrain/Config.hpp>
 #include <Nazara/DynaTerrain/TerrainInternalNode.hpp>
-#include <Nazara/DynaTerrain/DynaTerrainQuadTreeBase.hpp>
+#include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
 #include <stack>
 #include <iostream>
 #include <Nazara/DynaTerrain/Debug.hpp>
@@ -76,6 +76,7 @@ void NzTerrainInternalNode::CreatePatch()
         m_patch = m_data->quadtree->GetPatchFromPool();
         m_patch->Initialize(m_nodeID,m_data);
         m_aabb = m_patch->GetAABB();
+        m_patch->UploadMesh();
     }
 }
 
@@ -146,7 +147,7 @@ NzTerrainInternalNode* NzTerrainInternalNode::GetDirectNeighbor(nzDirection dire
     }
     else
     {
-        NzDynaTerrainQuadTreeBase* tempQuad = m_data->quadtree->GetContainingQuadTree(tempID);
+        NzTerrainQuadTree* tempQuad = m_data->quadtree->GetContainingQuadTree(tempID);
 
         if(tempQuad == nullptr)
             return nullptr;
@@ -184,7 +185,6 @@ void NzTerrainInternalNode::HierarchicalSubdivide(unsigned int maxDepth, bool is
     {
         if(m_nodeID.depth < maxDepth)
         {
-            //m_doNotRefine = true;//FIX ME : Pourrait être utilisé ? Doit être affecté aux enfants
             this->Subdivide(isNotReversible);
 
             for(int i(0) ; i < 4 ; ++i)
@@ -205,14 +205,10 @@ bool NzTerrainInternalNode::IsLeaf() const
 {
     return m_isLeaf;
 }
+
 bool NzTerrainInternalNode::IsRoot() const
 {
     return m_isRoot;
-}
-
-bool NzTerrainInternalNode::IsRefineable() const
-{
-    return !m_doNotRefine && !m_isLeaf;
 }
 
 bool NzTerrainInternalNode::IsValid() const
@@ -265,7 +261,6 @@ void NzTerrainInternalNode::Initialize(TerrainNodeData *data, NzTerrainInternalN
         m_nodeID.locy = parent->m_nodeID.locy * 2 + offy;
     }
     CreatePatch();
-    m_patch->UploadMesh();
 }
 
 void NzTerrainInternalNode::Invalidate()
@@ -467,7 +462,7 @@ bool NzTerrainInternalNode::Refine()
     m_isLeaf = true;
     m_data->quadtree->RegisterLeaf(this);
     CreatePatch();
-    m_patch->UploadMesh();
+    //m_patch->UploadMesh();
 
     //On met à jour les interfaces
     nzDirection dirDirection[4] = {TOP,BOTTOM,LEFT,RIGHT};
@@ -575,7 +570,7 @@ void NzTerrainInternalNode::HandleNeighborSubdivision(nzDirection direction, boo
         break;
     }
 
-    NzDynaTerrainQuadTreeBase* tempQuad;
+    NzTerrainQuadTree* tempQuad;
     NzTerrainInternalNode* tempNode;
 
     //Si on ne cherche pas à atteindre une case externe

@@ -10,7 +10,7 @@
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Math/Vector3.hpp>
 
-class NzDynaTerrainQuadTreeBase;
+class NzTerrainQuadTree;
 class NzTerrainNodeID;
 
 class NAZARA_API NzTerrainVertex
@@ -22,7 +22,7 @@ class NAZARA_API NzTerrainVertex
         const NzVector3f& GetPosition() const;
         const NzVector3f& GetNormal() const;
 
-        void ComputePosition(NzDynaTerrainQuadTreeBase* quadtree, const NzTerrainNodeID& ID, const NzVector2i& offset);
+        void ComputePosition(NzTerrainQuadTree* quadtree, const NzTerrainNodeID& ID, const NzVector2i& offset);
         void ComputeNormal(const NzTerrainVertex& v1,
                            const NzTerrainVertex& v2,
                            const NzTerrainVertex& v3,

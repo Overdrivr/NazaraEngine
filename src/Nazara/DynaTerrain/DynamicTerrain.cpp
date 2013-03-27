@@ -39,7 +39,7 @@ void NzDynamicTerrain::Initialize()
     //FIXME : Construire l'index buffer, en coordination avec le dispatcher
     NzDynaTerrainMainClassBase::CreateIndexBuffer(256);
 
-    quadtree = new NzDynaTerrainQuadTreeBase(m_configuration,m_heightSource);
+    quadtree = new NzTerrainQuadTree(m_configuration,m_heightSource);
     quadtree->Initialize();
 
     /*NzTerrainConfiguration second = m_configuration;

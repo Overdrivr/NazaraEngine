@@ -6,7 +6,7 @@
 #include <Nazara/DynaTerrain/Config.hpp>
 #include <Nazara/Core/Log.hpp>
 #include <Nazara/Core/String.hpp>
-#include <Nazara/DynaTerrain/DynaTerrainQuadTreeBase.hpp>
+#include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
 #include <Nazara/Math/Matrix4.hpp>
 #include <Nazara/Math/Quaternion.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
@@ -16,7 +16,7 @@
 
 using namespace std;
 
-NzDynaTerrainQuadTreeBase::NzDynaTerrainQuadTreeBase(const NzTerrainConfiguration& configuration, NzHeightSource2D* heightSource)
+NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainConfiguration& configuration, NzHeightSource2D* heightSource)
 {
     m_type = TERRAIN;
 
@@ -32,7 +32,7 @@ NzDynaTerrainQuadTreeBase::NzDynaTerrainQuadTreeBase(const NzTerrainConfiguratio
     Construct();
 }
 
-NzDynaTerrainQuadTreeBase::NzDynaTerrainQuadTreeBase(const NzPlanetConfiguration& configuration, NzHeightSource3D* heightSource, const NzEulerAnglesf& quadtreeOrientation)
+NzTerrainQuadTree::NzTerrainQuadTree(const NzPlanetConfiguration& configuration, NzHeightSource3D* heightSource, const NzEulerAnglesf& quadtreeOrientation)
 {
     m_type = PLANET;
 
@@ -48,17 +48,20 @@ NzDynaTerrainQuadTreeBase::NzDynaTerrainQuadTreeBase(const NzPlanetConfiguration
     Construct();
 }
 
-void NzDynaTerrainQuadTreeBase::Construct()
+void NzTerrainQuadTree::Construct()
 {
     m_nodesPool.SetChunkSize(5000);
     m_patchesPool.SetChunkSize(1000);
-
+    m_verticesPool.SetChunkSize(1000);
 
     m_dispatcher.Initialize(m_commonConfiguration.minPrecision);
+
     m_data.quadtree = this;
     m_data.dispatcher = &m_dispatcher;
+
     m_root = m_nodesPool.GetObjectPtr();
     m_root->Initialize(&m_data,nullptr);
+
     m_leaves.push_back(m_root);//I
     m_nodesMap[NzTerrainNodeID(0,0,0)] = m_root;
 
@@ -83,7 +86,7 @@ void NzDynaTerrainQuadTreeBase::Construct()
 
 }
 
-NzDynaTerrainQuadTreeBase::~NzDynaTerrainQuadTreeBase()
+NzTerrainQuadTree::~NzTerrainQuadTree()
 {
     cout<<"Maximum amount of operations per frame : "<<m_maxOperationsPerFrame<<std::endl;
     cout<<"Libération de "<<m_nodesPool.GetPoolSize()<<" node(s), veuillez patientez..."<<endl;
@@ -97,7 +100,7 @@ NzDynaTerrainQuadTreeBase::~NzDynaTerrainQuadTreeBase()
     m_isInitialized = false;
 }
 
-void NzDynaTerrainQuadTreeBase::ConnectNeighbor(NzDynaTerrainQuadTreeBase* neighbour, nzDirection direction)
+void NzTerrainQuadTree::ConnectNeighbor(NzTerrainQuadTree* neighbour, nzDirection direction)
 {
     nzDirection invDirection = direction;
     switch(direction)
@@ -127,7 +130,7 @@ void NzDynaTerrainQuadTreeBase::ConnectNeighbor(NzDynaTerrainQuadTreeBase* neigh
     neighbour->m_neighbours[invDirection] = this;
 }
 
-void NzDynaTerrainQuadTreeBase::DisconnectNeighbor(NzDynaTerrainQuadTreeBase* neighbour, nzDirection direction)
+void NzTerrainQuadTree::DisconnectNeighbor(NzTerrainQuadTree* neighbour, nzDirection direction)
 {
     nzDirection invDirection = direction;
     switch(direction)
@@ -157,7 +160,7 @@ void NzDynaTerrainQuadTreeBase::DisconnectNeighbor(NzDynaTerrainQuadTreeBase* ne
     neighbour->m_neighbours[invDirection] = nullptr;
 }
 
-void NzDynaTerrainQuadTreeBase::Initialize()
+void NzTerrainQuadTree::Initialize()
 {
     m_isInitialized = true;
 
@@ -169,12 +172,12 @@ void NzDynaTerrainQuadTreeBase::Initialize()
 
 }
 
-void NzDynaTerrainQuadTreeBase::Render()
+void NzTerrainQuadTree::Render()
 {
     m_dispatcher.Draw();
 }
 
-NzDynaTerrainQuadTreeBase* NzDynaTerrainQuadTreeBase::GetContainingQuadTree(const NzTerrainNodeID& nodeID)
+NzTerrainQuadTree* NzTerrainQuadTree::GetContainingQuadTree(const NzTerrainNodeID& nodeID)
 {
     if(nodeID.locx < 0)
         return m_neighbours[LEFT];
@@ -191,17 +194,17 @@ NzDynaTerrainQuadTreeBase* NzDynaTerrainQuadTreeBase::GetContainingQuadTree(cons
     return nullptr;
 }
 
-unsigned int NzDynaTerrainQuadTreeBase::GetLeafNodesAmount() const
+unsigned int NzTerrainQuadTree::GetLeafNodesAmount() const
 {
     return m_leaves.size();
 }
 
-float NzDynaTerrainQuadTreeBase::GetMaximumHeight() const
+float NzTerrainQuadTree::GetMaximumHeight() const
 {
     return m_commonConfiguration.maxHeight;
 }
 
-NzTerrainInternalNode* NzDynaTerrainQuadTreeBase::GetNode(const NzTerrainNodeID& nodeID)
+NzTerrainInternalNode* NzTerrainQuadTree::GetNode(const NzTerrainNodeID& nodeID)
 {
     if(m_nodesMap.count(nodeID) == 1)
         return m_nodesMap.at(nodeID);
@@ -209,17 +212,17 @@ NzTerrainInternalNode* NzDynaTerrainQuadTreeBase::GetNode(const NzTerrainNodeID&
         return nullptr;
 }
 
-NzTerrainInternalNode* NzDynaTerrainQuadTreeBase::GetRootNode()
+NzTerrainInternalNode* NzTerrainQuadTree::GetRootNode()
 {
     return m_root;
 }
 
-NzTerrainInternalNode* NzDynaTerrainQuadTreeBase::GetNodeFromPool()
+NzTerrainInternalNode* NzTerrainQuadTree::GetNodeFromPool()
 {
     return m_nodesPool.GetObjectPtr();
 }
 
-void NzDynaTerrainQuadTreeBase::ReturnNodeToPool(NzTerrainInternalNode* node)
+void NzTerrainQuadTree::ReturnNodeToPool(NzTerrainInternalNode* node)
 {
     std::map<NzTerrainNodeID,NzTerrainInternalNode*>::iterator it = m_refinementQueue.find(node->GetNodeID());
 
@@ -240,24 +243,34 @@ void NzDynaTerrainQuadTreeBase::ReturnNodeToPool(NzTerrainInternalNode* node)
     m_nodesPool.ReturnObjectPtr(node);
 }
 
-NzPatch* NzDynaTerrainQuadTreeBase::GetPatchFromPool()
+NzPatch* NzTerrainQuadTree::GetPatchFromPool()
 {
     return m_patchesPool.GetObjectPtr();
 }
 
-void NzDynaTerrainQuadTreeBase::ReturnPatchToPool(NzPatch* patch)
+void NzTerrainQuadTree::ReturnPatchToPool(NzPatch* patch)
 {
     m_patchesPool.ReturnObjectPtr(patch);
 }
 
-unsigned int NzDynaTerrainQuadTreeBase::GetSubdivisionsAmount()
+NzTerrainVertex* NzTerrainQuadTree::GetVertexFromPool()
+{
+    return m_verticesPool.GetObjectPtr();
+}
+
+void NzTerrainQuadTree::ReturnVertexToPool(NzTerrainVertex* vertex)
+{
+    m_verticesPool.ReturnObjectPtr(vertex);
+}
+
+unsigned int NzTerrainQuadTree::GetSubdivisionsAmount()
 {
     unsigned int temp = m_subdivisionsAmount;
     m_subdivisionsAmount = 0;
     return temp;
 }
 
-NzVector3f NzDynaTerrainQuadTreeBase::GetVertexPosition(const NzTerrainNodeID& nodeID, int x, int y)
+NzVector3f NzTerrainQuadTree::GetVertexPosition(const NzTerrainNodeID& nodeID, int x, int y)
 {
     //Note : nodeID.depth should never be < 0
     float power = 1.f/(1 << nodeID.depth);
@@ -300,7 +313,7 @@ NzVector3f NzDynaTerrainQuadTreeBase::GetVertexPosition(const NzTerrainNodeID& n
 
 }
 
-void NzDynaTerrainQuadTreeBase::RegisterLeaf(NzTerrainInternalNode* node)
+void NzTerrainQuadTree::RegisterLeaf(NzTerrainInternalNode* node)
 {
     if(m_nodesMap.count(node->GetNodeID()) == 0)
     {
@@ -309,14 +322,14 @@ void NzDynaTerrainQuadTreeBase::RegisterLeaf(NzTerrainInternalNode* node)
     }
 }
 
-bool NzDynaTerrainQuadTreeBase::UnRegisterLeaf(NzTerrainInternalNode* node)
+bool NzTerrainQuadTree::UnRegisterLeaf(NzTerrainInternalNode* node)
 {
     m_leaves.remove(node);
 
     return true;
 }
 
-bool NzDynaTerrainQuadTreeBase::UnRegisterNode(NzTerrainInternalNode* node)
+bool NzTerrainQuadTree::UnRegisterNode(NzTerrainInternalNode* node)
 {
     std::map<NzTerrainNodeID,NzTerrainInternalNode*>::iterator it = m_nodesMap.find(node->GetNodeID());
 
@@ -335,7 +348,7 @@ bool NzDynaTerrainQuadTreeBase::UnRegisterNode(NzTerrainInternalNode* node)
     }
 }
 
-void NzDynaTerrainQuadTreeBase::Update(const NzVector3f& cameraPosition)
+void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
 {
 
     nzUInt64 maxTime = 5000;//ms
@@ -387,22 +400,22 @@ void NzDynaTerrainQuadTreeBase::Update(const NzVector3f& cameraPosition)
     }
 }
 
-void NzDynaTerrainQuadTreeBase::AddLeaveToSubdivisionQueue(NzTerrainInternalNode* node)
+void NzTerrainQuadTree::AddLeaveToSubdivisionQueue(NzTerrainInternalNode* node)
 {
     m_subdivisionQueue[node->GetNodeID()] = node;
 }
 
-void NzDynaTerrainQuadTreeBase::AddNodeToRefinementQueue(NzTerrainInternalNode* node)
+void NzTerrainQuadTree::AddNodeToRefinementQueue(NzTerrainInternalNode* node)
 {
     m_refinementQueue[node->GetNodeID()] = node;
 }
 
-void NzDynaTerrainQuadTreeBase::TryRemoveNodeFromRefinementQueue(NzTerrainInternalNode* node)
+void NzTerrainQuadTree::TryRemoveNodeFromRefinementQueue(NzTerrainInternalNode* node)
 {
     m_refinementQueue.erase(node->GetNodeID());
 }
 
-int NzDynaTerrainQuadTreeBase::TransformDistanceToCameraInRadiusIndex(float distance)
+int NzTerrainQuadTree::TransformDistanceToCameraInRadiusIndex(float distance)
 {
     if(distance > m_cameraRadiuses.rbegin()->first)
         return -1;

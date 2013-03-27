@@ -10,7 +10,7 @@
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Renderer/Shader.hpp>
 #include <Nazara/DynaTerrain/TerrainConfiguration.hpp>
-#include <Nazara/DynaTerrain/DynaTerrainQuadTreeBase.hpp>
+#include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
 #include <Nazara/Utility/IndexBuffer.hpp>
 #include <Nazara/Renderer/Texture.hpp>
 #include <Nazara/3D/SceneNode.hpp>
