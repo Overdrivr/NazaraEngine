@@ -27,11 +27,13 @@ NzTerrainInternalNode::~NzTerrainInternalNode()
 
 void NzTerrainInternalNode::CleanTree(unsigned int minDepth)
 {
+    #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
     {
         std::cout<<"NzTerrainNode::CleanTree : Calling uninitialized node"<<std::endl;
         return;
     }
+    #endif
 
     if(m_nodeID.depth >= minDepth)
     {
@@ -64,11 +66,13 @@ void NzTerrainInternalNode::CleanTree(unsigned int minDepth)
 
 void NzTerrainInternalNode::CreatePatch()
 {
+    #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
     {
         std::cout<<"NzTerrainNode::CreatePatch : Calling uninitialized node"<<std::endl;
         return;
     }
+    #endif
 
     if(!m_patchMemoryAllocated)
     {
@@ -111,11 +115,13 @@ NzTerrainInternalNode* NzTerrainInternalNode::GetChild(unsigned int i)
 
 NzTerrainInternalNode* NzTerrainInternalNode::GetDirectNeighbor(nzDirection direction)
 {
-     if(!m_isInitialized)
+    #if NAZARA_DYNATERRAIN_SAFE
+    if(!m_isInitialized)
     {
         std::cout<<"NzTerrainNode::GetNeighbor : Calling uninitialized node"<<std::endl;
         return nullptr;
     }
+    #endif
 
     NzTerrainNodeID tempID = m_nodeID;
     int counter = 0;
@@ -175,11 +181,13 @@ NzTerrainInternalNode* NzTerrainInternalNode::GetParent()
 
 void NzTerrainInternalNode::HierarchicalSubdivide(unsigned int maxDepth, bool isNotReversible)
 {
+    #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
     {
         std::cout<<"NzTerrainNode::HierarchicalSubdivide : Calling uninitialized node"<<std::endl;
         return;
     }
+    #endif
 
     if(m_isLeaf)
     {
@@ -271,11 +279,13 @@ void NzTerrainInternalNode::Invalidate()
 
 void NzTerrainInternalNode::HierarchicalSlopeBasedSubdivide(unsigned int maxDepth)
 {
+    #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
     {
         std::cout<<"NzTerrainNode::HierarchicalSlopeBasedSubdivide : Calling uninitialized node"<<std::endl;
         return;
     }
+    #endif
 
     //Si la cellule est une feuille
     if(m_isLeaf == true)
@@ -301,11 +311,23 @@ void NzTerrainInternalNode::HierarchicalSlopeBasedSubdivide(unsigned int maxDept
 
 bool NzTerrainInternalNode::Subdivide(bool isNotReversible)
 {
+    #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
     {
-        std::cout<<"NzTerrainNode::Subdivide : Calling uninitialized node"<<std::endl;
+        std::cout<<"NzTerrainNode::Subdivide : Calling uninitialized node."<<std::endl;
         return false;
     }
+
+    if(m_children[TOPLEFT] != nullptr ||
+       m_children[TOPRIGHT] != nullptr ||
+       m_children[BOTTOMLEFT] != nullptr ||
+       m_children[BOTTOMRIGHT] != nullptr)
+   {
+       std::cout<<"NzTerrainNode::Subdivide : Trying to overwrite existing children."<<std::endl;
+       return false;
+   }
+
+    #endif
 
     if(!m_isLeaf)
         return false;
@@ -314,78 +336,57 @@ bool NzTerrainInternalNode::Subdivide(bool isNotReversible)
     m_data->quadtree->UnRegisterLeaf(this);
     this->DeletePatch();
 
-    if(m_children[TOPLEFT] == nullptr)
-    {
-        //On crée le premier node fils
-        m_children[TOPLEFT] = m_data->quadtree->GetNodeFromPool();
-        m_children[TOPLEFT]->Initialize(m_data,this,TOPLEFT);
-        //C'est une subdivision, le node est forcément une leaf
-        m_children[TOPLEFT]->m_isLeaf = true;
-        //Et on l'enregistre auprès du quadtree
-        m_data->quadtree->RegisterLeaf(m_children[TOPLEFT]);
-        //On vérifie que le voisin de gauche est suffisamment subdivisé/refiné pour qu'il y ait au max 1 niveau d'écart entre les 2
-        m_children[TOPLEFT]->HandleNeighborSubdivision(LEFT,isNotReversible);
-        //Traitement du voisin TOP
-        m_children[TOPLEFT]->HandleNeighborSubdivision(TOP,isNotReversible);
-    }
-    else
-    {
-        std::cout<<"NzTerrainNode::Subdivide topleft problem"<<std::endl;
-    }
 
-    if(m_children[TOPRIGHT] == nullptr)
-    {
-        m_children[TOPRIGHT] = m_data->quadtree->GetNodeFromPool();
-        m_children[TOPRIGHT]->Initialize(m_data,this,TOPRIGHT);
-        m_children[TOPRIGHT]->m_isLeaf = true;
-        m_data->quadtree->RegisterLeaf(m_children[TOPRIGHT]);
-        m_children[TOPRIGHT]->HandleNeighborSubdivision(RIGHT,isNotReversible);
-        m_children[TOPRIGHT]->HandleNeighborSubdivision(TOP,isNotReversible);
 
-    }
-    else
-    {
-        std::cout<<"NzTerrainNode::Subdivide topright problem"<<std::endl;
-    }
+    //On récupère des pointeurs valides pour les nodes
+    m_children[TOPLEFT] = m_data->quadtree->GetNodeFromPool();
+    m_children[TOPRIGHT] = m_data->quadtree->GetNodeFromPool();
+    m_children[BOTTOMLEFT] = m_data->quadtree->GetNodeFromPool();
+    m_children[BOTTOMRIGHT] = m_data->quadtree->GetNodeFromPool();
 
-    if(m_children[BOTTOMLEFT] == nullptr)
-    {
-        m_children[BOTTOMLEFT] = m_data->quadtree->GetNodeFromPool();
-        m_children[BOTTOMLEFT]->Initialize(m_data,this,BOTTOMLEFT);
-        m_children[BOTTOMLEFT]->m_isLeaf = true;
-        m_data->quadtree->RegisterLeaf(m_children[BOTTOMLEFT]);
-        m_children[BOTTOMLEFT]->HandleNeighborSubdivision(LEFT,isNotReversible);
-        m_children[BOTTOMLEFT]->HandleNeighborSubdivision(BOTTOM,isNotReversible);
-    }
-    else
-    {
-        std::cout<<"NzTerrainNode::Subdivide bottomleft problem"<<std::endl;
-    }
 
-    if(m_children[BOTTOMRIGHT] == nullptr)
-    {
-        m_children[BOTTOMRIGHT] = m_data->quadtree->GetNodeFromPool();
-        m_children[BOTTOMRIGHT]->Initialize(m_data,this,BOTTOMRIGHT);
-        m_children[BOTTOMRIGHT]->m_isLeaf = true;
-        m_data->quadtree->RegisterLeaf(m_children[BOTTOMRIGHT]);
-        m_children[BOTTOMRIGHT]->HandleNeighborSubdivision(RIGHT,isNotReversible);
-        m_children[BOTTOMRIGHT]->HandleNeighborSubdivision(BOTTOM,isNotReversible);
+    m_children[TOPLEFT]->Initialize(m_data,this,TOPLEFT);
+    m_children[TOPRIGHT]->Initialize(m_data,this,TOPRIGHT);
+    m_children[BOTTOMLEFT]->Initialize(m_data,this,BOTTOMLEFT);
+    m_children[BOTTOMRIGHT]->Initialize(m_data,this,BOTTOMRIGHT);
 
-    }
-    else
-    {
-        std::cout<<"NzTerrainNode::Subdivide bottomright problem"<<std::endl;
-    }
+    //C'est une subdivision, le node est forcément une leaf
+    m_children[TOPLEFT]->m_isLeaf = true;
+    m_children[TOPRIGHT]->m_isLeaf = true;
+    m_children[BOTTOMLEFT]->m_isLeaf = true;
+    m_children[BOTTOMRIGHT]->m_isLeaf = true;
+
+    //Et on l'enregistre auprès du quadtree
+    m_data->quadtree->RegisterLeaf(m_children[TOPLEFT]);
+    m_data->quadtree->RegisterLeaf(m_children[TOPRIGHT]);
+    m_data->quadtree->RegisterLeaf(m_children[BOTTOMLEFT]);
+    m_data->quadtree->RegisterLeaf(m_children[BOTTOMRIGHT]);
+
+    //On vérifie que les nodes voisins n'aient pas plus d'1 niveau d'écart de profondeur
+    m_children[TOPLEFT]->HandleNeighborSubdivision(LEFT,isNotReversible);
+    m_children[TOPLEFT]->HandleNeighborSubdivision(TOP,isNotReversible);
+
+    m_children[TOPRIGHT]->HandleNeighborSubdivision(RIGHT,isNotReversible);
+    m_children[TOPRIGHT]->HandleNeighborSubdivision(TOP,isNotReversible);
+
+    m_children[BOTTOMLEFT]->HandleNeighborSubdivision(LEFT,isNotReversible);
+    m_children[BOTTOMLEFT]->HandleNeighborSubdivision(BOTTOM,isNotReversible);
+
+    m_children[BOTTOMRIGHT]->HandleNeighborSubdivision(RIGHT,isNotReversible);
+    m_children[BOTTOMRIGHT]->HandleNeighborSubdivision(BOTTOM,isNotReversible);
+
     return true;
 }
 
 bool NzTerrainInternalNode::Refine()
 {
+    #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
     {
         std::cout<<"NzTerrainNode::HierarchicalRefine : Calling uninitialized node"<<std::endl;
         return false;
     }
+    #endif
 
     //Impossible de refiner une feuille
     if(m_isLeaf)
@@ -509,11 +510,13 @@ bool NzTerrainInternalNode::Refine()
 
 bool NzTerrainInternalNode::HierarchicalRefine()
 {
+    #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
     {
-        std::cout<<"NzTerrainNode::HierarchicalRefine : Calling uninitialized node"<<std::endl;
+        std::cout<<"NzTerrainNode::HierarchicalRefine : Calling uninitialized node."<<std::endl;
         return false;
     }
+    #endif
 
     //Impossible de refiner une feuille
     if(m_isLeaf)
@@ -534,11 +537,13 @@ bool NzTerrainInternalNode::HierarchicalRefine()
 
 void NzTerrainInternalNode::HandleNeighborSubdivision(nzDirection direction, bool isNotReversible)
 {
+    #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
     {
         std::cout<<"NzTerrainNode::HandleNeighborSubdivision : Calling uninitialized node"<<std::endl;
         return;
     }
+    #endif
 
     NzTerrainNodeID tempID = m_nodeID;
     int counter = 0;
@@ -643,11 +648,13 @@ void NzTerrainInternalNode::HandleNeighborSubdivision(nzDirection direction, boo
 
 void NzTerrainInternalNode::Update(const NzVector3f& cameraPosition)
 {
+    #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
     {
-        std::cout<<"NzTerrainNode::Update : Calling uninitialized node"<<std::endl;
+        std::cout<<"NzTerrainNode::Update : Calling uninitialized node."<<std::endl;
         return;
     }
+    #endif
 
     //A) On calcule la précision optimale du node tenant compte de sa distance à la caméra
     float distance = m_aabb.DistanceTo(cameraPosition);
