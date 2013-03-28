@@ -8,6 +8,7 @@
 #include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
 #include <stack>
 #include <iostream>
+#include <Nazara/Profiler/TimeMonitor.hpp>
 #include <Nazara/DynaTerrain/Debug.hpp>
 
 
@@ -16,7 +17,6 @@ int NzTerrainInternalNode::nbNodes = 0;
 NzTerrainInternalNode::NzTerrainInternalNode()
 {
     nbNodes++;
-    m_patchMemoryAllocated = false;
     m_isInitialized = false;
 }
 
@@ -74,25 +74,17 @@ void NzTerrainInternalNode::CreatePatch()
     }
     #endif
 
-    if(!m_patchMemoryAllocated)
-    {
-        m_patchMemoryAllocated = true;
-        m_patch = m_data->quadtree->GetPatchFromPool();
-        m_patch->Initialize(m_nodeID,m_data);
-        m_aabb = m_patch->GetAABB();
-        m_patch->UploadMesh();
-    }
+    m_patch = m_data->quadtree->GetPatchFromPool();
+    m_patch->Initialize(m_nodeID,m_data);
+    m_aabb = m_patch->GetAABB();
+    m_patch->UploadMesh();
 }
 
 void NzTerrainInternalNode::DeletePatch()
 {
-    if(m_patchMemoryAllocated)
-    {
-        m_patch->UnUploadMesh();
-        m_patch->Invalidate();
-        m_patchMemoryAllocated = false;
-        m_data->quadtree->ReturnPatchToPool(m_patch);
-    }
+    m_patch->UnUploadMesh();
+    m_patch->Invalidate();
+    m_data->quadtree->ReturnPatchToPool(m_patch);
 }
 
 const NzCubef& NzTerrainInternalNode::GetAABB() const
@@ -226,48 +218,7 @@ bool NzTerrainInternalNode::IsValid() const
 
 void NzTerrainInternalNode::Initialize(TerrainNodeData *data, NzTerrainInternalNode* parent, nzLocation loc)
 {
-    m_isInitialized = true;
-    m_data = data;
-    m_location = loc;
-    m_isLeaf = false;
-
-    m_doNotRefine = false;
-
-    for(int i(0) ; i < 4 ; ++i)
-        m_children[i] = nullptr;
-
-    if(parent == nullptr)
-    {
-        m_isRoot = true;
-        m_isLeaf = true;
-        m_nodeID.depth = 0;
-        m_nodeID.locx = 0;
-        m_nodeID.locy = 0;
-    }
-    else
-    {
-        m_nodeID.depth = parent->m_nodeID.depth + 1;
-        m_parent = parent;
-        m_isRoot = false;
-        int offx = 0, offy = 0;
-        switch(m_location)
-        {
-            case TOPRIGHT:
-                offx = 1;
-            break;
-
-            case BOTTOMLEFT:
-                offy = 1;
-            break;
-
-            case BOTTOMRIGHT:
-                offx = 1;
-                offy = 1;
-            break;
-        }
-        m_nodeID.locx = parent->m_nodeID.locx * 2 + offx;
-        m_nodeID.locy = parent->m_nodeID.locy * 2 + offy;
-    }
+    InitializeData(data,parent,loc);
     CreatePatch();
 }
 
@@ -311,6 +262,7 @@ void NzTerrainInternalNode::HierarchicalSlopeBasedSubdivide(unsigned int maxDept
 
 bool NzTerrainInternalNode::Subdivide(bool isNotReversible)
 {
+    NzTimeMonitor monitor(0);
     #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
     {
@@ -322,11 +274,10 @@ bool NzTerrainInternalNode::Subdivide(bool isNotReversible)
        m_children[TOPRIGHT] != nullptr ||
        m_children[BOTTOMLEFT] != nullptr ||
        m_children[BOTTOMRIGHT] != nullptr)
-   {
+    {
        std::cout<<"NzTerrainNode::Subdivide : Trying to overwrite existing children."<<std::endl;
        return false;
-   }
-
+    }
     #endif
 
     if(!m_isLeaf)
@@ -334,9 +285,8 @@ bool NzTerrainInternalNode::Subdivide(bool isNotReversible)
 
     m_isLeaf = false;
     m_data->quadtree->UnRegisterLeaf(this);
-    this->DeletePatch();
-
-
+    //this->DeletePatch();
+    m_patch->UnUploadMesh();
 
     //On récupère des pointeurs valides pour les nodes
     m_children[TOPLEFT] = m_data->quadtree->GetNodeFromPool();
@@ -344,11 +294,10 @@ bool NzTerrainInternalNode::Subdivide(bool isNotReversible)
     m_children[BOTTOMLEFT] = m_data->quadtree->GetNodeFromPool();
     m_children[BOTTOMRIGHT] = m_data->quadtree->GetNodeFromPool();
 
-
-    m_children[TOPLEFT]->Initialize(m_data,this,TOPLEFT);
-    m_children[TOPRIGHT]->Initialize(m_data,this,TOPRIGHT);
-    m_children[BOTTOMLEFT]->Initialize(m_data,this,BOTTOMLEFT);
-    m_children[BOTTOMRIGHT]->Initialize(m_data,this,BOTTOMRIGHT);
+    m_children[TOPLEFT]->Initialize(m_data,this,*m_patch,TOPLEFT);
+    m_children[TOPRIGHT]->Initialize(m_data,this,*m_patch,TOPRIGHT);
+    m_children[BOTTOMLEFT]->Initialize(m_data,this,*m_patch,BOTTOMLEFT);
+    m_children[BOTTOMRIGHT]->Initialize(m_data,this,*m_patch,BOTTOMRIGHT);
 
     //C'est une subdivision, le node est forcément une leaf
     m_children[TOPLEFT]->m_isLeaf = true;
@@ -462,8 +411,8 @@ bool NzTerrainInternalNode::Refine()
     //Ce node devient leaf
     m_isLeaf = true;
     m_data->quadtree->RegisterLeaf(this);
-    CreatePatch();
-    //m_patch->UploadMesh();
+    //CreatePatch();
+    m_patch->UploadMesh();
 
     //On met à jour les interfaces
     nzDirection dirDirection[4] = {TOP,BOTTOM,LEFT,RIGHT};
@@ -687,6 +636,61 @@ void NzTerrainInternalNode::Update(const NzVector3f& cameraPosition)
         {
             m_data->quadtree->AddNodeToRefinementQueue(this);
         }
+    }
+}
+
+void NzTerrainInternalNode::Initialize(TerrainNodeData *data, NzTerrainInternalNode* parent, const NzPatch& patch, nzLocation loc)
+{
+    InitializeData(data,parent,loc);
+    m_patch = m_data->quadtree->GetPatchFromPool();
+    m_patch->InitializeFromParent(m_nodeID,m_data,patch);
+    m_aabb = m_patch->GetAABB();
+    m_patch->UploadMesh();
+}
+
+void NzTerrainInternalNode::InitializeData(TerrainNodeData *data, NzTerrainInternalNode* parent, nzLocation loc)
+{
+    m_isInitialized = true;
+    m_data = data;
+    m_location = loc;
+    m_isLeaf = false;
+
+    m_doNotRefine = false;
+
+    for(int i(0) ; i < 4 ; ++i)
+        m_children[i] = nullptr;
+
+    if(parent == nullptr)
+    {
+        m_isRoot = true;
+        m_isLeaf = true;
+        m_nodeID.depth = 0;
+        m_nodeID.locx = 0;
+        m_nodeID.locy = 0;
+    }
+    else
+    {
+        m_nodeID.depth = parent->m_nodeID.depth + 1;
+        m_parent = parent;
+        m_isRoot = false;
+        int offx = 0, offy = 0;
+        switch(m_location)
+        {
+            case TOPRIGHT:
+                offx = 1;
+            break;
+
+            case BOTTOMLEFT:
+                offy = 1;
+            break;
+
+            case BOTTOMRIGHT:
+                offx = 1;
+                offy = 1;
+            break;
+        }
+        m_nodeID.locx = parent->m_nodeID.locx * 2 + offx;
+        m_nodeID.locy = parent->m_nodeID.locy * 2 + offy;
     }
 }
 

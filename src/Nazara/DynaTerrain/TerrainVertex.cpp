@@ -12,7 +12,6 @@
 NzTerrainVertex::NzTerrainVertex()
 {
     m_isPositionInitialized = false;
-    m_isNormalInitialized = false;
 }
 
 NzTerrainVertex::~NzTerrainVertex()
@@ -23,28 +22,6 @@ NzTerrainVertex::~NzTerrainVertex()
 const NzVector3f& NzTerrainVertex::GetPosition() const
 {
     return m_position;
-}
-
-const NzVector3f& NzTerrainVertex::GetNormal() const
-{
-    return m_normal;
-}
-
-void NzTerrainVertex::ComputeNormal(const NzTerrainVertex& v1, const NzTerrainVertex& v2, const NzTerrainVertex& v3,const NzTerrainVertex& v4)
-{
-    if(!m_isNormalInitialized)
-    {
-        NzVector3f v12,v23,v34,v41;
-
-        v12 = v1.m_position.CrossProduct(v2.m_position);
-        v23 = v2.m_position.CrossProduct(v3.m_position);
-        v34 = v3.m_position.CrossProduct(v4.m_position);
-        v41 = v4.m_position.CrossProduct(v1.m_position);
-
-        m_normal = v12 + v23 + v34 + v41;
-        m_normal.Normalize();
-        m_isNormalInitialized = true;
-    }
 }
 
 void NzTerrainVertex::ComputePosition(NzTerrainQuadTree* quadtree, const NzTerrainNodeID& ID, const NzVector2i& offset)
@@ -59,10 +36,9 @@ void NzTerrainVertex::ComputePosition(NzTerrainQuadTree* quadtree, const NzTerra
 void NzTerrainVertex::Invalidate()
 {
     m_isPositionInitialized = false;
-    m_isNormalInitialized = false;
 }
 
 bool NzTerrainVertex::IsInitialized() const
 {
-    return m_isPositionInitialized && m_isNormalInitialized;
+    return m_isPositionInitialized;
 }

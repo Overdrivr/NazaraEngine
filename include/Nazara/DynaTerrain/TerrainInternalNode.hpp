@@ -55,6 +55,8 @@ class NAZARA_API NzTerrainInternalNode
         bool Subdivide(bool isNotReversible = false);
 
     private:
+        void Initialize(TerrainNodeData *data, NzTerrainInternalNode* parent, const NzPatch& patch, nzLocation loc = TOPLEFT);
+        void InitializeData(TerrainNodeData *data, NzTerrainInternalNode* parent, nzLocation loc = TOPLEFT);
         void HandleNeighborSubdivision(nzDirection direction, bool isNotReversible = false);
         /* Variables pour le fonctionnement basique de l'arbre */
         TerrainNodeData* m_data;
@@ -63,7 +65,6 @@ class NAZARA_API NzTerrainInternalNode
 
         bool m_isLeaf;
         bool m_isRoot;
-        bool m_patchMemoryAllocated;
         bool m_isInitialized;
 
         NzTerrainNodeID m_nodeID;

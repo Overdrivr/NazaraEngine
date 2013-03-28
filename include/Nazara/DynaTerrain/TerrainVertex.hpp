@@ -17,26 +17,20 @@ class NAZARA_API NzTerrainVertex
 {
     public:
         NzTerrainVertex();
+        NzTerrainVertex(const NzTerrainVertex& vertex) = default;
         ~NzTerrainVertex();
 
         const NzVector3f& GetPosition() const;
-        const NzVector3f& GetNormal() const;
 
         void ComputePosition(NzTerrainQuadTree* quadtree, const NzTerrainNodeID& ID, const NzVector2i& offset);
-        void ComputeNormal(const NzTerrainVertex& v1,
-                           const NzTerrainVertex& v2,
-                           const NzTerrainVertex& v3,
-                           const NzTerrainVertex& v4);
+
         void Invalidate();
         bool IsInitialized() const;
 
     protected:
     private:
-
         NzVector3f m_position;
-        NzVector3f m_normal;
         bool m_isPositionInitialized;
-        bool m_isNormalInitialized;
 };
 
 #endif // NAZARA_TERRAINVERTEX_HPP

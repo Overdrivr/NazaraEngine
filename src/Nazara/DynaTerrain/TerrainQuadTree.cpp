@@ -163,13 +163,10 @@ void NzTerrainQuadTree::DisconnectNeighbor(NzTerrainQuadTree* neighbour, nzDirec
 void NzTerrainQuadTree::Initialize()
 {
     m_isInitialized = true;
-
     //On subdivise l'arbre équitablement au niveau minimum
     m_root->HierarchicalSubdivide(m_commonConfiguration.minPrecision,true);
-
     //Si on doit améliorer l'arbre là où la pente est la plus forte, on le fait également
     m_root->HierarchicalSlopeBasedSubdivide(m_commonConfiguration.maxSlopePrecision);
-
 }
 
 void NzTerrainQuadTree::Render()
