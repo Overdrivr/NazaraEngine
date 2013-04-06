@@ -1,5 +1,6 @@
 #include <cmath>
 #include "MyHeightSource2D.hpp"
+#include <Nazara/Profiler/TimeMonitor.hpp>
 
 MyHeightSource2D::MyHeightSource2D()
 {
@@ -10,7 +11,7 @@ MyHeightSource2D::MyHeightSource2D()
     m_source3->SetLacunarity(2.7);
     m_source3->SetHurstParameter(0.28);
 
-    resolution = 1/2800.f;
+    resolution = 1/2400.f;
 }
 
 MyHeightSource2D::~MyHeightSource2D()
