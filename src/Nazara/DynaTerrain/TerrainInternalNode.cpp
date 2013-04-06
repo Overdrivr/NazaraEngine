@@ -262,7 +262,6 @@ void NzTerrainInternalNode::HierarchicalSlopeBasedSubdivide(unsigned int maxDept
 
 bool NzTerrainInternalNode::Subdivide(bool isNotReversible)
 {
-    NzTimeMonitor monitor(0);
     #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
     {

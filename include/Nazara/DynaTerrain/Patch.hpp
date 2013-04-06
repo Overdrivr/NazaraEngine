@@ -54,7 +54,8 @@ class NAZARA_API NzPatch
         bool m_isInitialized;
         bool m_fromScratch;
 
-        std::array<std::array<NzTerrainVertex*, 7>,7> m_vertices;
+        //std::array<std::array<NzTerrainVertex*, 7>,7> m_vertices;
+        std::array<std::array<NzTerrainVertex,7>,7> m_vertices;
 };
 
 #endif // NAZARA_PATCH_HPP
