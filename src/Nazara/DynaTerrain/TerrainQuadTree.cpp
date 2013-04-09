@@ -348,7 +348,7 @@ bool NzTerrainQuadTree::UnRegisterNode(NzTerrainInternalNode* node)
 void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
 {
 
-    nzUInt64 maxTime = 5000;//ms
+    nzUInt64 maxTime = 10;//ms
     std::map<NzTerrainNodeID,NzTerrainInternalNode*>::iterator it;
     int subdivisionsPerFrame = 0;
     updateClock.Restart();
