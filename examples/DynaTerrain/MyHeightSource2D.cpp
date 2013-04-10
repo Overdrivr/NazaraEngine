@@ -1,6 +1,5 @@
 #include <cmath>
 #include "MyHeightSource2D.hpp"
-#include <Nazara/Profiler/TimeMonitor.hpp>
 
 MyHeightSource2D::MyHeightSource2D()
 {

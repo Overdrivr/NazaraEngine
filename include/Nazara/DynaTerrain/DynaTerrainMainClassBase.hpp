@@ -13,8 +13,9 @@
 #include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
 #include <Nazara/Utility/IndexBuffer.hpp>
 #include <Nazara/Renderer/Texture.hpp>
-#include <Nazara/3D/SceneNode.hpp>
-#include <Nazara/2D/Drawable.hpp>
+#include <Nazara/Graphics/SceneNode.hpp>
+#include <Nazara/Graphics/Drawable.hpp>
+#include <Nazara/Graphics/RenderQueue.hpp>
 
 /// BASE CLASS OF THE TERRAIN/PLANET
 

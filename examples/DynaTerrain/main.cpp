@@ -1,4 +1,4 @@
-#include <Nazara/3D.hpp>
+#include <Nazara/Graphics.hpp>
 #include <Nazara/Core/Clock.hpp>
 #include <Nazara/Renderer.hpp>
 #include <Nazara/Utility.hpp>
@@ -7,8 +7,6 @@
 #include <Nazara/DynaTerrain/TerrainConfiguration.hpp>
 #include "MyHeightSource2D.hpp"
 #include "MyHeightSource3D.hpp"
-#include <Nazara/Profiler/TimeMonitor.hpp>
-#include <Nazara/Profiler/Profiler.hpp>
 #include <iostream>
 #include <sstream>
 
@@ -16,16 +14,8 @@ using namespace std;
 
 int main()
 {
-	NzInitializer<Nz3D> nazara;
+	NzInitializer<NzGraphics> nazara;
 	if (!nazara)
-	{
-		std::cout << "Failed to initialize Nazara, see NazaraLog.log for further informations" << std::endl;
-		std::getchar();
-		return EXIT_FAILURE;
-	}
-
-	NzInitializer<NzProfiler> profiler;
-	if (!profiler)
 	{
 		std::cout << "Failed to initialize Nazara, see NazaraLog.log for further informations" << std::endl;
 		std::getchar();

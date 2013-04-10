@@ -14,8 +14,7 @@
 #include <Nazara/Utility/IndexBuffer.hpp>
 #include <Nazara/DynaTerrain/TerrainNode.hpp>
 #include <Nazara/DynaTerrain/Enums.hpp>
-#include <Nazara/2D/Drawable.hpp>
-#include <Nazara/3D/SceneNode.hpp>
+#include <Nazara/Graphics/SceneNode.hpp>
 #include <Nazara/Math/BoundingBox.hpp>
 #include <vector>
 #include <queue>

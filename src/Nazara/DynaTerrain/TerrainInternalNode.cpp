@@ -8,7 +8,6 @@
 #include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
 #include <stack>
 #include <iostream>
-#include <Nazara/Profiler/TimeMonitor.hpp>
 #include <Nazara/DynaTerrain/Debug.hpp>
 
 

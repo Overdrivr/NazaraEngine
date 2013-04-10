@@ -48,11 +48,7 @@ bool NzSphere<T>::Contains(T X, T Y, T Z) const
 }
 
 template<typename T>
-<<<<<<< HEAD
 bool NzSphere<T>::Contains(const NzSphere& sphere) const
-=======
-bool NzSphere<T>::Contains(const NzCube<T>& cube) const
->>>>>>> upstream/master
 {
     return sphere.GetCenter().Distance(GetCenter()) + sphere.radius <= radius;
 }

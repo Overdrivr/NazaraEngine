@@ -21,8 +21,8 @@ else
 		links "NazaraUtility-s-d"
 		links "NazaraCore-s-d"
 		links "NazaraNoise-s-d"
+		links "NazaraGraphics-s-d"
 		links "NazaraDynaTerrain-s-d"
-		links "NazaraProfiler-s-d"
 
 	configuration "ReleaseStatic"
 		links "Nazara3D-s"
@@ -30,8 +30,8 @@ else
 		links "NazaraUtility-s"
 		links "NazaraCore-s"
 		links "NazaraNoise-s"
+		links "NazaraGraphics-s"
 		links "NazaraDynaTerrain-s"
-		links "NazaraProfiler-s"
 
 	configuration "DebugDLL"
 		links "Nazara3D-d"
@@ -39,8 +39,8 @@ else
 		links "NazaraUtility-d"
 		links "NazaraCore-d"
 		links "NazaraNoise-d"
+		links "NazaraGraphics-d"
 		links "NazaraDynaTerrain-d"
-		links "NazaraProfiler-d"
 
 	configuration "ReleaseDLL"
 		links "Nazara3D"
@@ -48,6 +48,6 @@ else
 		links "NazaraUtility"
 		links "NazaraCore"
 		links "NazaraNoise"
+		links "NazaraGraphics"
 		links "NazaraDynaTerrain"
-		links "NazaraProfiler"
 end
