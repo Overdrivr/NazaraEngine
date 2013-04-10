@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -343,6 +343,7 @@ bool NzMD5MeshParser::Parse(NzMesh* mesh)
 
 			// Material
 			mesh->SetMaterial(i, baseDir + md5Mesh.shader);
+			subMesh->GenerateNormalsAndTangents();
 			subMesh->SetMaterialIndex(i);
 
 			if (!mesh->AddSubMesh(subMesh.get()))
@@ -354,8 +355,6 @@ bool NzMD5MeshParser::Parse(NzMesh* mesh)
 			subMesh.release();
 		}
 	}
-
-	mesh->GenerateNormalsAndTangents();
 
 	return true;
 }

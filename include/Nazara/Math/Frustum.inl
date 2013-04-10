@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Mathematics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -165,7 +165,6 @@ bool NzFrustum<T>::Contains(const NzVector3<T>* points, unsigned int pointCount)
 template<typename T>
 NzFrustum<T>& NzFrustum<T>::Extract(const NzMatrix4<T>& clipMatrix)
 {
-	///TODO: Calculer les coins
 	// http://www.crownandcutlass.com/features/technicaldetails/frustum.html
 	T plane[4];
 	T invLength;
@@ -264,8 +263,7 @@ NzFrustum<T>& NzFrustum<T>::Extract(const NzMatrix4<T>& clipMatrix)
 	// Je me base sur cette page: http://www.gamedev.net/topic/393309-calculating-the-view-frustums-vertices/
 
 	NzMatrix4f invClipMatrix;
-	clipMatrix.GetInverse(&invClipMatrix); // Nous n'avons plus besoin de la matrice originale
-
+	clipMatrix.GetInverse(&invClipMatrix);
 	NzVector4f corner;
 
 	// FarLeftBottom

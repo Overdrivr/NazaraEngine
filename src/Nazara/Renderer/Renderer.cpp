@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -23,6 +23,7 @@
 #include <Nazara/Utility/VertexBuffer.hpp>
 #include <Nazara/Utility/VertexDeclaration.hpp>
 #include <map>
+#include <memory>
 #include <stdexcept>
 #include <tuple>
 #include <vector>
@@ -61,7 +62,9 @@ namespace
 	std::map<VAO_Key, unsigned int> s_vaos;
 	std::vector<TextureUnit> s_textureUnits;
 	NzBuffer* s_instancingBuffer = nullptr;
+	NzVertexBuffer* s_quadBuffer = nullptr;
 	NzMatrix4f s_matrix[totalMatrixCount];
+	NzVector2ui s_targetSize;
 	nzBlendFunc s_srcBlend;
 	nzBlendFunc s_dstBlend;
 	nzFaceCulling s_faceCulling;
@@ -308,6 +311,130 @@ void NzRenderer::DrawPrimitivesInstanced(unsigned int instanceCount, nzPrimitive
 	glDrawArraysInstanced(NzOpenGL::PrimitiveType[primitive], firstVertex, vertexCount, instanceCount);
 }
 
+void NzRenderer::DrawTexture(unsigned int unit, const NzRectf& rect, const NzVector2f& uv0, const NzVector2f& uv1, float z)
+{
+	#ifdef NAZARA_DEBUG
+	if (NzContext::GetCurrent() == nullptr)
+	{
+		NazaraError("No active context");
+		return;
+	}
+	#endif
+
+	#if NAZARA_RENDERER_SAFE
+	if (unit >= s_textureUnits.size())
+	{
+		NazaraError("Texture unit out of range (" + NzString::Number(unit) + " >= " + NzString::Number(s_textureUnits.size()) + ')');
+		return;
+	}
+
+	if (!s_textureUnits[unit].texture)
+	{
+		NazaraError("No texture at unit #" + NzString::Number(unit));
+		return;
+	}
+
+	if (z < 0.f || z > 1.f)
+	{
+		NazaraError("Z must be in range [0..1] (Got " + NzString::Number(z) + ')');
+		return;
+	}
+	#endif
+
+	const NzTexture* texture = s_textureUnits[unit].texture;
+
+	if (glDrawTexture)
+	{
+		float xCorrect = 2.f/s_targetSize.x;
+		float yCorrect = 2.f/s_targetSize.y;
+
+		NzVector2f coords[2] =
+		{
+			{rect.x, rect.y},
+			{rect.x+rect.width, rect.y+rect.height}
+		};
+
+		for (unsigned int i = 0; i < 2; ++i)
+		{
+			coords[i].x *= xCorrect;
+			coords[i].x -= 1.f;
+
+			coords[i].y *= yCorrect;
+			coords[i].y -= 1.f;
+		}
+
+		const NzTextureSampler& sampler = s_textureUnits[unit].sampler;
+		GLuint samplerId;
+		if (s_useSamplerObjects)
+			samplerId = sampler.GetOpenGLID();
+		else
+		{
+			sampler.Apply(texture);
+			samplerId = 0;
+		}
+
+		glDrawTexture(texture->GetOpenGLID(), samplerId,
+		              coords[0].x, coords[0].y, coords[1].x, coords[1].y,
+		              z,
+		              uv0.x, 1.f-uv0.y, uv1.x, 1.f-uv1.y); // Inversion des UV sur Y
+	}
+	else
+	{
+		///FIXME: Remplacer cette immondice (Code fonctionnel mais à vomir)
+		// Ce code est horrible mais la version optimisée demanderait des fonctionnalités pas encore implémentées, à venir...
+
+		float vertices[4*(3 + 2)] =
+		{
+			rect.x, rect.y, z,
+			uv0.x, uv0.y,
+
+			rect.x+rect.width, rect.y, z,
+			uv1.x, uv0.y,
+
+			rect.x, rect.y+rect.height, z,
+			uv0.x, uv1.y,
+
+			rect.x+rect.width, rect.y+rect.height, z,
+			uv1.x, uv1.y
+		};
+
+		if (!s_quadBuffer->Fill(vertices, 0, 4, true))
+		{
+			NazaraError("Failed to fill vertex buffer");
+			return;
+		}
+
+		const NzShader* oldShader = s_shader;
+		const NzVertexBuffer* oldBuffer = s_vertexBuffer;
+
+		const NzShader* shader = NzShaderBuilder::Get(nzShaderFlags_DiffuseMapping | nzShaderFlags_FlipUVs);
+		shader->SendTexture(shader->GetUniformLocation("MaterialDiffuseMap"), texture);
+
+		bool faceCulling = IsEnabled(nzRendererParameter_FaceCulling);
+		Enable(nzRendererParameter_FaceCulling, false);
+		SetShader(shader);
+		SetVertexBuffer(s_quadBuffer);
+
+		if (!EnsureStateUpdate(true))
+		{
+			NazaraError("Failed to update states");
+			return;
+		}
+
+		shader->SendMatrix(shader->GetUniformLocation("WorldViewProjMatrix"), NzMatrix4f::Ortho(0.f, s_targetSize.x, 0.f, s_targetSize.y, 0.f));
+
+		glDrawArrays(NzOpenGL::PrimitiveType[nzPrimitiveType_TriangleStrip], 0, 4);
+
+		// Restauration
+		Enable(nzRendererParameter_FaceCulling, faceCulling);
+		SetShader(oldShader);
+		SetVertexBuffer(oldBuffer);
+
+		s_matrixUpdated[nzMatrixCombination_WorldViewProj] = false;
+		s_vaoUpdated = false;
+	}
+}
+
 void NzRenderer::Enable(nzRendererParameter parameter, bool enable)
 {
 	#ifdef NAZARA_DEBUG
@@ -344,40 +471,16 @@ void NzRenderer::Enable(nzRendererParameter parameter, bool enable)
 	}
 }
 
-void NzRenderer::FillInstancingBuffer(const NzRenderer::InstancingData* instancingData, unsigned int instanceCount)
+void NzRenderer::Flush()
 {
-	#if NAZARA_RENDERER_SAFE
-	if (!s_capabilities[nzRendererCap_Instancing])
+	#ifdef NAZARA_DEBUG
+	if (NzContext::GetCurrent() == nullptr)
 	{
-		NazaraError("Instancing not supported");
-		return;
-	}
-
-	if (!instancingData)
-	{
-		NazaraError("Instancing data must be valid");
-		return;
-	}
-
-	if (instanceCount == 0)
-	{
-		NazaraError("Instance count must be over 0");
-		return;
-	}
-
-	if (instanceCount > NAZARA_RENDERER_INSTANCING_MAX)
-	{
-		NazaraError("Instance count is over maximum instance count (" + NzString::Number(instanceCount) + " >= " + NzString::Number(NAZARA_RENDERER_INSTANCING_MAX) + ')');
+		NazaraError("No active context");
 		return;
 	}
 	#endif
 
-	if (!s_instancingBuffer->Fill(instancingData, 0, instanceCount, true))
-		NazaraError("Failed to fill instancing buffer");
-}
-
-void NzRenderer::Flush()
-{
 	glFlush();
 }
 
@@ -513,15 +616,10 @@ bool NzRenderer::HasCapability(nzRendererCap capability)
 	return s_capabilities[capability];
 }
 
-bool NzRenderer::Initialize(bool initializeDebugDrawer)
+bool NzRenderer::Initialize()
 {
 	if (s_moduleReferenceCounter++ != 0)
-	{
-		if (initializeDebugDrawer && !NzDebugDrawer::Initialize())
-			NazaraWarning("Failed to initialize debug drawer"); // Non-critique
-
 		return true; // Déjà initialisé
-	}
 
 	// Initialisation des dépendances
 	if (!NzUtility::Initialize())
@@ -635,8 +733,28 @@ bool NzRenderer::Initialize(bool initializeDebugDrawer)
 	s_vertexBuffer = nullptr;
 	s_vertexDeclaration = nullptr;
 
-	if (initializeDebugDrawer && !NzDebugDrawer::Initialize())
-		NazaraWarning("Failed to initialize debug drawer"); // Non-critique
+	NzVertexElement elements[2];
+	elements[0].offset = 0;
+	elements[0].type = nzElementType_Float3;
+	elements[0].usage = nzElementUsage_Position;
+
+	elements[1].offset = 3*sizeof(float);
+	elements[1].type = nzElementType_Float2;
+	elements[1].usage = nzElementUsage_TexCoord;
+
+	std::unique_ptr<NzVertexDeclaration> declaration(new NzVertexDeclaration);
+	if (!declaration->Create(elements, 2))
+	{
+		NazaraError("Failed to create quad declaration");
+		Uninitialize();
+
+		return false;
+	}
+
+	declaration->SetPersistent(false);
+
+	s_quadBuffer = new NzVertexBuffer(declaration.get(), 4, nzBufferStorage_Hardware, nzBufferUsage_Dynamic);
+	declaration.release();
 
 	if (!NzShaderBuilder::Initialize())
 	{
@@ -844,6 +962,38 @@ bool NzRenderer::SetIndexBuffer(const NzIndexBuffer* indexBuffer)
 	}
 
 	return true;
+}
+
+void NzRenderer::SetInstancingData(const NzRenderer::InstancingData* instancingData, unsigned int instanceCount)
+{
+	#if NAZARA_RENDERER_SAFE
+	if (!s_capabilities[nzRendererCap_Instancing])
+	{
+		NazaraError("Instancing not supported");
+		return;
+	}
+
+	if (!instancingData)
+	{
+		NazaraError("Instancing data must be valid");
+		return;
+	}
+
+	if (instanceCount == 0)
+	{
+		NazaraError("Instance count must be over 0");
+		return;
+	}
+
+	if (instanceCount > NAZARA_RENDERER_INSTANCING_MAX)
+	{
+		NazaraError("Instance count is over maximum instance count (" + NzString::Number(instanceCount) + " >= " + NzString::Number(NAZARA_RENDERER_INSTANCING_MAX) + ')');
+		return;
+	}
+	#endif
+
+	if (!s_instancingBuffer->Fill(instancingData, 0, instanceCount, true))
+		NazaraError("Failed to fill instancing buffer");
 }
 
 void NzRenderer::SetLineWidth(float width)
@@ -1078,6 +1228,7 @@ bool NzRenderer::SetTarget(const NzRenderTarget* target)
 		}
 
 		s_target = target;
+		s_targetSize.Set(target->GetWidth(), target->GetHeight());
 	}
 
 	return true;
@@ -1093,18 +1244,18 @@ void NzRenderer::SetTexture(nzUInt8 unit, const NzTexture* texture)
 	}
 	#endif
 
-	if (!texture) // Pas besoin de mettre à jour s'il n'y a pas de texture
-		return;
-
 	if (s_textureUnits[unit].texture != texture)
 	{
 		s_textureUnits[unit].texture = texture;
 		s_textureUnits[unit].textureUpdated = false;
 
-		if (s_textureUnits[unit].sampler.UseMipmaps(texture->HasMipmaps()))
-			s_textureUnits[unit].samplerUpdated = false;
+		if (texture)
+		{
+			if (s_textureUnits[unit].sampler.UseMipmaps(texture->HasMipmaps()))
+				s_textureUnits[unit].samplerUpdated = false;
 
-		s_textureUnits[unit].updated = false;
+			s_textureUnits[unit].updated = false;
+		}
 	}
 }
 
@@ -1136,7 +1287,7 @@ bool NzRenderer::SetVertexBuffer(const NzVertexBuffer* vertexBuffer)
 	}
 	#endif
 
-	if (s_vertexBuffer != vertexBuffer)
+	if (vertexBuffer && s_vertexBuffer != vertexBuffer)
 	{
 		s_vertexBuffer = vertexBuffer;
 
@@ -1192,6 +1343,8 @@ void NzRenderer::Uninitialize()
 		return;
 	}
 
+	NzContext::EnsureContext();
+
 	// Libération du module
 	s_moduleReferenceCounter = 0;
 
@@ -1204,9 +1357,9 @@ void NzRenderer::Uninitialize()
 	NzShaderBuilder::Uninitialize();
 	NzTextureSampler::Uninitialize();
 
-	NzContext::EnsureContext();
+	// Libération des buffers
+	delete s_quadBuffer;
 
-	// Libération du buffer d'instancing
 	if (s_instancingBuffer)
 	{
 		delete s_instancingBuffer;

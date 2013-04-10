@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -49,10 +49,10 @@ class NAZARA_API NzResource
 
 		bool IsPersistent() const;
 
-		void RemoveResourceListener(NzResourceListener* listener) const;
-		void RemoveResourceReference() const;
+		bool RemoveResourceListener(NzResourceListener* listener) const;
+		bool RemoveResourceReference() const;
 
-		void SetPersistent(bool persistent = true, bool checkReferenceCount = true);
+		void SetPersistent(bool persistent = true, bool checkReferenceCount = false);
 
 	protected:
 		void NotifyCreated();

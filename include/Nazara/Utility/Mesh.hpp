@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -12,6 +12,7 @@
 #include <Nazara/Core/Resource.hpp>
 #include <Nazara/Core/ResourceListener.hpp>
 #include <Nazara/Core/ResourceLoader.hpp>
+#include <Nazara/Core/ResourceRef.hpp>
 #include <Nazara/Core/String.hpp>
 #include <Nazara/Math/Cube.hpp>
 #include <Nazara/Utility/Skeleton.hpp>
@@ -36,7 +37,9 @@ class NzMesh;
 
 typedef NzVertexStruct_XYZ_Normal_UV_Tangent NzMeshVertex;
 
+using NzMeshConstRef = NzResourceRef<const NzMesh>;
 using NzMeshLoader = NzResourceLoader<NzMesh, NzMeshParams>;
+using NzMeshRef = NzResourceRef<NzMesh>;
 
 struct NzMeshImpl;
 
@@ -73,6 +76,7 @@ class NAZARA_API NzMesh : public NzResource, NzResourceListener
 		const NzSubMesh* GetSubMesh(unsigned int index) const;
 		unsigned int GetSubMeshCount() const;
 		int GetSubMeshIndex(const NzString& identifier) const;
+		unsigned int GetTriangleCount() const;
 		unsigned int GetVertexCount() const;
 
 		bool HasSubMesh(const NzString& identifier) const;

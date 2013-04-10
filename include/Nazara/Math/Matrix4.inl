@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Mathematics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -137,6 +137,16 @@ T NzMatrix4<T>::GetDeterminant() const
 	T D = m12*(m23*m34 - m33*m24) - m22*(m13*m34 - m33*m14) + m32*(m13*m24 - m23*m14);
 
 	return m11*A - m21*B + m31*C - m41*D;
+}
+
+template<typename T>
+T NzMatrix4<T>::GetDeterminantAffine() const
+{
+	T A = m22*m33 - m32*m23;
+	T B = m12*m33 - m32*m13;
+	T C = m12*m23 - m22*m13;
+
+	return m11*A - m21*B + m31*C;
 }
 
 template<typename T>
@@ -286,7 +296,13 @@ template<typename T>
 bool NzMatrix4<T>::GetInverseAffine(NzMatrix4* dest) const
 {
 	///DOC: Il est possible d'appeler cette méthode avec la même matrice en argument qu'en appelant
-	#ifdef NAZARA_DEBUG
+	#if NAZARA_MATH_SAFE
+	if (!IsAffine())
+	{
+		NazaraError("Matrix is not affine");
+		return false;
+	}
+
 	if (!dest)
 	{
 		NazaraError("Destination matrix must be valid");
@@ -294,7 +310,7 @@ bool NzMatrix4<T>::GetInverseAffine(NzMatrix4* dest) const
 	}
 	#endif
 
-	T det = GetDeterminant();
+	T det = GetDeterminantAffine();
 	if (!NzNumberEquals(det, F(0.0)))
 	{
 		// http://stackoverflow.com/questions/1148309/inverting-a-4x4-matrix
@@ -432,17 +448,6 @@ NzMatrix4<T>& NzMatrix4<T>::Inverse(bool* succeeded)
 template<typename T>
 NzMatrix4<T>& NzMatrix4<T>::InverseAffine(bool* succeeded)
 {
-	#if NAZARA_MATH_SAFE
-	if (!IsAffine())
-	{
-		NazaraError("Matrix not affine");
-		if (succeeded)
-			*succeeded = false;
-
-		return *this;
-	}
-	#endif
-
 	bool result = GetInverseAffine(this);
 	if (succeeded)
 		*succeeded = result;

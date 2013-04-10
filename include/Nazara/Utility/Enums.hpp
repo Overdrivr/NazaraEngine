@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -141,9 +141,9 @@ enum nzImageType
 
 enum nzNodeType
 {
-	nzNodeType_Default,
-	nzNodeType_Scene,
-	nzNodeType_Skeletal,
+	nzNodeType_Default,  // NzNode
+	nzNodeType_Scene,    // NzSceneNode (Graphics)
+	nzNodeType_Skeletal, ///TODO
 
 	nzNodeType_Max = nzNodeType_Skeletal
 };

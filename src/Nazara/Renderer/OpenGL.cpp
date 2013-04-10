@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -340,6 +340,8 @@ bool NzOpenGL::Initialize()
 	if (!glBindFragDataLocation)
 		glBindFragDataLocation = reinterpret_cast<PFNGLBINDFRAGDATALOCATIONEXTPROC>(LoadEntry("glBindFragDataLocationEXT", false));
 
+	glDrawTexture = reinterpret_cast<PFNGLDRAWTEXTURENVPROC>(LoadEntry("glDrawTextureNV", false));
+	glFramebufferTexture = reinterpret_cast<PFNGLFRAMEBUFFERTEXTUREPROC>(LoadEntry("glFramebufferTexture", false));
 	glGetStringi = reinterpret_cast<PFNGLGETSTRINGIPROC>(LoadEntry("glGetStringi", false));
 	glMapBufferRange = reinterpret_cast<PFNGLMAPBUFFERRANGEPROC>(LoadEntry("glMapBufferRange", false));
 	glInvalidateBufferData = reinterpret_cast<PFNGLINVALIDATEBUFFERDATAPROC>(LoadEntry("glInvalidateBufferData", false));
@@ -474,7 +476,6 @@ bool NzOpenGL::Initialize()
 			glDeleteFramebuffers = reinterpret_cast<PFNGLDELETEFRAMEBUFFERSPROC>(LoadEntry("glDeleteFramebuffers"));
 			glDeleteRenderbuffers = reinterpret_cast<PFNGLDELETERENDERBUFFERSPROC>(LoadEntry("glDeleteRenderbuffers"));
 			glFramebufferRenderbuffer = reinterpret_cast<PFNGLFRAMEBUFFERRENDERBUFFERPROC>(LoadEntry("glFramebufferRenderbuffer"));
-			glFramebufferTexture = reinterpret_cast<PFNGLFRAMEBUFFERTEXTUREPROC>(LoadEntry("glFramebufferTexture"));
 			glFramebufferTexture1D = reinterpret_cast<PFNGLFRAMEBUFFERTEXTURE1DPROC>(LoadEntry("glFramebufferTexture1D"));
 			glFramebufferTexture2D = reinterpret_cast<PFNGLFRAMEBUFFERTEXTURE2DPROC>(LoadEntry("glFramebufferTexture2D"));
 			glFramebufferTexture3D = reinterpret_cast<PFNGLFRAMEBUFFERTEXTURE3DPROC>(LoadEntry("glFramebufferTexture3D"));
@@ -879,8 +880,8 @@ GLenum NzOpenGL::CubemapFace[6] =
 {
 	GL_TEXTURE_CUBE_MAP_POSITIVE_X, // nzCubemapFace_PositiveX
 	GL_TEXTURE_CUBE_MAP_NEGATIVE_X, // nzCubemapFace_NegativeX
-	GL_TEXTURE_CUBE_MAP_POSITIVE_Y, // nzCubemapFace_PositiveY
-	GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, // nzCubemapFace_NegativeY
+	GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, // nzCubemapFace_PositiveY (Inversion pour les standards OpenGL)
+	GL_TEXTURE_CUBE_MAP_POSITIVE_Y, // nzCubemapFace_NegativeY (Inversion pour les standards OpenGL)
 	GL_TEXTURE_CUBE_MAP_POSITIVE_Z, // nzCubemapFace_PositiveZ
 	GL_TEXTURE_CUBE_MAP_NEGATIVE_Z  // nzCubemapFace_NegativeZ
 };
@@ -1046,6 +1047,7 @@ PFNGLDRAWBUFFERPROC               glDrawBuffer               = nullptr;
 PFNGLDRAWBUFFERSPROC              glDrawBuffers              = nullptr;
 PFNGLDRAWELEMENTSPROC             glDrawElements             = nullptr;
 PFNGLDRAWELEMENTSINSTANCEDPROC    glDrawElementsInstanced    = nullptr;
+PFNGLDRAWTEXTURENVPROC            glDrawTexture              = nullptr;
 PFNGLENABLEPROC                   glEnable                   = nullptr;
 PFNGLENABLEVERTEXATTRIBARRAYPROC  glEnableVertexAttribArray  = nullptr;
 PFNGLENDQUERYPROC                 glEndQuery                 = nullptr;

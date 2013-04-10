@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -11,6 +11,7 @@
 #include <Nazara/Core/Color.hpp>
 #include <Nazara/Core/NonCopyable.hpp>
 #include <Nazara/Core/Resource.hpp>
+#include <Nazara/Core/ResourceRef.hpp>
 #include <Nazara/Core/String.hpp>
 #include <Nazara/Math/Matrix4.hpp>
 #include <Nazara/Math/Vector2.hpp>
@@ -18,8 +19,13 @@
 #include <Nazara/Math/Vector4.hpp>
 #include <Nazara/Renderer/Enums.hpp>
 
-class NzShaderImpl;
+class NzShader;
 class NzTexture;
+
+using NzShaderConstRef = NzResourceRef<const NzShader>;
+using NzShaderRef = NzResourceRef<NzShader>;
+
+class NzShaderImpl;
 
 class NAZARA_API NzShader : public NzResource, NzNonCopyable
 {

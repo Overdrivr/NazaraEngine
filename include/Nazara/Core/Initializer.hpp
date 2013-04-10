@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -9,16 +9,19 @@
 
 #include <Nazara/Prerequesites.hpp>
 
-template<typename T>
+template<typename... Args>
 class NzInitializer
 {
 	public:
-		template<typename... Args> NzInitializer(Args... args);
+		NzInitializer();
 		~NzInitializer();
 
 		bool IsInitialized() const;
 
 		operator bool() const;
+
+	private:
+		bool m_initialized;
 };
 
 #include <Nazara/Core/Initializer.inl>

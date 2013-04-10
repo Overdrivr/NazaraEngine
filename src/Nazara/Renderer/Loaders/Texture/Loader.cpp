@@ -1,11 +1,12 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Renderer/Loaders/Texture.hpp>
 #include <Nazara/Renderer/Material.hpp>
 #include <Nazara/Renderer/Texture.hpp>
-#include <Nazara/Utility/Debug.hpp>
+#include <memory>
+#include <Nazara/Renderer/Debug.hpp>
 
 namespace
 {
@@ -21,7 +22,9 @@ namespace
 	{
 		NazaraUnused(parameters);
 
-		NzTexture* texture = new NzTexture;
+		std::unique_ptr<NzTexture> texture(new NzTexture);
+		texture->SetPersistent(false);
+
 		if (!texture->LoadFromStream(stream))
 		{
 			NazaraError("Failed to load diffuse map");
@@ -29,8 +32,8 @@ namespace
 		}
 
 		material->Reset();
-		material->SetDiffuseMap(texture);
-		texture->SetPersistent(false);
+		material->SetDiffuseMap(texture.get());
+		texture.release();
 
 		return true;
 	}
@@ -38,11 +41,10 @@ namespace
 
 void NzLoaders_Texture_Register()
 {
-	///FIXME: Pas bon
-	NzMaterialLoader::RegisterLoader("bmp,gif,hdr,jpg,jpeg,pic,png,psd,tga", Check, Load);
+	NzMaterialLoader::RegisterLoader(NzImageLoader::IsExtensionSupported, Check, Load);
 }
 
 void NzLoaders_Texture_Unregister()
 {
-	NzMaterialLoader::UnregisterLoader("bmp,gif,hdr,jpg,jpeg,pic,png,psd,tga", Check, Load);
+	NzMaterialLoader::UnregisterLoader(NzImageLoader::IsExtensionSupported, Check, Load);
 }

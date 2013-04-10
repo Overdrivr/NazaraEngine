@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -10,7 +10,13 @@
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Core/NonCopyable.hpp>
 #include <Nazara/Core/Resource.hpp>
+#include <Nazara/Core/ResourceRef.hpp>
 #include <Nazara/Utility/Enums.hpp>
+
+class NzBuffer;
+
+using NzBufferConstRef = NzResourceRef<const NzBuffer>;
+using NzBufferRef = NzResourceRef<NzBuffer>;
 
 class NzBufferImpl;
 

@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -197,11 +197,12 @@ NzString& NzString::Append(char character)
 
 NzString& NzString::Append(const char* string)
 {
-	if (!string || !string[0])
-		return *this;
+	return Append(string, std::strlen(string));
+}
 
-	unsigned int length = std::strlen(string);
-	if (length == 0)
+NzString& NzString::Append(const char* string, unsigned int length)
+{
+	if (!string || !string[0] || length == 0)
 		return *this;
 
 	if (m_sharedString->capacity >= m_sharedString->size + length)
@@ -226,6 +227,8 @@ NzString& NzString::Append(const char* string)
 		m_sharedString->size = newSize;
 		m_sharedString->string = str;
 	}
+
+	m_sharedString->string[m_sharedString->size] = '\0';
 
 	return *this;
 }
@@ -2444,20 +2447,21 @@ unsigned int NzString::GetWordPosition(unsigned int index, nzUInt32 flags) const
 	}
 	else
 	{
-		while (ptr != &m_sharedString->string[m_sharedString->size])
+		do
 		{
-			if (!std::isspace(*ptr++))
+			if (std::isspace(*ptr))
+				inWord = false;
+			else
 			{
 				if (!inWord)
 				{
 					inWord = true;
 					if (++currentWord > index)
-						return ptr-m_sharedString->string;
+						return ptr - m_sharedString->string;
 				}
 			}
-			else
-				inWord = false;
 		}
+		while (*++ptr);
 	}
 
 	return npos;
@@ -2633,7 +2637,7 @@ bool NzString::IsNumber(nzUInt8 base, nzUInt32 flags) const
 		return false;
 
 	NzString check = Simplified();
-	if (check.m_sharedString->size)
+	if (check.m_sharedString->size == 0)
 		return false;
 
 	char* ptr = (check.m_sharedString->string[0] == '-') ? &check.m_sharedString->string[1] : check.m_sharedString->string;
@@ -2642,20 +2646,24 @@ bool NzString::IsNumber(nzUInt8 base, nzUInt32 flags) const
 	{
 		if (flags & CaseInsensitive)
 		{
+			char limitLower = 'a'+base-1;
+			char limitUpper = 'A'+base-1;
+
 			do
 			{
 				char c = *ptr;
-				if (c != ' ' && (c < '0' || (c > '9' && c < 'A') || (c > 'A'+base-1 && c < 'a') || c > 'a'+base-1))
+				if (c != ' ' && (c < '0' || (c > '9' && c < 'A') || (c > limitUpper && c < 'a') || c > limitLower))
 					return false;
 			}
 			while (*++ptr);
 		}
 		else
 		{
+			char limit = 'a'+base-1;
 			do
 			{
 				char c = *ptr;
-				if (c != ' ' && (c < '0' || (c > '9' && c < 'a') || c > 'a'+base-1))
+				if (c != ' ' && (c < '0' || (c > '9' && c < 'a') || c > limit))
 					return false;
 			}
 			while (*++ptr);
@@ -2663,10 +2671,12 @@ bool NzString::IsNumber(nzUInt8 base, nzUInt32 flags) const
 	}
 	else
 	{
+		char limit = '0'+base-1;
+
 		do
 		{
 			char c = *ptr;
-			if (c != ' ' && (c < '0' || c > '0'+base-1))
+			if (c != ' ' && (c < '0' || c > limit))
 				return false;
 		}
 		while (*++ptr);
@@ -4906,7 +4916,7 @@ NzString operator+(char character, const NzString& string)
 	unsigned int totalSize = string.m_sharedString->size+1;
 	char* str = new char[totalSize+1];
 	str[0] = character;
-	std::memcpy(str, string.m_sharedString->string, string.m_sharedString->size+1);
+	std::memcpy(&str[1], string.m_sharedString->string, string.m_sharedString->size+1);
 
 	return NzString(new NzString::SharedString(1, totalSize, totalSize, str));
 }

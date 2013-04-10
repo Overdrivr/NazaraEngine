@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -24,6 +24,11 @@ struct NzWeight
 	unsigned int jointIndex;
 };
 
+class NzSkeletalMesh;
+
+using NzSkeletalMeshConstRef = NzResourceRef<const NzSkeletalMesh>;
+using NzSkeletalMeshRef = NzResourceRef<NzSkeletalMesh>;
+
 struct NzSkeletalMeshImpl;
 
 class NAZARA_API NzSkeletalMesh final : public NzSubMesh
@@ -34,8 +39,6 @@ class NAZARA_API NzSkeletalMesh final : public NzSubMesh
 
 		bool Create(unsigned int vertexCount, unsigned int weightCount);
 		void Destroy();
-
-		void Finish();
 
 		const NzCubef& GetAABB() const;
 		nzAnimationType GetAnimationType() const final;

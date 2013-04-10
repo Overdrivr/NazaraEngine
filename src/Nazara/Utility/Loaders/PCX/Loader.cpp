@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -38,6 +38,11 @@ namespace
 	};
 
 	//static_assert(sizeof(pcx_header) == 1024, "PCX header must be 1024 bytes sized");
+
+	bool IsSupported(const NzString& extension)
+	{
+		return (extension == "pcx");
+	}
 
 	bool Check(NzInputStream& stream, const NzImageParams& parameters)
 	{
@@ -339,10 +344,10 @@ namespace
 
 void NzLoaders_PCX_Register()
 {
-	NzImageLoader::RegisterLoader("pcx", Check, Load);
+	NzImageLoader::RegisterLoader(IsSupported, Check, Load);
 }
 
 void NzLoaders_PCX_Unregister()
 {
-	NzImageLoader::UnregisterLoader("pcx", Check, Load);
+	NzImageLoader::UnregisterLoader(IsSupported, Check, Load);
 }

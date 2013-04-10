@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Audio module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -13,6 +13,7 @@
 #include <Nazara/Core/NonCopyable.hpp>
 #include <Nazara/Core/Resource.hpp>
 #include <Nazara/Core/ResourceLoader.hpp>
+#include <Nazara/Core/ResourceRef.hpp>
 
 struct NzSoundBufferParams
 {
@@ -22,7 +23,9 @@ struct NzSoundBufferParams
 class NzSound;
 class NzSoundBuffer;
 
+using NzSoundBufferConstRef = NzResourceRef<const NzSoundBuffer>;
 using NzSoundBufferLoader = NzResourceLoader<NzSoundBuffer, NzSoundBufferParams>;
+using NzSoundBufferRef = NzResourceRef<NzSoundBuffer>;
 
 struct NzSoundBufferImpl;
 

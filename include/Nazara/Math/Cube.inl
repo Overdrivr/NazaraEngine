@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Mathematics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -246,7 +246,7 @@ NzSphere<T> NzCube<T>::GetBoundingSphere() const
 template<typename T>
 NzVector3<T> NzCube<T>::GetCenter() const
 {
-	return NzVector3<T>(x + width*F(0.5), y + height*F(0.5), z + depth*F(0.5));
+	return GetPosition() + F(0.5)*GetSize();
 }
 
 template<typename T>

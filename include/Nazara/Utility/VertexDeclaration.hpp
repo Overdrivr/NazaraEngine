@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -9,6 +9,7 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Core/Resource.hpp>
+#include <Nazara/Core/ResourceRef.hpp>
 #include <Nazara/Utility/Enums.hpp>
 
 struct NzVertexElement
@@ -19,6 +20,11 @@ struct NzVertexElement
 	nzElementType type;
 	nzElementUsage usage;
 };
+
+class NzVertexDeclaration;
+
+using NzVertexDeclarationConstRef = NzResourceRef<const NzVertexDeclaration>;
+using NzVertexDeclarationRef = NzResourceRef<NzVertexDeclaration>;
 
 struct NzVertexDeclarationImpl;
 

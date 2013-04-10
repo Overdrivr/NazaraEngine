@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -10,6 +10,7 @@
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Core/Resource.hpp>
 #include <Nazara/Core/ResourceLoader.hpp>
+#include <Nazara/Core/ResourceRef.hpp>
 #include <Nazara/Core/String.hpp>
 #include <Nazara/Utility/Enums.hpp>
 #include <Nazara/Utility/Sequence.hpp>
@@ -27,7 +28,9 @@ struct NAZARA_API NzAnimationParams
 class NzAnimation;
 class NzSkeleton;
 
+using NzAnimationConstRef = NzResourceRef<const NzAnimation>;
 using NzAnimationLoader = NzResourceLoader<NzAnimation, NzAnimationParams>;
+using NzAnimationRef = NzResourceRef<NzAnimation>;
 
 struct NzAnimationImpl;
 

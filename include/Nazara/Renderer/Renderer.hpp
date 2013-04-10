@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -40,10 +40,9 @@ class NAZARA_API NzRenderer
 		static void DrawIndexedPrimitivesInstanced(unsigned int instanceCount, nzPrimitiveType primitive, unsigned int firstIndex, unsigned int indexCount);
 		static void DrawPrimitives(nzPrimitiveType primitive, unsigned int firstVertex, unsigned int vertexCount);
 		static void DrawPrimitivesInstanced(unsigned int instanceCount, nzPrimitiveType primitive, unsigned int firstVertex, unsigned int vertexCount);
+		NAZARA_DEPRECATED("Don't use this or you will have cancer") static void DrawTexture(unsigned int unit, const NzRectf& rect, const NzVector2f& uv0, const NzVector2f& uv1, float z = 0.f);
 
 		static void Enable(nzRendererParameter parameter, bool enable);
-
-		static void FillInstancingBuffer(const InstancingData* instancingData, unsigned int instanceCount);
 
 		static void Flush();
 
@@ -60,7 +59,7 @@ class NAZARA_API NzRenderer
 
 		static bool HasCapability(nzRendererCap capability);
 
-		static bool Initialize(bool initializeDebugDrawer = false);
+		static bool Initialize();
 
 		static bool IsEnabled(nzRendererParameter parameter);
 		static bool IsInitialized();
@@ -74,6 +73,7 @@ class NAZARA_API NzRenderer
 		static void SetFaceCulling(nzFaceCulling cullingMode);
 		static void SetFaceFilling(nzFaceFilling fillingMode);
 		static bool SetIndexBuffer(const NzIndexBuffer* indexBuffer);
+		static void SetInstancingData(const InstancingData* instancingData, unsigned int instanceCount);
 		static void SetLineWidth(float size);
 		static void SetMatrix(nzMatrixType type, const NzMatrix4f& matrix);
 		static void SetPointSize(float size);

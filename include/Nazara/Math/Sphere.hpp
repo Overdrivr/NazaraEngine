@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 JÃ©rÃ´me Leclercq
 // This file is part of the "Nazara Engine - Mathematics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -20,7 +20,7 @@ class NzSphere
 		NzSphere() = default;
 		NzSphere(T X, T Y, T Z, T Radius);
 		//NzSphere(const NzCircle<T>& circle);
-		NzSphere(const NzVector3<T>& pos, T Radius);
+		NzSphere(const NzVector3<T>& center, T Radius);
 		NzSphere(const T sphere[4]);
 		template<typename U> explicit NzSphere(const NzSphere<U>& sphere);
 		NzSphere(const NzSphere& sphere) = default;
@@ -54,7 +54,7 @@ class NzSphere
 		NzSphere& Set(T X, T Y, T Z, T Radius);
 		//NzSphere& Set(const NzCircle<T>& circle);
 		NzSphere& Set(const NzSphere& sphere);
-		NzSphere& Set(const NzVector3<T>& pos, T Radius);
+		NzSphere& Set(const NzVector3<T>& center, T Radius);
 		NzSphere& Set(const T sphere[4]);
 		template<typename U> NzSphere& Set(const NzSphere<U>& sphere);
 

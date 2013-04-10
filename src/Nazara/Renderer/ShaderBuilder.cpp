@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -11,17 +11,21 @@
 #include <unordered_map>
 #include <Nazara/Renderer/Debug.hpp>
 
+///TODO: Remplacer par les ShaderNode
+
 namespace
 {
-	std::unordered_map<nzUInt32, NzShader*> s_shaders;
+	std::unordered_map<nzUInt32, NzResourceRef<NzShader>> s_shaders;
 
 	NzString BuildFragmentShaderSource(nzUInt32 flags)
 	{
 		bool glsl140 = (NzOpenGL::GetVersion() >= 310);
 		//bool useMRT = (glsl140 && NzRenderer::HasCapability(nzRendererCap_MultipleRenderTargets));
+		bool uvMapping = (flags & nzShaderFlags_DiffuseMapping || flags & nzShaderFlags_NormalMapping || flags & nzShaderFlags_SpecularMapping);
 
 		NzString inKW = (glsl140) ? "in" : "varying";
 		NzString fragmentColorKW = (glsl140) ? "RenderTarget0" : "gl_FragColor";
+		NzString textureLookupKW = (glsl140) ? "texture" : "texture2D";
 
 		NzString sourceCode;
 		sourceCode.Reserve(1024); // Le shader peut faire plus, mais cela évite déjà beaucoup de petites allocations
@@ -77,6 +81,9 @@ namespace
 		if (flags & nzShaderFlags_DiffuseMapping)
 			sourceCode += "uniform sampler2D MaterialDiffuseMap;\n";
 
+		if (flags & nzShaderFlags_EmissiveMapping)
+			sourceCode += "uniform sampler2D MaterialEmissiveMap;\n";
+
 		if (flags & nzShaderFlags_Lighting)
 		{
 			if (flags & nzShaderFlags_NormalMapping)
@@ -102,7 +109,7 @@ namespace
 				sourceCode += inKW + " vec3 vNormal;\n";
 		}
 
-		if (flags & nzShaderFlags_DiffuseMapping || flags & nzShaderFlags_NormalMapping)
+		if (uvMapping)
 			sourceCode += inKW + " vec2 vTexCoord;\n";
 
 		if (flags & nzShaderFlags_Lighting)
@@ -128,7 +135,7 @@ namespace
 				sourceCode += "vec3 si = vec3(0.0, 0.0, 0.0);\n";
 
 			if (flags & nzShaderFlags_NormalMapping)
-				sourceCode += "vec3 normal = normalize(vLightToWorld * (2.0 * vec3(texture2D(MaterialNormalMap, vTexCoord)) - 1.0));\n";
+				sourceCode += "vec3 normal = normalize(vLightToWorld * (2.0 * vec3(" + textureLookupKW + "(MaterialNormalMap, vTexCoord)) - 1.0));\n";
 			else
 				sourceCode += "vec3 normal = normalize(vNormal);\n";
 
@@ -263,18 +270,27 @@ namespace
 			sourceCode += "}\n"
 			              "\n";
 
-			sourceCode += fragmentColorKW + " = vec4(light, MaterialDiffuse.a)";
+			sourceCode += "vec3 lighting = light";
 
 			if (flags & nzShaderFlags_DiffuseMapping)
-				sourceCode += "*texture2D(MaterialDiffuseMap, vTexCoord)";
+				sourceCode += "*vec3(" + textureLookupKW + "(MaterialDiffuseMap, vTexCoord))";
 
 			if (flags & nzShaderFlags_SpecularMapping)
-				sourceCode += " + vec4(si, MaterialDiffuse.a)*texture2D(MaterialSpecularMap, vTexCoord)"; // Utiliser l'alpha de MaterialSpecular n'aurait aucun sens
+				sourceCode += " + si*vec3(" + textureLookupKW + "(MaterialSpecularMap, vTexCoord))"; // Utiliser l'alpha de MaterialSpecular n'aurait aucun sens
 
 			sourceCode += ";\n";
+
+			if (flags & nzShaderFlags_EmissiveMapping)
+			{
+				sourceCode += "vec3 emission = vec3(" + textureLookupKW + "(MaterialEmissiveMap, vTexCoord));\n"
+				               + fragmentColorKW + " = vec4(mix(lighting, emission, length(emission)), MaterialDiffuse.a);";
+				///NOTE: Pour un shader avec un coût réduit avec une qualité moyenne, il est possible de remplacer "length(emission)" par "dot(emission, emission)"
+			}
+			else
+				sourceCode += fragmentColorKW + " = vec4(lighting, MaterialDiffuse.a);";
 		}
 		else if (flags & nzShaderFlags_DiffuseMapping)
-			sourceCode += fragmentColorKW + " = texture2D(MaterialDiffuseMap, vTexCoord);\n";
+			sourceCode += fragmentColorKW + " = " + textureLookupKW + "(MaterialDiffuseMap, vTexCoord);\n";
 		else
 			sourceCode += fragmentColorKW + " = MaterialDiffuse;\n";
 
@@ -286,6 +302,7 @@ namespace
 	NzString BuildVertexShaderSource(nzUInt32 flags)
 	{
 		bool glsl140 = (NzOpenGL::GetVersion() >= 310);
+		bool uvMapping = (flags & nzShaderFlags_DiffuseMapping || flags & nzShaderFlags_NormalMapping || flags & nzShaderFlags_SpecularMapping);
 
 		NzString inKW = (glsl140) ? "in" : "attribute";
 		NzString outKW = (glsl140) ? "out" : "varying";
@@ -327,7 +344,7 @@ namespace
 			sourceCode += inKW + " vec3 VertexTangent;\n";
 		}
 
-		if (flags & nzShaderFlags_DiffuseMapping)
+		if (uvMapping)
 			sourceCode += inKW + " vec2 VertexTexCoord0;\n";
 
 		sourceCode += '\n';
@@ -341,7 +358,7 @@ namespace
 				sourceCode += outKW + " vec3 vNormal;\n";
 		}
 
-		if (flags & nzShaderFlags_DiffuseMapping || flags & nzShaderFlags_NormalMapping)
+		if (uvMapping)
 			sourceCode += outKW + " vec2 vTexCoord;\n";
 
 		if (flags & nzShaderFlags_Lighting)
@@ -361,9 +378,19 @@ namespace
 		if (flags & nzShaderFlags_Lighting)
 		{
 			if (flags & nzShaderFlags_Instancing)
-				sourceCode += "mat3 rotationMatrix = mat3(InstanceMatrix);\n";
+			{
+				if (glsl140)
+					sourceCode += "mat3 rotationMatrix = mat3(InstanceMatrix);\n";
+				else
+					sourceCode += "mat3 rotationMatrix = mat3(InstanceMatrix[0].xyz, InstanceMatrix[1].xyz, InstanceMatrix[2].xyz);\n";
+			}
 			else
-				sourceCode += "mat3 rotationMatrix = mat3(WorldMatrix);\n";
+			{
+				if (glsl140)
+					sourceCode += "mat3 rotationMatrix = mat3(WorldMatrix);\n";
+				else
+					sourceCode += "mat3 rotationMatrix = mat3(WorldMatrix[0].xyz, WorldMatrix[1].xyz, WorldMatrix[2].xyz);\n";
+			}
 
 			if (flags & nzShaderFlags_NormalMapping)
 			{
@@ -378,7 +405,7 @@ namespace
 				sourceCode += "vNormal = normalize(rotationMatrix * VertexNormal);\n";
 		}
 
-		if (flags & nzShaderFlags_DiffuseMapping || flags & nzShaderFlags_NormalMapping || flags & nzShaderFlags_SpecularMapping)
+		if (uvMapping)
 		{
 			if (flags & nzShaderFlags_FlipUVs)
 				sourceCode += "vTexCoord = vec2(VertexTexCoord0.x, 1.0 - VertexTexCoord0.y);\n";
@@ -440,6 +467,7 @@ namespace
 		}
 
 		shader->SetFlags(flags);
+		shader->SetPersistent(false);
 
 		return shader.release();
 	}
@@ -452,11 +480,14 @@ const NzShader* NzShaderBuilder::Get(nzUInt32 flags)
 	{
 		// Alors nous créons le shader
 		NzShader* shader = BuildShader(flags);
-		if (!shader) ///TODO: Ajouter une erreur en mode Once
-			return s_shaders[0]; // Shader par défaut
+		if (!shader)
+		{
+			NazaraWarning("Failed to build shader (flags: 0x" + NzString::Number(flags, 16) + "), using default one...");
+
+			shader = s_shaders[0]; // Shader par défaut
+		}
 
 		s_shaders[flags] = shader;
-		///TODO: emplace
 
 		return shader;
 	}
@@ -480,8 +511,5 @@ bool NzShaderBuilder::Initialize()
 
 void NzShaderBuilder::Uninitialize()
 {
-	for (auto it : s_shaders)
-		delete it.second;
-
 	s_shaders.clear();
 }

@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -25,4 +25,4 @@ class NAZARA_API NzShaderBuilder
 		static void Uninitialize();
 };
 
-#endif // NAZARA_SHADER_HPP
+#endif // NAZARA_SHADERBUILDER_HPP

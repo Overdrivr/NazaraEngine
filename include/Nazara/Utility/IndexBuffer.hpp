@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -9,7 +9,13 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Core/Resource.hpp>
+#include <Nazara/Core/ResourceRef.hpp>
 #include <Nazara/Utility/Buffer.hpp>
+
+class NzIndexBuffer;
+
+using NzIndexBufferConstRef = NzResourceRef<const NzIndexBuffer>;
+using NzIndexBufferRef = NzResourceRef<NzIndexBuffer>;
 
 class NAZARA_API NzIndexBuffer : public NzResource
 {
@@ -19,7 +25,7 @@ class NAZARA_API NzIndexBuffer : public NzResource
 		NzIndexBuffer(const NzIndexBuffer& indexBuffer);
 		~NzIndexBuffer();
 
-		bool Fill(const void* data, unsigned int offset, unsigned int length);
+		bool Fill(const void* data, unsigned int offset, unsigned int length, bool forceDiscard = false);
 
 		NzBuffer* GetBuffer() const;
 		unsigned int GetIndexCount() const;
@@ -40,7 +46,7 @@ class NAZARA_API NzIndexBuffer : public NzResource
 		void Unmap() const;
 
 	private:
-		NzBuffer* m_buffer;
+		NzBufferRef m_buffer;
 		bool m_ownsBuffer;
 		unsigned int m_indexCount;
 		unsigned int m_startIndex;

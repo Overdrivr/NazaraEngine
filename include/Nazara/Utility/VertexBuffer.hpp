@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -9,8 +9,14 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Core/Resource.hpp>
+#include <Nazara/Core/ResourceRef.hpp>
 #include <Nazara/Utility/Buffer.hpp>
 #include <Nazara/Utility/VertexDeclaration.hpp>
+
+class NzVertexBuffer;
+
+using NzVertexBufferConstRef = NzResourceRef<NzVertexBuffer>;
+using NzVertexBufferRef = NzResourceRef<NzVertexBuffer>;
 
 class NAZARA_API NzVertexBuffer : public NzResource
 {
@@ -20,7 +26,7 @@ class NAZARA_API NzVertexBuffer : public NzResource
 		NzVertexBuffer(const NzVertexBuffer& vertexBuffer);
 		~NzVertexBuffer();
 
-		bool Fill(const void* data, unsigned int offset, unsigned int length);
+		bool Fill(const void* data, unsigned int offset, unsigned int length, bool forceDiscard = false);
 
 		NzBuffer* GetBuffer() const;
 		void* GetPointer();
@@ -40,8 +46,8 @@ class NAZARA_API NzVertexBuffer : public NzResource
 		void Unmap() const;
 
 	private:
-		NzBuffer* m_buffer;
-		const NzVertexDeclaration* m_vertexDeclaration;
+		NzBufferRef m_buffer;
+		NzVertexDeclarationConstRef m_vertexDeclaration;
 		bool m_ownsBuffer;
 		unsigned int m_startVertex;
 		unsigned int m_vertexCount;

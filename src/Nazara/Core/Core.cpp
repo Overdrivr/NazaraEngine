@@ -1,4 +1,4 @@
-// Copyright (C) 2012 AUTHORS
+// Copyright (C) 2013 AUTHORS
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -10,24 +10,9 @@
 #include <Nazara/Core/TaskScheduler.hpp>
 #include <Nazara/Core/Debug.hpp>
 
-bool NzCore::Initialize(bool initializeHardwareInfo, bool initializeTaskScheduler)
+bool NzCore::Initialize()
 {
-	s_moduleReferenceCounter++;
-
-	// Initialisation du module
-	if (initializeHardwareInfo && !NzHardwareInfo::Initialize())
-		NazaraWarning("Failed to initialize hardware info"); // Non-critique
-
-	if (initializeTaskScheduler && !NzTaskScheduler::Initialize())
-	{
-		NazaraError("Failed to initialize task scheduler");
-		Uninitialize();
-
-		return false;
-	}
-
-	// Vérification après l'initialisation des sous-modules
-	if (s_moduleReferenceCounter != 1)
+	if (s_moduleReferenceCounter++ != 0)
 		return true; // Déjà initialisé
 
 	NazaraNotice("Initialized: Core");

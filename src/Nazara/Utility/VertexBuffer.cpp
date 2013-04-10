@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -29,9 +29,6 @@ m_vertexCount(vertexCount)
 		throw std::invalid_argument("Invalid vertex declaration");
 	}
 	#endif
-
-	m_buffer->AddResourceReference();
-	m_vertexDeclaration->AddResourceReference();
 }
 
 NzVertexBuffer::NzVertexBuffer(const NzVertexDeclaration* vertexDeclaration, unsigned int length, nzBufferStorage storage, nzBufferUsage usage) :
@@ -49,9 +46,7 @@ m_vertexCount(length)
 	#endif
 
 	m_buffer = new NzBuffer(nzBufferType_Vertex, length, vertexDeclaration->GetStride(nzElementStream_VertexData), storage, usage);
-	m_buffer->AddResourceReference();
 	m_buffer->SetPersistent(false);
-	m_vertexDeclaration->AddResourceReference();
 }
 
 NzVertexBuffer::NzVertexBuffer(const NzVertexBuffer& vertexBuffer) :
@@ -66,26 +61,16 @@ m_vertexCount(vertexBuffer.m_vertexCount)
 		NzBuffer* buffer = vertexBuffer.m_buffer;
 
 		m_buffer = new NzBuffer(nzBufferType_Vertex, buffer->GetLength(), buffer->GetSize(), buffer->GetStorage(), buffer->GetUsage());
-		m_buffer->AddResourceReference();
 		m_buffer->SetPersistent(false);
 		m_buffer->CopyContent(*vertexBuffer.m_buffer);
 	}
 	else
-	{
 		m_buffer = vertexBuffer.m_buffer;
-		m_buffer->AddResourceReference();
-	}
-
-	m_vertexDeclaration->AddResourceReference();
 }
 
-NzVertexBuffer::~NzVertexBuffer()
-{
-	m_buffer->RemoveResourceReference();
-	m_vertexDeclaration->RemoveResourceReference();
-}
+NzVertexBuffer::~NzVertexBuffer() = default;
 
-bool NzVertexBuffer::Fill(const void* data, unsigned int offset, unsigned int length)
+bool NzVertexBuffer::Fill(const void* data, unsigned int offset, unsigned int length, bool forceDiscard)
 {
 	#if NAZARA_UTILITY_SAFE
 	if (offset+length > m_vertexCount)
@@ -95,7 +80,7 @@ bool NzVertexBuffer::Fill(const void* data, unsigned int offset, unsigned int le
 	}
 	#endif
 
-	return m_buffer->Fill(data, m_startVertex+offset, length);
+	return m_buffer->Fill(data, m_startVertex+offset, length, forceDiscard);
 }
 
 NzBuffer* NzVertexBuffer::GetBuffer() const

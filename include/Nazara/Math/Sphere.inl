@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 JÃ©rÃ´me Leclercq
 // This file is part of the "Nazara Engine - Mathematics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -23,9 +23,9 @@ NzSphere<T>::NzSphere(const NzCircle<T>& circle)
 }
 */
 template<typename T>
-NzSphere<T>::NzSphere(const NzVector3<T>& pos, T Radius)
+NzSphere<T>::NzSphere(const NzVector3<T>& center, T Radius)
 {
-	Set(pos, Radius);
+	Set(center, Radius);
 }
 
 template<typename T>
@@ -48,7 +48,11 @@ bool NzSphere<T>::Contains(T X, T Y, T Z) const
 }
 
 template<typename T>
+<<<<<<< HEAD
 bool NzSphere<T>::Contains(const NzSphere& sphere) const
+=======
+bool NzSphere<T>::Contains(const NzCube<T>& cube) const
+>>>>>>> upstream/master
 {
     return sphere.GetCenter().Distance(GetCenter()) + sphere.radius <= radius;
 }
@@ -240,11 +244,11 @@ NzSphere<T>& NzSphere<T>::Set(T X, T Y, T Z, T Radius)
 }
 
 template<typename T>
-NzSphere<T>& NzSphere<T>::Set(const NzVector3<T>& pos, T Radius)
+NzSphere<T>& NzSphere<T>::Set(const NzVector3<T>& center, T Radius)
 {
-	x = pos.x;
-	y = pos.y;
-	z = pos.z;
+	x = center.x;
+	y = center.y;
+	z = center.z;
 	radius = Radius;
 
 	return *this;
@@ -296,7 +300,7 @@ template<typename T>
 T NzSphere<T>::SquaredDistance(T X, T Y, T Z) const
 {
 	NzVector3<T> distance(X-x, Y-y, Z-z);
-	return radius*radius - distance.SquaredLength();
+	return distance.SquaredLength() - radius*radius;
 }
 
 template<typename T>

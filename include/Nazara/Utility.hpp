@@ -1,9 +1,9 @@
-// This file was automatically generated on 05 Mar 2013 at 10:53:41
+// This file was automatically generated on 07 Apr 2013 at 02:09:05
 
 /*
 	Nazara Engine - Window module
 
-	Copyright (C) 2012 Jérôme "Lynix" Leclercq (Lynix680@gmail.com)
+	Copyright (C) 2013 Jérôme "Lynix" Leclercq (Lynix680@gmail.com)
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy of
 	this software and associated documentation files (the "Software"), to deal in
@@ -34,6 +34,7 @@
 #include <Nazara/Utility/BufferImpl.hpp>
 #include <Nazara/Utility/BufferMapper.hpp>
 #include <Nazara/Utility/Config.hpp>
+#include <Nazara/Utility/CubemapParams.hpp>
 #include <Nazara/Utility/Cursor.hpp>
 #include <Nazara/Utility/Enums.hpp>
 #include <Nazara/Utility/Event.hpp>

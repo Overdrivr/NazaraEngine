@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -9,8 +9,12 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Core/Color.hpp>
+#include <Nazara/Core/Resource.hpp>
 #include <Nazara/Core/ResourceLoader.hpp>
+#include <Nazara/Core/ResourceRef.hpp>
+#include <Nazara/Core/String.hpp>
 #include <Nazara/Renderer/Enums.hpp>
+#include <Nazara/Renderer/Shader.hpp>
 #include <Nazara/Renderer/Texture.hpp>
 #include <Nazara/Renderer/TextureSampler.hpp>
 
@@ -23,9 +27,10 @@ struct NAZARA_API NzMaterialParams
 };
 
 class NzMaterial;
-class NzShader;
 
+using NzMaterialConstRef = NzResourceRef<const NzMaterial>;
 using NzMaterialLoader = NzResourceLoader<NzMaterial, NzMaterialParams>;
+using NzMaterialRef = NzResourceRef<NzMaterial>;
 
 class NAZARA_API NzMaterial : public NzResource
 {
@@ -35,7 +40,7 @@ class NAZARA_API NzMaterial : public NzResource
 		NzMaterial();
 		NzMaterial(const NzMaterial& material);
 		NzMaterial(NzMaterial&& material);
-		~NzMaterial();
+		~NzMaterial() = default;
 
 		void Apply(const NzShader* shader) const;
 
@@ -52,6 +57,7 @@ class NAZARA_API NzMaterial : public NzResource
 		NzTextureSampler& GetDiffuseSampler();
 		const NzTextureSampler& GetDiffuseSampler() const;
 		nzBlendFunc GetDstBlend() const;
+		NzTexture* GetEmissiveMap() const;
 		nzFaceCulling GetFaceCulling() const;
 		nzFaceFilling GetFaceFilling() const;
 		NzTexture* GetHeightMap() const;
@@ -81,16 +87,22 @@ class NAZARA_API NzMaterial : public NzResource
 
 		void SetAmbientColor(const NzColor& ambient);
 		void SetDiffuseColor(const NzColor& diffuse);
+		bool SetDiffuseMap(const NzString& texturePath);
 		void SetDiffuseMap(NzTexture* map);
 		void SetDiffuseSampler(const NzTextureSampler& sampler);
 		void SetDstBlend(nzBlendFunc func);
+		bool SetEmissiveMap(const NzString& texturePath);
+		void SetEmissiveMap(NzTexture* map);
 		void SetFaceCulling(nzFaceCulling culling);
 		void SetFaceFilling(nzFaceFilling filling);
+		bool SetHeightMap(const NzString& texturePath);
 		void SetHeightMap(NzTexture* map);
+		bool SetNormalMap(const NzString& texturePath);
 		void SetNormalMap(NzTexture* map);
 		void SetCustomShader(const NzShader* shader);
 		void SetShininess(float shininess);
 		void SetSpecularColor(const NzColor& specular);
+		bool SetSpecularMap(const NzString& texturePath);
 		void SetSpecularMap(NzTexture* map);
 		void SetSpecularSampler(const NzTextureSampler& sampler);
 		void SetSrcBlend(nzBlendFunc func);
@@ -102,6 +114,8 @@ class NAZARA_API NzMaterial : public NzResource
 		static NzMaterial* GetDefault();
 
 	private:
+		void Copy(const NzMaterial& material);
+
 		nzBlendFunc m_dstBlend;
 		nzBlendFunc m_srcBlend;
 		nzFaceCulling m_faceCulling;
@@ -113,11 +127,12 @@ class NAZARA_API NzMaterial : public NzResource
 		NzColor m_specularColor;
 		NzTextureSampler m_diffuseSampler;
 		NzTextureSampler m_specularSampler;
-		mutable const NzShader* m_customShader;
-		NzTexture* m_diffuseMap;
-		NzTexture* m_heightMap;
-		NzTexture* m_normalMap;
-		NzTexture* m_specularMap;
+		mutable NzShaderConstRef m_customShader;
+		NzTextureRef m_diffuseMap;
+		NzTextureRef m_emissiveMap;
+		NzTextureRef m_heightMap;
+		NzTextureRef m_normalMap;
+		NzTextureRef m_specularMap;
 		bool m_alphaBlendingEnabled;
 		bool m_faceCullingEnabled;
 		bool m_lightingEnabled;

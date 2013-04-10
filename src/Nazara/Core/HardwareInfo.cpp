@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -80,6 +80,7 @@ NzString NzHardwareInfo::GetProcessorBrandString()
 
 unsigned int NzHardwareInfo::GetProcessorCount()
 {
+	///DOC: Ne nécessite pas l'initialisation de HardwareInfo pour fonctionner
 	static unsigned int processorCount = std::max(NzHardwareInfoImpl::GetProcessorCount(), 1U);
 	return processorCount;
 }

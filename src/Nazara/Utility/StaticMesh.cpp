@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -50,12 +50,6 @@ void NzStaticMesh::Destroy()
 		m_vertexBuffer->RemoveResourceListener(this);
 		m_vertexBuffer = nullptr;
 	}
-}
-
-void NzStaticMesh::Finish()
-{
-	// La seule chose à faire ici est de calculer l'AABB
-	GenerateAABB();
 }
 
 bool NzStaticMesh::GenerateAABB()

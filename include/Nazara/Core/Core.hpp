@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -16,7 +16,7 @@ class NAZARA_API NzCore
 		NzCore() = delete;
 		~NzCore() = delete;
 
-		static bool Initialize(bool initializeHardwareInfo = false, bool initializeTaskScheduler = false);
+		static bool Initialize();
 
 		static bool IsInitialized();
 

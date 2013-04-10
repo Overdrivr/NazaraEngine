@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -9,6 +9,7 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Core/Resource.hpp>
+#include <Nazara/Core/ResourceRef.hpp>
 #include <Nazara/Math/Cube.hpp>
 #include <Nazara/Utility/Enums.hpp>
 #include <Nazara/Utility/IndexBuffer.hpp>
@@ -16,6 +17,10 @@
 #include <Nazara/Utility/VertexDeclaration.hpp>
 
 class NzMesh;
+class NzSubMesh;
+
+using NzSubMeshConstRef = NzResourceRef<const NzSubMesh>;
+using NzSubMeshRef = NzResourceRef<NzSubMesh>;
 
 class NAZARA_API NzSubMesh : public NzResource
 {
@@ -25,7 +30,9 @@ class NAZARA_API NzSubMesh : public NzResource
 		NzSubMesh(const NzMesh* parent);
 		virtual ~NzSubMesh();
 
-		virtual void Finish() = 0; ///DOC: Mets le mesh dans sa position d'origine et calcule son AABB
+		void GenerateNormals();
+		void GenerateNormalsAndTangents();
+		void GenerateTangents();
 
 		virtual const NzCubef& GetAABB() const = 0;
 		virtual nzAnimationType GetAnimationType() const = 0;
@@ -33,6 +40,7 @@ class NAZARA_API NzSubMesh : public NzResource
 		unsigned int GetMaterialIndex() const;
 		const NzMesh* GetParent() const;
 		nzPrimitiveType GetPrimitiveType() const;
+		unsigned int GetTriangleCount() const;
 		virtual unsigned int GetVertexCount() const = 0;
 
 		virtual bool IsAnimated() const = 0;

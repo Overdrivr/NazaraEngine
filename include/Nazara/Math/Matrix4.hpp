@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Mathematics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -37,6 +37,7 @@ class NzMatrix4
 		NzMatrix4& ConcatenateAffine(const NzMatrix4& matrix);
 
 		T GetDeterminant() const;
+		T GetDeterminantAffine() const;
 		bool GetInverse(NzMatrix4* dest) const;
 		bool GetInverseAffine(NzMatrix4* dest) const;
 		NzQuaternion<T> GetRotation() const;

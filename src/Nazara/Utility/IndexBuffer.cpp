@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -28,8 +28,6 @@ m_startIndex(startIndex)
 			throw std::runtime_error("Constructor failed");
 		}
 		#endif
-
-		m_buffer->AddResourceReference();
 	}
 }
 
@@ -39,7 +37,6 @@ m_indexCount(length),
 m_startIndex(0)
 {
 	m_buffer = new NzBuffer(nzBufferType_Index, length, (largeIndices) ? 4 : 2, storage, usage);
-	m_buffer->AddResourceReference();
 	m_buffer->SetPersistent(false);
 }
 
@@ -57,25 +54,17 @@ m_startIndex(indexBuffer.m_startIndex)
 			NzBuffer* buffer = indexBuffer.m_buffer;
 
 			m_buffer = new NzBuffer(nzBufferType_Index, buffer->GetLength(), buffer->GetSize(), buffer->GetStorage(), buffer->GetUsage());
-			m_buffer->AddResourceReference();
 			m_buffer->SetPersistent(false);
 			m_buffer->CopyContent(*indexBuffer.m_buffer);
 		}
 		else
-		{
 			m_buffer = indexBuffer.m_buffer;
-			m_buffer->AddResourceReference();
-		}
 	}
 }
 
-NzIndexBuffer::~NzIndexBuffer()
-{
-	if (m_buffer)
-		m_buffer->RemoveResourceReference();
-}
+NzIndexBuffer::~NzIndexBuffer() = default;
 
-bool NzIndexBuffer::Fill(const void* data, unsigned int offset, unsigned int length)
+bool NzIndexBuffer::Fill(const void* data, unsigned int offset, unsigned int length, bool forceDiscard)
 {
 	#if NAZARA_UTILITY_SAFE
 	if (!m_buffer)
@@ -91,7 +80,7 @@ bool NzIndexBuffer::Fill(const void* data, unsigned int offset, unsigned int len
 	}
 	#endif
 
-	return m_buffer->Fill(data, m_startIndex+offset, length);
+	return m_buffer->Fill(data, m_startIndex+offset, length, forceDiscard);
 }
 
 NzBuffer* NzIndexBuffer::GetBuffer() const

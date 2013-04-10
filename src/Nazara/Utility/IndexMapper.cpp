@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -46,11 +46,13 @@ namespace
 	}
 }
 
-NzIndexMapper::NzIndexMapper(NzIndexBuffer* indexBuffer, nzBufferAccess access) :
-m_mapper(indexBuffer, access)
+NzIndexMapper::NzIndexMapper(NzIndexBuffer* indexBuffer, nzBufferAccess access)
 {
 	if (indexBuffer && !indexBuffer->IsSequential())
 	{
+		if (!m_mapper.Map(indexBuffer, access))
+			NazaraError("Failed to map buffer"); ///TODO: Unexcepted
+
 		if (indexBuffer->HasLargeIndices())
 		{
 			m_getter = Getter32;

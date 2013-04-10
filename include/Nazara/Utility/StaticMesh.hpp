@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -11,6 +11,11 @@
 #include <Nazara/Core/ResourceListener.hpp>
 #include <Nazara/Utility/SubMesh.hpp>
 
+class NzStaticMesh;
+
+using NzStaticMeshConstRef = NzResourceRef<const NzStaticMesh>;
+using NzStaticMeshRef = NzResourceRef<NzStaticMesh>;
+
 class NAZARA_API NzStaticMesh final : public NzSubMesh, NzResourceListener
 {
 	public:
@@ -19,8 +24,6 @@ class NAZARA_API NzStaticMesh final : public NzSubMesh, NzResourceListener
 
 		bool Create(NzVertexBuffer* vertexBuffer);
 		void Destroy();
-
-		void Finish();
 
 		bool GenerateAABB();
 

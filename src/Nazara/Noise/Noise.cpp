@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Rémi Bèges
+// Copyright (C) 2013 Rémi Bèges
 // This file is part of the "Nazara Engine - Noise module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -49,10 +49,10 @@ void NzNoise::Uninitialize()
 	// Libération du module
 	s_moduleReferenceCounter = 0;
 
+	NazaraNotice("Uninitialized: Noise module");
+
 	// Libération des dépendances
 	NzCore::Uninitialize();
-
-	NazaraNotice("Uninitialized: Noise module");
 }
 
 unsigned int NzNoise::s_moduleReferenceCounter = 0;

@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -19,7 +19,11 @@
 
 namespace
 {
-	/// Loader de mesh
+	bool IsSupported(const NzString& extension)
+	{
+		return (extension == "md2");
+	}
+
 	bool Check(NzInputStream& stream, const NzMeshParams& parameters)
 	{
 		NazaraUnused(parameters);
@@ -210,10 +214,10 @@ namespace
 		vertexBuffer->SetPersistent(false);
 		vertexBuffer.release();
 
+		subMesh->GenerateAABB();
+		subMesh->GenerateTangents();
 		subMesh->SetMaterialIndex(0);
 		mesh->AddSubMesh(subMesh.release());
-
-		mesh->GenerateTangents();
 
 		return true;
 	}
@@ -221,10 +225,10 @@ namespace
 
 void NzLoaders_MD2_Register()
 {
-	NzMeshLoader::RegisterLoader("md2", Check, Load);
+	NzMeshLoader::RegisterLoader(IsSupported, Check, Load);
 }
 
 void NzLoaders_MD2_Unregister()
 {
-	NzMeshLoader::UnregisterLoader("md2", Check, Load);
+	NzMeshLoader::UnregisterLoader(IsSupported, Check, Load);
 }

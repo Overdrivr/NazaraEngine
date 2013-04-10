@@ -1,11 +1,13 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Utility/Utility.hpp>
 #include <Nazara/Core/Core.hpp>
 #include <Nazara/Core/Error.hpp>
+#include <Nazara/Core/HardwareInfo.hpp>
 #include <Nazara/Core/Log.hpp>
+#include <Nazara/Core/Thread.hpp>
 #include <Nazara/Utility/Buffer.hpp>
 #include <Nazara/Utility/Config.hpp>
 #include <Nazara/Utility/Loaders/MD2.hpp>
@@ -23,11 +25,7 @@ bool NzUtility::Initialize()
 		return true; // Déjà initialisé
 
 	// Initialisation des dépendances
-	#if NAZARA_UTILITY_MULTITHREADED_SKINNING
-	if (!NzCore::Initialize(false, true))
-	#else
 	if (!NzCore::Initialize())
-	#endif
 	{
 		NazaraError("Failed to initialize core module");
 		Uninitialize();
@@ -36,6 +34,16 @@ bool NzUtility::Initialize()
 	}
 
 	// Initialisation du module
+	#if NAZARA_UTILITY_MULTITHREADED_SKINNING
+	if (!NzTaskScheduler::Initialize())
+	{
+		NazaraError("Failed to initialize task scheduler");
+		Uninitialize();
+
+		return false;
+	}
+	#endif
+
 	if (!NzBuffer::Initialize())
 	{
 		NazaraError("Failed to initialize buffers");

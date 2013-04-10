@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -12,9 +12,11 @@
 #include <Nazara/Core/InputStream.hpp>
 #include <Nazara/Core/Resource.hpp>
 #include <Nazara/Core/ResourceLoader.hpp>
+#include <Nazara/Core/ResourceRef.hpp>
 #include <Nazara/Math/Cube.hpp>
 #include <Nazara/Math/Rect.hpp>
 #include <Nazara/Math/Vector3.hpp>
+#include <Nazara/Utility/CubemapParams.hpp>
 #include <Nazara/Utility/Enums.hpp>
 #include <Nazara/Utility/PixelFormat.hpp>
 
@@ -39,7 +41,9 @@ struct NAZARA_API NzImageParams
 
 class NzImage;
 
+using NzImageConstRef = NzResourceRef<const NzImage>;
 using NzImageLoader = NzResourceLoader<NzImage, NzImageParams>;
+using NzImageRef = NzResourceRef<NzImage>;
 
 class NAZARA_API NzImage : public NzResource
 {
@@ -57,7 +61,7 @@ class NAZARA_API NzImage : public NzResource
 
 		bool Convert(nzPixelFormat format);
 
-		bool Copy(const NzImage& source, const NzCubeui& srcCube, const NzVector3ui& dstPos);
+		void Copy(const NzImage& source, const NzCubeui& srcCube, const NzVector3ui& dstPos);
 
 		bool Create(nzImageType type, nzPixelFormat format, unsigned int width, unsigned int height, unsigned int depth = 1, nzUInt8 levelCount = 1);
 		void Destroy();
@@ -87,20 +91,28 @@ class NAZARA_API NzImage : public NzResource
 		bool IsCubemap() const;
 		bool IsValid() const;
 
+		// Load
 		bool LoadFromFile(const NzString& filePath, const NzImageParams& params = NzImageParams());
 		bool LoadFromMemory(const void* data, std::size_t size, const NzImageParams& params = NzImageParams());
 		bool LoadFromStream(NzInputStream& stream, const NzImageParams& params = NzImageParams());
 
-		bool SetLevelCount(nzUInt8 levelCount);
+		// LoadCubemap
+		bool LoadCubemapFromFile(const NzString& filePath, const NzImageParams& imageParams = NzImageParams(), const NzCubemapParams& cubemapParams = NzCubemapParams());
+		bool LoadCubemapFromImage(const NzImage& image, const NzCubemapParams& params = NzCubemapParams());
+		bool LoadCubemapFromMemory(const void* data, std::size_t size, const NzImageParams& imageParams = NzImageParams(), const NzCubemapParams& cubemapParams = NzCubemapParams());
+		bool LoadCubemapFromStream(NzInputStream& stream, const NzImageParams& imageParams = NzImageParams(), const NzCubemapParams& cubemapParams = NzCubemapParams());
+
+		void SetLevelCount(nzUInt8 levelCount);
 		bool SetPixelColor(const NzColor& color, unsigned int x, unsigned int y = 0, unsigned int z = 0);
 
-		bool Update(const nzUInt8* pixels, nzUInt8 level = 0);
-		bool Update(const nzUInt8* pixels, const NzRectui& rect, unsigned int z = 0, nzUInt8 level = 0);
-		bool Update(const nzUInt8* pixels, const NzCubeui& cube, nzUInt8 level = 0);
+		void Update(const nzUInt8* pixels, unsigned int srcWidth = 0, unsigned int srcHeight = 0, nzUInt8 level = 0);
+		void Update(const nzUInt8* pixels, const NzRectui& rect, unsigned int z = 0, unsigned int srcWidth = 0, unsigned int srcHeight = 0, nzUInt8 level = 0);
+		void Update(const nzUInt8* pixels, const NzCubeui& cube, unsigned int srcWidth = 0, unsigned int srcHeight = 0, nzUInt8 level = 0);
 
 		NzImage& operator=(const NzImage& image);
 		NzImage& operator=(NzImage&& image) noexcept;
 
+		static void Copy(nzUInt8* destination, const nzUInt8* source, nzUInt8 bpp, unsigned int width, unsigned int height, unsigned int depth = 1, unsigned int dstWidth = 0, unsigned int dstHeight = 0, unsigned int srcWidth = 0, unsigned int srcHeight = 0);
 		static nzUInt8 GetMaxLevel(unsigned int width, unsigned int height, unsigned int depth = 1);
 
 		struct SharedImage

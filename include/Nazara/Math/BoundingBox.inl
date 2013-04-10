@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Mathematics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -175,8 +175,9 @@ NzBoundingBox<T> NzBoundingBox<T>::operator*(T scalar) const
 template<typename T>
 NzBoundingBox<T>& NzBoundingBox<T>::operator*=(T scalar)
 {
-	aabb *= scalar;
 	obb *= scalar;
+
+	return *this;
 }
 
 template<typename T>

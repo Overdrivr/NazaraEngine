@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Jérôme Leclercq
+// Copyright (C) 2013 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -136,7 +136,7 @@ struct NzSkeletalMeshImpl
 	std::vector<NzWeight> weights;
 	NzCubef aabb;
 	nzUInt8* bindPoseBuffer;
-	const NzIndexBuffer* indexBuffer = nullptr;
+	NzIndexBufferConstRef indexBuffer;
 	unsigned int vertexCount;
 };
 
@@ -181,26 +181,10 @@ void NzSkeletalMesh::Destroy()
 {
 	if (m_impl)
 	{
-		if (m_impl->indexBuffer)
-			m_impl->indexBuffer->RemoveResourceReference();
-
 		delete[] m_impl->bindPoseBuffer;
 		delete m_impl;
 		m_impl = nullptr;
 	}
-}
-
-void NzSkeletalMesh::Finish()
-{
-	#if NAZARA_UTILITY_SAFE
-	if (!m_impl)
-	{
-		NazaraError("Skeletal mesh not created");
-		return;
-	}
-	#endif
-
-	// Rien à faire de particulier
 }
 
 const NzCubef& NzSkeletalMesh::GetAABB() const
@@ -401,11 +385,5 @@ void NzSkeletalMesh::Skin(NzMeshVertex* outputBuffer, const NzSkeleton* skeleton
 
 void NzSkeletalMesh::SetIndexBuffer(const NzIndexBuffer* indexBuffer)
 {
-	if (m_impl->indexBuffer)
-		m_impl->indexBuffer->RemoveResourceReference();
-
-	if (indexBuffer)
-		indexBuffer->AddResourceReference();
-
 	m_impl->indexBuffer = indexBuffer;
 }
