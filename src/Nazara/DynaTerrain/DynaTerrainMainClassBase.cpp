@@ -40,8 +40,8 @@ void NzDynaTerrainMainClassBase::CreateIndexBuffer(unsigned int bufferCapacity, 
     for(int i(0) ; i < 4 ; ++i)
     {
         rowIndex[i*6] = i;
-        rowIndex[i*6+1] = i + 1;
-        rowIndex[i*6+2] = i + 6;
+        rowIndex[i*6+1] = i + 6;
+        rowIndex[i*6+2] = i + 1;
         rowIndex[i*6+3] = i;
         rowIndex[i*6+4] = i + 5;
         rowIndex[i*6+5] = i + 6;
@@ -84,6 +84,14 @@ nzSceneNodeType NzDynaTerrainMainClassBase::GetSceneNodeType() const
 
 void NzDynaTerrainMainClassBase::Draw() const
 {
+    if (!m_transformMatrixUpdated)
+		UpdateTransformMatrix();
+
+    NzRenderer::SetMatrix(nzMatrixType_World,m_transformMatrix);
+    NzRenderer::SetFaceCulling(nzFaceCulling_Back);
+    //NzRenderer::Enable(nzRendererParameter_Blend, false);
+    NzRenderer::Enable(nzRendererParameter_DepthTest, true);
+    //NzRenderer::Enable(nzRendererParameter_FaceCulling, false);
     NzRenderer::SetShader(&m_shader);
     NzRenderer::SetIndexBuffer(m_indexBuffer);
 }

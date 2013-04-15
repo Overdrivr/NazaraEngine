@@ -25,6 +25,7 @@ class NAZARA_API NzTerrainQuadTree
 {
     public:
         friend class NzTerrainInternalNode;
+        friend class NzTerrainConfiguration;
 
         NzTerrainQuadTree(const NzTerrainConfiguration& configuration, NzHeightSource2D* heightSource);
         NzTerrainQuadTree(const NzPlanetConfiguration& configuration, NzHeightSource3D* heightSource, const NzEulerAnglesf& quadtreeOrientation = NzEulerAnglesf(0.f,0.f,0.f));

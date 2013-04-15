@@ -269,15 +269,24 @@ unsigned int NzTerrainQuadTree::GetSubdivisionsAmount()
 
 NzVector3f NzTerrainQuadTree::GetVertexPosition(const NzTerrainNodeID& nodeID, int x, int y)
 {
+    ///Les terrains sont centrées en 0
+    ///Avec le système de node
+    ///Leur position "affichée" peut changer à l'exécution
+    ///La configuration ne peut donc pas contenir la position du terrain, ce doit être géré par lee système de node
+    ///Néanmoins, pour un terrain infini, les quadtree autres que le central doivent avoir un offset
+    ///Par conséquent la configuration contient la taille du terrain en floattant
+    ///Et un offset (x,y) en coordonnées entières
+
     //Note : nodeID.depth should never be < 0
     float power = 1.f/(1 << nodeID.depth);
     NzVector3f position;
+
     switch(m_type)
     {
         case TERRAIN:
-            position.x = m_terrainConfiguration.terrainSize * (x * 0.25f + nodeID.locx) * power - m_halfTerrainSize + m_commonConfiguration.center.x;
-            position.z = m_terrainConfiguration.terrainSize * (y * 0.25f + nodeID.locy) * power - m_halfTerrainSize + m_commonConfiguration.center.z;
-            position.y = m_heightSource2D->GetHeight(position.x,position.z) * m_commonConfiguration.maxHeight + m_commonConfiguration.center.y;
+            position.x = m_terrainConfiguration.terrainSize * (m_commonConfiguration.x_offset + (x * 0.25f + nodeID.locx) * power);
+            position.z = m_terrainConfiguration.terrainSize * (m_commonConfiguration.y_offset + (y * 0.25f + nodeID.locy) * power);
+            position.y = m_heightSource2D->GetHeight(position.x,position.z) * m_commonConfiguration.maxHeight;
             return m_rotationMatrix.Transform(position);
         break;
 
@@ -301,7 +310,7 @@ NzVector3f NzTerrainQuadTree::GetVertexPosition(const NzTerrainNodeID& nodeID, i
             position.Normalize();
             position *= m_planetConfiguration.planetRadius + height;
 
-            position += m_commonConfiguration.center;
+            ///position += m_commonConfiguration.center;
 
             return position;
 

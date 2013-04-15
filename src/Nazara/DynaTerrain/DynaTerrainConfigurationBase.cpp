@@ -11,8 +11,6 @@ NzDynaTerrainConfigurationBase::NzDynaTerrainConfigurationBase()
 {
     //La hauteur maximale du terrain/planète (sous condition que la source de hauteur renvoie bien des valeurs dans [0;1])
     maxHeight = 100.f;
-    //Le centre du terrain/planète
-    center = NzVector3f(0.f,0.f,0.f);
     //La précision minimale du terrain/planète (= le quadtree sera subdivisé équitablement jusqu'à cette profondeur)
     minPrecision = 2;
     //La précision maximale engendrée par la plus forte variation de pente
@@ -31,6 +29,9 @@ NzDynaTerrainConfigurationBase::NzDynaTerrainConfigurationBase()
     fragmentShader = "unset_path_to_fragment_shader_file/unset_fragment_shader.frag";
     //Le chemin vers la texture du terrain
     groundTextures = "unset_path_to_terrain_texture_file/unset_terrain_texture.jpg";
+
+    x_offset = 0;
+    y_offset = 0;
 }
 
 NzDynaTerrainConfigurationBase::~NzDynaTerrainConfigurationBase()

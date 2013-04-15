@@ -17,6 +17,11 @@ class NAZARA_API NzDynaTerrainConfigurationBase
         //-Slope variation
     //Each method accepts various parameters, but there are several conditions over these parameters
     //This class helps configurating the quadtree and checks input parameters
+
+    //friend class NzDynamicTerrain;
+    //friend class NzDynamicPlanet;
+    friend class NzDynaTerrainMainClassBase;
+    friend class NzTerrainQuadTree;
     public:
         NzDynaTerrainConfigurationBase();
         ~NzDynaTerrainConfigurationBase();
@@ -26,7 +31,6 @@ class NAZARA_API NzDynaTerrainConfigurationBase
         virtual bool IsValid() const;
 
         float maxHeight;
-        NzVector3f center;
 
         unsigned int minPrecision;
 
@@ -42,7 +46,10 @@ class NAZARA_API NzDynaTerrainConfigurationBase
         NzString groundTextures;
 
     protected:
+        int x_offset;
+        int y_offset;
     private:
+
 };
 
 #endif // NAZARA_DYNATERRAINCONFIGURATIONBASE_HPP

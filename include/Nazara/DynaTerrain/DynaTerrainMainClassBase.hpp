@@ -21,7 +21,6 @@
 
 //TODO : modifier shader du terrain pour qu'il fonctionne avec n'importe quelle direction (slope, altitude)
 //FIX ME : Nommage des méthodes innaproprié, renforcer la sécurité
-//FIX ME : sortir les shaders d'ici
 
 class NAZARA_API NzDynaTerrainMainClassBase : public NzDrawable, public NzSceneNode
 {

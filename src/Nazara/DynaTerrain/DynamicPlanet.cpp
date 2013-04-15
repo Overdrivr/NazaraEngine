@@ -42,14 +42,14 @@ void NzDynamicPlanet::Initialize()
     //float radius = 2000.f;
 
     //m_configuration.center += NzVector3f(-m_configuration.planetRadius,m_configuration.planetRadius,-m_configuration.planetRadius);
-    std::cout<<m_configuration.center<<std::endl;
+    //std::cout<<m_configuration.center<<std::endl;
     quadtree = new NzTerrainQuadTree(m_configuration,m_heightSource);
     quadtree->Initialize();
 
     NzPlanetConfiguration second = m_configuration;
 
     //second.center += NzVector3f(0.f,-m_configuration.planetRadius/4.f,0.f);
-    std::cout<<second.center<<std::endl;
+    //std::cout<<second.center<<std::endl;
 
     quadtree2 = new NzTerrainQuadTree(second,m_heightSource,NzEulerAnglesf(0.f,0.f,-90.f));
     quadtree2->Initialize();
