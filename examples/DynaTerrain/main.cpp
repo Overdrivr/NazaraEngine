@@ -30,7 +30,7 @@ int main()
     // On créé la configuration du terrain
     NzTerrainConfiguration myConfig;
     //Les paramètres de base
-    myConfig.center = NzVector3f(0.f,0.f,0.f);//Le centre du terrain
+    //myConfig.center = NzVector3f(0.f,0.f,0.f);//Le centre du terrain
     myConfig.terrainOrientation = NzEulerAnglesf(0.f, 0.f, 0.f);//L'orientation du terrain
     myConfig.terrainSize = 4000.f;
     myConfig.maxHeight = 1000.f;//La hauteur maximale du terrain
@@ -51,10 +51,14 @@ int main()
         std::cout<<"Terrain configuration not valid..."<<std::endl;
 
     NzDynamicTerrain terrain(myConfig,&source2);
+
     cout<<"Initializing terrain, please wait..."<<endl;
     terrain.Initialize();
     cout<<"Terrain initialized successfully !"<<endl;
+
     terrain.SetParent(scene);
+    NzVector3f terrainPos(100.f,100.f,100.f);
+    terrain.SetPosition(terrainPos);
 
     /*
     MyHeightSource3D source3;
@@ -122,6 +126,21 @@ int main()
 	unsigned int fps = 0; // Compteur de FPS
 	float camSpeed = 50.f;
 	float sensitivity = 0.2f;
+
+	///Skybox
+
+	NzTexture* texture = new NzTexture;
+	if (texture->LoadCubemapFromFile("resources/skyboxsun5deg2.png"))
+	{
+		texture->SetPersistent(false);
+		NzSkyboxBackground* background = new NzSkyboxBackground(texture);
+		scene.SetBackground(background);
+	}
+	else
+	{
+		delete texture;
+		std::cout << "Failed to load skybox" << std::endl;
+	}
 
 	// Quelques variables
 	bool camMode = true;
@@ -194,6 +213,14 @@ int main()
                             terrainUpdate = !terrainUpdate;
                             break;
 
+                        case NzKeyboard::Add:
+                            terrainPos.x += 50.f;
+                            break;
+
+                        case NzKeyboard::Subtract:
+                            terrainPos.x -= 50.f;
+                            break;
+
 						default:
 							break;
 					}
@@ -237,12 +264,12 @@ int main()
             if (NzKeyboard::IsKeyPressed(NzKeyboard::LControl))
                 camera.Move(up * speed * elapsedTime, nzCoordSys_Global);
 
+            terrain.SetPosition(terrainPos);
+
 			updateClock.Restart();
 		}
 
         camera.Activate();
-		NzRenderer::Enable(nzRendererParameter_DepthTest, true);
-		NzRenderer::Clear(nzRendererClear_Color | nzRendererClear_Depth);
 		scene.Update();
 		scene.Cull();
 		scene.UpdateVisible();
@@ -255,7 +282,6 @@ int main()
             terrain.Update(camera.GetPosition());
         }
         ///-----------------
-
 
         scene.Draw();///Le terrain est dessiné ici !
 		// Nous mettons à jour l'écran
