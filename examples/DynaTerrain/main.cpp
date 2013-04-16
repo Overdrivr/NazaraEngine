@@ -200,12 +200,12 @@ int main()
 							if (drawWireframe)
 							{
 								drawWireframe = false;
-								NzRenderer::SetFaceFilling(nzFaceFilling_Fill);
+								NzRenderer::SetFaceFilling(nzFaceFilling_Fill);//FIX ME
 							}
 							else
 							{
 								drawWireframe = true;
-								NzRenderer::SetFaceFilling(nzFaceFilling_Line);
+								NzRenderer::SetFaceFilling(nzFaceFilling_Line);//FIX ME
 							}
 							break;
 
