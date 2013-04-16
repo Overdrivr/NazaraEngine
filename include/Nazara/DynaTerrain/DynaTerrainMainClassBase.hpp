@@ -16,6 +16,7 @@
 #include <Nazara/Graphics/SceneNode.hpp>
 #include <Nazara/Graphics/Drawable.hpp>
 #include <Nazara/Graphics/RenderQueue.hpp>
+#include <Nazara/Renderer/TextureSampler.hpp>
 
 /// BASE CLASS OF THE TERRAIN/PLANET
 
@@ -51,6 +52,7 @@ class NAZARA_API NzDynaTerrainMainClassBase : public NzDrawable, public NzSceneN
     private:
 
         NzTexture m_terrainTexture;
+        NzTextureSampler m_sampler;
 
         NzIndexBuffer* m_indexBuffer;
         unsigned int m_bufferCapacity;

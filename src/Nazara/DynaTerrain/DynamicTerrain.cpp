@@ -56,6 +56,9 @@ void NzDynamicTerrain::Initialize()
 
 void NzDynamicTerrain::Update(const NzVector3f& cameraPosition)
 {
-    quadtree->Update(cameraPosition);
+    //On transforme la position de la caméra du repère global dans le repère local
+    NzVector3f localCamPos = cameraPosition - this->GetPosition();
+
+    quadtree->Update(localCamPos);
     //quadtree2->Update(cameraPosition);
 }

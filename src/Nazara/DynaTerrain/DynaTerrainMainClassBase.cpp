@@ -13,7 +13,6 @@ using namespace std;
 
 NzDynaTerrainMainClassBase::NzDynaTerrainMainClassBase()
 {
-
 }
 
 NzDynaTerrainMainClassBase::~NzDynaTerrainMainClassBase()
@@ -87,12 +86,16 @@ void NzDynaTerrainMainClassBase::Draw() const
     if (!m_transformMatrixUpdated)
 		UpdateTransformMatrix();
 
+    nzUInt8 textureUnit;
+	m_shader.SendTexture(m_shader.GetUniformLocation("terrainTexture"), &m_terrainTexture, &textureUnit);
+
     NzRenderer::SetMatrix(nzMatrixType_World,m_transformMatrix);
     NzRenderer::SetFaceCulling(nzFaceCulling_Back);
     //NzRenderer::Enable(nzRendererParameter_Blend, false);
     NzRenderer::Enable(nzRendererParameter_DepthTest, true);
     //NzRenderer::Enable(nzRendererParameter_FaceCulling, false);
     NzRenderer::SetShader(&m_shader);
+    NzRenderer::SetTextureSampler(textureUnit, m_sampler);
     NzRenderer::SetIndexBuffer(m_indexBuffer);
 }
 
@@ -119,6 +122,8 @@ void NzDynaTerrainMainClassBase::Initialize(const NzDynaTerrainConfigurationBase
         std::cout<<"radius "<<configuration.higherCameraPrecision - i<<" = "<<radius<<std::endl;
         radius *= configuration.radiusSizeIncrement;
     }
+
+     m_sampler.SetWrapMode(nzSamplerWrap_Repeat);
 }
 
 bool NzDynaTerrainMainClassBase::SetShaders(const NzString& vertexShader, const NzString& fragmentShader)
