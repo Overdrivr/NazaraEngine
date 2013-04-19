@@ -91,6 +91,7 @@ void NzDynaTerrainMainClassBase::Draw() const
 
     NzRenderer::SetMatrix(nzMatrixType_World,m_transformMatrix);
     NzRenderer::SetFaceCulling(nzFaceCulling_Back);
+    NzRenderer::SetFaceFilling(m_faceFilling);
     //NzRenderer::Enable(nzRendererParameter_Blend, false);
     NzRenderer::Enable(nzRendererParameter_DepthTest, true);
     //NzRenderer::Enable(nzRendererParameter_FaceCulling, false);
@@ -124,6 +125,11 @@ void NzDynaTerrainMainClassBase::Initialize(const NzDynaTerrainConfigurationBase
     }
 
      m_sampler.SetWrapMode(nzSamplerWrap_Repeat);
+}
+
+void NzDynaTerrainMainClassBase::SetFaceFilling(const nzFaceFilling& faceFilling)
+{
+    m_faceFilling = faceFilling;
 }
 
 bool NzDynaTerrainMainClassBase::SetShaders(const NzString& vertexShader, const NzString& fragmentShader)

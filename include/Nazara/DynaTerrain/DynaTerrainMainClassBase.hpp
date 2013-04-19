@@ -38,7 +38,9 @@ class NAZARA_API NzDynaTerrainMainClassBase : public NzDrawable, public NzSceneN
 
         virtual void Initialize(const NzDynaTerrainConfigurationBase& configuration);
 
+        void SetFaceFilling(const nzFaceFilling& faceFilling);
         bool SetShaders(const NzString& vertexShader, const NzString& fragmentShader);
+
 
         virtual void Update(const NzVector3f& cameraPosition);
 
@@ -58,6 +60,7 @@ class NAZARA_API NzDynaTerrainMainClassBase : public NzDrawable, public NzSceneN
         unsigned int m_bufferCapacity;
 
         NzShader m_shader;
+        nzFaceFilling m_faceFilling;
 };
 
 #endif // NAZARA_DYNATERRAINMAINCLASSBASE_HPP
