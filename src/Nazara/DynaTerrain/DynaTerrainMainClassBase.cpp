@@ -9,14 +9,15 @@
 #include <iostream>
 #include <Nazara/DynaTerrain/Debug.hpp>
 
-using namespace std;
-
 NzDynaTerrainMainClassBase::NzDynaTerrainMainClassBase()
 {
 }
 
 NzDynaTerrainMainClassBase::~NzDynaTerrainMainClassBase()
 {
+    if(m_shader)
+        delete m_shader;
+    m_shader = nullptr;
     delete m_indexBuffer;
 }
 
@@ -25,9 +26,91 @@ void NzDynaTerrainMainClassBase::AddToRenderQueue(NzRenderQueue& renderQueue) co
     renderQueue.otherDrawables.push_back(this);
 }
 
+void NzDynaTerrainMainClassBase::BuildShader()
+{
+    const char* vertexSource =
+    "#version 140\n"
+    "in vec3 VertexPosition;\n"
+    "in vec3 VertexNormal;\n"
+    "uniform mat4 WorldViewProjMatrix;\n"
+    "out vec3 normal;\n"
+    "out vec3 position;\n"
+
+    "void main()\n"
+    "{\n"
+	"normal = VertexNormal;\n"
+	"position = VertexPosition;\n"
+    "gl_Position = WorldViewProjMatrix * vec4(VertexPosition, 1.0);\n"
+    "}\n";
+
+    const char* fragmentSource =
+    "#version 140\n"
+    "uniform sampler2D terrainTexture;\n"
+    "out vec4 out_Color;\n"
+    "in vec3 normal;\n"
+    "in vec3 position;\n"
+    "vec2 uvTileConversion(float slope, float altitude, vec2 uv);\n"
+    "void main()\n"
+    "{\n"
+    "vec3 upVector = vec3(0.0,1.0,0.0);\n"
+    "float slope = dot(normal,upVector);\n"
+    "float altitude = position.y;\n"
+    "float tex_scale = 512.0;\n"
+    "vec3 uvw = position/tex_scale;\n"
+
+    "vec3 weights = abs(normal);\n"
+    "weights = max((weights - 0.2) * 5 ,0);\n"
+    "weights /= vec3(weights.x + weights.y + weights.z);\n"
+
+    "vec2 coord1 = uvw.zy;\n"
+    "vec2 coord2 = uvw.xz;\n"
+    "vec2 coord3 = uvw.yx;\n"
+
+    "vec4 col1 = texture2D(terrainTexture,coord1);\n"
+    "vec4 col2 = texture2D(terrainTexture,coord2);\n"
+    "vec4 col3 = texture2D(terrainTexture,coord3);\n"
+
+    "out_Color = col1 * weights.xxxx + col2 * weights.yyyy + col3 * weights.zzzz;\n"
+    "}\n"
+    "vec2 uvTileConversion(float slope, float altitude, vec2 uv)\n"
+    "{\n"
+    "vec2 tile = vec2(0.0,3.0);\n"
+    "if(altitude > 600.0)\n"
+    "    tile = vec2(3.0,3.0);\n"
+    "else if(altitude < 75.0)\n"
+    "    tile = vec2(3.0,2.0);\n"
+    "else if(slope > 0.5)\n"
+    "    tile = vec2(2.0,3.0);\n"
+
+    "vec2 newUV;\n"
+    "newUV.x = uv.x*0.25 + tile.x*0.25;\n"
+    "newUV.y = uv.y*0.25 + tile.y*0.25;\n"
+    "return newUV;\n"
+    "}\n";
+
+    m_shader = new NzShader(nzShaderLanguage_GLSL);
+
+    if (!m_shader->Load(nzShaderType_Fragment, fragmentSource))
+    {
+        NazaraError("Failed to load fragment shader");
+        return;
+    }
+
+    if (!m_shader->Load(nzShaderType_Vertex, vertexSource))
+    {
+        NazaraError("Failed to load vertex shader");
+        return;
+    }
+
+    if (!m_shader->Compile())
+    {
+        NazaraError("Failed to compile shader");
+        return;
+    }
+}
+
 void NzDynaTerrainMainClassBase::CreateIndexBuffer(unsigned int bufferCapacity, bool appendConfigurations)
 {
-    std::cout<<"Creating index buffer with capacity : "<<bufferCapacity<<std::endl;
     m_bufferCapacity = bufferCapacity;
     //On construit l'index buffer
     //taille totale : 1750 * 96 = 168000
@@ -87,7 +170,7 @@ void NzDynaTerrainMainClassBase::Draw() const
 		UpdateTransformMatrix();
 
     nzUInt8 textureUnit;
-	m_shader.SendTexture(m_shader.GetUniformLocation("terrainTexture"), &m_terrainTexture, &textureUnit);
+	m_shader->SendTexture(m_shader->GetUniformLocation("terrainTexture"), &m_terrainTexture, &textureUnit);
 
     NzRenderer::SetMatrix(nzMatrixType_World,m_transformMatrix);
     NzRenderer::SetFaceCulling(nzFaceCulling_Back);
@@ -95,26 +178,19 @@ void NzDynaTerrainMainClassBase::Draw() const
     //NzRenderer::Enable(nzRendererParameter_Blend, false);
     NzRenderer::Enable(nzRendererParameter_DepthTest, true);
     //NzRenderer::Enable(nzRendererParameter_FaceCulling, false);
-    NzRenderer::SetShader(&m_shader);
+    NzRenderer::SetShader(m_shader);
     NzRenderer::SetTextureSampler(textureUnit, m_sampler);
     NzRenderer::SetIndexBuffer(m_indexBuffer);
 }
 
 void NzDynaTerrainMainClassBase::Initialize(const NzDynaTerrainConfigurationBase& configuration)
 {
-    SetShaders(configuration.vertexShader,configuration.fragmentShader);
+    BuildShader();
 
     if(!m_terrainTexture.LoadFromFile(configuration.groundTextures))
         std::cout<<"Could not load texture "<<configuration.groundTextures<<std::endl;
 
     //m_terrainTexture.EnableMipmapping(false);
-
-    int i = m_shader.GetUniformLocation("terrainTexture");
-
-    if(i == -1)
-        std::cout<<"Could not retrieve uniform location"<<std::endl;
-
-    m_shader.SendTexture(i,&m_terrainTexture);
 
 
     float radius = configuration.higherCameraPrecisionRadius;
@@ -130,42 +206,6 @@ void NzDynaTerrainMainClassBase::Initialize(const NzDynaTerrainConfigurationBase
 void NzDynaTerrainMainClassBase::SetFaceFilling(const nzFaceFilling& faceFilling)
 {
     m_faceFilling = faceFilling;
-}
-
-bool NzDynaTerrainMainClassBase::SetShaders(const NzString& vertexShader, const NzString& fragmentShader)
-{
-    if (!m_shader.Create(nzShaderLanguage_GLSL))
-    {
-        std::cout << "Failed to load shader" << std::endl;
-        std::getchar();
-        return false;
-    }
-
-    if (!m_shader.LoadFromFile(nzShaderType_Fragment, fragmentShader))
-    {
-        std::cout << "Failed to load fragment shader from file" << std::endl;
-        std::cout << "Log: " << m_shader.GetLog() << std::endl;
-        std::getchar();
-        return false;
-    }
-
-    if (!m_shader.LoadFromFile(nzShaderType_Vertex, vertexShader))
-    {
-        std::cout << "Failed to load vertex shader from file" << std::endl;
-        std::cout << "Log: " << m_shader.GetLog() << std::endl;
-        std::getchar();
-        return false;
-    }
-
-    if (!m_shader.Compile())
-    {
-        std::cout << "Failed to compile shader" << std::endl;
-        std::cout << "Log: " << m_shader.GetLog() << std::endl;
-        std::getchar();
-        return false;
-    }
-
-    return true;
 }
 
 void NzDynaTerrainMainClassBase::Update(const NzVector3f& cameraPosition)

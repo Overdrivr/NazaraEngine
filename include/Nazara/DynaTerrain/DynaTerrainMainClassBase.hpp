@@ -29,8 +29,6 @@ class NAZARA_API NzDynaTerrainMainClassBase : public NzDrawable, public NzSceneN
         NzDynaTerrainMainClassBase();
         ~NzDynaTerrainMainClassBase();
 
-        virtual void AddToRenderQueue(NzRenderQueue& renderQueue) const;
-
         virtual const NzBoundingBoxf& GetBoundingBox() const;
 		virtual nzSceneNodeType GetSceneNodeType() const;
 
@@ -39,13 +37,13 @@ class NAZARA_API NzDynaTerrainMainClassBase : public NzDrawable, public NzSceneN
         virtual void Initialize(const NzDynaTerrainConfigurationBase& configuration);
 
         void SetFaceFilling(const nzFaceFilling& faceFilling);
-        bool SetShaders(const NzString& vertexShader, const NzString& fragmentShader);
-
 
         virtual void Update(const NzVector3f& cameraPosition);
 
     protected:
+        virtual void AddToRenderQueue(NzRenderQueue& renderQueue) const;
 
+        void BuildShader();
         void CreateIndexBuffer(unsigned int bufferCapacity, bool appendConfigurations = false);
 
         virtual bool VisibilityTest(const NzFrustumf& frustum);
@@ -59,7 +57,7 @@ class NAZARA_API NzDynaTerrainMainClassBase : public NzDrawable, public NzSceneN
         NzIndexBuffer* m_indexBuffer;
         unsigned int m_bufferCapacity;
 
-        NzShader m_shader;
+        NzShader* m_shader;
         nzFaceFilling m_faceFilling;
 };
 
