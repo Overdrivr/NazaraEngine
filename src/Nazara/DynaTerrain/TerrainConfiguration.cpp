@@ -10,7 +10,7 @@
 NzTerrainConfiguration::NzTerrainConfiguration()
 {
     //Taille d'un côté du terrain
-    terrainSize = 2000.f;
+    terrainSize = 4000.f;
     //La rotation du terrain dans les trois axes exprimé en angles d'euler
     terrainOrientation = NzEulerAnglesf(0.f,0.f,0.f);
 }

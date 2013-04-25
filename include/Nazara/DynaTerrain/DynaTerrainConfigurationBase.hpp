@@ -18,8 +18,6 @@ class NAZARA_API NzDynaTerrainConfigurationBase
     //Each method accepts various parameters, but there are several conditions over these parameters
     //This class helps configurating the quadtree and checks input parameters
 
-    //friend class NzDynamicTerrain;
-    //friend class NzDynamicPlanet;
     friend class NzDynaTerrainMainClassBase;
     friend class NzTerrainQuadTree;
     public:
@@ -41,8 +39,6 @@ class NAZARA_API NzDynaTerrainConfigurationBase
         unsigned int cameraRadiusAmount;
         float radiusSizeIncrement;
 
-        NzString vertexShader;
-        NzString fragmentShader;
         NzString groundTextures;
 
     protected:

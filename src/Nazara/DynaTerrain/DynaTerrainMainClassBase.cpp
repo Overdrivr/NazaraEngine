@@ -9,8 +9,11 @@
 #include <iostream>
 #include <Nazara/DynaTerrain/Debug.hpp>
 
+using namespace std;
+
 NzDynaTerrainMainClassBase::NzDynaTerrainMainClassBase()
 {
+    m_faceFilling = nzFaceFilling_Fill;
 }
 
 NzDynaTerrainMainClassBase::~NzDynaTerrainMainClassBase()
@@ -175,6 +178,7 @@ void NzDynaTerrainMainClassBase::Draw() const
     NzRenderer::SetMatrix(nzMatrixType_World,m_transformMatrix);
     NzRenderer::SetFaceCulling(nzFaceCulling_Back);
     NzRenderer::SetFaceFilling(m_faceFilling);
+
     //NzRenderer::Enable(nzRendererParameter_Blend, false);
     NzRenderer::Enable(nzRendererParameter_DepthTest, true);
     //NzRenderer::Enable(nzRendererParameter_FaceCulling, false);

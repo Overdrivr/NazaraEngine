@@ -39,19 +39,9 @@ void NzDynamicPlanet::Initialize()
     //FIXME : Construire l'index buffer, en coordination avec le dispatcher
     NzDynaTerrainMainClassBase::CreateIndexBuffer(256);
 
-    //float radius = 2000.f;
-
-    //m_configuration.center += NzVector3f(-m_configuration.planetRadius,m_configuration.planetRadius,-m_configuration.planetRadius);
-    //std::cout<<m_configuration.center<<std::endl;
     quadtree = new NzTerrainQuadTree(m_configuration,m_heightSource);
     quadtree->Initialize();
-
-    NzPlanetConfiguration second = m_configuration;
-
-    //second.center += NzVector3f(0.f,-m_configuration.planetRadius/4.f,0.f);
-    //std::cout<<second.center<<std::endl;
-
-    quadtree2 = new NzTerrainQuadTree(second,m_heightSource,NzEulerAnglesf(0.f,0.f,-90.f));
+    quadtree2 = new NzTerrainQuadTree(m_configuration,m_heightSource,NzEulerAnglesf(0.f,0.f,-90.f));
     quadtree2->Initialize();
 
     quadtree->ConnectNeighbor(quadtree2,RIGHT);
@@ -59,6 +49,9 @@ void NzDynamicPlanet::Initialize()
 
 void NzDynamicPlanet::Update(const NzVector3f& cameraPosition)
 {
-    quadtree->Update(cameraPosition);
-    quadtree2->Update(cameraPosition);
+     //On transforme la position de la caméra du repère global dans le repère local
+    NzVector3f localCamPos = cameraPosition - this->GetPosition();
+
+    quadtree->Update(localCamPos);
+    quadtree2->Update(localCamPos);
 }

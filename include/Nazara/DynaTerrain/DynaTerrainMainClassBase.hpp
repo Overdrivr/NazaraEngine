@@ -20,6 +20,7 @@
 
 /// BASE CLASS OF THE TERRAIN/PLANET
 
+//TODO : Créer une seule fois l'index buffer pour tous les terrains
 //TODO : modifier shader du terrain pour qu'il fonctionne avec n'importe quelle direction (slope, altitude)
 //FIX ME : Nommage des méthodes innaproprié, renforcer la sécurité
 

@@ -24,78 +24,56 @@ int main()
 
 	NzScene scene;
 
-    ///Initialisation du terrain
+    ///-----------Initialisation du terrain---------------
     // On instancie notre source de hauteur personnalisée, définissant la hauteur du terrain en tout point
     MyHeightSource2D source2;
     // On créé la configuration du terrain
-    NzTerrainConfiguration myConfig;
+    NzTerrainConfiguration myTerrainConfig;
     //Les paramètres de base
-    //myConfig.center = NzVector3f(0.f,0.f,0.f);//Le centre du terrain
-    myConfig.terrainOrientation = NzEulerAnglesf(0.f, 0.f, 0.f);//L'orientation du terrain
-    myConfig.terrainSize = 4000.f;
-    myConfig.maxHeight = 1000.f;//La hauteur maximale du terrain
-    myConfig.minPrecision = 2;//La précision minimale du terrain
-    myConfig.fragmentShader = "resources/terrain_shader.frag";
-    myConfig.vertexShader = "resources/terrain_shader.vert";
-    myConfig.groundTextures = "resources/debug_grid2.png";//"resources/debug_grid2.png";//"resources/debug_texture2.png";//"resources/debug_texture_flat.png";"resources/dt_tiles.jpg"
-    //Le paramètre lié à la précision des pentes
-    myConfig.maxSlopePrecision = 2;//La précision maximale en cas de très forte pente
+    myTerrainConfig.groundTextures = "resources/debug_grid2.png";
     //Les paramètres liés à la précision autour de la caméra
-    myConfig.higherCameraPrecision = 9;//La précision maximale engendrée par la caméra
-    myConfig.cameraRadiusAmount = 7;//Le nombre max de rayons de précision autour de la caméra
-    myConfig.higherCameraPrecisionRadius = 100.f;//Le rayon du cercle le plus précis (à garder très petit si la précision est importante)
-    myConfig.radiusSizeIncrement = 2.5f;//L'incrément en taille entre deux rayons consécutifs
+    myTerrainConfig.minPrecision = 2;//La précision minimale du terrain
+    myTerrainConfig.higherCameraPrecision = 9;//La précision maximale engendrée par la caméra
+    myTerrainConfig.cameraRadiusAmount = 7;//Le nombre max de rayons de précision autour de la caméra (= 9-2)
+    myTerrainConfig.higherCameraPrecisionRadius = 100.f;//Le rayon du cercle le plus précis (à garder très petit si la précision est importante)
+    myTerrainConfig.radiusSizeIncrement = 2.5f;//L'incrément en taille entre deux rayons consécutifs
 
-    //Si la configuration n'est pas bonne, elle sera réparée au plus proche automatiquement ( TODO !)
-    if(!myConfig.IsValid())
-        std::cout<<"Terrain configuration not valid..."<<std::endl;
+    //Si la configuration n'est pas bonne, elle sera réparée au plus proche automatiquement
+    if(!myTerrainConfig.IsValid())
+        std::cout<<"Terrain configuration not valid, autofix will be used."<<std::endl;
 
-    NzDynamicTerrain terrain(myConfig,&source2);
-
-    cout<<"Initializing terrain, please wait..."<<endl;
+    NzDynamicTerrain terrain(myTerrainConfig,&source2);
     terrain.Initialize();
-    cout<<"Terrain initialized successfully !"<<endl;
 
     terrain.SetParent(scene);
     NzVector3f terrainPos(100.f,100.f,100.f);
     terrain.SetPosition(terrainPos);
 
-    /*
+    ///-----------Initialisation de la planète-----------
     MyHeightSource3D source3;
-    NzPlanetConfiguration myConfig;
+    NzPlanetConfiguration myPlanetConfig;
 
-    ///Les paramètres de base
-    myConfig.center = NzVector3f(0.f,0.f,0.f);//Le centre du terrain
-    myConfig.planetRadius = 6378.f;
-    myConfig.maxHeight = 884.8;//La hauteur maximale du terrain
-    myConfig.minPrecision = 2;//La précision minimale du terrain
-    myConfig.fragmentShader = "resources/terrain_shader.frag";
-    myConfig.vertexShader = "resources/terrain_shader.vert";
-    myConfig.groundTextures = "resources/debug_grid2.png";//"resources/debug_grid2.png";//"resources/debug_texture2.png";//"resources/debug_texture_flat.png";"resources/dt_tiles.jpg"
-    ///Le paramètre lié à la précision des pentes
-    myConfig.maxSlopePrecision = 2;//La précision maximale en cas de très forte pente
-    ///Les paramètres liés à la précision autour de la caméra
-    myConfig.higherCameraPrecision = 12;//La précision maximale engendrée par la caméra
-    myConfig.cameraRadiusAmount = 9;//Le nombre max de rayons de précision autour de la caméra
-    myConfig.higherCameraPrecisionRadius = 10.f;//Le rayon du cercle le plus précis (à garder très petit si la précision est importante)
-    myConfig.radiusSizeIncrement = 2.5f;//L'incrément en taille entre deux rayons consécutifs
-    //Si la configuration n'est pas bonne, elle sera réparée au plus proche automatiquement ( TODO !)
-    if(!myConfig.IsValid())
-        std::cout<<"Terrain configuration not valid..."<<std::endl;
+    //Les paramètres de base (quasi-identiques au terrainà
+    myPlanetConfig.planetRadius = 6378.f;//Le rayon de la planète
+    myPlanetConfig.maxHeight = 884.8;
+    myPlanetConfig.minPrecision = 2;
+    myPlanetConfig.groundTextures = "resources/debug_grid2.png";
+    myPlanetConfig.higherCameraPrecision = 12;
+    myPlanetConfig.cameraRadiusAmount = 9;
+    myPlanetConfig.higherCameraPrecisionRadius = 10.f;
+    myPlanetConfig.radiusSizeIncrement = 2.5f;
 
-    NzDynamicPlanet planet(myConfig,&source3);
-    //planet.Initialize();
-    cout<<"Planet initialized successfully !"<<endl;
-*/
+    if(!myPlanetConfig.IsValid())
+        std::cout<<"Planet configuration not valid, autofix will be used."<<std::endl;
 
+    NzDynamicPlanet planet(myPlanetConfig,&source3);
+    planet.Initialize();
 
+    planet.SetParent(scene);
+    NzVector3f planetPos(7000.f,500.f,100.f);
+    planet.SetPosition(planetPos);
 
-    //cout<<"Nombre de feuilles  : "<<quad.GetLeafNodesAmount()<<endl;
-    //cout<<"Nombre de triangles : "<<quad.GetLeafNodesAmount()*32<<endl;
-    cout<<"---------------------------------------------------------------"<<endl;
-
-
-
+    cout<<"Terrain & Planet initialized successfully."<<endl;
 
     ///Code classique pour ouvrir une fenêtre avec Nazara
     NzString windowTitle("DynaTerrain example");
@@ -104,6 +82,8 @@ int main()
 	window.EnableVerticalSync(false);
 	window.SetCursor(nzWindowCursor_None);
     NzRenderer::SetClearColor(25, 25, 25);
+
+    std::cout<<"Window opened successfully."<<endl;
 
 	/// Caméra
 	NzVector3f camPos(-2000.f, 1800.f, 2000.f);
@@ -135,17 +115,20 @@ int main()
 		texture->SetPersistent(false);
 		NzSkyboxBackground* background = new NzSkyboxBackground(texture);
 		scene.SetBackground(background);
+		std::cout<<"Skybox loaded successfully."<<endl;
 	}
 	else
 	{
 		delete texture;
-		std::cout << "Failed to load skybox" << std::endl;
+		std::cout << "Failed to load skybox." << std::endl;
 	}
 
 	// Quelques variables
 	bool camMode = true;
     bool drawWireframe = false;
     bool terrainUpdate = true;
+
+    std::cout<<"Starting main loop"<<std::endl;
 
 	while (window.IsOpen())
 	{
@@ -201,11 +184,13 @@ int main()
 							{
 								drawWireframe = false;
 								terrain.SetFaceFilling(nzFaceFilling_Fill);//FIX ME
+								planet.SetFaceFilling(nzFaceFilling_Fill);
 							}
 							else
 							{
 								drawWireframe = true;
 								terrain.SetFaceFilling(nzFaceFilling_Line);//FIX ME
+								planet.SetFaceFilling(nzFaceFilling_Line);
 							}
 							break;
 
@@ -214,11 +199,11 @@ int main()
                             break;
 
                         case NzKeyboard::Add:
-                            terrainPos.x += 50.f;
+                            //terrainPos.x += 50.f;
                             break;
 
                         case NzKeyboard::Subtract:
-                            terrainPos.x -= 50.f;
+                            //terrainPos.x -= 50.f;
                             break;
 
 						default:
@@ -264,7 +249,7 @@ int main()
             if (NzKeyboard::IsKeyPressed(NzKeyboard::LControl))
                 camera.Move(up * speed * elapsedTime, nzCoordSys_Global);
 
-            terrain.SetPosition(terrainPos);
+            //terrain.SetPosition(terrainPos);
 
 			updateClock.Restart();
 		}
@@ -278,7 +263,7 @@ int main()
         //On met à jour le terrain
         if(terrainUpdate)
         {
-            //planet.Update(camera.GetPosition());
+            planet.Update(camera.GetPosition());
             terrain.Update(camera.GetPosition());
         }
         ///-----------------
