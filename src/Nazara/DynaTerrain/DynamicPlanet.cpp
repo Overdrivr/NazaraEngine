@@ -21,15 +21,19 @@ NzDynamicPlanet::NzDynamicPlanet(const NzPlanetConfiguration& configuration, NzH
 
 NzDynamicPlanet::~NzDynamicPlanet()
 {
-    delete quadtree;
-    delete quadtree2;
+    for (auto& it: quadtrees)
+        delete it;
 }
 
 void NzDynamicPlanet::Draw() const
 {
     NzDynaTerrainMainClassBase::Draw();
-    quadtree->Render();
-    quadtree2->Render();
+    quadtrees.at(0)->Render();
+    quadtrees.at(1)->Render();
+    quadtrees.at(2)->Render();
+    quadtrees.at(3)->Render();
+    //quadtrees.at(4).Render();
+    //quadtrees.at(5).Render();
 }
 
 void NzDynamicPlanet::Initialize()
@@ -39,12 +43,19 @@ void NzDynamicPlanet::Initialize()
     //FIXME : Construire l'index buffer, en coordination avec le dispatcher
     NzDynaTerrainMainClassBase::CreateIndexBuffer(256);
 
-    quadtree = new NzTerrainQuadTree(m_configuration,m_heightSource);
-    quadtree->Initialize();
-    quadtree2 = new NzTerrainQuadTree(m_configuration,m_heightSource,NzEulerAnglesf(0.f,0.f,-90.f));
-    quadtree2->Initialize();
+    quadtrees.emplace_back(new NzTerrainQuadTree(m_configuration,m_heightSource));
+    quadtrees.at(0)->Initialize();
+    quadtrees.emplace_back(new NzTerrainQuadTree(m_configuration,m_heightSource,NzEulerAnglesf(0.f,0.f,-90.f)));
+    quadtrees.at(1)->Initialize();
+    quadtrees.emplace_back(new NzTerrainQuadTree(m_configuration,m_heightSource,NzEulerAnglesf(0.f,0.f,-180.f)));
+    quadtrees.at(2)->Initialize();
+    quadtrees.emplace_back(new NzTerrainQuadTree(m_configuration,m_heightSource,NzEulerAnglesf(0.f,0.f,90.f)));
+    quadtrees.at(3)->Initialize();
 
-    quadtree->ConnectNeighbor(quadtree2,RIGHT);
+    quadtrees.at(0)->ConnectNeighbor(quadtrees.at(1),RIGHT);
+    quadtrees.at(1)->ConnectNeighbor(quadtrees.at(2),RIGHT);
+    quadtrees.at(2)->ConnectNeighbor(quadtrees.at(3),RIGHT);
+    quadtrees.at(3)->ConnectNeighbor(quadtrees.at(0),RIGHT);
 }
 
 void NzDynamicPlanet::Update(const NzVector3f& cameraPosition)
@@ -52,6 +63,10 @@ void NzDynamicPlanet::Update(const NzVector3f& cameraPosition)
      //On transforme la position de la caméra du repère global dans le repère local
     NzVector3f localCamPos = cameraPosition - this->GetPosition();
 
-    quadtree->Update(localCamPos);
-    quadtree2->Update(localCamPos);
+    quadtrees.at(0)->Update(localCamPos);
+    quadtrees.at(1)->Update(localCamPos);
+    quadtrees.at(2)->Update(localCamPos);
+    quadtrees.at(3)->Update(localCamPos);
+    //quadtrees.at(4).Update(localCamPos);
+    //quadtrees.at(5).Update(localCamPos);
 }

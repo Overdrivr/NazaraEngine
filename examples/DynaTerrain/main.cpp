@@ -54,13 +54,13 @@ int main()
     NzPlanetConfiguration myPlanetConfig;
 
     //Les paramètres de base (quasi-identiques au terrainà
-    myPlanetConfig.planetRadius = 6378.f;//Le rayon de la planète
-    myPlanetConfig.maxHeight = 884.8;
+    myPlanetConfig.planetRadius = 4000.f;//Le rayon de la planète
+    myPlanetConfig.maxHeight = 2000.f;
     myPlanetConfig.minPrecision = 2;
     myPlanetConfig.groundTextures = "resources/debug_grid2.png";
-    myPlanetConfig.higherCameraPrecision = 12;
-    myPlanetConfig.cameraRadiusAmount = 9;
-    myPlanetConfig.higherCameraPrecisionRadius = 10.f;
+    myPlanetConfig.higherCameraPrecision = 9;
+    myPlanetConfig.cameraRadiusAmount = 7;
+    myPlanetConfig.higherCameraPrecisionRadius = 100.f;
     myPlanetConfig.radiusSizeIncrement = 2.5f;
 
     if(!myPlanetConfig.IsValid())
@@ -70,7 +70,7 @@ int main()
     planet.Initialize();
 
     planet.SetParent(scene);
-    NzVector3f planetPos(7000.f,500.f,100.f);
+    NzVector3f planetPos(8000.f,9000.f,8000.f);
     planet.SetPosition(planetPos);
 
     cout<<"Terrain & Planet initialized successfully."<<endl;

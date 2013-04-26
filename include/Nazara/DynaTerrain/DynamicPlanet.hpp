@@ -12,6 +12,7 @@
 #include <Nazara/DynaTerrain/TerrainConfiguration.hpp>
 #include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
 #include <Nazara/DynaTerrain/DynaTerrainMainClassBase.hpp>
+#include <vector>
 
 //TODO : modifier shader du terrain pour qu'il fonctionne avec n'importe quelle direction (slope, altitude)
 
@@ -35,8 +36,8 @@ class NAZARA_API NzDynamicPlanet : public NzDynaTerrainMainClassBase
         NzTexture m_terrainTexture;
 
         NzShader m_shader;
-        NzTerrainQuadTree* quadtree;
-        NzTerrainQuadTree* quadtree2;
+        std::vector<NzTerrainQuadTree*> quadtrees;
+        //NzTerrainQuadTree* quadtree2;
 };
 
 #endif // NAZARA_DYNAMICPLANET_HPP
