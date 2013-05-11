@@ -49,17 +49,17 @@ void NzDynamicTerrain::Initialize()
     NzTerrainConfiguration second = m_configuration;
 
     second.x_offset = 0;
-    second.y_offset = 2;
+    second.y_offset = 1;
     quadtree2 = new NzTerrainQuadTree(second,m_heightSource);
     quadtree2->Initialize();
 
-    //quadtree->ConnectNeighbor(quadtree2,BOTTOM,TOP);
+    quadtree->ConnectNeighbor(quadtree2,BOTTOM,TOP);
     NzTerrainConfiguration third = m_configuration;
-    third.x_offset = 2;
+    third.x_offset = 1;
     third.y_offset = 0;
     quadtree3 = new NzTerrainQuadTree(third,m_heightSource);
     quadtree3->Initialize();
-    //quadtree->ConnectNeighbor(quadtree3,RIGHT,LEFT);
+    quadtree->ConnectNeighbor(quadtree3,RIGHT,LEFT);
     quadtree3->ConnectNeighbor(quadtree2,BOTTOM,RIGHT);
 }
 

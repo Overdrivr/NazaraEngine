@@ -28,7 +28,7 @@ void NzPatch::ComputeHeights()
     {
         j = j0 + 1;
 
-        m_vertices[0][j].ComputePosition(m_data->quadtree, m_id,NzVector2i(-1,j0));
+        m_vertices[0].at(j).ComputePosition(m_data->quadtree, m_id,NzVector2i(-1,j0));
         m_vertices[1].at(j).ComputePosition(m_data->quadtree, m_id,NzVector2i(0,j0));
         m_vertices[2].at(j).ComputePosition(m_data->quadtree, m_id,NzVector2i(1,j0));
         m_vertices[3].at(j).ComputePosition(m_data->quadtree, m_id,NzVector2i(2,j0));

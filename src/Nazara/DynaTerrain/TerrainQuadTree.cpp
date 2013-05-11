@@ -108,6 +108,9 @@ void NzTerrainQuadTree::ConnectNeighbor(NzTerrainQuadTree* neighbour, nzDirectio
     //std::cout<<"Connecting "<<callerDirection<<" w "<<calleeDirection<<" : "<<((callerDirection & calleeDirection) == 3 || (callerDirection & calleeDirection) == 12)<<std::endl;
     m_connectionType[neighbour] = ((callerDirection + calleeDirection) == 1 || (callerDirection + calleeDirection) == 5);
     neighbour->m_connectionType[this] = ((callerDirection + calleeDirection) == 1 || (callerDirection + calleeDirection) == 5);
+
+    m_connectionDirectionLookup[neighbour] = callerDirection;
+    neighbour->m_connectionDirectionLookup[this] = calleeDirection;
 }
 
 void NzTerrainQuadTree::DisconnectNeighbor(NzTerrainQuadTree* neighbour, nzDirection direction)
@@ -174,6 +177,11 @@ NzTerrainQuadTree* NzTerrainQuadTree::GetContainingQuadTree(const NzTerrainNodeI
 NzTerrainQuadTree* NzTerrainQuadTree::GetNeighbourQuadTree(nzDirection direction)
 {
     return m_neighbours[direction];
+}
+
+nzDirection NzTerrainQuadTree::GetNeighbourDirection(NzTerrainQuadTree* neighbour)
+{
+    return m_connectionDirectionLookup[neighbour];
 }
 
 bool NzTerrainQuadTree::GetIsConnectionStraight(NzTerrainQuadTree* neighbour)

@@ -152,10 +152,10 @@ NzTerrainInternalNode* NzTerrainInternalNode::GetDirectNeighbor(nzDirection dire
         if(m_data->quadtree->GetIsConnectionStraight(tempQuad))
             tempID.Normalize();//Pour passer des coordonnées du bord d'un quadtree au bord de l'autre quadtree
         else
-            {
-                tempID = m_nodeID;
-                tempID.InvertXY();//Pareil, mais dans le cas d'une connexion à 90°
-            }
+        {
+            tempID = m_nodeID;
+            tempID.InvertXY();//Pareil, mais dans le cas d'une connexion à 90°
+        }
 
         return tempQuad->GetNode(tempID);
     }
@@ -358,6 +358,15 @@ bool NzTerrainInternalNode::Refine()
     nzDirection first, second;
     NzTerrainInternalNode* temp = nullptr;
 
+    nzDirection dirDirection[4] = {TOP,BOTTOM,LEFT,RIGHT};
+    nzDirection invDirection[4] = {BOTTOM,TOP,RIGHT,LEFT};
+
+    //Contains location of neighbor's children in contact with (*this)
+    nzLocation locLUT[4][2] =  {{BOTTOMLEFT,BOTTOMRIGHT},//TOP Neighbour
+                                {TOPLEFT   ,TOPRIGHT},//BOTTOM Neighbour
+                                {TOPRIGHT  ,BOTTOMRIGHT},//LEFT Neighbour
+                                {TOPLEFT   ,BOTTOMLEFT}};//RIGHT Neighbour
+
     //Impossible de refiner si les voisins ne sont pas d'accord
     for(int i(0) ; i < 4 ; ++i)
     {
@@ -417,24 +426,43 @@ bool NzTerrainInternalNode::Refine()
     m_data->quadtree->RegisterLeaf(this);
     //CreatePatch();
     m_patch->UploadMesh();
-
-    //On met à jour les interfaces
-    nzDirection dirDirection[4] = {TOP,BOTTOM,LEFT,RIGHT};
-    nzDirection invDirection[4] = {BOTTOM,TOP,RIGHT,LEFT};
-
-    //Contains location of neighbor's children in contact with (*this)
-    nzLocation locLUT[4][2] =  {{BOTTOMLEFT,BOTTOMRIGHT},//TOP Neighbour
-                                {TOPLEFT   ,TOPRIGHT},//BOTTOM Neighbour
-                                {TOPRIGHT  ,BOTTOMRIGHT},//LEFT Neighbour
-                                {TOPLEFT   ,BOTTOMLEFT}};//RIGHT Neighbour
+    nzDirection direct;
 
     for(int i(0) ; i < 4 ; ++i)
     {
         //On signale aux voisins le refinement
         temp = this->GetDirectNeighbor(dirDirection[i]);
+        direct = static_cast<nzDirection>(i);//TOP, BOTTOM, LEFT, RIGHT
 
         if(temp != nullptr)
         {
+            //On en profite pour vérifier si le node voisin fait partie d'un autre quadtree
+            //auquel cas on récupère les directions directe et inverse (pas nécessairement opposées)
+            if(temp->m_data->quadtree != m_data->quadtree)
+            {
+                invDirection[i] = temp->m_data->quadtree->GetNeighbourDirection(m_data->quadtree);
+                direct = invDirection[i];
+                //TODO : METTRE DANS UNE FONCTION, CAR UTILISE PLEIN DE FOIS
+                switch(direct)
+                {
+                    case TOP :
+                        direct = BOTTOM;
+                    break;
+
+                    case RIGHT :
+                        direct = LEFT;
+                    break;
+
+                    case BOTTOM :
+                        direct = TOP;
+                    break;
+
+                    case LEFT :
+                        direct = RIGHT;
+                    break;
+                }
+            }
+
             if(temp->m_isLeaf)
             {
                 //This et son voisin auront le même niveau, on supprime l'interface ?
@@ -442,15 +470,15 @@ bool NzTerrainInternalNode::Refine()
             }
             else
             {
-                //This aura un niveau inférieur, on indique aux fils du voisin de générer une interface :
-                if(temp->m_children[locLUT[i][0]]->m_isLeaf)
+                //This aura un niveau inférieur, on indique aux fils du voisin de générer une interface
+                if(temp->m_children[locLUT[direct][0]]->m_isLeaf)
                 {
-                    temp->m_children[locLUT[i][0]]->m_patch->SetConfiguration(invDirection[i],1);
+                    temp->m_children[locLUT[direct][0]]->m_patch->SetConfiguration(invDirection[i],1);
                 }
 
-                if(temp->m_children[locLUT[i][1]]->m_isLeaf)
+                if(temp->m_children[locLUT[direct][1]]->m_isLeaf)
                 {
-                    temp->m_children[locLUT[i][1]]->m_patch->SetConfiguration(invDirection[i],1);
+                    temp->m_children[locLUT[direct][1]]->m_patch->SetConfiguration(invDirection[i],1);
                 }
             }
 
@@ -555,6 +583,7 @@ void NzTerrainInternalNode::HandleNeighborSubdivision(nzDirection direction, boo
         }
 
         tempNode = tempQuad->GetNode(tempID);
+        invDirection = tempQuad->GetNeighbourDirection(m_data->quadtree);
     }
 
     //Si le voisin n'existe pas (il n'y a pas de node voisin de même profondeur)
