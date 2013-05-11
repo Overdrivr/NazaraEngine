@@ -28,12 +28,12 @@ NzDynamicPlanet::~NzDynamicPlanet()
 void NzDynamicPlanet::Draw() const
 {
     NzDynaTerrainMainClassBase::Draw();
-    quadtrees.at(0)->Render();
+    //quadtrees.at(0)->Render();
     quadtrees.at(1)->Render();
-    quadtrees.at(2)->Render();
+    //quadtrees.at(2)->Render();
     quadtrees.at(3)->Render();
-    //quadtrees.at(4).Render();
-    //quadtrees.at(5).Render();
+    quadtrees.at(4)->Render();
+    //quadtrees.at(5)->Render();
 }
 
 void NzDynamicPlanet::Initialize()
@@ -51,11 +51,25 @@ void NzDynamicPlanet::Initialize()
     quadtrees.at(2)->Initialize();
     quadtrees.emplace_back(new NzTerrainQuadTree(m_configuration,m_heightSource,NzEulerAnglesf(0.f,0.f,90.f)));
     quadtrees.at(3)->Initialize();
+    quadtrees.emplace_back(new NzTerrainQuadTree(m_configuration,m_heightSource,NzEulerAnglesf(90.f,0.f,0.f)));
+    quadtrees.at(4)->Initialize();
+    quadtrees.emplace_back(new NzTerrainQuadTree(m_configuration,m_heightSource,NzEulerAnglesf(-90.f,0.f,0.f)));
+    quadtrees.at(5)->Initialize();
 
-    quadtrees.at(0)->ConnectNeighbor(quadtrees.at(1),RIGHT);
-    quadtrees.at(1)->ConnectNeighbor(quadtrees.at(2),RIGHT);
-    quadtrees.at(2)->ConnectNeighbor(quadtrees.at(3),RIGHT);
-    quadtrees.at(3)->ConnectNeighbor(quadtrees.at(0),RIGHT);
+    quadtrees.at(0)->ConnectNeighbor(quadtrees.at(1),RIGHT,LEFT);
+    quadtrees.at(1)->ConnectNeighbor(quadtrees.at(2),RIGHT,LEFT);
+    quadtrees.at(2)->ConnectNeighbor(quadtrees.at(3),RIGHT,LEFT);
+    quadtrees.at(3)->ConnectNeighbor(quadtrees.at(0),RIGHT,LEFT);
+
+    quadtrees.at(4)->ConnectNeighbor(quadtrees.at(0),TOP,BOTTOM);
+    quadtrees.at(4)->ConnectNeighbor(quadtrees.at(1),RIGHT,BOTTOM);
+    //quadtrees.at(4)->ConnectNeighbor(quadtrees.at(2),BOTTOM);
+    //quadtrees.at(4)->ConnectNeighbor(quadtrees.at(3),RIGHT,BOTTOM);
+
+    //quadtrees.at(5)->ConnectNeighbor(quadtrees.at(0),BOTTOM,TOP);
+    //quadtrees.at(5)->ConnectNeighbor(quadtrees.at(1),LEFT);
+    //quadtrees.at(5)->ConnectNeighbor(quadtrees.at(2),TOP);
+    //quadtrees.at(5)->ConnectNeighbor(quadtrees.at(3),RIGHT);
 }
 
 void NzDynamicPlanet::Update(const NzVector3f& cameraPosition)
@@ -67,6 +81,6 @@ void NzDynamicPlanet::Update(const NzVector3f& cameraPosition)
     quadtrees.at(1)->Update(localCamPos);
     quadtrees.at(2)->Update(localCamPos);
     quadtrees.at(3)->Update(localCamPos);
-    //quadtrees.at(4).Update(localCamPos);
-    //quadtrees.at(5).Update(localCamPos);
+    quadtrees.at(4)->Update(localCamPos);
+    quadtrees.at(5)->Update(localCamPos);
 }

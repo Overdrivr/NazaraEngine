@@ -18,6 +18,7 @@ class MyHeightSource3D : public NzHeightSource3D
         NzFBM3D* m_source2;
         NzHybridMultiFractal3D* m_source3;
         float resolution;
+        float resolution2;
 };
 
 #endif // MYHEIGHTSOURCE3D_HPP

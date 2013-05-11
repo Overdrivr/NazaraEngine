@@ -40,6 +40,13 @@ void NzTerrainNodeID::Normalize()
         locy -= std::pow(2,depth);
 }
 
+void NzTerrainNodeID::InvertXY()
+{
+    int tmp = locx;
+    locx = locy;
+    locy = tmp;
+}
+
 bool NzTerrainNodeID::operator<( const NzTerrainNodeID& id ) const
 {
     return (this->depth != id.depth) ? this->depth < id.depth : (this->locx != id.locx) ? this->locx < id.locx : this->locy < id.locy;

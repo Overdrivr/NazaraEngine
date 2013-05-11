@@ -20,6 +20,8 @@ class NAZARA_API NzDynaTerrainConfigurationBase
 
     friend class NzDynaTerrainMainClassBase;
     friend class NzTerrainQuadTree;
+    friend class NzDynamicTerrain;
+    friend class NzTerrainInternalNode;
     public:
         NzDynaTerrainConfigurationBase();
         ~NzDynaTerrainConfigurationBase();

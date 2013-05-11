@@ -144,13 +144,19 @@ NzTerrainInternalNode* NzTerrainInternalNode::GetDirectNeighbor(nzDirection dire
     }
     else
     {
-        NzTerrainQuadTree* tempQuad = m_data->quadtree->GetContainingQuadTree(tempID);
+        NzTerrainQuadTree* tempQuad = m_data->quadtree->GetNeighbourQuadTree(direction);
 
         if(tempQuad == nullptr)
             return nullptr;
 
-        //On convertit les coordonnées du node dans celles du quadtree voisin
-        tempID.Normalize();
+        if(m_data->quadtree->GetIsConnectionStraight(tempQuad))
+            tempID.Normalize();//Pour passer des coordonnées du bord d'un quadtree au bord de l'autre quadtree
+        else
+            {
+                tempID = m_nodeID;
+                tempID.InvertXY();//Pareil, mais dans le cas d'une connexion à 90°
+            }
+
         return tempQuad->GetNode(tempID);
     }
 }
@@ -533,16 +539,23 @@ void NzTerrainInternalNode::HandleNeighborSubdivision(nzDirection direction, boo
     }
     else
     {
-        tempQuad = m_data->quadtree->GetContainingQuadTree(tempID);
+        tempQuad = m_data->quadtree->GetNeighbourQuadTree(direction);
 
         if(tempQuad == nullptr)
             return;
 
-        //On convertit les coordonnées du node dans celles du quadtree voisin
-        tempID.Normalize();
+        if(m_data->quadtree->GetIsConnectionStraight(tempQuad))
+        {
+            tempID.Normalize();//Pour passer des coordonnées du bord d'un quadtree au bord de l'autre quadtree
+        }
+        else
+        {
+            tempID = m_nodeID;
+            tempID.InvertXY();//Pareil, mais dans le cas d'une connexion à 90°
+        }
+
         tempNode = tempQuad->GetNode(tempID);
     }
-
 
     //Si le voisin n'existe pas (il n'y a pas de node voisin de même profondeur)
     if(tempNode == nullptr)

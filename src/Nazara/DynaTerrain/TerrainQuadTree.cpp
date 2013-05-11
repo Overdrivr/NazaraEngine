@@ -88,46 +88,26 @@ void NzTerrainQuadTree::Construct()
 
 NzTerrainQuadTree::~NzTerrainQuadTree()
 {
-    cout<<"Maximum amount of operations per frame : "<<m_maxOperationsPerFrame<<std::endl;
-    cout<<"Libération de "<<m_nodesPool.GetPoolSize()<<" node(s), veuillez patientez..."<<endl;
+    //cout<<"Maximum amount of operations per frame : "<<m_maxOperationsPerFrame<<std::endl;
+    cout<<"Libération de "<<m_nodesPool.GetPoolSize()<<" node(s)."<<endl;
     NzClock clk;
     clk.Restart();
     m_nodesPool.ReleaseAll();
     m_patchesPool.ReleaseAll();
     clk.Pause();
-    cout<<"Arbre libere en "<<clk.GetMilliseconds()/1000.f<<" s "<<endl;
-    cout<<"NbNodes non supprimes : "<<m_root->GetNodeAmount()<< endl;
+    //cout<<"Arbre libere en "<<clk.GetMilliseconds()/1000.f<<" s "<<endl;
+    //cout<<"NbNodes non supprimes : "<<m_root->GetNodeAmount()<< endl;
     m_isInitialized = false;
 }
 
-void NzTerrainQuadTree::ConnectNeighbor(NzTerrainQuadTree* neighbour, nzDirection direction)
+void NzTerrainQuadTree::ConnectNeighbor(NzTerrainQuadTree* neighbour, nzDirection callerDirection, nzDirection calleeDirection)
 {
-    nzDirection invDirection = direction;
-    switch(direction)
-    {
-        case TOP :
-            invDirection = BOTTOM;
-        break;
-
-        case RIGHT :
-            invDirection = LEFT;
-        break;
-
-        case BOTTOM :
-            invDirection = TOP;
-        break;
-
-        case LEFT :
-            invDirection = RIGHT;
-        break;
-
-        default:
-            invDirection = BOTTOM;
-        break;
-    }
-
-    m_neighbours[direction] = neighbour;
-    neighbour->m_neighbours[invDirection] = this;
+    m_neighbours[callerDirection] = neighbour;
+    neighbour->m_neighbours[calleeDirection] = this;
+    //0 + 1 || 2 + 3
+    //std::cout<<"Connecting "<<callerDirection<<" w "<<calleeDirection<<" : "<<((callerDirection & calleeDirection) == 3 || (callerDirection & calleeDirection) == 12)<<std::endl;
+    m_connectionType[neighbour] = ((callerDirection + calleeDirection) == 1 || (callerDirection + calleeDirection) == 5);
+    neighbour->m_connectionType[this] = ((callerDirection + calleeDirection) == 1 || (callerDirection + calleeDirection) == 5);
 }
 
 void NzTerrainQuadTree::DisconnectNeighbor(NzTerrainQuadTree* neighbour, nzDirection direction)
@@ -189,6 +169,21 @@ NzTerrainQuadTree* NzTerrainQuadTree::GetContainingQuadTree(const NzTerrainNodeI
         return m_neighbours[BOTTOM];
 
     return nullptr;
+}
+
+NzTerrainQuadTree* NzTerrainQuadTree::GetNeighbourQuadTree(nzDirection direction)
+{
+    return m_neighbours[direction];
+}
+
+bool NzTerrainQuadTree::GetIsConnectionStraight(NzTerrainQuadTree* neighbour)
+{
+    std::map<NzTerrainQuadTree*,bool>::iterator it = m_connectionType.find(neighbour);
+
+    if(it == m_connectionType.end())
+        return false;
+    else
+        return it->second;
 }
 
 unsigned int NzTerrainQuadTree::GetLeafNodesAmount() const

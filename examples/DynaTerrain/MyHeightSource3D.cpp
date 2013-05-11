@@ -11,6 +11,7 @@ MyHeightSource3D::MyHeightSource3D()
     m_source3->SetHurstParameter(0.28);
 
     resolution = 1/2800.f;
+    resolution2 = 1/5800.f;
 }
 
 MyHeightSource3D::~MyHeightSource3D()
@@ -35,7 +36,7 @@ float MyHeightSource3D::GetNoiseValue(float x, float y, float z)
     //return (std::sin(x/100.f)+1)/2.f;
     //return m_source->GetValue(x,y,z,0.005);
     //return (m_source2->GetValue(x,y,z,resolution)+1)/2.f;
-    return (m_source3->GetValue(x,y,z,resolution)+1)/2.f;
+    return (m_source3->GetValue(x,y,z,resolution2)+1)/2.f;
     //return std::exp(y/100.f);
     //return 0.f;
 }

@@ -19,6 +19,7 @@ class NAZARA_API NzTerrainNodeID
 
         bool IsValid() const;
 
+        void InvertXY();
         void Normalize();
 
         bool operator<( const NzTerrainNodeID& id ) const;

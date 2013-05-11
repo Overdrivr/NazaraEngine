@@ -33,8 +33,8 @@ int main()
     myTerrainConfig.groundTextures = "resources/debug_grid2.png";
     //Les paramètres liés à la précision autour de la caméra
     myTerrainConfig.minPrecision = 2;//La précision minimale du terrain
-    myTerrainConfig.higherCameraPrecision = 9;//La précision maximale engendrée par la caméra
-    myTerrainConfig.cameraRadiusAmount = 7;//Le nombre max de rayons de précision autour de la caméra (= 9-2)
+    myTerrainConfig.higherCameraPrecision = 5;//La précision maximale engendrée par la caméra
+    myTerrainConfig.cameraRadiusAmount = 3;//Le nombre max de rayons de précision autour de la caméra (= 9-2)
     myTerrainConfig.higherCameraPrecisionRadius = 100.f;//Le rayon du cercle le plus précis (à garder très petit si la précision est importante)
     myTerrainConfig.radiusSizeIncrement = 2.5f;//L'incrément en taille entre deux rayons consécutifs
 
@@ -55,12 +55,12 @@ int main()
 
     //Les paramètres de base (quasi-identiques au terrainà
     myPlanetConfig.planetRadius = 4000.f;//Le rayon de la planète
-    myPlanetConfig.maxHeight = 2000.f;
-    myPlanetConfig.minPrecision = 2;
+    myPlanetConfig.maxHeight = 1000.f;
+    myPlanetConfig.minPrecision = 1;
     myPlanetConfig.groundTextures = "resources/debug_grid2.png";
-    myPlanetConfig.higherCameraPrecision = 9;
-    myPlanetConfig.cameraRadiusAmount = 7;
-    myPlanetConfig.higherCameraPrecisionRadius = 100.f;
+    myPlanetConfig.higherCameraPrecision = 5;
+    myPlanetConfig.cameraRadiusAmount = 3;
+    myPlanetConfig.higherCameraPrecisionRadius = 500.f;
     myPlanetConfig.radiusSizeIncrement = 2.5f;
 
     if(!myPlanetConfig.IsValid())
@@ -86,7 +86,8 @@ int main()
     std::cout<<"Window opened successfully."<<endl;
 
 	/// Caméra
-	NzVector3f camPos(-2000.f, 1800.f, 2000.f);
+	//NzVector3f camPos(-2000.f, 1800.f, 2000.f);
+	NzVector3f camPos(7241.f, 12618.f, 3130.f);
 	NzEulerAnglesf camRot(-30.f, -45.f, 0.f);
 	NzCamera camera;
 	camera.SetPosition(camPos);
@@ -227,7 +228,7 @@ int main()
 			static const NzVector3f left(NzVector3f::Left());
 			static const NzVector3f up(NzVector3f::Up());
 
-            float speed2 = (NzKeyboard::IsKeyPressed(NzKeyboard::Key::LShift)) ? camSpeed*20: camSpeed;
+            float speed2 = (NzKeyboard::IsKeyPressed(NzKeyboard::Key::LShift)) ? camSpeed*40: camSpeed;
             NzVector3f speed(speed2,speed2,speed2);
 
             if (NzKeyboard::IsKeyPressed(NzKeyboard::Z))

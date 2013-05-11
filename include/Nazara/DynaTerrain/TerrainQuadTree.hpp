@@ -31,11 +31,13 @@ class NAZARA_API NzTerrainQuadTree
         NzTerrainQuadTree(const NzPlanetConfiguration& configuration, NzHeightSource3D* heightSource, const NzEulerAnglesf& quadtreeOrientation = NzEulerAnglesf(0.f,0.f,0.f));
         ~NzTerrainQuadTree();
 
-        void ConnectNeighbor(NzTerrainQuadTree* neighbour, nzDirection direction);
+        void ConnectNeighbor(NzTerrainQuadTree* neighbour, nzDirection callerDirection, nzDirection calleeDirection);
 
-        void DisconnectNeighbor(NzTerrainQuadTree* neighbour, nzDirection direction);
+        void DisconnectNeighbor(NzTerrainQuadTree* neighbour, nzDirection direction);//DO NOT USE : Modifs todo
 
-        NzTerrainQuadTree* GetContainingQuadTree(const NzTerrainNodeID& nodeID);
+        NzTerrainQuadTree* GetContainingQuadTree(const NzTerrainNodeID& nodeID);//DO NOT USE : Outdated
+        NzTerrainQuadTree* GetNeighbourQuadTree(nzDirection direction);
+        bool GetIsConnectionStraight(NzTerrainQuadTree* neighbour);
         unsigned int GetLeafNodesAmount() const;
         float GetMaximumHeight() const;
         NzTerrainInternalNode* GetNode(const NzTerrainNodeID& nodeID);
@@ -87,6 +89,7 @@ class NAZARA_API NzTerrainQuadTree
         //-------
 
         NzTerrainQuadTree* m_neighbours[4];
+        std::map<NzTerrainQuadTree*,bool> m_connectionType;
 
         std::map<float,unsigned int> m_cameraRadiuses;
         std::map<float,unsigned int>::iterator it;
