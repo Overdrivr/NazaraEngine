@@ -149,12 +149,25 @@ NzTerrainInternalNode* NzTerrainInternalNode::GetDirectNeighbor(nzDirection dire
         if(tempQuad == nullptr)
             return nullptr;
 
-        if(m_data->quadtree->GetIsConnectionStraight(tempQuad))
-            tempID.Normalize();//Pour passer des coordonnées du bord d'un quadtree au bord de l'autre quadtree
-        else
+        //Il y a trois types de connexions :
+            // - directe : Top <-> Bottom
+            // - orthogonale : Top <-> Left
+            // - inverse : Top <-> Top
+        nzConnectionType type = m_data->quadtree->GetConnectionType(tempQuad);
+        switch(type)
         {
-            tempID = m_nodeID;
-            tempID.InvertXY();//Pareil, mais dans le cas d'une connexion à 90°
+            case nzConnectionType_orthogonal :
+                tempID = m_nodeID;
+                tempID.InvertXY();//Pareil, mais dans le cas d'une connexion à 90°
+                break;
+
+            case nzConnectionType_straight :
+                tempID.Normalize();//Pour passer des coordonnées du bord d'un quadtree au bord de l'autre quadtree
+                break;
+
+            case nzConnectionType_reverse :
+                tempID = m_nodeID;
+                break;
         }
 
         return tempQuad->GetNode(tempID);
@@ -572,14 +585,21 @@ void NzTerrainInternalNode::HandleNeighborSubdivision(nzDirection direction, boo
         if(tempQuad == nullptr)
             return;
 
-        if(m_data->quadtree->GetIsConnectionStraight(tempQuad))
+        nzConnectionType type = m_data->quadtree->GetConnectionType(tempQuad);
+        switch(type)
         {
-            tempID.Normalize();//Pour passer des coordonnées du bord d'un quadtree au bord de l'autre quadtree
-        }
-        else
-        {
-            tempID = m_nodeID;
-            tempID.InvertXY();//Pareil, mais dans le cas d'une connexion à 90°
+            case nzConnectionType_orthogonal :
+                tempID = m_nodeID;
+                tempID.InvertXY();
+                break;
+
+            case nzConnectionType_straight :
+                tempID.Normalize();
+                break;
+
+            case nzConnectionType_reverse :
+                tempID = m_nodeID;
+                break;
         }
 
         tempNode = tempQuad->GetNode(tempID);

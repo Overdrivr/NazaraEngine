@@ -38,7 +38,7 @@ class NAZARA_API NzTerrainQuadTree
         NzTerrainQuadTree* GetContainingQuadTree(const NzTerrainNodeID& nodeID);//DO NOT USE : Outdated
         NzTerrainQuadTree* GetNeighbourQuadTree(nzDirection direction);
         nzDirection GetNeighbourDirection(NzTerrainQuadTree* neighbour);
-        bool GetIsConnectionStraight(NzTerrainQuadTree* neighbour);
+        nzConnectionType GetConnectionType(NzTerrainQuadTree* neighbour);
         unsigned int GetLeafNodesAmount() const;
         float GetMaximumHeight() const;
         NzTerrainInternalNode* GetNode(const NzTerrainNodeID& nodeID);
@@ -90,7 +90,7 @@ class NAZARA_API NzTerrainQuadTree
         //-------
 
         NzTerrainQuadTree* m_neighbours[4];
-        std::map<NzTerrainQuadTree*,bool> m_connectionType;
+        std::map<NzTerrainQuadTree*,nzConnectionType> m_connectionType;
         std::map<NzTerrainQuadTree*,nzDirection> m_connectionDirectionLookup;
 
         std::map<float,unsigned int> m_cameraRadiuses;

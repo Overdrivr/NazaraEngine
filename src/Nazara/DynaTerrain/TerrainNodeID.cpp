@@ -25,6 +25,23 @@ bool NzTerrainNodeID::IsValid() const
     return depth >= 0 && locx >= 0 && locy >= 0 && locx < (std::pow(2,depth)) && locy < (std::pow(2,depth));
 }
 
+void NzTerrainNodeID::InvertXY()
+{
+    int tmp = locx;
+    locx = locy;
+    locy = tmp;
+}
+
+void NzTerrainNodeID::FlipX()
+{
+    //TODO
+}
+
+void NzTerrainNodeID::FlipY()
+{
+    //TODO
+}
+
 void NzTerrainNodeID::Normalize()
 {
     if(locx < 0)
@@ -38,13 +55,6 @@ void NzTerrainNodeID::Normalize()
 
     if(locy > (std::pow(2,depth)-1))
         locy -= std::pow(2,depth);
-}
-
-void NzTerrainNodeID::InvertXY()
-{
-    int tmp = locx;
-    locx = locy;
-    locy = tmp;
 }
 
 bool NzTerrainNodeID::operator<( const NzTerrainNodeID& id ) const

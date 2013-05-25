@@ -60,7 +60,7 @@ int main()
     myPlanetConfig.groundTextures = "resources/debug_grid2.png";
     myPlanetConfig.higherCameraPrecision = 5;
     myPlanetConfig.cameraRadiusAmount = 3;
-    myPlanetConfig.higherCameraPrecisionRadius = 500.f;
+    myPlanetConfig.higherCameraPrecisionRadius = 100.f;
     myPlanetConfig.radiusSizeIncrement = 2.5f;
 
     if(!myPlanetConfig.IsValid())

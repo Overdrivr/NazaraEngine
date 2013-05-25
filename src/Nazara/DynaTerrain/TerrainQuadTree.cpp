@@ -104,10 +104,22 @@ void NzTerrainQuadTree::ConnectNeighbor(NzTerrainQuadTree* neighbour, nzDirectio
 {
     m_neighbours[callerDirection] = neighbour;
     neighbour->m_neighbours[calleeDirection] = this;
-    //0 + 1 || 2 + 3
-    //std::cout<<"Connecting "<<callerDirection<<" w "<<calleeDirection<<" : "<<((callerDirection & calleeDirection) == 3 || (callerDirection & calleeDirection) == 12)<<std::endl;
-    m_connectionType[neighbour] = ((callerDirection + calleeDirection) == 1 || (callerDirection + calleeDirection) == 5);
-    neighbour->m_connectionType[this] = ((callerDirection + calleeDirection) == 1 || (callerDirection + calleeDirection) == 5);
+
+    nzConnectionType connection;
+
+    if(callerDirection == calleeDirection)
+        connection = nzConnectionType_reverse;
+    else if(std::abs(callerDirection - calleeDirection))
+    {
+        //|TOP - BOTTOM| = 1
+        //|LEFT - RIGHT| = 1
+        connection = nzConnectionType_straight;
+    }
+    else
+        connection = nzConnectionType_orthogonal;
+
+    m_connectionType[neighbour] = connection;
+    neighbour->m_connectionType[this] = connection;
 
     m_connectionDirectionLookup[neighbour] = callerDirection;
     neighbour->m_connectionDirectionLookup[this] = calleeDirection;
@@ -184,12 +196,12 @@ nzDirection NzTerrainQuadTree::GetNeighbourDirection(NzTerrainQuadTree* neighbou
     return m_connectionDirectionLookup[neighbour];
 }
 
-bool NzTerrainQuadTree::GetIsConnectionStraight(NzTerrainQuadTree* neighbour)
+nzConnectionType NzTerrainQuadTree::GetConnectionType(NzTerrainQuadTree* neighbour)
 {
-    std::map<NzTerrainQuadTree*,bool>::iterator it = m_connectionType.find(neighbour);
+    std::map<NzTerrainQuadTree*,nzConnectionType>::iterator it = m_connectionType.find(neighbour);
 
     if(it == m_connectionType.end())
-        return false;
+        return nzConnectionType_none;
     else
         return it->second;
 }

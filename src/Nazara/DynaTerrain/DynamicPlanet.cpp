@@ -31,9 +31,9 @@ void NzDynamicPlanet::Draw() const
     //quadtrees.at(0)->Render();
     quadtrees.at(1)->Render();
     //quadtrees.at(2)->Render();
-    quadtrees.at(3)->Render();
+    //quadtrees.at(3)->Render();
     quadtrees.at(4)->Render();
-    //quadtrees.at(5)->Render();
+    ///quadtrees.at(5)->Render();
 }
 
 void NzDynamicPlanet::Initialize()
@@ -56,19 +56,20 @@ void NzDynamicPlanet::Initialize()
     quadtrees.emplace_back(new NzTerrainQuadTree(m_configuration,m_heightSource,NzEulerAnglesf(-90.f,0.f,0.f)));
     quadtrees.at(5)->Initialize();
 
-    quadtrees.at(0)->ConnectNeighbor(quadtrees.at(1),RIGHT,LEFT);
-    quadtrees.at(1)->ConnectNeighbor(quadtrees.at(2),RIGHT,LEFT);
-    quadtrees.at(2)->ConnectNeighbor(quadtrees.at(3),RIGHT,LEFT);
-    quadtrees.at(3)->ConnectNeighbor(quadtrees.at(0),RIGHT,LEFT);
+    ///4 PREMIERS : OK !
+    //quadtrees.at(0)->ConnectNeighbor(quadtrees.at(1),RIGHT,LEFT);
+    //quadtrees.at(1)->ConnectNeighbor(quadtrees.at(2),RIGHT,LEFT);
+    //quadtrees.at(2)->ConnectNeighbor(quadtrees.at(3),RIGHT,LEFT);
+    //quadtrees.at(3)->ConnectNeighbor(quadtrees.at(0),RIGHT,LEFT);
 
-    quadtrees.at(4)->ConnectNeighbor(quadtrees.at(0),TOP,BOTTOM);
+    ///quadtrees.at(4)->ConnectNeighbor(quadtrees.at(0),TOP,BOTTOM);
     quadtrees.at(4)->ConnectNeighbor(quadtrees.at(1),RIGHT,BOTTOM);
-    //quadtrees.at(4)->ConnectNeighbor(quadtrees.at(2),BOTTOM);
-    //quadtrees.at(4)->ConnectNeighbor(quadtrees.at(3),RIGHT,BOTTOM);
+    //quadtrees.at(4)->ConnectNeighbor(quadtrees.at(2),BOTTOM,BOTTOM);//INVERSE A CAUSE DE LA ROTATION !
+    //quadtrees.at(4)->ConnectNeighbor(quadtrees.at(3),LEFT,BOTTOM);
 
-    //quadtrees.at(5)->ConnectNeighbor(quadtrees.at(0),BOTTOM,TOP);
+    ///quadtrees.at(5)->ConnectNeighbor(quadtrees.at(0),BOTTOM,TOP);
     //quadtrees.at(5)->ConnectNeighbor(quadtrees.at(1),LEFT);
-    //quadtrees.at(5)->ConnectNeighbor(quadtrees.at(2),TOP);
+    //quadtrees.at(5)->ConnectNeighbor(quadtrees.at(2),,BOTTOM);
     //quadtrees.at(5)->ConnectNeighbor(quadtrees.at(3),RIGHT);
 }
 

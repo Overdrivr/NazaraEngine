@@ -23,6 +23,14 @@ enum nzDirection
     RIGHT = 3
 };
 
+enum nzConnectionType
+{
+  nzConnectionType_straight,
+  nzConnectionType_orthogonal,
+  nzConnectionType_reverse,
+  nzConnectionType_none
+};
+
 enum nzQuadTreeType
 {
     TERRAIN,
