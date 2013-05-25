@@ -109,7 +109,7 @@ void NzTerrainQuadTree::ConnectNeighbor(NzTerrainQuadTree* neighbour, nzDirectio
 
     if(callerDirection == calleeDirection)
         connection = nzConnectionType_reverse;
-    else if(std::abs(callerDirection - calleeDirection))
+    else if(std::abs(callerDirection - calleeDirection) == 1)
     {
         //|TOP - BOTTOM| = 1
         //|LEFT - RIGHT| = 1

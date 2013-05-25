@@ -47,7 +47,7 @@ void NzDynamicPlanet::Initialize()
     quadtrees.at(0)->Initialize();
     quadtrees.emplace_back(new NzTerrainQuadTree(m_configuration,m_heightSource,NzEulerAnglesf(0.f,0.f,-90.f)));
     quadtrees.at(1)->Initialize();
-    quadtrees.emplace_back(new NzTerrainQuadTree(m_configuration,m_heightSource,NzEulerAnglesf(0.f,0.f,-180.f)));
+    quadtrees.emplace_back(new NzTerrainQuadTree(m_configuration,m_heightSource,NzEulerAnglesf(0.f,0.f,-170.f)));
     quadtrees.at(2)->Initialize();
     quadtrees.emplace_back(new NzTerrainQuadTree(m_configuration,m_heightSource,NzEulerAnglesf(0.f,0.f,90.f)));
     quadtrees.at(3)->Initialize();
@@ -63,7 +63,7 @@ void NzDynamicPlanet::Initialize()
     //quadtrees.at(3)->ConnectNeighbor(quadtrees.at(0),RIGHT,LEFT);
 
     ///quadtrees.at(4)->ConnectNeighbor(quadtrees.at(0),TOP,BOTTOM);
-    quadtrees.at(4)->ConnectNeighbor(quadtrees.at(1),RIGHT,BOTTOM);
+    //quadtrees.at(4)->ConnectNeighbor(quadtrees.at(1),RIGHT,BOTTOM);
     //quadtrees.at(4)->ConnectNeighbor(quadtrees.at(2),BOTTOM,BOTTOM);//INVERSE A CAUSE DE LA ROTATION !
     //quadtrees.at(4)->ConnectNeighbor(quadtrees.at(3),LEFT,BOTTOM);
 

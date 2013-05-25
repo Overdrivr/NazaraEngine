@@ -25,7 +25,7 @@ class NAZARA_API NzTerrainInternalNode
         NzTerrainInternalNode();
         ~NzTerrainInternalNode();
 
-        void CleanTree(unsigned int minDepth);
+        void CleanTree(unsigned int minDepth);//RENOMMER ReleaseAllChildren
         void CreatePatch();
 
         void DeletePatch();
