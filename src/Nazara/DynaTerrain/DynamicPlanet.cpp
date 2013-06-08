@@ -55,6 +55,7 @@ void NzDynamicPlanet::Initialize()
     quadtrees.at(4)->Initialize();
     quadtrees.emplace_back(new NzTerrainQuadTree(m_configuration,m_heightSource,NzEulerAnglesf(-90.f,0.f,0.f)));
     quadtrees.at(5)->Initialize();
+    //BUG MAJ MESH
 
     ///4 PREMIERS : OK !
     //quadtrees.at(0)->ConnectNeighbor(quadtrees.at(1),RIGHT,LEFT);

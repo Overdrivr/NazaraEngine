@@ -30,7 +30,7 @@ int main()
     // On créé la configuration du terrain
     NzTerrainConfiguration myTerrainConfig;
     //Les paramètres de base
-    myTerrainConfig.groundTextures = "resources/debug_grid2.png";
+    myTerrainConfig.groundTextures = "resources/dt_tiles.jpg";
     //Les paramètres liés à la précision autour de la caméra
     myTerrainConfig.minPrecision = 2;//La précision minimale du terrain
     myTerrainConfig.higherCameraPrecision = 5;//La précision maximale engendrée par la caméra
@@ -48,7 +48,7 @@ int main()
     terrain.SetParent(scene);
     NzVector3f terrainPos(100.f,100.f,100.f);
     terrain.SetPosition(terrainPos);
-
+/*
     ///-----------Initialisation de la planète-----------
     MyHeightSource3D source3;
     NzPlanetConfiguration myPlanetConfig;
@@ -71,7 +71,7 @@ int main()
 
     planet.SetParent(scene);
     NzVector3f planetPos(8000.f,9000.f,8000.f);
-    planet.SetPosition(planetPos);
+    planet.SetPosition(planetPos);*/
 
     cout<<"Terrain & Planet initialized successfully."<<endl;
 
@@ -185,13 +185,13 @@ int main()
 							{
 								drawWireframe = false;
 								terrain.SetFaceFilling(nzFaceFilling_Fill);//FIX ME
-								planet.SetFaceFilling(nzFaceFilling_Fill);
+								//planet.SetFaceFilling(nzFaceFilling_Fill);
 							}
 							else
 							{
 								drawWireframe = true;
 								terrain.SetFaceFilling(nzFaceFilling_Line);//FIX ME
-								planet.SetFaceFilling(nzFaceFilling_Line);
+								//planet.SetFaceFilling(nzFaceFilling_Line);
 							}
 							break;
 
@@ -264,7 +264,7 @@ int main()
         //On met à jour le terrain
         if(terrainUpdate)
         {
-            planet.Update(camera.GetPosition());
+            //planet.Update(camera.GetPosition());
             terrain.Update(camera.GetPosition());
         }
         ///-----------------
