@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Rémi Bèges
+// Copyright (C) 2012 RÃ©mi BÃ¨ges
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -9,9 +9,9 @@
 
 NzTerrainConfiguration::NzTerrainConfiguration()
 {
-    //Taille d'un côté du terrain
+    //Taille d'un cÃ´tÃ© du terrain
     terrainSize = 4000.f;
-    //La rotation du terrain dans les trois axes exprimé en angles d'euler
+    //La rotation du terrain dans les trois axes exprimÃ© en angles d'euler
     terrainOrientation = NzEulerAnglesf(0.f,0.f,0.f);
 }
 

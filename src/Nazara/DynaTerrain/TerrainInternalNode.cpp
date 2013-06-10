@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Rémi Bèges
+// Copyright (C) 2012 RÃ©mi BÃ¨ges
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -158,11 +158,11 @@ NzTerrainInternalNode* NzTerrainInternalNode::GetDirectNeighbor(nzDirection dire
         {
             case nzConnectionType_orthogonal :
                 tempID = m_nodeID;
-                tempID.InvertXY();//Pareil, mais dans le cas d'une connexion à 90°
+                tempID.InvertXY();//Pareil, mais dans le cas d'une connexion Ã  90Â°
                 break;
 
             case nzConnectionType_straight :
-                tempID.Normalize();//Pour passer des coordonnées du bord d'un quadtree au bord de l'autre quadtree
+                tempID.Normalize();//Pour passer des coordonnÃ©es du bord d'un quadtree au bord de l'autre quadtree
                 break;
 
             case nzConnectionType_reverse :
@@ -259,8 +259,8 @@ void NzTerrainInternalNode::HierarchicalSlopeBasedSubdivide(unsigned int maxDept
     //Si la cellule est une feuille
     if(m_isLeaf == true)
     {
-        //Si son niveau est inférieur au niveau max de subdivision
-            //Et également inférieur au niveau minimum de précision requis par la pente du terrain
+        //Si son niveau est infÃ©rieur au niveau max de subdivision
+            //Et Ã©galement infÃ©rieur au niveau minimum de prÃ©cision requis par la pente du terrain
                 //Alors on le subdivise
         if(m_nodeID.depth < maxDepth && m_nodeID.depth < static_cast<unsigned int>(m_patch->GetGlobalSlope() * m_data->quadtree->GetMaximumHeight()))
         {
@@ -305,7 +305,7 @@ bool NzTerrainInternalNode::Subdivide(bool isNotReversible)
     //this->DeletePatch();
     m_patch->UnUploadMesh();
 
-    //On récupère des pointeurs valides pour les nodes
+    //On rÃ©cupÃ¨re des pointeurs valides pour les nodes
     m_children[TOPLEFT] = m_data->quadtree->GetNodeFromPool();
     m_children[TOPRIGHT] = m_data->quadtree->GetNodeFromPool();
     m_children[BOTTOMLEFT] = m_data->quadtree->GetNodeFromPool();
@@ -316,19 +316,19 @@ bool NzTerrainInternalNode::Subdivide(bool isNotReversible)
     m_children[BOTTOMLEFT]->Initialize(m_data,this,*m_patch,BOTTOMLEFT);
     m_children[BOTTOMRIGHT]->Initialize(m_data,this,*m_patch,BOTTOMRIGHT);
 
-    //C'est une subdivision, le node est forcément une leaf
+    //C'est une subdivision, le node est forcÃ©ment une leaf
     m_children[TOPLEFT]->m_isLeaf = true;
     m_children[TOPRIGHT]->m_isLeaf = true;
     m_children[BOTTOMLEFT]->m_isLeaf = true;
     m_children[BOTTOMRIGHT]->m_isLeaf = true;
 
-    //Et on l'enregistre auprès du quadtree
+    //Et on l'enregistre auprÃ¨s du quadtree
     m_data->quadtree->RegisterLeaf(m_children[TOPLEFT]);
     m_data->quadtree->RegisterLeaf(m_children[TOPRIGHT]);
     m_data->quadtree->RegisterLeaf(m_children[BOTTOMLEFT]);
     m_data->quadtree->RegisterLeaf(m_children[BOTTOMRIGHT]);
 
-    //On vérifie que les nodes voisins n'aient pas plus d'1 niveau d'écart de profondeur
+    //On vÃ©rifie que les nodes voisins n'aient pas plus d'1 niveau d'Ã©cart de profondeur
     m_children[TOPLEFT]->HandleNeighborSubdivision(LEFT,isNotReversible);
     m_children[TOPLEFT]->HandleNeighborSubdivision(TOP,isNotReversible);
 
@@ -407,21 +407,21 @@ bool NzTerrainInternalNode::Refine()
 
         }
         temp = m_children[i]->GetDirectNeighbor(first);
-        //Si il y a un node voisin de niveau égal
+        //Si il y a un node voisin de niveau Ã©gal
         if(temp != nullptr)
         {
              //Si il des fils
              if(!temp->m_isLeaf)
-                return false;//Abandon, le refine va causer une différence de profondeur > 2
+                return false;//Abandon, le refine va causer une diffÃ©rence de profondeur > 2
         }
 
         temp = m_children[i]->GetDirectNeighbor(second);
-        //Si il y a un node voisin de niveau égal
+        //Si il y a un node voisin de niveau Ã©gal
         if(temp != nullptr)
         {
              //Si il des fils
              if(!temp->m_isLeaf)
-                return false;//Abandon, le refine va causer une différence de profondeur > 2
+                return false;//Abandon, le refine va causer une diffÃ©rence de profondeur > 2
         }
     }
 
@@ -449,8 +449,8 @@ bool NzTerrainInternalNode::Refine()
 
         if(temp != nullptr)
         {
-            //On en profite pour vérifier si le node voisin fait partie d'un autre quadtree
-            //auquel cas on récupère les directions directe et inverse (pas nécessairement opposées)
+            //On en profite pour vÃ©rifier si le node voisin fait partie d'un autre quadtree
+            //auquel cas on rÃ©cupÃ¨re les directions directe et inverse (pas nÃ©cessairement opposÃ©es)
             if(temp->m_data->quadtree != m_data->quadtree)
             {
                 invDirection[i] = temp->m_data->quadtree->GetNeighbourDirection(m_data->quadtree);
@@ -478,12 +478,12 @@ bool NzTerrainInternalNode::Refine()
 
             if(temp->m_isLeaf)
             {
-                //This et son voisin auront le même niveau, on supprime l'interface ?
+                //This et son voisin auront le mÃªme niveau, on supprime l'interface ?
                 //temp->m_patch->SetConfiguration(invDirection[i],0);
             }
             else
             {
-                //This aura un niveau inférieur, on indique aux fils du voisin de générer une interface
+                //This aura un niveau infÃ©rieur, on indique aux fils du voisin de gÃ©nÃ©rer une interface
                 if(temp->m_children[locLUT[direct][0]]->m_isLeaf)
                 {
                     temp->m_children[locLUT[direct][0]]->m_patch->SetConfiguration(invDirection[i],1);
@@ -572,7 +572,7 @@ void NzTerrainInternalNode::HandleNeighborSubdivision(nzDirection direction, boo
     NzTerrainQuadTree* tempQuad;
     NzTerrainInternalNode* tempNode;
 
-    //Si on ne cherche pas à atteindre une case externe
+    //Si on ne cherche pas Ã  atteindre une case externe
     if(tempID.IsValid())
     {
         tempQuad = m_data->quadtree;
@@ -606,10 +606,10 @@ void NzTerrainInternalNode::HandleNeighborSubdivision(nzDirection direction, boo
         invDirection = tempQuad->GetNeighbourDirection(m_data->quadtree);
     }
 
-    //Si le voisin n'existe pas (il n'y a pas de node voisin de même profondeur)
+    //Si le voisin n'existe pas (il n'y a pas de node voisin de mÃªme profondeur)
     if(tempNode == nullptr)
     {
-        //Un niveau d'écart n'est pas suffisant pour demander une subdivision
+        //Un niveau d'Ã©cart n'est pas suffisant pour demander une subdivision
         tempID.depth -= 1;
         tempID.locx /= 2;
         tempID.locy /= 2;
@@ -628,9 +628,9 @@ void NzTerrainInternalNode::HandleNeighborSubdivision(nzDirection direction, boo
 
             if(counter < 200)
             {
-                //On subdivise la cellule jusqu'à atteindre le bon niveau
+                //On subdivise la cellule jusqu'Ã  atteindre le bon niveau
                 tempNode->HierarchicalSubdivide(m_nodeID.depth-1,isNotReversible);
-                //La subdivision a généré une interface, le node le plus subdivisé (cad this) doit s'adapter
+                //La subdivision a gÃ©nÃ©rÃ© une interface, le node le plus subdivisÃ© (cad this) doit s'adapter
                 m_patch->SetConfiguration(direction,1);
             }
             else
@@ -643,11 +643,11 @@ void NzTerrainInternalNode::HandleNeighborSubdivision(nzDirection direction, boo
         {
             m_patch->SetConfiguration(direction,1);
         }
-        //else la cellule voisine voisin est suffisamment divisé
+        //else la cellule voisine voisin est suffisamment divisÃ©
     }
     else
     {
-        //La subdivision a supprimé une interface de précision, on l'indique au voisin qu'il n'a plus besoin de s'adapter
+        //La subdivision a supprimÃ© une interface de prÃ©cision, on l'indique au voisin qu'il n'a plus besoin de s'adapter
         if(tempNode->m_isLeaf)
         {
             tempNode->m_patch->SetConfiguration(invDirection,0);
@@ -665,15 +665,15 @@ void NzTerrainInternalNode::Update(const NzVector3f& cameraPosition)
     }
     #endif
 
-    //A) On calcule la précision optimale du node tenant compte de sa distance à la caméra
+    //A) On calcule la prÃ©cision optimale du node tenant compte de sa distance Ã  la camÃ©ra
     float distance = m_aabb.DistanceTo(cameraPosition);
 
     int rayon = m_data->quadtree->TransformDistanceToCameraInRadiusIndex(distance);
 
-    //B) Si la précision optimale est inférieure à la précision actuelle
-        //Si le node est une feuille, on l'ajoute à la liste de subdivision
+    //B) Si la prÃ©cision optimale est infÃ©rieure Ã  la prÃ©cision actuelle
+        //Si le node est une feuille, on l'ajoute Ã  la liste de subdivision
         //Sinon on update ses enfants
-            //Le fusion pouvant échouer, on garantit que le node subdivisé ne reste pas dans la file de fusion
+            //Le fusion pouvant Ã©chouer, on garantit que le node subdivisÃ© ne reste pas dans la file de fusion
     if(m_nodeID.depth < rayon)
     {
         if(m_isLeaf)
@@ -688,8 +688,8 @@ void NzTerrainInternalNode::Update(const NzVector3f& cameraPosition)
                 m_children[i]->Update(cameraPosition);
         }
     }
-    //C) Si la précision optimale est supérieure ou égale à la précision actuelle
-        //Si le node n'est pas une feuille, on l'ajoute à la liste de fusion
+    //C) Si la prÃ©cision optimale est supÃ©rieure ou Ã©gale Ã  la prÃ©cision actuelle
+        //Si le node n'est pas une feuille, on l'ajoute Ã  la liste de fusion
     else if(m_nodeID.depth >= rayon)
     {
         if(!m_isLeaf)

@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Rémi Bèges
+// Copyright (C) 2012 RÃ©mi BÃ¨ges
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -20,7 +20,7 @@ NzHeightSource3D::~NzHeightSource3D()
 
 float NzHeightSource3D::GetHeight(float x, float y, float z)
 {
-    //Coder ici la routine permettant de récupérer les données du terrain non procédurales
+    //Coder ici la routine permettant de rÃ©cupÃ©rer les donnÃ©es du terrain non procÃ©durales
 
     return this->GetNoiseValue(x,y,z);
 }

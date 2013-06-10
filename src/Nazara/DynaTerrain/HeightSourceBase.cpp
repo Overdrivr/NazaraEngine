@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Rémi Bèges
+// Copyright (C) 2012 RÃ©mi BÃ¨ges
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -56,7 +56,7 @@ bool NzHeightSourceBase::LoadTerrainFile(const NzString& filename)
     }
     else
     {
-        std::cout<<"Version de structure non supportée : "<<m_structureVersion<<std::endl;
+        std::cout<<"Version de structure non supportÃ©e : "<<m_structureVersion<<std::endl;
         file.Close();
         return false;
     }

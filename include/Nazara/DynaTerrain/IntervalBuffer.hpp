@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Rémi Bèges
+// Copyright (C) 2012 RÃ©mi BÃ¨ges
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -63,15 +63,15 @@ template <typename T> class NzIntervalBuffer
             //Efficace pour trouver rapidement l'emplacement d'une valeur dans internalBuffer
         std::map<T,int> m_slots;
 
-        //Représentation des intervalles pleins dans le buffer
-            //Efficace pour déterminer le nombre et la position de blocs de vertices consécutifs
-            //x représente l'index
-            //y le nombre de slots pleins consécutifs
+        //ReprÃ©sentation des intervalles pleins dans le buffer
+            //Efficace pour dÃ©terminer le nombre et la position de blocs de vertices consÃ©cutifs
+            //x reprÃ©sente l'index
+            //y le nombre de slots pleins consÃ©cutifs
         std::list<NzBatch> m_filledSlotBatches;
 
-        //Représentation des espaces libres dans le buffer
-            //x représente l'index
-            //y le nombre de slots vides consécutifs
+        //ReprÃ©sentation des espaces libres dans le buffer
+            //x reprÃ©sente l'index
+            //y le nombre de slots vides consÃ©cutifs
         std::list<NzBatch> m_freeSlotBatches;
 
         unsigned int m_bufferSize;

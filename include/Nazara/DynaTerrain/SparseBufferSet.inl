@@ -1,4 +1,4 @@
-// Copyright (C) 2012 R�mi B�ges
+// Copyright (C) 2012 RÃ©mi BÃ¨ges
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -106,7 +106,7 @@ NzVector2i NzSparseBufferSet<T>::InsertValueKey(const T& key)
         if(m_buffers.at(i).GetFreeSlotsAmount() > 0)
         {
             location.y =  m_buffers.at(i).InsertValueKey(key);
-            if(location.y > -1)//Si l'index retourn� est valide, on s'arr�te l�
+            if(location.y > -1)//Si l'index retournÃ© est valide, on s'arrÃªte lÃ 
             {
                 m_valueToBufferIndex[key] = i;
                 location.x = i;

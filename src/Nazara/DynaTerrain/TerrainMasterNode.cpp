@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Rémi Bèges
+// Copyright (C) 2012 RÃ©mi BÃ¨ges
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -60,7 +60,7 @@ bool NzTerrainMasterNode::RemovePatch(const NzTerrainNodeID& ID)
 {
     if(m_isReady)
     {
-        //On récupère la zone devant accueillir le patch
+        //On rÃ©cupÃ¨re la zone devant accueillir le patch
         NzTerrainNodeID temp;
         temp.locx = ID.locx * m_zonesAmountX/std::pow(2,ID.depth);
         temp.locy = ID.locy * m_zonesAmountX/std::pow(2,ID.depth);
@@ -84,7 +84,7 @@ bool NzTerrainMasterNode::RemovePatch(const NzTerrainNodeID& ID)
 
 bool NzTerrainMasterNode::Initialize(unsigned int zoneDepth)
 {
-    ///---- On crée la déclaration de vertices
+    ///---- On crÃ©e la dÃ©claration de vertices
     m_elements[0].usage = nzElementUsage_Position;
 	m_elements[0].offset = 0;
 	m_elements[0].type = nzElementType_Float3;
@@ -99,10 +99,10 @@ bool NzTerrainMasterNode::Initialize(unsigned int zoneDepth)
 		return false;
 	}
 
-    ///-----On crée toutes les zones nécessaires
+    ///-----On crÃ©e toutes les zones nÃ©cessaires
     m_zoneDepth = zoneDepth;
     m_zonesAmountX = std::pow(2,m_zoneDepth);
-    //On crée le nombre de zones demandé
+    //On crÃ©e le nombre de zones demandÃ©
     for(unsigned int i(0) ; i < m_zonesAmountX * m_zonesAmountX ; ++i)
     {
         std::unique_ptr<NzTerrainNode> zone(new NzTerrainNode(this,m_patchAmount));
@@ -142,7 +142,7 @@ bool NzTerrainMasterNode::SubmitPatch(const std::array<float,150>& subBuffer, co
     if(!m_isReady)
         return false;
 
-    //On récupère la zone devant accueillir le patch
+    //On rÃ©cupÃ¨re la zone devant accueillir le patch
     NzTerrainNodeID temp;
     temp.locx = ID.locx * m_zonesAmountX / std::pow(2,ID.depth);
     temp.locy = ID.locy * m_zonesAmountX / std::pow(2,ID.depth);
@@ -163,7 +163,7 @@ bool NzTerrainMasterNode::UpdatePatch(const std::array<float,150>& subBuffer, co
 {
     if(m_isReady)
     {
-        //On récupère la zone devant accueillir le patch
+        //On rÃ©cupÃ¨re la zone devant accueillir le patch
         NzTerrainNodeID temp;
         temp.locx = ID.locx * m_zonesAmountX / std::pow(2,ID.depth);
         temp.locy = ID.locy * m_zonesAmountX / std::pow(2,ID.depth);

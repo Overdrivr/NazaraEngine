@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Rémi Bèges
+// Copyright (C) 2012 RÃ©mi BÃ¨ges
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -76,7 +76,7 @@ void NzDynamicPlanet::Initialize()
 
 void NzDynamicPlanet::Update(const NzVector3f& cameraPosition)
 {
-     //On transforme la position de la caméra du repère global dans le repère local
+     //On transforme la position de la camÃ©ra du repÃ¨re global dans le repÃ¨re local
     NzVector3f localCamPos = cameraPosition - this->GetPosition();
 
     quadtrees.at(0)->Update(localCamPos);

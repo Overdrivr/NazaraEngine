@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Rémi Bèges
+// Copyright (C) 2012 RÃ©mi BÃ¨ges
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -9,19 +9,19 @@
 
 NzDynaTerrainConfigurationBase::NzDynaTerrainConfigurationBase()
 {
-    //La hauteur maximale du terrain/planète (sous condition que la source de hauteur renvoie bien des valeurs dans [0;1])
+    //La hauteur maximale du terrain/planÃ¨te (sous condition que la source de hauteur renvoie bien des valeurs dans [0;1])
     maxHeight = 1000.f;
-    //La précision minimale du terrain/planète (= le quadtree sera subdivisé équitablement jusqu'à cette profondeur)
+    //La prÃ©cision minimale du terrain/planÃ¨te (= le quadtree sera subdivisÃ© Ã©quitablement jusqu'Ã  cette profondeur)
     minPrecision = 2;
-    //La précision maximale engendrée par la plus forte variation de pente
+    //La prÃ©cision maximale engendrÃ©e par la plus forte variation de pente
     maxSlopePrecision = 2;
-    //La précision au plus près de la caméra
+    //La prÃ©cision au plus prÃ¨s de la camÃ©ra
     higherCameraPrecision = 8;
-    //Le nombre de cercles de précision autour de la caméra
+    //Le nombre de cercles de prÃ©cision autour de la camÃ©ra
     cameraRadiusAmount = 6;
-    //Le rapport de taille entre deux rayons consécutifs
+    //Le rapport de taille entre deux rayons consÃ©cutifs
     radiusSizeIncrement = 2.5f;
-    //Le rayon de précision maximale autour de la caméra
+    //Le rayon de prÃ©cision maximale autour de la camÃ©ra
     higherCameraPrecisionRadius = 75.f;
     //Le chemin vers la texture du terrain
     groundTextures = "unset_path_to_terrain_texture_file/unset_terrain_texture.jpg";

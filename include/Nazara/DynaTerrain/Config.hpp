@@ -1,7 +1,7 @@
 /*
 	Nazara Engine - DynaTerrain
 
-	Copyright (C) 2012 Rémi "Overdrivr" Bèges (remi.beges@laposte.net)
+	Copyright (C) 2012 RÃ©mi "Overdrivr" BÃ¨ges (remi.beges@laposte.net)
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy of
 	this software and associated documentation files (the "Software"), to deal in
@@ -27,12 +27,12 @@
 #ifndef NAZARA_CONFIG_DYNATERRAIN_HPP
 #define NAZARA_CONFIG_DYNATERRAIN_HPP
 
-/// Chaque modification d'un paramètre du module nécessite une recompilation de celui-ci
+/// Chaque modification d'un paramÃ¨tre du module nÃ©cessite une recompilation de celui-ci
 
-// Utilise un tracker pour repérer les éventuels leaks (Ralentit l'exécution)
+// Utilise un tracker pour repÃ©rer les Ã©ventuels leaks (Ralentit l'exÃ©cution)
 #define NAZARA_DYNATERRAIN_MEMORYLEAKTRACKER 1
 
-// Active les tests de sécurité basés sur le code (Conseillé pour le développement)
+// Active les tests de sÃ©curitÃ© basÃ©s sur le code (ConseillÃ© pour le dÃ©veloppement)
 #define NAZARA_DYNATERRAIN_SAFE 1
 
 #endif // NAZARA_CONFIG_MODULENAME_HPP

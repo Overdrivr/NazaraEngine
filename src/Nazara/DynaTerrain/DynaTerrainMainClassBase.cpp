@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Rémi Bèges
+// Copyright (C) 2012 RÃ©mi BÃ¨ges
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -151,7 +151,7 @@ void NzDynaTerrainMainClassBase::CreateIndexBuffer(unsigned int bufferCapacity, 
         }
 
 	m_indexBuffer = new NzIndexBuffer(bufferCapacity * 96, true, nzBufferStorage_Hardware);
-	if (!m_indexBuffer->Fill(allIndexes.data(), 0, bufferCapacity * 96)) // FIX ME : Que faire en cas d'échec
+	if (!m_indexBuffer->Fill(allIndexes.data(), 0, bufferCapacity * 96)) // FIX ME : Que faire en cas d'Ã©chec
 	{
 		std::cout << "Failed to fill indexbuffer" << std::endl;
 	}

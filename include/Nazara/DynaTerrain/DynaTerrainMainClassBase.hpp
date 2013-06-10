@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Rémi Bèges
+// Copyright (C) 2012 RÃ©mi BÃ¨ges
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -20,9 +20,9 @@
 
 /// BASE CLASS OF THE TERRAIN/PLANET
 
-//TODO : Créer une seule fois l'index buffer pour tous les terrains
+//TODO : CrÃ©er une seule fois l'index buffer pour tous les terrains
 //TODO : modifier shader du terrain pour qu'il fonctionne avec n'importe quelle direction (slope, altitude)
-//FIX ME : Nommage des méthodes innaproprié, renforcer la sécurité
+//FIX ME : Nommage des mÃ©thodes innapropriÃ©, renforcer la sÃ©curitÃ©
 
 class NAZARA_API NzDynaTerrainMainClassBase : public NzDrawable, public NzSceneNode
 {

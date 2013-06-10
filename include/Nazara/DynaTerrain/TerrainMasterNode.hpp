@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Rémi Bèges
+// Copyright (C) 2012 RÃ©mi BÃ¨ges
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -22,7 +22,7 @@
 
 //FIX ME 2 : Utiliser un arbre en structure interne pour le fast culling
 //FIX ME : Renommer m_zones, zoneDepth
-//FIX ME : Gérer l'aabb
+//FIX ME : GÃ©rer l'aabb
 class NAZARA_API NzTerrainMasterNode// : public NzSceneNode
 {
     public:
@@ -48,9 +48,9 @@ class NAZARA_API NzTerrainMasterNode// : public NzSceneNode
         //FIX ME : Renommer en AddMesh
         bool SubmitPatch(const std::array<float,150>& subBuffer, const NzTerrainNodeID& ID);
 
-        //FIX ME : Il n'est pas utile de réenvoyer toutes les vertices lors d'un update
+        //FIX ME : Il n'est pas utile de rÃ©envoyer toutes les vertices lors d'un update
         //Avec un index buffer 16 fois plus grand contenant les 16 configuration
-        //il est possible en donnant un offset à la donnée d'utiliser un différent index de ses vertices
+        //il est possible en donnant un offset Ã  la donnÃ©e d'utiliser un diffÃ©rent index de ses vertices
         bool UpdatePatch(const std::array<float,150>& subBuffer, const NzTerrainNodeID& ID);
 
     protected:

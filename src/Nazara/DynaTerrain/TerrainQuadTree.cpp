@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Rémi Bèges
+// Copyright (C) 2012 RÃ©mi BÃ¨ges
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -89,7 +89,7 @@ void NzTerrainQuadTree::Construct()
 NzTerrainQuadTree::~NzTerrainQuadTree()
 {
     //cout<<"Maximum amount of operations per frame : "<<m_maxOperationsPerFrame<<std::endl;
-    cout<<"Libération de "<<m_nodesPool.GetPoolSize()<<" node(s)."<<endl;
+    cout<<"LibÃ©ration de "<<m_nodesPool.GetPoolSize()<<" node(s)."<<endl;
     NzClock clk;
     clk.Restart();
     m_nodesPool.ReleaseAll();
@@ -158,9 +158,9 @@ void NzTerrainQuadTree::DisconnectNeighbor(NzTerrainQuadTree* neighbour, nzDirec
 void NzTerrainQuadTree::Initialize()
 {
     m_isInitialized = true;
-    //On subdivise l'arbre équitablement au niveau minimum
+    //On subdivise l'arbre Ã©quitablement au niveau minimum
     m_root->HierarchicalSubdivide(m_commonConfiguration.minPrecision,true);
-    //Si on doit améliorer l'arbre là où la pente est la plus forte, on le fait également
+    //Si on doit amÃ©liorer l'arbre lÃ  oÃ¹ la pente est la plus forte, on le fait Ã©galement
     m_root->HierarchicalSlopeBasedSubdivide(m_commonConfiguration.maxSlopePrecision);
 }
 
@@ -241,7 +241,7 @@ void NzTerrainQuadTree::ReturnNodeToPool(NzTerrainInternalNode* node)
     if(it != m_refinementQueue.end())
         m_refinementQueue.erase(it);
 
-    //Si la camera se déplace très rapidement, un node peut se retrouver à la fois
+    //Si la camera se dÃ©place trÃ¨s rapidement, un node peut se retrouver Ã  la fois
     //dans la liste de subdivision et de fusion
     it = m_subdivisionQueue.find(node->GetNodeID());
     if(it != m_subdivisionQueue.end())
@@ -284,13 +284,13 @@ unsigned int NzTerrainQuadTree::GetSubdivisionsAmount()
 
 NzVector3f NzTerrainQuadTree::GetVertexPosition(const NzTerrainNodeID& nodeID, int x, int y)
 {
-    ///Les terrains sont centrées en 0
-    ///Avec le système de node
-    ///Leur position "affichée" peut changer à l'exécution
-    ///La configuration ne peut donc pas contenir la position du terrain, ce doit être géré par lee système de node
-    ///Néanmoins, pour un terrain infini, les quadtree autres que le central doivent avoir un offset
-    ///Par conséquent la configuration contient la taille du terrain en floattant
-    ///Et un offset (x,y) en coordonnées entières
+    ///Les terrains sont centrÃ©es en 0
+    ///Avec le systÃ¨me de node
+    ///Leur position "affichÃ©e" peut changer Ã  l'exÃ©cution
+    ///La configuration ne peut donc pas contenir la position du terrain, ce doit Ãªtre gÃ©rÃ© par lee systÃ¨me de node
+    ///NÃ©anmoins, pour un terrain infini, les quadtree autres que le central doivent avoir un offset
+    ///Par consÃ©quent la configuration contient la taille du terrain en floattant
+    ///Et un offset (x,y) en coordonnÃ©es entiÃ¨res
 
     //Note : nodeID.depth should never be < 0
     float power = 1.f/(1 << nodeID.depth);
@@ -308,12 +308,12 @@ NzVector3f NzTerrainQuadTree::GetVertexPosition(const NzTerrainNodeID& nodeID, i
         case PLANET:
         default:
 
-            //Les coordonnées d'un plan
+            //Les coordonnÃ©es d'un plan
             position.x = 2.f * (x * 0.25f + nodeID.locx) / std::pow(2,nodeID.depth) - 1.f;
             position.y = 1.f;
             position.z = 2.f * (y * 0.25f + nodeID.locy) / std::pow(2,nodeID.depth) - 1.f;
 
-            //On normalise le vecteur pour obtenir une sphère
+            //On normalise le vecteur pour obtenir une sphÃ¨re
             position.Normalize();
             position *= m_planetConfiguration.planetRadius;
 
@@ -377,7 +377,7 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
     int subdivisionsPerFrame = 0;
     updateClock.Restart();
 
-    ///A chaque frame, on recalcule quels noeuds sont dans le périmètre de la caméra
+    ///A chaque frame, on recalcule quels noeuds sont dans le pÃ©rimÃ¨tre de la camÃ©ra
     m_root->Update(cameraPosition);
 
     ///On subdivise les nodes
@@ -399,7 +399,7 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
     m_subdivisionsAmount += subdivisionsPerFrame;
 
 
-     ///On refine les nodes nécessaires
+     ///On refine les nodes nÃ©cessaires
     it = m_refinementQueue.begin();
     while(updateClock.GetMilliseconds() < maxTime)
     {

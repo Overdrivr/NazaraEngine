@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Rémi Bèges
+// Copyright (C) 2012 RÃ©mi BÃ¨ges
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -74,9 +74,9 @@ class NAZARA_API NzTerrainInternalNode
 
         static int nbNodes;
 
-        /* Variables pour les fonctionnalités supplémentaires */
+        /* Variables pour les fonctionnalitÃ©s supplÃ©mentaires */
 
-        //Indique que le node ne doit pas être refiné, pour conserver une précision du terrain lors de variation de pente
+        //Indique que le node ne doit pas Ãªtre refinÃ©, pour conserver une prÃ©cision du terrain lors de variation de pente
         bool m_doNotRefine;
 };
 

@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Rémi Bèges
+// Copyright (C) 2012 RÃ©mi BÃ¨ges
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -60,9 +60,9 @@ class NAZARA_API NzTerrainQuadTree
         void ReturnPatchToPool(NzPatch* patch);
         NzTerrainVertex* GetVertexFromPool();
         void ReturnVertexToPool(NzTerrainVertex* vertex);
-        //Vu que quadtree ne sera pas en charge de l'affichage, elles sont peut être inutiles, y compris maintenir à jour m_leaves
+        //Vu que quadtree ne sera pas en charge de l'affichage, elles sont peut Ãªtre inutiles, y compris maintenir Ã  jour m_leaves
         void RegisterLeaf(NzTerrainInternalNode* node);
-        bool UnRegisterLeaf(NzTerrainInternalNode* node);//Les feuilles enlevées ici doivent aussi l'être de la camera list
+        bool UnRegisterLeaf(NzTerrainInternalNode* node);//Les feuilles enlevÃ©es ici doivent aussi l'Ãªtre de la camera list
         bool UnRegisterNode(NzTerrainInternalNode* node);
 
         void AddLeaveToSubdivisionQueue(NzTerrainInternalNode* node);

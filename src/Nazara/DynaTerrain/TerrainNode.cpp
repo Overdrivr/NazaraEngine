@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Rémi Bèges
+// Copyright (C) 2012 RÃ©mi BÃ¨ges
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -34,7 +34,7 @@ void NzTerrainNode::AddBuffer(NzVertexBuffer* buffer)
         nzBufferLocation temp;
         temp.buffer = m_buffers.size() - 1;
         temp.index = i*25;
-        //On rajoute l'index de l'emplacement à la file des index libres
+        //On rajoute l'index de l'emplacement Ã  la file des index libres
         m_freeSpotsIndex.push_back(temp);
     }
 
@@ -52,16 +52,16 @@ void NzTerrainNode::AddPatch(const std::array<float,150>& vertices, const NzTerr
 {
     //std::cout<<"Adding patch "<<ID.lvl<<"|"<<ID.sx<<"|"<<ID.sy<<std::endl;
 
-    //Si la zone n'a pas de slots de libre, elle demande un buffer supplémentaire au dispatcher
+    //Si la zone n'a pas de slots de libre, elle demande un buffer supplÃ©mentaire au dispatcher
     if(m_buffersMap.GetTotalFreeSlotsAmount() == 0)
     {
         NzVertexBuffer* temp = m_dispatcher->QueryFreeBuffer();
         if(temp != nullptr)
         {
-            //On a bien reçu un buffer, on peut poursuivre
+            //On a bien reÃ§u un buffer, on peut poursuivre
             this->AddBuffer(temp);
         }
-        else //Si le dispatcher ne peut en fournir aucun, l'opération est temporairement abandonnée et le patch est sauvegardé dans une file
+        else //Si le dispatcher ne peut en fournir aucun, l'opÃ©ration est temporairement abandonnÃ©e et le patch est sauvegardÃ© dans une file
         {
             for(int i(0) ; i < 150 ; ++i)
             {
@@ -160,7 +160,7 @@ bool NzTerrainNode::UpdatePatch(const std::array<float,150>& vertices, const NzT
 {
     NzVector2i location = m_buffersMap.FindKeyLocation(ID);
 
-    //Si l'emplacement n'a pas été retrouvé, on abandonne
+    //Si l'emplacement n'a pas Ã©tÃ© retrouvÃ©, on abandonne
     if(location.x < 0 || location.y < 0)
     {
         std::cout<<"Cannot update patch...Location not found"<<std::endl;

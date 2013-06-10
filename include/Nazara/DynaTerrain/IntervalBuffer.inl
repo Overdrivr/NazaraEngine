@@ -1,4 +1,4 @@
-// Copyright (C) 2012 RÈmi BËges
+// Copyright (C) 2012 R√©mi B√®ges
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -7,7 +7,7 @@ NzIntervalBuffer<T>::NzIntervalBuffer(unsigned int bufferSize)
 {
     m_bufferSize = bufferSize;
     m_occupiedSlotsAmount = 0;
-    //Il y a m_bufferSize cases de libres ‡ partir de l'index 0
+    //Il y a m_bufferSize cases de libres √† partir de l'index 0
     m_freeSlotBatches.push_front(NzBatch(0,bufferSize));
 }
 
@@ -20,10 +20,10 @@ NzIntervalBuffer<T>::~NzIntervalBuffer()
 template <typename T>
 int NzIntervalBuffer<T>::FindValue(const T& value) const
 {
-    //On rÈcupËre l'emplacement de la valeur
+    //On r√©cup√®re l'emplacement de la valeur
     typename std::map<T,int>::const_iterator it = m_slots.find(key);
 
-    //Si la valeur n'existe pas dans le buffer, il n'y a rien ‡ supprimer
+    //Si la valeur n'existe pas dans le buffer, il n'y a rien √† supprimer
     if(it == m_slots.end())
         return -1;
 
@@ -73,16 +73,16 @@ int NzIntervalBuffer<T>::InsertValue(const T& value)
     if(m_occupiedSlotsAmount == m_bufferSize)
         return -1;
 
-    //On rÈcupËre le premier emplacement libre avec m_freeSlotBatches
+    //On r√©cup√®re le premier emplacement libre avec m_freeSlotBatches
     unsigned int index = m_freeSlotBatches.front().Start();
 
-    //On ajoute la valeur dans le buffer ‡ l'emplacement libre
+    //On ajoute la valeur dans le buffer √† l'emplacement libre
     m_slots[key] = index;
 
     if(!AtomicKeyRemoval(m_freeSlotBatches,index))
         return -1;
 
-    //L'insertion ne peut pas Èchouer
+    //L'insertion ne peut pas √©chouer
     AtomicKeyInsertion(m_filledSlotBatches,index);
 
     m_occupiedSlotsAmount++;
@@ -99,10 +99,10 @@ NzVector2i NzIntervalBuffer<T>::ReduceFragmentation()
 template <typename T>
 int NzIntervalBuffer<T>::RemoveValue(const T& value)
 {
-    //On rÈcupËre l'emplacement de la valeur
+    //On r√©cup√®re l'emplacement de la valeur
     typename std::map<T,int>::iterator it = m_slots.find(key);
 
-    //Si la valeur n'existe pas dans le buffer, il n'y a rien ‡ supprimer
+    //Si la valeur n'existe pas dans le buffer, il n'y a rien √† supprimer
     if(it == m_slots.end())
         return -1;
 
@@ -111,7 +111,7 @@ int NzIntervalBuffer<T>::RemoveValue(const T& value)
     if(!RemoveValueFromSingleBuffer(m_filledSlotBatches,index))
         return -1;
 
-    //L'insertion ne peut pas Èchouer
+    //L'insertion ne peut pas √©chouer
     InsertValueToSingleBuffer(m_freeSlotBatches,index);
 
     m_occupiedSlotsAmount--;
@@ -127,7 +127,7 @@ bool NzSparseBuffer<T>::InsertValueToSingleBuffer(std::list<NzBatch>& buffer, un
     std::list<NzBatch>::iterator it_last = buffer.end();
     it_last--;
 
-    //Si il n'y a pas d'espace disponible on en crÈe un et on lui affecte immÈdiatement la valeur
+    //Si il n'y a pas d'espace disponible on en cr√©e un et on lui affecte imm√©diatement la valeur
     if(buffer.empty())
     {
         buffer.push_front(NzBatch(index,1));
@@ -135,19 +135,19 @@ bool NzSparseBuffer<T>::InsertValueToSingleBuffer(std::list<NzBatch>& buffer, un
     }
     else
     {
-        //On l'ajoute ‡ la liste des batches pleins
+        //On l'ajoute √† la liste des batches pleins
         for(it = buffer.begin() ; it != buffer.end() ; ++it)
         {
-            if(it->Add(index))//Ajout ‡ un emplacement existant rÈussi
+            if(it->Add(index))//Ajout √† un emplacement existant r√©ussi
             {
                 break;
             }
-            else if(it->Start() > index + 1)//CrÈation d'un nouveau bloc nÈcessaire
+            else if(it->Start() > index + 1)//Cr√©ation d'un nouveau bloc n√©cessaire
             {
                 buffer.insert(it,NzBatch(index,1));
                 break;
             }
-            else if(it == it_last)//L'index est situÈ aprËs le dernier emplacement, crÈation d'un nouveau bloc a la fin
+            else if(it == it_last)//L'index est situ√© apr√®s le dernier emplacement, cr√©ation d'un nouveau bloc a la fin
             {
                 buffer.push_back(NzBatch(index,1));
                 break;
@@ -156,7 +156,7 @@ bool NzSparseBuffer<T>::InsertValueToSingleBuffer(std::list<NzBatch>& buffer, un
 
     }
 
-    //L'insertion a ÈtÈ rÈalisÈe, maintenant on regarde si un regroupement (avant et/ou aprËs) est possible
+    //L'insertion a √©t√© r√©alis√©e, maintenant on regarde si un regroupement (avant et/ou apr√®s) est possible
 
     //avant
     if(it != buffer.begin())
@@ -171,7 +171,7 @@ bool NzSparseBuffer<T>::InsertValueToSingleBuffer(std::list<NzBatch>& buffer, un
         }
     }
 
-    //aprËs
+    //apr√®s
     it++;
     if(it != buffer.end())
     {
@@ -195,7 +195,7 @@ bool NzSparseBuffer<T>::RemoveValueFromSingleBuffer(std::list<NzBatch>& buffer, 
     std::list<NzBatch>::iterator it_last = buffer.end();
     it_last--;
 
-    //Si il n'y a pas d'emplacements occupÈs, aucune suppression ‡ effectuer
+    //Si il n'y a pas d'emplacements occup√©s, aucune suppression √† effectuer
     if(buffer.empty())
     {
         return false;
@@ -205,12 +205,12 @@ bool NzSparseBuffer<T>::RemoveValueFromSingleBuffer(std::list<NzBatch>& buffer, 
         int situation;
         NzBatch temp(0,0);
 
-        //On l'ajoute ‡ la liste des batches pleins
+        //On l'ajoute √† la liste des batches pleins
         for(it = buffer.begin() ; it != buffer.end() ; ++it)
         {
             situation = it->Remove(index,temp);
 
-            if(situation == 2)//Une suppression au milieu a eu lieu, un nouvel emplacement a ÈtÈ crÈÈ
+            if(situation == 2)//Une suppression au milieu a eu lieu, un nouvel emplacement a √©t√© cr√©√©
             {
                 ++it;
                 buffer.insert(it,temp);

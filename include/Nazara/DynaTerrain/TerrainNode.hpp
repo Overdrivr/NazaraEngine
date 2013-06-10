@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Rémi Bèges
+// Copyright (C) 2012 RÃ©mi BÃ¨ges
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -53,8 +53,8 @@ class NAZARA_API NzTerrainNode
         //Image of the raw data for quick search over patch id & memory fragmentation reduction
         NzSparseBufferSet<NzTerrainNodeID> m_buffersMap;
 
-        //Contient l'ensemble des patches qui n'ont pas pu être mis en mémoire vidéo pour cause d'espace insuffisant
-            //Non utilisé : FIX ME : Vraiment Utile ?
+        //Contient l'ensemble des patches qui n'ont pas pu Ãªtre mis en mÃ©moire vidÃ©o pour cause d'espace insuffisant
+            //Non utilisÃ© : FIX ME : Vraiment Utile ?
         std::queue<float> m_unbufferedPatches;
         std::queue<NzTerrainNodeID> m_unbufferedPatchesIndex;
         unsigned int m_freeSpotsAmount;
