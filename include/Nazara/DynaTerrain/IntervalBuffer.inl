@@ -3,7 +3,7 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 template <typename T>
-NzSparseBuffer<T>::NzSparseBuffer(unsigned int bufferSize)
+NzIntervalBuffer<T>::NzIntervalBuffer(unsigned int bufferSize)
 {
     m_bufferSize = bufferSize;
     m_occupiedSlotsAmount = 0;
@@ -12,13 +12,13 @@ NzSparseBuffer<T>::NzSparseBuffer(unsigned int bufferSize)
 }
 
 template <typename T>
-NzSparseBuffer<T>::~NzSparseBuffer()
+NzIntervalBuffer<T>::~NzIntervalBuffer()
 {
     //dtor
 }
 
 template <typename T>
-int NzSparseBuffer<T>::FindKey(const T& key) const
+int NzIntervalBuffer<T>::FindValue(const T& value) const
 {
     //On récupère l'emplacement de la valeur
     typename std::map<T,int>::const_iterator it = m_slots.find(key);
@@ -31,43 +31,43 @@ int NzSparseBuffer<T>::FindKey(const T& key) const
 }
 
 template <typename T>
-unsigned int NzSparseBuffer<T>::GetFilledSlotsAmount() const
+unsigned int NzIntervalBuffer<T>::GetFilledSlotsAmount() const
 {
     return m_occupiedSlotsAmount;
 }
 
 template <typename T>
-const std::list<NzBatch>& NzSparseBuffer<T>::GetFilledBatches() const
+const std::list<NzBatch>& NzIntervalBuffer<T>::GetFilledIntervals() const
 {
     return m_filledSlotBatches;
 }
 
 template <typename T>
-std::list<NzBatch> NzSparseBuffer<T>::GetFilledBatchesCopy()
+std::list<NzBatch> NzIntervalBuffer<T>::GetFilledIntervalsCopy()
 {
     return m_filledSlotBatches;
 }
 
 template <typename T>
-const std::list<NzBatch>& NzSparseBuffer<T>::GetFreeBatches() const
+const std::list<NzBatch>& NzIntervalBuffer<T>::GetFreeIntervals() const
 {
     return m_freeSlotBatches;
 }
 
 template <typename T>
-std::list<NzBatch> NzSparseBuffer<T>::GetFreeBatchesCopy()
+std::list<NzBatch> NzIntervalBuffer<T>::GetFreeIntervalsCopy()
 {
     return m_freeSlotBatches;
 }
 
 template <typename T>
-unsigned int NzSparseBuffer<T>::GetFreeSlotsAmount() const
+unsigned int NzIntervalBuffer<T>::GetFreeSlotsAmount() const
 {
     return m_bufferSize - m_occupiedSlotsAmount;
 }
 
 template <typename T>
-int NzSparseBuffer<T>::InsertValueKey(const T& key)
+int NzIntervalBuffer<T>::InsertValue(const T& value)
 {
     //Pas d'espace libre
     if(m_occupiedSlotsAmount == m_bufferSize)
@@ -79,11 +79,11 @@ int NzSparseBuffer<T>::InsertValueKey(const T& key)
     //On ajoute la valeur dans le buffer à l'emplacement libre
     m_slots[key] = index;
 
-    if(!RemoveValueFromSingleBuffer(m_freeSlotBatches,index))
+    if(!AtomicKeyRemoval(m_freeSlotBatches,index))
         return -1;
 
     //L'insertion ne peut pas échouer
-    InsertValueToSingleBuffer(m_filledSlotBatches,index);
+    AtomicKeyInsertion(m_filledSlotBatches,index);
 
     m_occupiedSlotsAmount++;
 
@@ -91,13 +91,13 @@ int NzSparseBuffer<T>::InsertValueKey(const T& key)
 }
 
 template <typename T>
-NzVector2i NzSparseBuffer<T>::ReduceFragmentation()
+NzVector2i NzIntervalBuffer<T>::ReduceFragmentation()
 {
     return NzVector2i(0,0);
 }
 
 template <typename T>
-int NzSparseBuffer<T>::RemoveValueKey(const T& key)
+int NzIntervalBuffer<T>::RemoveValue(const T& value)
 {
     //On récupère l'emplacement de la valeur
     typename std::map<T,int>::iterator it = m_slots.find(key);

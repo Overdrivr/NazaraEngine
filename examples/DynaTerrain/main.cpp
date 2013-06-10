@@ -86,8 +86,8 @@ int main()
     std::cout<<"Window opened successfully."<<endl;
 
 	/// Caméra
-	//NzVector3f camPos(-2000.f, 1800.f, 2000.f);
-	NzVector3f camPos(7241.f, 12618.f, 3130.f);
+	NzVector3f camPos(-2000.f, 1800.f, 2000.f);
+	//NzVector3f camPos(7241.f, 12618.f, 3130.f);
 	NzEulerAnglesf camRot(-30.f, -45.f, 0.f);
 	NzCamera camera;
 	camera.SetPosition(camPos);

@@ -2,10 +2,21 @@
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
+// Container
+// Data is indexed by a unique key
+// Container's size is fixed at construction
+// Initially all slots are free
+// Data can be added to an empty slot, and removed from a full one
+// When two identical slots (i.e. both empty or full) or more are next to each other
+// They form an "interval"
+// An interval is described by a start index and a size
+// It is possible to get a list of all full & empty intervals
+// Example : used to keep track of occupied locations in a bix vertex buffer
+
 #pragma once
 
-#ifndef NAZARA_SPARSEBUFFER_HPP
-#define NAZARA_SPARSEBUFFER_HPP
+#ifndef NAZARA_INTERVALBUFFER_HPP
+#define NAZARA_INTERVALBUFFER_HPP
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Math/Vector2.hpp>
@@ -14,25 +25,25 @@
 #include <map>
 #include <list>
 
-template <typename T> class NzSparseBuffer
+template <typename T> class NzIntervalBuffer
 {
     public:
-        NzSparseBuffer(unsigned int bufferSize);
-        ~NzSparseBuffer();
+        NzIntervalBuffer(unsigned int bufferSize);
+        ~NzIntervalBuffer();
 
         //Returns the value's index OR -1 if the value cannot be located
-        int FindKey(const T& key) const;
+        int FindValue(const T& value) const;
 
         unsigned int GetFilledSlotsAmount() const;
-        const std::list<NzBatch>& GetFilledBatches() const;
-        std::list<NzBatch> GetFilledBatchesCopy();
-        const std::list<NzBatch>& GetFreeBatches() const;
-        std::list<NzBatch> GetFreeBatchesCopy();
+        const std::list<NzBatch>& GetFilledIntervals() const;
+        std::list<NzBatch> GetFilledIntervalsCopy();// POURQUOI NOM DIFFERENT ? A TESTER
+        const std::list<NzBatch>& GetFreeIntervals() const;
+        std::list<NzBatch> GetFreeIntervalsCopy();//PAREIL
         unsigned int GetFreeSlotsAmount() const;
 
         //Insert the value's key inside the buffer
             //Returns -1 if something went wrong OR index location if everything ok
-        int InsertValueKey(const T& key);
+        int InsertValue(const T& value);
 
         //Reduces fragmentation by moving 1 value key from one case to an other
             //Returns a vector where x is the previous position
@@ -41,18 +52,18 @@ template <typename T> class NzSparseBuffer
         NzVector2i ReduceFragmentation();
         //Returns the erased value key's index OR -1 if something went wrong
             //FIX ME : Mieux bool ou int en sortie ?
-        int RemoveValueKey(const T& key);
+        int RemoveValue(const T& value);
 
     protected:
     private:
-        bool InsertValueToSingleBuffer(std::list<NzBatch>& buffer, unsigned int index);
-        bool RemoveValueFromSingleBuffer(std::list<NzBatch>& buffer, unsigned int index);
+        bool AtomicKeyInsertion(std::list<NzBatch>& buffer, unsigned int index);
+        bool AtomicKeyRemoval(std::list<NzBatch>& buffer, unsigned int index);
 
         //Contient l'ensemble des valeurs du buffer et leur emplacement dans le buffer
             //Efficace pour trouver rapidement l'emplacement d'une valeur dans internalBuffer
         std::map<T,int> m_slots;
 
-        //Représentation des espaces pleins dans le buffer
+        //Représentation des intervalles pleins dans le buffer
             //Efficace pour déterminer le nombre et la position de blocs de vertices consécutifs
             //x représente l'index
             //y le nombre de slots pleins consécutifs
@@ -69,4 +80,4 @@ template <typename T> class NzSparseBuffer
 
 #include "SparseBuffer.inl"
 
-#endif // NAZARA_SPARSEBUFFER_HPP
+#endif // NAZARA_INDEXBUFFER_HPP
