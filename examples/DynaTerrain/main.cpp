@@ -32,11 +32,11 @@ int main()
     //Les paramètres de base
     myTerrainConfig.groundTextures = "resources/dt_tiles.jpg";
     //Les paramètres liés à la précision autour de la caméra
-    myTerrainConfig.minPrecision = 2;//La précision minimale du terrain
-    myTerrainConfig.higherCameraPrecision = 5;//La précision maximale engendrée par la caméra
-    myTerrainConfig.cameraRadiusAmount = 3;//Le nombre max de rayons de précision autour de la caméra (= 9-2)
-    myTerrainConfig.higherCameraPrecisionRadius = 500.f;//Le rayon du cercle le plus précis (à garder très petit si la précision est importante)
-    myTerrainConfig.radiusSizeIncrement = 2.5f;//L'incrément en taille entre deux rayons consécutifs
+    //myTerrainConfig.minPrecision = 2;//La précision minimale du terrain
+    //myTerrainConfig.higherCameraPrecision = 5;//La précision maximale engendrée par la caméra
+    //myTerrainConfig.cameraRadiusAmount = 3;//Le nombre max de rayons de précision autour de la caméra (= 9-2)
+    //myTerrainConfig.higherCameraPrecisionRadius = 500.f;//Le rayon du cercle le plus précis (à garder très petit si la précision est importante)
+    //myTerrainConfig.radiusSizeIncrement = 2.5f;//L'incrément en taille entre deux rayons consécutifs
 
     //Si la configuration n'est pas bonne, elle sera réparée au plus proche automatiquement
     if(!myTerrainConfig.IsValid())

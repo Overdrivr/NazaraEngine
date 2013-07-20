@@ -19,6 +19,11 @@ NzDynamicTerrain::NzDynamicTerrain(const NzTerrainConfiguration& configuration, 
     m_heightSource = heightSource;
 }
 
+NzDynamicTerrain::NzDynamicTerrain(NzHeightSource2D* heightSource)
+{
+    m_heightSource = heightSource;
+}
+
 NzDynamicTerrain::~NzDynamicTerrain()
 {
     delete quadtree;

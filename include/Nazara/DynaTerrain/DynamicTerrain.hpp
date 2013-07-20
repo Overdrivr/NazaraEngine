@@ -13,13 +13,14 @@
 #include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
 #include <Nazara/DynaTerrain/DynaTerrainMainClassBase.hpp>
 
-//TODO : Rajouter constructeur sans config, pour config par défaut
+//TODO : Ramener les textures dans NzDynaTerrainMainCLass, ce n'est pas à la classe de config de s'en occuper
 
 class NAZARA_API NzDynamicTerrain : public NzDynaTerrainMainClassBase
 {
     public:
 
         NzDynamicTerrain(const NzTerrainConfiguration& configuration, NzHeightSource2D* heightSource);
+        NzDynamicTerrain(NzHeightSource2D* heightSource);
         ~NzDynamicTerrain();
 
         void Initialize();
