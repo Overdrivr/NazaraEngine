@@ -78,6 +78,6 @@ template <typename T> class NzIntervalBuffer
         unsigned int m_occupiedSlotsAmount;
 };
 
-#include "SparseBuffer.inl"
+#include "IntervalBuffer.inl"
 
 #endif // NAZARA_INDEXBUFFER_HPP

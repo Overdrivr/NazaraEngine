@@ -8,7 +8,7 @@
 #define NAZARA_SPARSEBUFFERSET_HPP
 
 #include <Nazara/Prerequesites.hpp>
-#include <Nazara/DynaTerrain/SparseBuffer.hpp>
+#include <Nazara/DynaTerrain/IntervalBuffer.hpp>
 #include <Nazara/Math/Vector2.hpp>
 #include <Nazara/Math/Vector4.hpp>
 #include <vector>
@@ -20,8 +20,8 @@ template <typename T> class NzSparseBufferSet
         NzSparseBufferSet();
         ~NzSparseBufferSet();
 
-        NzSparseBuffer<T>& at(unsigned int index);
-        const NzSparseBuffer<T>& at(unsigned int index) const;
+        NzIntervalBuffer<T>& at(unsigned int index);
+        const NzIntervalBuffer<T>& at(unsigned int index) const;
         void AddEmptyBuffer(unsigned int bufferSize);
 
         NzVector2i FindKeyLocation(const T& key) const;
@@ -45,7 +45,7 @@ template <typename T> class NzSparseBufferSet
 
     protected:
     private:
-        std::vector<NzSparseBuffer<T>> m_buffers;
+        std::vector<NzIntervalBuffer<T>> m_buffers;
         std::map<T,int> m_valueToBufferIndex;
         unsigned int m_occupiedSlotsAmount;
         unsigned int m_totalSlots;

@@ -21,7 +21,7 @@ template <typename T>
 int NzIntervalBuffer<T>::FindValue(const T& value) const
 {
     //On récupère l'emplacement de la valeur
-    typename std::map<T,int>::const_iterator it = m_slots.find(key);
+    typename std::map<T,int>::const_iterator it = m_slots.find(value);
 
     //Si la valeur n'existe pas dans le buffer, il n'y a rien à supprimer
     if(it == m_slots.end())
@@ -77,12 +77,12 @@ int NzIntervalBuffer<T>::InsertValue(const T& value)
     unsigned int index = m_freeSlotBatches.front().Start();
 
     //On ajoute la valeur dans le buffer à l'emplacement libre
-    m_slots[key] = index;
+    m_slots[value] = index;
 
     if(!AtomicKeyRemoval(m_freeSlotBatches,index))
         return -1;
 
-    //L'insertion ne peut pas échouer
+    //L'insertion ne peut pas échouer car il y a de la place
     AtomicKeyInsertion(m_filledSlotBatches,index);
 
     m_occupiedSlotsAmount++;
@@ -100,7 +100,7 @@ template <typename T>
 int NzIntervalBuffer<T>::RemoveValue(const T& value)
 {
     //On récupère l'emplacement de la valeur
-    typename std::map<T,int>::iterator it = m_slots.find(key);
+    typename std::map<T,int>::iterator it = m_slots.find(value);
 
     //Si la valeur n'existe pas dans le buffer, il n'y a rien à supprimer
     if(it == m_slots.end())
@@ -108,11 +108,11 @@ int NzIntervalBuffer<T>::RemoveValue(const T& value)
 
     unsigned int index = it->second;
 
-    if(!RemoveValueFromSingleBuffer(m_filledSlotBatches,index))
+    if(!AtomicKeyRemoval(m_filledSlotBatches,index))
         return -1;
 
     //L'insertion ne peut pas échouer
-    InsertValueToSingleBuffer(m_freeSlotBatches,index);
+    AtomicKeyInsertion(m_freeSlotBatches,index);
 
     m_occupiedSlotsAmount--;
 
@@ -120,7 +120,7 @@ int NzIntervalBuffer<T>::RemoveValue(const T& value)
 }
 
 template <typename T>
-bool NzSparseBuffer<T>::InsertValueToSingleBuffer(std::list<NzBatch>& buffer, unsigned int index)
+bool NzIntervalBuffer<T>::AtomicKeyInsertion(std::list<NzBatch>& buffer, unsigned int index)
 {
     std::list<NzBatch>::iterator it;
     std::list<NzBatch>::iterator it_2;
@@ -188,7 +188,7 @@ bool NzSparseBuffer<T>::InsertValueToSingleBuffer(std::list<NzBatch>& buffer, un
 }
 
 template <typename T>
-bool NzSparseBuffer<T>::RemoveValueFromSingleBuffer(std::list<NzBatch>& buffer, unsigned int index)
+bool NzIntervalBuffer<T>::AtomicKeyRemoval(std::list<NzBatch>& buffer, unsigned int index)
 {
     std::list<NzBatch>::iterator it;
     std::list<NzBatch>::iterator it_2;

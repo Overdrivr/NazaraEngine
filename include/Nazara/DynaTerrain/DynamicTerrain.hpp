@@ -13,6 +13,8 @@
 #include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
 #include <Nazara/DynaTerrain/DynaTerrainMainClassBase.hpp>
 
+//TODO : Rajouter constructeur sans config, pour config par défaut
+
 class NAZARA_API NzDynamicTerrain : public NzDynaTerrainMainClassBase
 {
     public:

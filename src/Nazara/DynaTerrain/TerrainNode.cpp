@@ -93,8 +93,8 @@ void NzTerrainNode::DrawBuffers() const
     {
 
         //we recover consecutive patches amount
-        std::list<NzBatch>::const_iterator it = m_buffersMap.at(i).GetFilledBatches().cbegin();
-        for(it = m_buffersMap.at(i).GetFilledBatches().cbegin() ; it != m_buffersMap.at(i).GetFilledBatches().cend() ; ++it)
+        std::list<NzBatch>::const_iterator it = m_buffersMap.at(i).GetFilledIntervals().cbegin();
+        for(it = m_buffersMap.at(i).GetFilledIntervals().cbegin() ; it != m_buffersMap.at(i).GetFilledIntervals().cend() ; ++it)
         {
             //We render each patch batch in a single call to reduce draw calls
             NzRenderer::SetVertexBuffer(m_buffers.at(i));

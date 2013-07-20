@@ -18,13 +18,13 @@ NzSparseBufferSet<T>::~NzSparseBufferSet()
 }
 
 template <typename T>
-NzSparseBuffer<T>& NzSparseBufferSet<T>::at(unsigned int index)
+NzIntervalBuffer<T>& NzSparseBufferSet<T>::at(unsigned int index)
 {
     return m_buffers.at(index);
 }
 
 template <typename T>
-const NzSparseBuffer<T>& NzSparseBufferSet<T>::at(unsigned int index) const
+const NzIntervalBuffer<T>& NzSparseBufferSet<T>::at(unsigned int index) const
 {
     return m_buffers.at(index);
 }
@@ -33,7 +33,7 @@ template <typename T>
 void NzSparseBufferSet<T>::AddEmptyBuffer(unsigned int bufferSize)
 {
     m_totalSlots += bufferSize;
-    NzSparseBuffer<T> temp(bufferSize);
+    NzIntervalBuffer<T> temp(bufferSize);
     m_buffers.push_back(temp);
 }
 
@@ -46,7 +46,7 @@ NzVector2i NzSparseBufferSet<T>::FindKeyLocation(const T& key) const
 
     if(location.x > -1)
     {
-       location.y = m_buffers.at(location.x).FindKey(key);
+       location.y = m_buffers.at(location.x).FindValue(key);
     }
 
     return location;
@@ -105,8 +105,8 @@ NzVector2i NzSparseBufferSet<T>::InsertValueKey(const T& key)
     {
         if(m_buffers.at(i).GetFreeSlotsAmount() > 0)
         {
-            location.y =  m_buffers.at(i).InsertValueKey(key);
-            if(location.y > -1)//Si l'index retournÃ© est valide, on s'arrÃªte lÃ 
+            location.y =  m_buffers.at(i).InsertValue(key);
+            if(location.y > -1)//Si l'index retourné est valide, on s'arrête là 
             {
                 m_valueToBufferIndex[key] = i;
                 location.x = i;
@@ -143,7 +143,7 @@ NzVector2i NzSparseBufferSet<T>::RemoveValueKey(const T& key)
     if(location.x < 0)
         return NzVector2i(-1,-1);
 
-    location.y = m_buffers.at(location.x).RemoveValueKey(key);
+    location.y = m_buffers.at(location.x).RemoveValue(key);
 
     if(location.y > -1)
     {
