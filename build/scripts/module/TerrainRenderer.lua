@@ -1,23 +1,23 @@
 if (not _OPTIONS["united"]) then
-	project "NazaraModuleName"
+	project "TerrainRenderer"
 end
 
 files
 {
-	"../include/Nazara/ModuleName/**.hpp",
-	"../include/Nazara/ModuleName/**.inl",
-	"../src/Nazara/ModuleName/**.hpp",
-	"../src/Nazara/ModuleName/**.cpp"
+	"../include/Nazara/TerrainRenderer/**.hpp",
+	"../include/Nazara/TerrainRenderer/**.inl",
+	"../src/Nazara/TerrainRenderer/**.hpp",
+	"../src/Nazara/TerrainRenderer/**.cpp"
 }
 
 if (os.is("windows")) then
-	excludes { "../src/Nazara/ModuleName/Posix/*.hpp", "../src/Nazara/ModuleName/Posix/*.cpp" }
+	excludes { "../src/Nazara/TerrainRenderer/Posix/*.hpp", "../src/Nazara/TerrainRenderer/Posix/*.cpp" }
 else
-	excludes { "../src/Nazara/ModuleName/Win32/*.hpp", "../src/Nazara/ModuleName/Win32/*.cpp" }
+	excludes { "../src/Nazara/TerrainRenderer/Win32/*.hpp", "../src/Nazara/TerrainRenderer/Win32/*.cpp" }
 end
 
 if (_OPTIONS["united"]) then
-	excludes "../src/Nazara/ModuleName/Debug/Leaks.cpp"
+	excludes "../src/Nazara/TerrainRenderer/Debug/Leaks.cpp"
 else
 	configuration "DebugStatic"
 		links "NazaraCore-s-d"

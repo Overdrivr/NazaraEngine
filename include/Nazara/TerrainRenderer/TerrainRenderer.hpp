@@ -1,20 +1,20 @@
-// Copyright (C) 2013 AUTHORS
+// Copyright (C) 2013 Rémi Bèges
 // This file is part of the "Nazara Engine - Module name"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #pragma once
 
-#ifndef NAZARA_MODULENAME_HPP
-#define NAZARA_MODULENAME_HPP
+#ifndef NAZARA_TERRAINRENDERER_HPP
+#define NAZARA_TERRAINRENDERER_HPP
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Core/Initializer.hpp>
 
-class NAZARA_API NzModuleName
+class NAZARA_API NzTerrainRenderer
 {
 	public:
-		NzModuleName() = delete;
-		~NzModuleName() = delete;
+		NzTerrainRenderer() = delete;
+		~NzTerrainRenderer() = delete;
 
 		static bool Initialize();
 
@@ -26,4 +26,4 @@ class NAZARA_API NzModuleName
 		static unsigned int s_moduleReferenceCounter;
 };
 
-#endif // NAZARA_MODULENAME_HPP
+#endif // NAZARA_TERRAINRENDERER_HPP

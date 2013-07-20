@@ -1,7 +1,7 @@
 /*
-	Nazara Engine - Module name
+	Nazara Engine - Terrain Renderer module
 
-	Copyright (C) 2013 AUTHORS (EMAIL)
+	Copyright (C) 2013 Rémi Bèges (remi[dot]beges[at]laposte[dot]net)
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy of
 	this software and associated documentation files (the "Software"), to deal in
@@ -24,15 +24,15 @@
 
 #pragma once
 
-#ifndef NAZARA_CONFIG_MODULENAME_HPP
-#define NAZARA_CONFIG_MODULENAME_HPP
+#ifndef NAZARA_CONFIG_TERRAINRENDERER_HPP
+#define NAZARA_CONFIG_TERRAINRENDERER_HPP
 
 /// Chaque modification d'un paramètre du module nécessite une recompilation de celui-ci
 
 // Utilise un tracker pour repérer les éventuels leaks (Ralentit l'exécution)
-#define NAZARA_MODULENAME_MEMORYLEAKTRACKER 0
+#define NAZARA_TERRAINRENDERER_MEMORYLEAKTRACKER 0
 
 // Active les tests de sécurité basés sur le code (Conseillé pour le développement)
-#define NAZARA_MODULENAME_SAFE 1
+#define NAZARA_TERRAINRENDERER_SAFE 1
 
-#endif // NAZARA_CONFIG_MODULENAME_HPP
+#endif // NAZARA_CONFIG_TERRAINRENDERER_HPP
