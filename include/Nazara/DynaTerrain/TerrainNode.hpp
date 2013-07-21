@@ -25,40 +25,49 @@ class NAZARA_API NzTerrainNode
         NzTerrainNode();
         ~NzTerrainNode();
 
+        // Actions hiérarchiques
         void CleanTree(unsigned int minDepth);//RENOMMER ReleaseAllChildren
-        void CreatePatch();
-
-        void DeletePatch();
-
-        const NzCubef& GetAABB() const;
-        NzTerrainInternalNode* GetChild(nzLocation location);
-        NzTerrainInternalNode* GetChild(unsigned int i);
-        unsigned int GetLevel() const;
-        NzTerrainInternalNode* GetDirectNeighbor(nzDirection direction);
-        static int GetNodeAmount();
-        const NzTerrainNodeID& GetNodeID() const;
-        NzTerrainInternalNode* GetParent();
-
-        void Update(const NzVector3f& cameraPosition);
         bool HierarchicalRefine();
         void HierarchicalSubdivide(unsigned int maxDepth, bool isNotReversible = false);
         void HierarchicalSlopeBasedSubdivide(unsigned int maxDepth);
 
+        // Gestion du patch
+        void CreatePatch();
+        void DeletePatch();
+
+        // Getters
+        const NzCubef& GetAABB() const;
+        NzTerrainInternalNode* GetChild(nzLocation location);
+        NzTerrainInternalNode* GetChild(unsigned int i);
+        unsigned int GetLevel() const;
+        static int GetNodeAmount();
+        const NzTerrainNodeID& GetNodeID() const;
+        NzTerrainInternalNode* GetParent();
+
+        // Interaction avec les nodes voisins
+        NzTerrainInternalNode* GetDirectNeighbor(nzDirection direction);
+
+        // Actions principales
+        void Update(const NzVector3f& cameraPosition);
+        void Initialize(TerrainNodeData *data, NzTerrainInternalNode* parent, nzLocation loc = TOPLEFT);
+        void Invalidate();
+        bool Refine();
+        bool Subdivide(bool isNotReversible = false);
+
+        // Infos
         bool IsLeaf() const;
         bool IsRoot() const;
         bool IsValid() const;
-        void Initialize(TerrainNodeData *data, NzTerrainInternalNode* parent, nzLocation loc = TOPLEFT);
-        void Invalidate();
 
-        bool Refine();
-
-        bool Subdivide(bool isNotReversible = false);
 
     private:
+        //?? différence entre les deux
         void Initialize(TerrainNodeData *data, NzTerrainInternalNode* parent, const NzPatch& patch, nzLocation loc = TOPLEFT);
         void InitializeData(TerrainNodeData *data, NzTerrainInternalNode* parent, nzLocation loc = TOPLEFT);
+
         void HandleNeighborSubdivision(nzDirection direction, bool isNotReversible = false);
-        /* Variables pour le fonctionnement basique de l'arbre */
+
+
         TerrainNodeData* m_data;
         NzTerrainInternalNode* m_parent;
         NzTerrainInternalNode* m_children[4];
@@ -67,14 +76,14 @@ class NAZARA_API NzTerrainNode
         bool m_isRoot;
         bool m_isInitialized;
 
+        //L'identifiant unique du node
         NzTerrainNodeID m_nodeID;
         NzCubef m_aabb;
         NzPatch* m_patch;
+        //L'emplacement du node par rapport au parent
         nzLocation m_location;
 
         static int nbNodes;
-
-        /* Variables pour les fonctionnalités supplémentaires */
 
         //Indique que le node ne doit pas être refiné, pour conserver une précision du terrain lors de variation de pente
         bool m_doNotRefine;

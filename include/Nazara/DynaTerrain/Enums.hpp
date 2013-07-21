@@ -40,7 +40,7 @@ enum nzQuadTreeType
 class NzTerrainQuadTree;
 class NzTerrainMasterNode;
 
-struct TerrainNodeData
+struct nzTerrainNodeData
 {
     NzTerrainQuadTree* quadtree;
     NzTerrainMasterNode* dispatcher;

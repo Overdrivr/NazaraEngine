@@ -12,9 +12,11 @@
 #include <Nazara/DynaTerrain/TerrainConfiguration.hpp>
 #include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
 #include <Nazara/DynaTerrain/DynaTerrainMainClassBase.hpp>
+#include <Nazara/TerrainRenderer/TerrainChunk.hpp>
+#include <vector>
 
 //TODO : Ramener les textures dans NzDynaTerrainMainCLass, ce n'est pas à la classe de config de s'en occuper
-
+//TODO : Définir une taille maximale (visible) du terrain. Travailler avec 4,16 ou 32 quadtrees pour gérer le déplacement
 class NAZARA_API NzDynamicTerrain : public NzDynaTerrainMainClassBase
 {
     public:
@@ -37,9 +39,16 @@ class NAZARA_API NzDynamicTerrain : public NzDynaTerrainMainClassBase
         NzTexture m_terrainTexture;
 
         NzShader m_shader;
+
+        // Les quadtrees gèrent la construction/mise à jour du maillage de manière optimisé
+        // Chaque quadtree représente une sous-région fixe du terrain
+        //std::array<4,std::array<4,NzTerrainQuadTree*>> quadtree;
         NzTerrainQuadTree* quadtree;
-        NzTerrainQuadTree* quadtree2;
-        NzTerrainQuadTree* quadtree3;
+
+        // Le maillage généré, consistant en un ensemble de chunks (plusieurs chunks par quadtree)
+        // Un chunk correspond à une sous-région d'un quadtree
+        // Les chunks sont ensuite transmis au TerrainRenderer pour y être dessinés de manière optimisée
+        std::vector<NzTerrainChunk> m_chunks;
 };
 
 #endif // NAZARA_DYNAMICTERRAIN_HPP

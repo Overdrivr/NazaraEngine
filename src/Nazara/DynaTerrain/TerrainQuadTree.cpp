@@ -164,10 +164,10 @@ void NzTerrainQuadTree::Initialize()
     m_root->HierarchicalSlopeBasedSubdivide(m_commonConfiguration.maxSlopePrecision);
 }
 
-void NzTerrainQuadTree::Render()
-{
-    m_dispatcher.Draw();
-}
+//void NzTerrainQuadTree::Render()
+//{
+    //m_dispatcher.Draw();
+//}
 
 NzTerrainQuadTree* NzTerrainQuadTree::GetContainingQuadTree(const NzTerrainNodeID& nodeID)
 {

@@ -16,6 +16,8 @@ class NAZARA_API NzTerrainRenderer
 		NzTerrainRenderer() = delete;
 		~NzTerrainRenderer() = delete;
 
+        static void DrawTerrainChunk(const NzTerrainChunk& chunk);
+
 		static bool Initialize();
 
 		static bool IsInitialized();

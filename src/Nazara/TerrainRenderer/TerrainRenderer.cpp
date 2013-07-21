@@ -9,6 +9,11 @@
 #include <Nazara/TerrainRenderer/Config.hpp>
 #include <Nazara/TerrainRenderer/Debug.hpp>
 
+static void NzTerrainRenderer::DrawTerrainChunk(const NzTerrainChunk& chunk)
+{
+
+}
+
 bool NzTerrainRenderer::Initialize()
 {
 	if (s_moduleReferenceCounter++ != 0)

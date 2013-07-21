@@ -27,16 +27,16 @@ NzDynamicTerrain::NzDynamicTerrain(NzHeightSource2D* heightSource)
 NzDynamicTerrain::~NzDynamicTerrain()
 {
     delete quadtree;
-    delete quadtree2;
-    delete quadtree3;
+    //delete quadtree2;
+    //delete quadtree3;
 }
 
 void NzDynamicTerrain::Draw() const
 {
     NzDynaTerrainMainClassBase::Draw();
     quadtree->Render();
-    quadtree2->Render();
-    quadtree3->Render();
+    //quadtree2->Render();
+    //quadtree3->Render();
 }
 
 void NzDynamicTerrain::Initialize()
@@ -51,7 +51,7 @@ void NzDynamicTerrain::Initialize()
     quadtree = new NzTerrainQuadTree(m_configuration,m_heightSource);
     quadtree->Initialize();
 
-    NzTerrainConfiguration second = m_configuration;
+    /*NzTerrainConfiguration second = m_configuration;
 
     second.x_offset = 0;
     second.y_offset = 1;
@@ -65,7 +65,7 @@ void NzDynamicTerrain::Initialize()
     quadtree3 = new NzTerrainQuadTree(third,m_heightSource);
     quadtree3->Initialize();
     quadtree->ConnectNeighbor(quadtree3,RIGHT,LEFT);
-    quadtree3->ConnectNeighbor(quadtree2,BOTTOM,RIGHT);
+    quadtree3->ConnectNeighbor(quadtree2,BOTTOM,RIGHT);*/
 }
 
 void NzDynamicTerrain::Update(const NzVector3f& cameraPosition)
@@ -74,6 +74,6 @@ void NzDynamicTerrain::Update(const NzVector3f& cameraPosition)
     NzVector3f localCamPos = cameraPosition - this->GetPosition();
 
     quadtree->Update(localCamPos);
-    quadtree2->Update(localCamPos);
-    quadtree3->Update(localCamPos);
+    //quadtree2->Update(localCamPos);
+    //quadtree3->Update(localCamPos);
 }
