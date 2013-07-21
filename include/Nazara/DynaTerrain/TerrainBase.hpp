@@ -4,8 +4,8 @@
 
 #pragma once
 
-#ifndef NAZARA_DYNATERRAINMAINCLASSBASE_HPP
-#define NAZARA_DYNATERRAINMAINCLASSBASE_HPP
+#ifndef NAZARA_TERRAINBASE_HPP
+#define NAZARA_TERRAINBASE_HPP
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Renderer/Shader.hpp>
@@ -24,11 +24,11 @@
 //TODO : modifier shader du terrain pour qu'il fonctionne avec n'importe quelle direction (slope, altitude)
 //FIX ME : Nommage des méthodes innaproprié, renforcer la sécurité
 
-class NAZARA_API NzDynaTerrainMainClassBase : public NzDrawable, public NzSceneNode
+class NAZARA_API NzTerrainBase : public NzDrawable, public NzSceneNode
 {
     public:
-        NzDynaTerrainMainClassBase();
-        ~NzDynaTerrainMainClassBase();
+        NzTerrainBase();
+        ~NzTerrainBase();
 
         virtual const NzBoundingBoxf& GetBoundingBox() const;
 		virtual nzSceneNodeType GetSceneNodeType() const;
@@ -62,4 +62,4 @@ class NAZARA_API NzDynaTerrainMainClassBase : public NzDrawable, public NzSceneN
         nzFaceFilling m_faceFilling;
 };
 
-#endif // NAZARA_DYNATERRAINMAINCLASSBASE_HPP
+#endif // NAZARA_TERRAINBASE_HPP

@@ -4,27 +4,27 @@
 
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/DynaTerrain/Config.hpp>
-#include <Nazara/DynaTerrain/TerrainInternalNode.hpp>
+#include <Nazara/DynaTerrain/TerrainNode.hpp>
 #include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
 #include <stack>
 #include <iostream>
 #include <Nazara/DynaTerrain/Debug.hpp>
 
 
-int NzTerrainInternalNode::nbNodes = 0;
+int NzTerrainNode::nbNodes = 0;
 
-NzTerrainInternalNode::NzTerrainInternalNode()
+NzTerrainNode::NzTerrainNode()
 {
     nbNodes++;
     m_isInitialized = false;
 }
 
-NzTerrainInternalNode::~NzTerrainInternalNode()
+NzTerrainNode::~NzTerrainNode()
 {
     nbNodes--;
 }
 
-void NzTerrainInternalNode::CleanTree(unsigned int minDepth)
+void NzTerrainNode::CleanTree(unsigned int minDepth)
 {
     #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
@@ -63,7 +63,7 @@ void NzTerrainInternalNode::CleanTree(unsigned int minDepth)
     }
 }
 
-void NzTerrainInternalNode::CreatePatch()
+void NzTerrainNode::CreatePatch()
 {
     #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
@@ -79,24 +79,24 @@ void NzTerrainInternalNode::CreatePatch()
     m_patch->UploadMesh();
 }
 
-void NzTerrainInternalNode::DeletePatch()
+void NzTerrainNode::DeletePatch()
 {
     m_patch->UnUploadMesh();
     m_patch->Invalidate();
     m_data->quadtree->ReturnPatchToPool(m_patch);
 }
 
-const NzCubef& NzTerrainInternalNode::GetAABB() const
+const NzCubef& NzTerrainNode::GetAABB() const
 {
     return m_aabb;
 }
 
-NzTerrainInternalNode* NzTerrainInternalNode::GetChild(nzLocation location)
+NzTerrainNode* NzTerrainNode::GetChild(nzLocation location)
 {
     return m_children[location];
 }
 
-NzTerrainInternalNode* NzTerrainInternalNode::GetChild(unsigned int i)
+NzTerrainNode* NzTerrainNode::GetChild(unsigned int i)
 {
     if(i < 4)
         return m_children[i];
@@ -104,7 +104,7 @@ NzTerrainInternalNode* NzTerrainInternalNode::GetChild(unsigned int i)
         return nullptr;
 }
 
-NzTerrainInternalNode* NzTerrainInternalNode::GetDirectNeighbor(nzDirection direction)
+NzTerrainNode* NzTerrainNode::GetDirectNeighbor(nzDirection direction)
 {
     #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
@@ -136,7 +136,7 @@ NzTerrainInternalNode* NzTerrainInternalNode::GetDirectNeighbor(nzDirection dire
         break;
     }
 
-    NzTerrainInternalNode* neighbor;
+    NzTerrainNode* neighbor;
 
     if(tempID.IsValid())
     {
@@ -174,22 +174,22 @@ NzTerrainInternalNode* NzTerrainInternalNode::GetDirectNeighbor(nzDirection dire
     }
 }
 
-int NzTerrainInternalNode::GetNodeAmount()
+int NzTerrainNode::GetNodeAmount()
 {
     return nbNodes;
 }
 
-const NzTerrainNodeID& NzTerrainInternalNode::GetNodeID() const
+const NzTerrainNodeID& NzTerrainNode::GetNodeID() const
 {
     return m_nodeID;
 }
 
-NzTerrainInternalNode* NzTerrainInternalNode::GetParent()
+NzTerrainNode* NzTerrainNode::GetParent()
 {
     return m_parent;
 }
 
-void NzTerrainInternalNode::HierarchicalSubdivide(unsigned int maxDepth, bool isNotReversible)
+void NzTerrainNode::HierarchicalSubdivide(unsigned int maxDepth, bool isNotReversible)
 {
     #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
@@ -219,34 +219,34 @@ void NzTerrainInternalNode::HierarchicalSubdivide(unsigned int maxDepth, bool is
     }
 }
 
-bool NzTerrainInternalNode::IsLeaf() const
+bool NzTerrainNode::IsLeaf() const
 {
     return m_isLeaf;
 }
 
-bool NzTerrainInternalNode::IsRoot() const
+bool NzTerrainNode::IsRoot() const
 {
     return m_isRoot;
 }
 
-bool NzTerrainInternalNode::IsValid() const
+bool NzTerrainNode::IsValid() const
 {
     return m_isInitialized;
 }
 
-void NzTerrainInternalNode::Initialize(TerrainNodeData *data, NzTerrainInternalNode* parent, nzLocation loc)
+void NzTerrainNode::Initialize(TerrainNodeData *data, NzTerrainInternalNode* parent, nzLocation loc)
 {
     InitializeData(data,parent,loc);
     CreatePatch();
 }
 
-void NzTerrainInternalNode::Invalidate()
+void NzTerrainNode::Invalidate()
 {
     DeletePatch();
     m_isInitialized = false;
 }
 
-void NzTerrainInternalNode::HierarchicalSlopeBasedSubdivide(unsigned int maxDepth)
+void NzTerrainNode::HierarchicalSlopeBasedSubdivide(unsigned int maxDepth)
 {
     #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
@@ -278,7 +278,7 @@ void NzTerrainInternalNode::HierarchicalSlopeBasedSubdivide(unsigned int maxDept
     }
 }
 
-bool NzTerrainInternalNode::Subdivide(bool isNotReversible)
+bool NzTerrainNode::Subdivide(bool isNotReversible)
 {
     #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
@@ -344,7 +344,7 @@ bool NzTerrainInternalNode::Subdivide(bool isNotReversible)
     return true;
 }
 
-bool NzTerrainInternalNode::Refine()
+bool NzTerrainNode::Refine()
 {
     #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
@@ -502,7 +502,7 @@ bool NzTerrainInternalNode::Refine()
 
 }
 
-bool NzTerrainInternalNode::HierarchicalRefine()
+bool NzTerrainNode::HierarchicalRefine()
 {
     #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
@@ -529,7 +529,7 @@ bool NzTerrainInternalNode::HierarchicalRefine()
 
 }
 
-void NzTerrainInternalNode::HandleNeighborSubdivision(nzDirection direction, bool isNotReversible)
+void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction, bool isNotReversible)
 {
     #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
@@ -655,7 +655,7 @@ void NzTerrainInternalNode::HandleNeighborSubdivision(nzDirection direction, boo
     }
 }
 
-void NzTerrainInternalNode::Update(const NzVector3f& cameraPosition)
+void NzTerrainNode::Update(const NzVector3f& cameraPosition)
 {
     #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
@@ -699,7 +699,7 @@ void NzTerrainInternalNode::Update(const NzVector3f& cameraPosition)
     }
 }
 
-void NzTerrainInternalNode::Initialize(TerrainNodeData *data, NzTerrainInternalNode* parent, const NzPatch& patch, nzLocation loc)
+void NzTerrainNode::Initialize(TerrainNodeData *data, NzTerrainInternalNode* parent, const NzPatch& patch, nzLocation loc)
 {
     InitializeData(data,parent,loc);
     m_patch = m_data->quadtree->GetPatchFromPool();
@@ -708,7 +708,7 @@ void NzTerrainInternalNode::Initialize(TerrainNodeData *data, NzTerrainInternalN
     m_patch->UploadMesh();
 }
 
-void NzTerrainInternalNode::InitializeData(TerrainNodeData *data, NzTerrainInternalNode* parent, nzLocation loc)
+void NzTerrainNode::InitializeData(TerrainNodeData *data, NzTerrainInternalNode* parent, nzLocation loc)
 {
     m_isInitialized = true;
     m_data = data;
@@ -753,4 +753,3 @@ void NzTerrainInternalNode::InitializeData(TerrainNodeData *data, NzTerrainInter
         m_nodeID.locy = parent->m_nodeID.locy * 2 + offy;
     }
 }
-

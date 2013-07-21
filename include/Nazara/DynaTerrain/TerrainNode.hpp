@@ -4,8 +4,8 @@
 
 #pragma once
 
-#ifndef NAZARA_TERRAININTERNALNODE_HPP
-#define NAZARA_TERRAININTERNALNODE_HPP
+#ifndef NAZARA_TERRAINNODE_HPP
+#define NAZARA_TERRAINNODE_HPP
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Math/Vector2.hpp>
@@ -18,12 +18,12 @@
 class NzTerrainQuadTree;
 class NzHeightSource;
 
-class NAZARA_API NzTerrainInternalNode
+class NAZARA_API NzTerrainNode
 {
     public:
 
-        NzTerrainInternalNode();
-        ~NzTerrainInternalNode();
+        NzTerrainNode();
+        ~NzTerrainNode();
 
         void CleanTree(unsigned int minDepth);//RENOMMER ReleaseAllChildren
         void CreatePatch();
@@ -80,4 +80,4 @@ class NAZARA_API NzTerrainInternalNode
         bool m_doNotRefine;
 };
 
-#endif // NAZARA_TERRAININTERNALNODE_HPP
+#endif // NAZARA_TERRAINNODE_HPP

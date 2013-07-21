@@ -4,19 +4,19 @@
 
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/DynaTerrain/Config.hpp>
-#include <Nazara/DynaTerrain/DynaTerrainMainClassBase.hpp>
+#include <Nazara/DynaTerrain/TerrainBase.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
 #include <iostream>
 #include <Nazara/DynaTerrain/Debug.hpp>
 
 using namespace std;
 
-NzDynaTerrainMainClassBase::NzDynaTerrainMainClassBase()
+NzTerrainBase::NzTerrainBase()
 {
     m_faceFilling = nzFaceFilling_Fill;
 }
 
-NzDynaTerrainMainClassBase::~NzDynaTerrainMainClassBase()
+NzTerrainBase::~NzTerrainBase()
 {
     if(m_shader)
         delete m_shader;
@@ -24,12 +24,12 @@ NzDynaTerrainMainClassBase::~NzDynaTerrainMainClassBase()
     delete m_indexBuffer;
 }
 
-void NzDynaTerrainMainClassBase::AddToRenderQueue(NzRenderQueue& renderQueue) const
+void NzTerrainBase::AddToRenderQueue(NzRenderQueue& renderQueue) const
 {
     renderQueue.otherDrawables.push_back(this);
 }
 
-void NzDynaTerrainMainClassBase::BuildShader()
+void NzTerrainBase::BuildShader()
 {
     const char* vertexSource =
     "#version 140\n"
@@ -112,7 +112,7 @@ void NzDynaTerrainMainClassBase::BuildShader()
     }
 }
 
-void NzDynaTerrainMainClassBase::CreateIndexBuffer(unsigned int bufferCapacity, bool appendConfigurations)
+void NzTerrainBase::CreateIndexBuffer(unsigned int bufferCapacity, bool appendConfigurations)
 {
     m_bufferCapacity = bufferCapacity;
     //On construit l'index buffer
@@ -157,17 +157,17 @@ void NzDynaTerrainMainClassBase::CreateIndexBuffer(unsigned int bufferCapacity, 
 	}
 }
 
-const NzBoundingBoxf& NzDynaTerrainMainClassBase::GetBoundingBox() const
+const NzBoundingBoxf& NzTerrainBase::GetBoundingBox() const
 {
     return m_aabb;
 }
 
-nzSceneNodeType NzDynaTerrainMainClassBase::GetSceneNodeType() const
+nzSceneNodeType NzTerrainBase::GetSceneNodeType() const
 {
     return nzSceneNodeType_User;
 }
 
-void NzDynaTerrainMainClassBase::Draw() const
+void NzTerrainBase::Draw() const
 {
     if (!m_transformMatrixUpdated)
 		UpdateTransformMatrix();
@@ -188,7 +188,7 @@ void NzDynaTerrainMainClassBase::Draw() const
     NzRenderer::SetIndexBuffer(m_indexBuffer);
 }
 
-void NzDynaTerrainMainClassBase::Initialize(const NzDynaTerrainConfigurationBase& configuration)
+void NzTerrainBase::Initialize(const NzDynaTerrainConfigurationBase& configuration)
 {
     BuildShader();
 
@@ -208,17 +208,17 @@ void NzDynaTerrainMainClassBase::Initialize(const NzDynaTerrainConfigurationBase
      m_sampler.SetWrapMode(nzSamplerWrap_Repeat);
 }
 
-void NzDynaTerrainMainClassBase::SetFaceFilling(const nzFaceFilling& faceFilling)
+void NzTerrainBase::SetFaceFilling(const nzFaceFilling& faceFilling)
 {
     m_faceFilling = faceFilling;
 }
 
-void NzDynaTerrainMainClassBase::Update(const NzVector3f& cameraPosition)
+void NzTerrainsBase::Update(const NzVector3f& cameraPosition)
 {
 
 }
 
-bool NzDynaTerrainMainClassBase::VisibilityTest(const NzFrustumf& frustum)
+bool NzTerrainBase::VisibilityTest(const NzFrustumf& frustum)
 {
     //FIX ME
     return true;
