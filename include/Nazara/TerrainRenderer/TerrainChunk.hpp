@@ -25,11 +25,15 @@ class NAZARA_API NzTerrainChunk
         NzTerrainChunk();
         ~NzTerrainChunk();
 
+        bool AddMesh();
+        bool UpdateMesh();
+        bool RemoveMesh();
 
     protected:
     private:
-
-
+        std::vector<NzVertexBuffer> m_vertexBuffers;
+        //IntervalBuffer
+        //BoundingBox
 };
 
 #endif // NAZARA_TERRAINCHUNK_HPP

@@ -12,46 +12,46 @@
 #include <Nazara/Utility/VertexBuffer.hpp>
 #include <Nazara/Utility/VertexDeclaration.hpp>
 #include <Nazara/Utility/IndexBuffer.hpp>
-#include <Nazara/DynaTerrain/TerrainNode.hpp>
+//#include <Nazara/DynaTerrain/TerrainNode.hpp>
 #include <Nazara/DynaTerrain/Enums.hpp>
-#include <Nazara/Graphics/SceneNode.hpp>
+//#include <Nazara/Graphics/SceneNode.hpp>
 #include <Nazara/Math/BoundingBox.hpp>
+#include <Nazara/TerrainRenderer/TerrainChunk.hpp>
+#include <Nazara/TerrainRenderer/TerrainRenderer.hpp>
 #include <vector>
 #include <queue>
 #include <memory>
 
-//FIX ME 2 : Utiliser un arbre en structure interne pour le fast culling
-//FIX ME : Renommer m_zones, zoneDepth
-//FIX ME : Gérer l'aabb
-class NAZARA_API NzTerrainMasterNode// : public NzSceneNode
+//FIX ME : Utiliser un arbre en structure interne pour le fast culling
+//
+class NAZARA_API NzTerrainChunksManager
 {
     public:
-        NzTerrainMasterNode(unsigned int patchBufferSize = 256);
-        ~NzTerrainMasterNode();
+        NzTerrainChunksManager(float edgelength, unsigned int depth);
+        ~NzTerrainChunksManager();
 
         //virtual void AddToRenderQueue(NzRenderQueue& renderQueue) const;
-
-        virtual void Draw() const;
+        NzTerrainChunk* LocateChunk(NzVector2f location);
+        virtual void DrawChunks() const;
 
 		//virtual const NzBoundingBoxf& GetBoundingBox() const;
-		unsigned int GetFreeBuffersAmount() const;
+		//unsigned int GetFreeBuffersAmount() const;
 		//virtual nzSceneNodeType GetSceneNodeType() const;
 
+        //bool Initialize();
 
-        bool Initialize(unsigned int zoneDepth);
+        //NzVertexBuffer* QueryFreeBuffer();
 
-        NzVertexBuffer* QueryFreeBuffer();
-
-        bool RemovePatch(const NzTerrainNodeID& ID);
-        void ReturnBuffer(NzVertexBuffer* buffer);
+        //bool RemovePatch(const NzTerrainNodeID& ID);
+        //void ReturnBuffer(NzVertexBuffer* buffer);
 
         //FIX ME : Renommer en AddMesh
-        bool SubmitPatch(const std::array<float,150>& subBuffer, const NzTerrainNodeID& ID);
+        //bool SubmitPatch(const std::array<float,150>& subBuffer, const NzTerrainNodeID& ID);
 
         //FIX ME : Il n'est pas utile de réenvoyer toutes les vertices lors d'un update
         //Avec un index buffer 16 fois plus grand contenant les 16 configuration
         //il est possible en donnant un offset à la donnée d'utiliser un différent index de ses vertices
-        bool UpdatePatch(const std::array<float,150>& subBuffer, const NzTerrainNodeID& ID);
+        //bool UpdatePatch(const std::array<float,150>& subBuffer, const NzTerrainNodeID& ID);
 
     protected:
         //virtual bool VisibilityTest(const NzFrustumf& frustum);
@@ -62,9 +62,8 @@ class NAZARA_API NzTerrainMasterNode// : public NzSceneNode
         unsigned int m_zoneDepth;
         unsigned int m_zonesAmountX;
 
-        std::vector<std::unique_ptr<NzTerrainNode>> m_zones;
-        std::vector<NzVertexBuffer*> m_buffers;
-        std::queue<NzVertexBuffer*> m_freeBuffers;
+        //std::vector<std::unique_ptr<NzTerrainNode>> m_zones;
+
 
         NzVertexElement m_elements[2];
         NzVertexDeclaration m_declaration;
