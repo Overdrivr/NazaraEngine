@@ -37,19 +37,19 @@ class NAZARA_API NzTerrainNode
 
         // Getters
         const NzCubef& GetAABB() const;
-        NzTerrainInternalNode* GetChild(nzLocation location);
-        NzTerrainInternalNode* GetChild(unsigned int i);
+        NzTerrainNode* GetChild(nzLocation location);
+        NzTerrainNode* GetChild(unsigned int i);
         unsigned int GetLevel() const;
         static int GetNodeAmount();
         const NzTerrainNodeID& GetNodeID() const;
-        NzTerrainInternalNode* GetParent();
+        NzTerrainNode* GetParent();
 
         // Interaction avec les nodes voisins
-        NzTerrainInternalNode* GetDirectNeighbor(nzDirection direction);
+        NzTerrainNode* GetDirectNeighbor(nzDirection direction);
 
         // Actions principales
         void Update(const NzVector3f& cameraPosition);
-        void Initialize(TerrainNodeData *data, NzTerrainInternalNode* parent, nzLocation loc = TOPLEFT);
+        void Initialize(TerrainNodeData *data, NzTerrainNode* parent, nzLocation loc = TOPLEFT);
         void Invalidate();
         bool Refine();
         bool Subdivide(bool isNotReversible = false);

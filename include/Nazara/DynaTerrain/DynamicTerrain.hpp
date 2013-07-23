@@ -31,6 +31,7 @@ class NAZARA_API NzDynamicTerrain : public NzDynaTerrainMainClassBase
 
         void Update(const NzVector3f& cameraPosition);
 
+
     private:
 
 

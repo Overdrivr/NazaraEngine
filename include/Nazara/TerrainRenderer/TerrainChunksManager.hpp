@@ -27,14 +27,14 @@
 class NAZARA_API NzTerrainChunksManager
 {
     public:
-        NzTerrainChunksManager(float edgelength, unsigned int depth);
+        NzTerrainChunksManager(float edgelenght, unsigned int depth);
         ~NzTerrainChunksManager();
 
         //virtual void AddToRenderQueue(NzRenderQueue& renderQueue) const;
         NzTerrainChunk* LocateChunk(NzVector2f location);
-        virtual void DrawChunks() const;
+        void DrawChunks() const;
 
-		//virtual const NzBoundingBoxf& GetBoundingBox() const;
+		const NzBoundingBoxf& GetGlobalBoundingBox() const;
 		//unsigned int GetFreeBuffersAmount() const;
 		//virtual nzSceneNodeType GetSceneNodeType() const;
 
@@ -58,19 +58,19 @@ class NAZARA_API NzTerrainChunksManager
 
         //NzBoundingBoxf m_aabb;
     private:
-        bool m_isReady;
-        unsigned int m_zoneDepth;
-        unsigned int m_zonesAmountX;
+        //bool m_isReady;
+        unsigned int m_depth;
+        float m_edgeLenght;
 
         //std::vector<std::unique_ptr<NzTerrainNode>> m_zones;
+        std::vector<NzTerrainChunks> m_chunks;
 
+        //NzVertexElement m_elements[2];
+        //NzVertexDeclaration m_declaration;
 
-        NzVertexElement m_elements[2];
-        NzVertexDeclaration m_declaration;
-
-        unsigned int m_bufferSize;
-        unsigned int m_patchSize;
-        unsigned int m_patchAmount;
+        //unsigned int m_bufferSize;
+        //unsigned int m_patchSize;
+        //unsigned int m_patchAmount;
 };
 
 #endif // NAZARA_TERRAINMASTERNODE_HPP
