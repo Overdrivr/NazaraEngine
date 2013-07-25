@@ -67,9 +67,6 @@ class NAZARA_API NzTerrainChunksManager
 
         NzBoundingBoxf m_aabb;
 
-        //NzVertexElement m_elements[2];
-        //NzVertexDeclaration m_declaration;
-
         //unsigned int m_bufferSize;
         //unsigned int m_patchSize;
         //unsigned int m_patchAmount;

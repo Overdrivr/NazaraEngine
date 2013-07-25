@@ -14,6 +14,8 @@
 #include <vector>
 #include <map>
 
+//TODO : AJouter Get free slot, FillFreeSlot, FreeFilledSlot() DoesKeyExist()
+//TODO : Un free slot renvoyé doit toujours être valide, le type de retour doit tjrs être unsigned int
 template <typename T> class NzSparseBufferSet
 {
     public:

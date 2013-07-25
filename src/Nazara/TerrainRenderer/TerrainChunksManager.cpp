@@ -81,19 +81,7 @@ bool NzTerrainMasterNode::RemovePatch(const NzTerrainNodeID& ID)
 bool NzTerrainMasterNode::Initialize(unsigned int zoneDepth)
 {
     ///---- On crée la déclaration de vertices
-    m_elements[0].usage = nzElementUsage_Position;
-	m_elements[0].offset = 0;
-	m_elements[0].type = nzElementType_Float3;
 
-	m_elements[1].usage = nzElementUsage_Normal;
-	m_elements[1].offset = 3*sizeof(float);
-	m_elements[1].type = nzElementType_Float3;
-
-	if (!m_declaration.Create(m_elements, 2))
-	{
-		std::cout << "NzDispatcher : Failed to create vertex declaration" << std::endl;
-		return false;
-	}
 
     ///-----On crée toutes les zones nécessaires
     m_zoneDepth = zoneDepth;

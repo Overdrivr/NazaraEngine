@@ -34,11 +34,15 @@ class NAZARA_API NzTerrainChunk
 
     protected:
     private:
+        bool CreateBuffer();
+
         std::vector<NzVertexBuffer> m_vertexBuffers;
         //IntervalBuffer
-        NzSparseBufferSet<NzTerrainNodeID> m_buffersMap;
+        NzSparseBufferSet<NzTerrainNodeID> m_vertexBuffersMap;
         //BoundingBox
         NzBoundingBoxf m_globalBoundingBox;
+        //La déclaration de structure du buffer
+        NzVertexDeclaration m_declaration;
 };
 
 #endif // NAZARA_TERRAINCHUNK_HPP
