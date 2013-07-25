@@ -2,60 +2,56 @@
 // This file is part of the "Nazara Engine".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <Nazara/DynaTerrain/TerrainMasterNode.hpp>
+#include <Nazara/TerrainRenderer/TerrainChunksManager.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
 #include <iostream>
 #include <cmath>
 
-NzTerrainMasterNode::NzTerrainMasterNode(unsigned int patchBufferSize)
+NzTerrainChunksManager::NzTerrainChunksManager(float edgelenght, unsigned int depth)
 {
-    m_patchSize = 600;
-    m_bufferSize = patchBufferSize * m_patchSize;
-    m_patchAmount = patchBufferSize;
-    m_isReady = false;
+    m_edgeLenght = edgelenght;
+    m_depth = depth;
+
+    for(unsigned int i(0) ; i < m_depth*m_depth)
+        m_chunks.emplace_back();
 }
 
-NzTerrainMasterNode::~NzTerrainMasterNode()
-{
-    for(unsigned int i(0) ; i < m_buffers.size() ; ++i)
-    {
-        delete m_buffers.at(i);
-        m_buffers.at(i) = nullptr;
-    }
-    m_buffers.clear();
-}
 /*
 void NzTerrainMasterNode::AddToRenderQueue(NzRenderQueue& renderQueue) const
 {
     renderQueue.otherDrawables.push_back(static_cast<NzDrawable>(this));
 }
 */
-void NzTerrainMasterNode::Draw() const
+
+NzTerrainChunk* NzTerrainChunksManager::LocateChunk(NzVector2f location)
 {
-    if(m_isReady)
+    return m_chunks.at(location.x + location.y * m_depth);
+}
+
+void NzTerrainChunksManager::DrawChunks()() const
+{
+    for(unsigned int i(0) ; i < m_depth*m_depth ; ++i)
     {
-        for(unsigned int i(0) ; i < m_zones.size() ; ++i)
-        {
-            m_zones.at(i)->DrawBuffers();
-        }
+        NzTerrainRenderer::DrawTerrainChunk(m_chunks.at(i));
     }
 }
-/*
-const NzBoundingBoxf& NzTerrainMasterNode::GetBoundingBox() const
+
+const NzBoundingBoxf& NzTerrainChunksManager::GetGlobalBoundingBox() const
 {
     return m_aabb;
 }
-*/
+
+/*
 unsigned int NzTerrainMasterNode::GetFreeBuffersAmount() const
 {
     return m_freeBuffers.size();
 }
-/*
+
 nzSceneNodeType NzTerrainMasterNode::GetSceneNodeType() const
 {
     return nzSceneNodeType_User;
 }*/
-
+/*
 bool NzTerrainMasterNode::RemovePatch(const NzTerrainNodeID& ID)
 {
     if(m_isReady)
@@ -182,6 +178,8 @@ bool NzTerrainMasterNode::UpdatePatch(const std::array<float,150>& subBuffer, co
     else
         return false;
 }
+*/
+
 /*
 virtual bool NzTerrainMasterNode::VisibilityTest(const NzFrustumf& frustum)
 {

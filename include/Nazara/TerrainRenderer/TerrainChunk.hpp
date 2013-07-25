@@ -22,6 +22,8 @@
 
 class NAZARA_API NzTerrainChunk
 {
+    friend class NzTerrainRenderer;
+
     public:
         NzTerrainChunk();
         ~NzTerrainChunk();

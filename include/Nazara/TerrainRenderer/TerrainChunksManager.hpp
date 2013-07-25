@@ -28,13 +28,13 @@ class NAZARA_API NzTerrainChunksManager
 {
     public:
         NzTerrainChunksManager(float edgelenght, unsigned int depth);
-        ~NzTerrainChunksManager();
+        ~NzTerrainChunksManager() = default;
 
         //virtual void AddToRenderQueue(NzRenderQueue& renderQueue) const;
         NzTerrainChunk* LocateChunk(NzVector2f location);
         void DrawChunks() const;
 
-		const NzBoundingBoxf& GetGlobalBoundingBox() const;
+		NzBoundingBoxf GetGlobalBoundingBox() const;
 		//unsigned int GetFreeBuffersAmount() const;
 		//virtual nzSceneNodeType GetSceneNodeType() const;
 
@@ -64,6 +64,8 @@ class NAZARA_API NzTerrainChunksManager
 
         //std::vector<std::unique_ptr<NzTerrainNode>> m_zones;
         std::vector<NzTerrainChunks> m_chunks;
+
+        NzBoundingBoxf m_aabb;
 
         //NzVertexElement m_elements[2];
         //NzVertexDeclaration m_declaration;
