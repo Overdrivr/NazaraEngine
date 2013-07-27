@@ -32,7 +32,7 @@ NzTerrainChunk::~NzTerrainChunk()
     //dtor
 }
 
-bool NzTerrainChunk::AddMesh(const std::array<150,float>& vertexData, const NzBoundingBoxf& meshBoundingBox, nzTerrainNodeID meshIdentifiant)
+bool NzTerrainChunk::AddMesh(const std::array<float,150>& vertexData, const NzBoundingBoxf& meshBoundingBox, NzTerrainNodeID meshIdentifiant)
 {
     if(m_vertexBuffersMap.GetTotalFreeSlotsAmount() == 0)
     {
@@ -53,7 +53,7 @@ bool NzTerrainChunk::AddMesh(const std::array<150,float>& vertexData, const NzBo
     return true;
 }
 
-bool NzTerrainChunk::UpdateMesh(const std::array<150,float>& vertexData,nzTerrainNodeID meshIdentifiant)
+bool NzTerrainChunk::UpdateMesh(const std::array<float,150>& vertexData,NzTerrainNodeID meshIdentifiant)
 {
     //TOCHECK : 2 recherches dans le sparsebuffer alors qu'une suffirait ?
     if(!m_vertexBuffersMap.DoesKeyExists(meshIdentifiant))
@@ -70,7 +70,7 @@ bool NzTerrainChunk::UpdateMesh(const std::array<150,float>& vertexData,nzTerrai
     return true;
 }
 
-bool NzTerrainChunk::RemoveMesh(nzTerrainNodeID meshIdentifiant)
+bool NzTerrainChunk::RemoveMesh(NzTerrainNodeID meshIdentifiant)
 {
     //TOCHECK : 2 recherches dans le sparsebuffer alors qu'une suffirait ?
     if(!m_vertexBuffersMap.DoesKeyExists(meshIdentifiant))
