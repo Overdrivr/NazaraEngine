@@ -20,7 +20,7 @@ template <typename T> class NzSparseBufferSet
 {
     public:
         NzSparseBufferSet();
-        ~NzSparseBufferSet();
+        ~NzSparseBufferSet() = default;
 
         NzIntervalBuffer<T>& at(unsigned int index);
         const NzIntervalBuffer<T>& at(unsigned int index) const;
@@ -30,12 +30,10 @@ template <typename T> class NzSparseBufferSet
 
         bool FillFreeSlot(NzVector2i& slot);
         bool FreeFilledSlot(NzVector2i& slot);
-
-        NzVector2i GetFreeSlot() const;
-
         NzVector2i FindKey(const T& key) const;
         int FindKeyBuffer(const T& key) const;
 
+        NzVector2i GetFreeSlot() const;
         unsigned int GetBuffersAmount() const;
         unsigned int GetFreeBuffersAmount() const;
         unsigned int GetTotalFreeSlotsAmount() const;
