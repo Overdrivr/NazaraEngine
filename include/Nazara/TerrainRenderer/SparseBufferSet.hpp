@@ -26,7 +26,7 @@ template <typename T> class NzSparseBufferSet
         const NzIntervalBuffer<T>& at(unsigned int index) const;
         void AddEmptyBuffer(unsigned int bufferSize);
 
-        bool DoesKeyExist(const T& key);
+        bool DoesKeyExists(const T& key);
 
         bool FillFreeSlot(const NzVector2i& slot, const T& value);
         bool FreeFilledSlot(const NzVector2i& slot, const T& value);//TODO : a terme ne devrait plus avoir besoin de value

@@ -32,7 +32,7 @@ void NzSparseBufferSet<T>::AddEmptyBuffer(unsigned int bufferSize)
 }
 
 template <typename T>
-bool NzSparseBufferSet<T>::DoesKeyExist(const T& key)
+bool NzSparseBufferSet<T>::DoesKeyExists(const T& key)
 {
     NzVector2i location(-1,-1);
 

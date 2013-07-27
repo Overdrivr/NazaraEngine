@@ -59,11 +59,11 @@ bool NzTerrainChunk::UpdateMesh(const std::array<float,150>& vertexData,NzTerrai
     if(!m_vertexBuffersMap.DoesKeyExists(meshIdentifiant))
         return false;
 
-    NzVector2i slotToUpdate = m_buffersMap.FindKeyLocation(meshIdentifiant);
+    NzVector2i slotToUpdate = m_vertexBuffersMap.FindKey(meshIdentifiant);
 
-    if(!m_buffers.at(slotToUpdate.x)->Fill(vertexData.data(),slotToUpdate.y*25,25))
+    if(!m_vertexBuffers.at(slotToUpdate.x).Fill(vertexData.data(),slotToUpdate.y*25,25))
     {
-        std::cout<<"NzTerrainChunk::UpdateMesh : Cannot fill vertex buffer number "<<freeSlot.x<<" at index "<<freeSlot.y * 25<<std::endl;
+        std::cout<<"NzTerrainChunk::UpdateMesh : Cannot fill vertex buffer number "<<slotToUpdate.x<<" at index "<<slotToUpdate.y * 25<<std::endl;
         return false;
     }
 
@@ -76,15 +76,16 @@ bool NzTerrainChunk::RemoveMesh(NzTerrainNodeID meshIdentifiant)
     if(!m_vertexBuffersMap.DoesKeyExists(meshIdentifiant))
         return false;
 
-    NzVector2i slotToRemove = m_buffersMap.FindKeyLocation(meshIdentifiant);
+    NzVector2i slotToRemove = m_vertexBuffersMap.FindKey(meshIdentifiant);
 
     //TODO : Vérifier si la transaction a bien eu lieu jusqu'au bout ?
+    //TODO : A besoin de la value pour l'instant, ne peux compiler
     m_vertexBuffersMap.FreeFilledSlot(slotToRemove);
 
     return true;
 }
 
-bool CreateBuffer()
+bool NzTerrainChunk::CreateBuffer()
 {
     #if NAZARA_TERRAINRENDERER_SAFE
     if(!m_declaration.IsValid())
@@ -93,8 +94,8 @@ bool CreateBuffer()
 
 	//On ajoute un buffer
 	//TOCHECK : static ou dynamic ?
-    m_buffers.emplace_back(&m_declaration,1750,nzBufferStorage_Hardware,nzBufferUsage_Static);
-    m_buffersMap.AddEmptyBuffer(m_freeSpotsAmount);
+    m_vertexBuffers.emplace_back(&m_declaration,1750,nzBufferStorage_Hardware,nzBufferUsage_Static);
+    m_vertexBuffersMap.AddEmptyBuffer(1750);
 
     return true;
 }
