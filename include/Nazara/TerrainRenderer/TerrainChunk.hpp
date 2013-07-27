@@ -28,9 +28,9 @@ class NAZARA_API NzTerrainChunk
         NzTerrainChunk();
         ~NzTerrainChunk();
 
-        bool AddMesh(const std::array<150,float>& vertexData, const NzBoundingBoxf& meshBoundingBox, nzTerrainNodeID meshIdentifiant);
-        bool UpdateMesh(const std::array<150,float>& vertexData,nzTerrainNodeID meshIdentifiant);
-        bool RemoveMesh(nzTerrainNodeID meshIdentifiant);
+        bool AddMesh(const std::array<float,150>& vertexData, const NzBoundingBoxf& meshBoundingBox, NzTerrainNodeID meshIdentifiant);
+        bool UpdateMesh(const std::array<float,150>& vertexData,NzTerrainNodeID meshIdentifiant);
+        bool RemoveMesh(NzTerrainNodeID meshIdentifiant);
 
     protected:
     private:
