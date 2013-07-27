@@ -32,7 +32,7 @@ void NzSparseBufferSet<T>::AddEmptyBuffer(unsigned int bufferSize)
 }
 
 template <typename T>
-bool DoesKeyExist(const T& key)
+bool NzSparseBufferSet<T>::DoesKeyExist(const T& key)
 {
     NzVector2i location(-1,-1);
 
@@ -65,7 +65,7 @@ NzVector2i NzSparseBufferSet<T>::FindKey(const T& key) const
 }
 
 template <typename T>
-bool FillFreeSlot(NzVector2i& slot)
+bool NzSparseBufferSet<T>::FillFreeSlot(const NzVector2i& slot, const T& value)
 {
     NzVector2i location(-1,-1);
 
@@ -73,12 +73,12 @@ bool FillFreeSlot(NzVector2i& slot)
     {
         if(m_buffers.at(i).GetFreeSlotsAmount() > 0)
         {
-            location.y =  m_buffers.at(i).InsertValue(key);
-            if(location.y > -1) 
+            location.y =  m_buffers.at(i).InsertValue(value);
+
+            if(location.y > -1)
             {
-                m_valueToBufferIndex[key] = i;
+                m_valueToBufferIndex[value] = i;
                 location.x = i;
-                insertionDone = true;
                 m_occupiedSlotsAmount++;
                 return true;
             }
@@ -89,20 +89,21 @@ bool FillFreeSlot(NzVector2i& slot)
 }
 
 template <typename T>
-bool FreeFilledSlot(NzVector2i& slot)
+bool NzSparseBufferSet<T>::FreeFilledSlot(const NzVector2i& slot, const T& value)
 {
-    NzVector2i location(-1,-1);
-    location.x = FindKeyBuffer(key);
-
-    if(location.x < 0)
+    if(slot.x < 0)
         return false;
+    if(slot.x >= m_buffers.size())
+        return false;
+    if(slot.y < 0)
+        return false;
+    //if(!m_buffers.at(slot.x).size...)
+        //return false;
 
-    location.y = m_buffers.at(location.x).RemoveValue(key);
-
-    if(location.y > -1)
+    if(m_buffers.at(slot.x).RemoveValueFromIndex(slot.y))
     {
         m_occupiedSlotsAmount--;
-        m_valueToBufferIndex.erase(key);
+        m_valueToBufferIndex.erase(value);
         return true;
     }
 

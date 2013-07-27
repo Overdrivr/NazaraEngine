@@ -28,8 +28,8 @@ template <typename T> class NzSparseBufferSet
 
         bool DoesKeyExist(const T& key);
 
-        bool FillFreeSlot(NzVector2i& slot);
-        bool FreeFilledSlot(NzVector2i& slot);
+        bool FillFreeSlot(const NzVector2i& slot, const T& value);
+        bool FreeFilledSlot(const NzVector2i& slot, const T& value);//TODO : a terme ne devrait plus avoir besoin de value
         NzVector2i FindKey(const T& key) const;
         int FindKeyBuffer(const T& key) const;
 

@@ -42,7 +42,7 @@ bool NzTerrainChunk::AddMesh(const std::array<float,150>& vertexData, const NzBo
 
     NzVector2i freeSlot = m_vertexBuffersMap.GetFreeSlot();
 
-    if(m_vertexBuffers.at(freeSlot.x)->Fill(vertexData.data(),freeSlot.y * 25,25))
+    if(m_vertexBuffers.at(freeSlot.x).Fill(vertexData.data(),freeSlot.y * 25,25))
     {
         std::cout<<"NzTerrainChunk::AddMesh : Cannot fill vertex buffer number "<<freeSlot.x<<" at index "<<freeSlot.y * 25<<std::endl;
         return false;

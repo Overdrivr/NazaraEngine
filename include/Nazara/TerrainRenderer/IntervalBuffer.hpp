@@ -20,6 +20,10 @@ template <typename T> class NzIntervalBuffer
         NzIntervalBuffer(unsigned int bufferSize);
         ~NzIntervalBuffer();
 
+        T at(unsigned int index);//TODO, générer exception si fail
+
+        bool Exists(const T& value);//TODO
+
         //Returns the value's index OR -1 if the value cannot be located
         int FindValue(const T& value) const;
 
@@ -42,6 +46,7 @@ template <typename T> class NzIntervalBuffer
         //Returns the erased value key's index OR -1 if something went wrong
             //FIX ME : Mieux bool ou int en sortie ?
         int RemoveValue(const T& value);
+        bool RemoveValueFromIndex(unsigned int index);//TODO
 
     protected:
     private:
