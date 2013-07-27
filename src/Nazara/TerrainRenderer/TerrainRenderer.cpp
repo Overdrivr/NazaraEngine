@@ -11,7 +11,26 @@
 
 static void NzTerrainRenderer::DrawTerrainChunk(const NzTerrainChunk& chunk)
 {
+    // Pour itérer sur les vertex buffers
+    auto itBuffers = m_vertexBuffers.begin();
+    for( ; itBuffers != m_vertexBuffers.end() ; ++itBuffers)
+    {
+        // Pour itérer sur les lots de maillage dans un même vertexBuffer
+        auto itBatches = itBuffers->GetFilledIntervals().cbegin();
 
+        // On envoie le vertexBuffer entier au renderer Nazara
+        NzRenderer::SetVertexBuffer(*itBuffers);
+
+        // On itère sur l'ensemble des lots d'un même buffer
+        for(; itBatches != itBuffers->GetFilledIntervals().cend() ; ++itBatches)
+        {
+            // On fait le rendu
+                //(*it).x -> firstIndex;
+                //(*it).y -> vertexCount;
+            //Pour dessiner 1 patch (25 vertex) il nous faut 96 index
+            NzRenderer::DrawIndexedPrimitives(nzPrimitiveType_TriangleList, (*itBatches).Start()*96, (*itBatches).Count()*96);
+        }
+    }
 }
 
 bool NzTerrainRenderer::Initialize()
