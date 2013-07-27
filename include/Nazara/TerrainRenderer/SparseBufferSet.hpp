@@ -26,24 +26,31 @@ template <typename T> class NzSparseBufferSet
         const NzIntervalBuffer<T>& at(unsigned int index) const;
         void AddEmptyBuffer(unsigned int bufferSize);
 
-        NzVector2i FindKeyLocation(const T& key) const;
+        bool DoesKeyExist(const T& key);
+
+        bool FillFreeSlot(NzVector2i& slot);
+        bool FreeFilledSlot(NzVector2i& slot);
+
+        NzVector2i GetFreeSlot() const;
+
+        NzVector2i FindKey(const T& key) const;
         int FindKeyBuffer(const T& key) const;
 
-        unsigned int GetBufferAmount() const;
+        unsigned int GetBuffersAmount() const;
         unsigned int GetFreeBuffersAmount() const;
         unsigned int GetTotalFreeSlotsAmount() const;
         unsigned int GetTotalOccupiedSlotsAmount() const;
 
         //x is the buffer
         //y is the index
-        NzVector2i InsertValueKey(const T& key);
+        //NzVector2i InsertValueKey(const T& key);
         //z is the destination buffer
         //w is the destination index
         NzVector4i ReduceFragmentation();
         bool RemoveBuffer(unsigned int index);
-        NzVector2i RemoveValueKey(const T& key);
+        //NzVector2i RemoveValueKey(const T& key);
 
-        NzVector2i UpdateValueKey(const T& key);
+        //NzVector2i UpdateValueKey(const T& key);
 
     protected:
     private:
