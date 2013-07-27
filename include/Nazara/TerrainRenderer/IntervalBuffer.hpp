@@ -1,17 +1,6 @@
 // Copyright (C) 2012 Rémi Bèges
-// This file is part of the "Nazara Engine".
+// This file is part of the "Nazara Engine - Terrain Renderer module".
 // For conditions of distribution and use, see copyright notice in Config.hpp
-
-// Container
-// Data is indexed by a unique key
-// Container's size is fixed at construction
-// Initially all slots are free
-// Data can be added to an empty slot, and removed from a full one
-// When two identical slots (i.e. both empty or full) or more are next to each other
-// They form an "interval"
-// An interval is described by a start index and a size
-// It is possible to get a list of all full & empty intervals
-// Example : used to keep track of occupied locations in a bix vertex buffer
 
 #pragma once
 
