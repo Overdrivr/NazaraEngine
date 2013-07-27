@@ -3,10 +3,10 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Core/Error.hpp>
-#include <Nazara/DynaTerrain/Config.hpp>
-#include <Nazara/DynaTerrain/TerrainChunk.hpp>
+#include <Nazara/TerrainRenderer/Config.hpp>
+#include <Nazara/TerrainRenderer/TerrainChunk.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
-#include <Nazara/DynaTerrain/Debug.hpp>
+#include <Nazara/TerrainRenderer/Debug.hpp>
 
 NzTerrainChunk::NzTerrainChunk()
 {
