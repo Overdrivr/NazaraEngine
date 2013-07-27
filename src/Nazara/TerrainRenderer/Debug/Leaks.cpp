@@ -1,9 +1,9 @@
 // Copyright (C) 2013 AUTHORS
-// This file is part of the "Nazara Engine - Module name"
+// This file is part of the "Nazara Engine - Terrain Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <Nazara/ModuleName/Config.hpp>
-#if NAZARA_MODULENAME_MEMORYLEAKTRACKER || defined(NAZARA_DEBUG)
+#include <Nazara/TerrainRenderer/Config.hpp>
+#if NAZARA_TERRAINRENDERER_MEMORYLEAKTRACKER || defined(NAZARA_DEBUG)
 #include <Nazara/Core/Debug/MemoryLeakTracker.hpp>
 #include <new>
 
