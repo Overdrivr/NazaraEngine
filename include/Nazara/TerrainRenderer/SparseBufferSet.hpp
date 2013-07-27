@@ -1,5 +1,5 @@
 // Copyright (C) 2012 Rémi Bèges
-// This file is part of the "Nazara Engine".
+// This file is part of the "Nazara Engine - Terrain Renderer module".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #pragma once
@@ -8,7 +8,7 @@
 #define NAZARA_SPARSEBUFFERSET_HPP
 
 #include <Nazara/Prerequesites.hpp>
-#include <Nazara/DynaTerrain/IntervalBuffer.hpp>
+#include <Nazara/TerrainRenderer/IntervalBuffer.hpp>
 #include <Nazara/Math/Vector2.hpp>
 #include <Nazara/Math/Vector4.hpp>
 #include <vector>

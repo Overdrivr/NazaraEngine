@@ -9,7 +9,7 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Math/Vector2.hpp>
-#include <Nazara/DynaTerrain/Batch.hpp>
+#include <Nazara/TerrainRenderer/Batch.hpp>
 #include <vector>
 #include <map>
 #include <list>
