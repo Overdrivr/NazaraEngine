@@ -33,7 +33,7 @@ template <typename T> class NzSparseBufferSet
         NzVector2i FindKey(const T& key) const;
         int FindKeyBuffer(const T& key) const;
 
-        NzVector2i GetFreeSlot() const;
+        NzVector2i GetFreeSlot() const;//TODO
         unsigned int GetBuffersAmount() const;
         unsigned int GetFreeBuffersAmount() const;
         unsigned int GetTotalFreeSlotsAmount() const;

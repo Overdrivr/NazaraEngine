@@ -12,9 +12,15 @@ NzIntervalBuffer<T>::NzIntervalBuffer(unsigned int bufferSize)
 }
 
 template <typename T>
-NzIntervalBuffer<T>::~NzIntervalBuffer()
+T NzIntervalBuffer<T>::at(unsigned int index)
 {
-    //dtor
+    //TODO
+}
+
+template <typename T>
+bool NzIntervalBuffer<T>::Exists(unsigned int index)
+{
+    //TODO
 }
 
 template <typename T>
@@ -117,6 +123,12 @@ int NzIntervalBuffer<T>::RemoveValue(const T& value)
     m_occupiedSlotsAmount--;
 
     return index;
+}
+
+template <typename T>
+bool NzIntervalBuffer<T>::RemoveValueFromIndex(unsigned int index)
+{
+    //TODO
 }
 
 template <typename T>

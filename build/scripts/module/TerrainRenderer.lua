@@ -1,5 +1,5 @@
 if (not _OPTIONS["united"]) then
-	project "TerrainRenderer"
+	project "NazaraTerrainRenderer"
 end
 
 files
@@ -21,13 +21,25 @@ if (_OPTIONS["united"]) then
 else
 	configuration "DebugStatic"
 		links "NazaraCore-s-d"
+		links "NazaraUtility-s-d"
+		links "NazaraRenderer-s-d"
+		links "NazaraGraphics-s-d"
 
 	configuration "ReleaseStatic"
 		links "NazaraCore-s"
+		links "NazaraUtility-s"
+		links "NazaraRenderer-s"
+		links "NazaraGraphics-s"
 
 	configuration "DebugDLL"
 		links "NazaraCore-d"
+		links "NazaraUtility-d"
+		links "NazaraRenderer-d"
+		links "NazaraGraphics-d"
 
 	configuration "ReleaseDLL"
 		links "NazaraCore"
+		links "NazaraUtility"
+		links "NazaraRenderer"
+		links "NazaraGraphics"
 end

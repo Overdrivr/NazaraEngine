@@ -132,6 +132,12 @@ int NzSparseBufferSet<T>::FindKeyBuffer(const T& key) const
 }
 
 template <typename T>
+NzVector2i NzSparseBufferSet<T>::GetFreeSlot() const
+{
+    //TODO
+}
+
+template <typename T>
 unsigned int NzSparseBufferSet<T>::GetBuffersAmount() const
 {
     return m_buffers.size();

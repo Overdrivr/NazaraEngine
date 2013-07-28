@@ -18,7 +18,7 @@ template <typename T> class NzIntervalBuffer
 {
     public:
         NzIntervalBuffer(unsigned int bufferSize);
-        ~NzIntervalBuffer();
+        ~NzIntervalBuffer() = default;
 
         T at(unsigned int index);//TODO, générer exception si fail
 
