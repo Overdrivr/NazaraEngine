@@ -10,6 +10,7 @@
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Core/Initializer.hpp>
 #include <Nazara/TerrainRenderer/TerrainChunk.hpp>
+#include <Nazara/Renderer/Renderer.hpp>
 #include <vector>
 
 class NAZARA_API NzTerrainRenderer

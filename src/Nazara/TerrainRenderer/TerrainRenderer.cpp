@@ -9,14 +9,16 @@
 #include <Nazara/TerrainRenderer/Config.hpp>
 #include <Nazara/TerrainRenderer/Debug.hpp>
 
-static void NzTerrainRenderer::DrawTerrainChunk(const NzTerrainChunk& chunk)
+void NzTerrainRenderer::DrawTerrainChunk(const NzTerrainChunk& chunk)
 {
     // Pour itérer sur les vertex buffers
-    auto itBuffers = m_vertexBuffers.begin();
-    for( ; itBuffers != m_vertexBuffers.end() ; ++itBuffers)
+    auto itBuffers = chunk.m_vertexBuffers.begin();
+    unsigned int i = 0;
+
+    for( ; itBuffers != chunk.m_vertexBuffers.end() ; ++itBuffers)
     {
         // Pour itérer sur les lots de maillage dans un même vertexBuffer
-        auto itBatches = itBuffers->GetFilledIntervals().cbegin();
+        auto itBatches = chunk.m_vertexBuffersMap.at(i).GetFilledIntervals().cbegin();
 
         // On envoie le vertexBuffer entier au renderer Nazara
         NzRenderer::SetVertexBuffer(*itBuffers);
@@ -30,6 +32,7 @@ static void NzTerrainRenderer::DrawTerrainChunk(const NzTerrainChunk& chunk)
             //Pour dessiner 1 patch (25 vertex) il nous faut 96 index
             NzRenderer::DrawIndexedPrimitives(nzPrimitiveType_TriangleList, (*itBatches).Start()*96, (*itBatches).Count()*96);
         }
+        ++i;
     }
 }
 
@@ -42,6 +45,13 @@ bool NzTerrainRenderer::Initialize()
 	if (!NzCore::Initialize())
 	{
 		NazaraError("Failed to initialize core module");
+		return false;
+	}
+
+	// Initialisation des dépendances
+	if (!NzRenderer::Initialize())
+	{
+		NazaraError("Failed to initialize renderer module");
 		return false;
 	}
 
