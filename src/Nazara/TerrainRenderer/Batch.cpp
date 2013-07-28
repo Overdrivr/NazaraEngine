@@ -1,8 +1,8 @@
 // Copyright (C) 2012 Rémi Bèges
-// This file is part of the "Nazara Engine - DynaTerrain".
+// This file is part of the "Nazara Engine - Terrain Renderer module".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <Nazara/DynaTerrain/Batch.hpp>
+#include <Nazara/TerrainRenderer/Batch.hpp>
 
 NzBatch::NzBatch(unsigned int start, unsigned int count)
 {
