@@ -71,7 +71,7 @@ unsigned int NzIntervalBuffer<T>::GetFreeSlotsAmount() const
 {
     return m_bufferSize - m_occupiedSlotsAmount;
 }
-
+/*
 template <typename T>
 int NzIntervalBuffer<T>::InsertValue(const T& value)
 {
@@ -95,40 +95,11 @@ int NzIntervalBuffer<T>::InsertValue(const T& value)
 
     return index;
 }
-
+*/
 template <typename T>
 NzVector2i NzIntervalBuffer<T>::ReduceFragmentation()
 {
     return NzVector2i(0,0);
-}
-
-template <typename T>
-int NzIntervalBuffer<T>::RemoveValue(const T& value)
-{
-    //On récupère l'emplacement de la valeur
-    typename std::map<T,int>::iterator it = m_slots.find(value);
-
-    //Si la valeur n'existe pas dans le buffer, il n'y a rien à supprimer
-    if(it == m_slots.end())
-        return -1;
-
-    unsigned int index = it->second;
-
-    if(!AtomicKeyRemoval(m_filledSlotBatches,index))
-        return -1;
-
-    //L'insertion ne peut pas échouer
-    AtomicKeyInsertion(m_freeSlotBatches,index);
-
-    m_occupiedSlotsAmount--;
-
-    return index;
-}
-
-template <typename T>
-bool NzIntervalBuffer<T>::RemoveValueFromIndex(unsigned int index)
-{
-    //TODO
 }
 
 template <typename T>

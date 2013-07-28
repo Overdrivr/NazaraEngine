@@ -35,8 +35,8 @@ NzTerrainChunk::~NzTerrainChunk()
 
 bool NzTerrainChunk::AddMesh(const std::array<float,150>& vertexData, const NzBoundingBoxf& meshBoundingBox, NzTerrainNodeID meshIdentifiant)
 {
-    unsigned int buffer = 0;
-    unsigned int index = 0;
+    int buffer = 0;
+    int index = 0;
 
     // Si pas de place pour un mesh supplémentaire
     if(m_freeSlotsAmount == 0)
@@ -67,7 +67,7 @@ bool NzTerrainChunk::AddMesh(const std::array<float,150>& vertexData, const NzBo
 
     if(m_vertexBuffers.at(buffer).Fill(vertexData.data(),index * 25,25))
     {
-        std::cout<<"NzTerrainChunk::AddMesh : Cannot fill vertex buffer number "<<freeSlot.x<<" at index "<<freeSlot.y * 25<<std::endl;
+        std::cout<<"NzTerrainChunk::AddMesh : Cannot fill vertex buffer number "<<buffer<<" at index "<<index * 25<<std::endl;
         return false;
     }
 
@@ -101,7 +101,7 @@ bool NzTerrainChunk::UpdateMesh(const std::array<float,150>& vertexData,NzTerrai
 
     if(!m_vertexBuffers.at(buffer).Fill(vertexData.data(),index * 25,25))
     {
-        std::cout<<"NzTerrainChunk::UpdateMesh : Cannot fill vertex buffer number "<<slotToUpdate.x<<" at index "<<slotToUpdate.y * 25<<std::endl;
+        std::cout<<"NzTerrainChunk::UpdateMesh : Cannot fill vertex buffer number "<<buffer<<" at index "<<index * 25<<std::endl;
         return false;
     }
 

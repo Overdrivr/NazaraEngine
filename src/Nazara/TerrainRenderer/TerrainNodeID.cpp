@@ -4,7 +4,7 @@
 
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/DynaTerrain/Config.hpp>
-#include <Nazara/DynaTerrain/TerrainNodeID.hpp>
+#include <Nazara/TerrainRenderer/TerrainNodeID.hpp>
 #include <cmath>
 #include <Nazara/DynaTerrain/Debug.hpp>
 

@@ -9,9 +9,8 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Utility/VertexBuffer.hpp>
-#include <Nazara/DynaTerrain/TerrainNodeID.hpp>
+#include <Nazara/TerrainRenderer/TerrainNodeID.hpp>
 #include <Nazara/TerrainRenderer/IntervalBuffer.hpp>
-#include <Nazara/TerrainRenderer/SparseBufferSet.hpp>
 
 #include <Nazara/Math/BoundingBox.hpp>
 #include <queue>

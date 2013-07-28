@@ -24,23 +24,25 @@ template <typename T> class NzIntervalBuffer
 
         bool Exists(unsigned int index);//TODO
 
-        //Returns the value's index OR -1 if the value cannot be located
         int FindValue(const T& value) const;
 
-        unsigned int GetFreeSlot() const;//TODO
+
         bool FillFreeSlot(unsigned int index, const T& value);//TODO
         bool FreeFilledSlot(unsigned int index);//TODO
 
+        unsigned int GetFreeSlot() const;//TODO
         unsigned int GetFilledSlotsAmount() const;
+        unsigned int GetFreeSlotsAmount() const;
+
         const std::list<NzBatch>& GetFilledIntervals() const;
         std::list<NzBatch> GetFilledIntervalsCopy();// POURQUOI NOM DIFFERENT ? A TESTER
         const std::list<NzBatch>& GetFreeIntervals() const;
         std::list<NzBatch> GetFreeIntervalsCopy();//PAREIL
-        unsigned int GetFreeSlotsAmount() const;
+
 
         //Insert the value's key inside the buffer
             //Returns -1 if something went wrong OR index location if everything ok
-        int InsertValue(const T& value);
+        //int InsertValue(const T& value);
 
         //Reduces fragmentation by moving 1 value key from one case to an other
             //Returns a vector where x is the previous position
@@ -49,8 +51,8 @@ template <typename T> class NzIntervalBuffer
         NzVector2i ReduceFragmentation();
         //Returns the erased value key's index OR -1 if something went wrong
             //FIX ME : Mieux bool ou int en sortie ?
-        int RemoveValue(const T& value);
-        bool RemoveValueFromIndex(unsigned int index);//TODO
+        //int RemoveValue(const T& value);
+        //bool RemoveValueFromIndex(unsigned int index);//TODO
 
     protected:
     private:
