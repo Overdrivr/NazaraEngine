@@ -146,7 +146,7 @@ bool NzTerrainChunk::CreateBuffer()
 	//On ajoute un buffer
 	//TOCHECK : static ou dynamic ?
     m_vertexBuffers.emplace_back(&m_declaration,1750,nzBufferStorage_Hardware,nzBufferUsage_Static);
-    m_vertexBuffersMap.emplace_back(1750);
+    m_vertexBuffersMap.emplace_back(NzIntervalBuffer<NzTerrainNodeID>(1750));
     m_freeSlotsAmount += 1750;
 
     return true;

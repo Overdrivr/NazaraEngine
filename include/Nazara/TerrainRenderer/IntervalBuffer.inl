@@ -1,5 +1,5 @@
 // Copyright (C) 2012 Rémi Bèges
-// This file is part of the "Nazara Engine".
+// This file is part of the "Nazara Engine - Terrain Interval module".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 template <typename T>
@@ -9,18 +9,20 @@ NzIntervalBuffer<T>::NzIntervalBuffer(unsigned int bufferSize)
     m_occupiedSlotsAmount = 0;
     //Il y a m_bufferSize cases de libres à partir de l'index 0
     m_freeSlotBatches.push_front(NzBatch(0,bufferSize));
+    typename std::vector<bool>::iterator it = m_occupationMap.end();
+    m_occupationMap.insert(it,bufferSize,false);
 }
-
+/*
 template <typename T>
 T NzIntervalBuffer<T>::at(unsigned int index)
 {
     //TODO
 }
-
+*/
 template <typename T>
-bool NzIntervalBuffer<T>::Exists(unsigned int index)
+bool NzIntervalBuffer<T>::IsFilled(unsigned int index)
 {
-    //TODO
+    return m_occupationMap.at(index);
 }
 
 template <typename T>
@@ -29,11 +31,61 @@ int NzIntervalBuffer<T>::FindValue(const T& value) const
     //On récupère l'emplacement de la valeur
     typename std::map<T,int>::const_iterator it = m_slots.find(value);
 
-    //Si la valeur n'existe pas dans le buffer, il n'y a rien à supprimer
+    //Si la valeur n'existe pas dans le buffer
     if(it == m_slots.end())
         return -1;
 
     return (*it).second;
+}
+
+template <typename T>
+bool NzIntervalBuffer<T>::FillFreeSlot(unsigned int index, const T& value)
+{
+    //On vérifie que l'emplacement ne soit pas déjà occupé
+    if(IsFilled(index))
+        return false;
+
+    //On ajoute la valeur dans le buffer à l'emplacement libre
+    m_slots[value] = index;
+
+    if(!AtomicKeyRemoval(m_freeSlotBatches,index))
+        return -1;
+
+    //L'insertion ne peut normalement pas échouer car l'index est valide
+    AtomicKeyInsertion(m_filledSlotBatches,index);
+    m_occupationMap.at(index) = true;
+    m_occupiedSlotsAmount++;
+
+    return index;
+}
+
+template <typename T>
+bool NzIntervalBuffer<T>::FreeFilledSlot(unsigned int index)
+{
+    // On vérifie que l'emplacement à supprimer soit bien plein
+    if(!IsFilled(index))
+        return false;
+
+    if(!AtomicKeyRemoval(m_filledSlotBatches,index))
+        return -1;
+
+    //L'insertion ne peut pas échouer
+    AtomicKeyInsertion(m_freeSlotBatches,index);
+    m_occupationMap.at(index) = false;
+    m_occupiedSlotsAmount--;
+
+    return index;
+}
+
+template <typename T>
+int NzIntervalBuffer<T>::GetFreeSlot() const
+{
+    //On vérifie qu'il y ait bien de la place
+    if(m_occupiedSlotsAmount == m_bufferSize)
+        return -1;
+
+    //On récupère le premier emplacement libre avec m_freeSlotBatches
+    unsigned int index = m_freeSlotBatches.front().Start();
 }
 
 template <typename T>
@@ -71,31 +123,7 @@ unsigned int NzIntervalBuffer<T>::GetFreeSlotsAmount() const
 {
     return m_bufferSize - m_occupiedSlotsAmount;
 }
-/*
-template <typename T>
-int NzIntervalBuffer<T>::InsertValue(const T& value)
-{
-    //Pas d'espace libre
-    if(m_occupiedSlotsAmount == m_bufferSize)
-        return -1;
 
-    //On récupère le premier emplacement libre avec m_freeSlotBatches
-    unsigned int index = m_freeSlotBatches.front().Start();
-
-    //On ajoute la valeur dans le buffer à l'emplacement libre
-    m_slots[value] = index;
-
-    if(!AtomicKeyRemoval(m_freeSlotBatches,index))
-        return -1;
-
-    //L'insertion ne peut pas échouer car il y a de la place
-    AtomicKeyInsertion(m_filledSlotBatches,index);
-
-    m_occupiedSlotsAmount++;
-
-    return index;
-}
-*/
 template <typename T>
 NzVector2i NzIntervalBuffer<T>::ReduceFragmentation()
 {

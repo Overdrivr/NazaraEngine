@@ -17,20 +17,20 @@
 template <typename T> class NzIntervalBuffer
 {
     public:
-        NzIntervalBuffer(unsigned int bufferSize);
+        explicit NzIntervalBuffer(unsigned int bufferSize);
         ~NzIntervalBuffer() = default;
 
-        T at(unsigned int index);//TODO, générer exception si fail
+        //T at(unsigned int index);//TODO ?
 
-        bool Exists(unsigned int index);//TODO
+        bool IsFilled(unsigned int index);
 
         int FindValue(const T& value) const;
 
 
-        bool FillFreeSlot(unsigned int index, const T& value);//TODO
-        bool FreeFilledSlot(unsigned int index);//TODO
+        bool FillFreeSlot(unsigned int index, const T& value);
+        bool FreeFilledSlot(unsigned int index);
 
-        unsigned int GetFreeSlot() const;//TODO
+        int GetFreeSlot() const;
         unsigned int GetFilledSlotsAmount() const;
         unsigned int GetFreeSlotsAmount() const;
 
@@ -39,20 +39,12 @@ template <typename T> class NzIntervalBuffer
         const std::list<NzBatch>& GetFreeIntervals() const;
         std::list<NzBatch> GetFreeIntervalsCopy();//PAREIL
 
-
-        //Insert the value's key inside the buffer
-            //Returns -1 if something went wrong OR index location if everything ok
-        //int InsertValue(const T& value);
-
         //Reduces fragmentation by moving 1 value key from one case to an other
             //Returns a vector where x is the previous position
             //y the new position
             //If x == -1 then something went wrong and the buffer hasn't been changed
         NzVector2i ReduceFragmentation();
-        //Returns the erased value key's index OR -1 if something went wrong
-            //FIX ME : Mieux bool ou int en sortie ?
-        //int RemoveValue(const T& value);
-        //bool RemoveValueFromIndex(unsigned int index);//TODO
+
 
     protected:
     private:
@@ -73,6 +65,9 @@ template <typename T> class NzIntervalBuffer
             //x représente l'index
             //y le nombre de slots vides consécutifs
         std::list<NzBatch> m_freeSlotBatches;
+
+        // Pour savoir si un index est occupé ou libre
+        std::vector<bool> m_occupationMap;
 
         unsigned int m_bufferSize;
         unsigned int m_occupiedSlotsAmount;
