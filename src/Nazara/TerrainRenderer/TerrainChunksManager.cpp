@@ -12,7 +12,7 @@ NzTerrainChunksManager::NzTerrainChunksManager(float edgelenght, unsigned int de
     m_edgeLenght = edgelenght;
     m_depth = depth;
 
-    for(unsigned int i(0) ; i < m_depth*m_depth)
+    for(unsigned int i(0) ; i < m_depth*m_depth ; ++i)
         m_chunks.emplace_back();
 }
 
@@ -25,10 +25,10 @@ void NzTerrainMasterNode::AddToRenderQueue(NzRenderQueue& renderQueue) const
 
 NzTerrainChunk* NzTerrainChunksManager::LocateChunk(NzVector2f location)
 {
-    return m_chunks.at(location.x + location.y * m_depth);
+    return &(m_chunks.at(location.x + location.y * m_depth));
 }
 
-void NzTerrainChunksManager::DrawChunks()() const
+void NzTerrainChunksManager::DrawChunks() const
 {
     for(unsigned int i(0) ; i < m_depth*m_depth ; ++i)
     {
