@@ -56,7 +56,7 @@ bool NzTerrainChunk::AddMesh(const std::array<float,150>& vertexData, const NzBo
         //Sinon on cherche le premier buffer avec un slot disponible
         for(int i(0) ; i < m_vertexBuffers.size() ; ++i)
         {
-            if(m_vertexBufferMap.at(i).GetFreeSlotsAmount() > 0)
+            if(m_vertexBuffersMap.at(i).GetFreeSlotsAmount() > 0)
             {
                 buffer = i;
                 index = m_vertexBuffersMap.at(i).GetFreeSlot();
@@ -71,7 +71,8 @@ bool NzTerrainChunk::AddMesh(const std::array<float,150>& vertexData, const NzBo
         return false;
     }
 
-    m_vertexBuffersMap.at(buffer).FillFreeSlot(index);
+    --m_freeSlotsAmount;
+    m_vertexBuffersMap.at(buffer).FillFreeSlot(index,meshIdentifiant);
 
     return true;
 }
@@ -79,13 +80,26 @@ bool NzTerrainChunk::AddMesh(const std::array<float,150>& vertexData, const NzBo
 //TO UPDATE
 bool NzTerrainChunk::UpdateMesh(const std::array<float,150>& vertexData,NzTerrainNodeID meshIdentifiant)
 {
-    //TOCHECK : 2 recherches dans le sparsebuffer alors qu'une suffirait ?
-    if(!m_vertexBuffersMap.DoesKeyExists(meshIdentifiant))
+    int buffer = 0;
+    int index = 0;
+
+    // Recherche bête dans chaque buffer l'un après l'autre
+    for(int i(0) ; i < m_vertexBuffers.size() ; ++i)
+    {
+        index = m_vertexBuffersMap.at(i).FindValue(meshIdentifiant);
+
+        //Index valide, on a trouvé l'emplacement
+        if(index > -1)
+        {
+            buffer = i;
+            break;
+        }
+    }
+
+    if(index < 0)
         return false;
 
-    NzVector2i slotToUpdate = m_vertexBuffersMap.FindKey(meshIdentifiant);
-
-    if(!m_vertexBuffers.at(slotToUpdate.x).Fill(vertexData.data(),slotToUpdate.y*25,25))
+    if(!m_vertexBuffers.at(buffer).Fill(vertexData.data(),index * 25,25))
     {
         std::cout<<"NzTerrainChunk::UpdateMesh : Cannot fill vertex buffer number "<<slotToUpdate.x<<" at index "<<slotToUpdate.y * 25<<std::endl;
         return false;
@@ -97,15 +111,27 @@ bool NzTerrainChunk::UpdateMesh(const std::array<float,150>& vertexData,NzTerrai
 //TO UPDATE
 bool NzTerrainChunk::RemoveMesh(NzTerrainNodeID meshIdentifiant)
 {
-    //TOCHECK : 2 recherches dans le sparsebuffer alors qu'une suffirait ?
-    if(!m_vertexBuffersMap.DoesKeyExists(meshIdentifiant))
+    int buffer = 0;
+    int index = 0;
+
+    // Recherche bête dans chaque buffer l'un après l'autre
+    for(int i(0) ; i < m_vertexBuffers.size() ; ++i)
+    {
+        index = m_vertexBuffersMap.at(i).FindValue(meshIdentifiant);
+
+        //Index valide, on a trouvé l'emplacement
+        if(index > -1)
+        {
+            buffer = i;
+            break;
+        }
+    }
+
+    if(index < 0)
         return false;
 
-    NzVector2i slotToRemove = m_vertexBuffersMap.FindKey(meshIdentifiant);
-
-    //TODO : Vérifier si la transaction a bien eu lieu jusqu'au bout ?
-    //TODO : A besoin de la value pour l'instant, ne peux compiler
-    m_vertexBuffersMap.FreeFilledSlot(slotToRemove);
+    m_vertexBuffersMap.at(buffer).FreeFilledSlot(index);
+    ++m_freeSlotsAmount;
 
     return true;
 }
