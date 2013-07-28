@@ -22,7 +22,7 @@ template <typename T> class NzIntervalBuffer
 
         T at(unsigned int index);//TODO, générer exception si fail
 
-        bool Exists(const T& value);//TODO
+        bool Exists(unsigned int index);//TODO
 
         //Returns the value's index OR -1 if the value cannot be located
         int FindValue(const T& value) const;

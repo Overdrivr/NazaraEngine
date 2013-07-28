@@ -89,7 +89,7 @@ bool NzSparseBufferSet<T>::FillFreeSlot(const NzVector2i& slot, const T& value)
 }
 
 template <typename T>
-bool NzSparseBufferSet<T>::FreeFilledSlot(const NzVector2i& slot, const T& value)
+bool NzSparseBufferSet<T>::FreeFilledSlot(const NzVector2i& slot)
 {
     if(slot.x < 0)
         return false;
@@ -97,8 +97,10 @@ bool NzSparseBufferSet<T>::FreeFilledSlot(const NzVector2i& slot, const T& value
         return false;
     if(slot.y < 0)
         return false;
-    //if(!m_buffers.at(slot.x).size...)
-        //return false;
+    if(!m_buffers.at(slot.x).Exists(slot.y))
+        return false;
+
+    T value = m_buffers.at(slot.x).at(slot.y);
 
     if(m_buffers.at(slot.x).RemoveValueFromIndex(slot.y))
     {
