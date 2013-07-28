@@ -21,10 +21,10 @@ void NzTerrainRenderer::DrawTerrainChunk(const NzTerrainChunk& chunk)
         auto itBatches = chunk.m_vertexBuffersMap.at(i).GetFilledIntervals().cbegin();
 
         // On envoie le vertexBuffer entier au renderer Nazara
-        NzRenderer::SetVertexBuffer(*itBuffers);
+        NzRenderer::SetVertexBuffer(&(*itBuffers));
 
         // On itère sur l'ensemble des lots d'un même buffer
-        for(; itBatches != itBuffers->GetFilledIntervals().cend() ; ++itBatches)
+        for(; itBatches != chunk.m_vertexBuffersMap.at(i).GetFilledIntervals().cend() ; ++itBatches)
         {
             // On fait le rendu
                 //(*it).x -> firstIndex;
