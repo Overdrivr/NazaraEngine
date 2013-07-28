@@ -11,8 +11,7 @@
 NzTerrainChunk::NzTerrainChunk()
 {
     //La structure du vertex buffer
-    //TODO : Trouver un moyen d'éviter l'initialisation à chaque constructeur
-    //TODO : Propager une exception si la déclaration n'est pas réussie
+    //TODO : A deplacer dans module, fournir une méthode statique pour récupérer la déclaration
     NzVertexElement m_elements[2];
 
     m_elements[0].usage = nzElementUsage_Position;
@@ -25,6 +24,8 @@ NzTerrainChunk::NzTerrainChunk()
 
 	if (!m_declaration.Create(m_elements, 2))
 		std::cout << "NzTerrainChunk::CreateBuffer : Failed to create vertex declaration" << std::endl;
+
+    m_freeSlotsAmount = 0;
 }
 
 NzTerrainChunk::~NzTerrainChunk()
@@ -34,25 +35,48 @@ NzTerrainChunk::~NzTerrainChunk()
 
 bool NzTerrainChunk::AddMesh(const std::array<float,150>& vertexData, const NzBoundingBoxf& meshBoundingBox, NzTerrainNodeID meshIdentifiant)
 {
-    if(m_vertexBuffersMap.GetTotalFreeSlotsAmount() == 0)
+    unsigned int buffer = 0;
+    unsigned int index = 0;
+
+    // Si pas de place pour un mesh supplémentaire
+    if(m_freeSlotsAmount == 0)
     {
+        //Création d'un buffer supplémentaire
         if(!this->CreateBuffer())
             return false;
+        else
+        {
+            //Le buffer a bien été crée, le slot disponible est l'index 0 du dernier buffer
+            buffer = m_vertexBuffers.size();
+        }
+
+    }
+    else
+    {
+        //Sinon on cherche le premier buffer avec un slot disponible
+        for(int i(0) ; i < m_vertexBuffers.size() ; ++i)
+        {
+            if(m_vertexBufferMap.at(i).GetFreeSlotsAmount() > 0)
+            {
+                buffer = i;
+                index = m_vertexBuffersMap.at(i).GetFreeSlot();
+                break;
+            }
+        }
     }
 
-    NzVector2i freeSlot = m_vertexBuffersMap.GetFreeSlot();
-
-    if(m_vertexBuffers.at(freeSlot.x).Fill(vertexData.data(),freeSlot.y * 25,25))
+    if(m_vertexBuffers.at(buffer).Fill(vertexData.data(),index * 25,25))
     {
         std::cout<<"NzTerrainChunk::AddMesh : Cannot fill vertex buffer number "<<freeSlot.x<<" at index "<<freeSlot.y * 25<<std::endl;
         return false;
     }
-    //TODO : Vérifier si la transaction a bien eu lieu jusqu'au bout ?
-    m_vertexBuffersMap.FillFreeSlot(freeSlot,meshIdentifiant);
+
+    m_vertexBuffersMap.at(buffer).FillFreeSlot(index);
 
     return true;
 }
 
+//TO UPDATE
 bool NzTerrainChunk::UpdateMesh(const std::array<float,150>& vertexData,NzTerrainNodeID meshIdentifiant)
 {
     //TOCHECK : 2 recherches dans le sparsebuffer alors qu'une suffirait ?
@@ -70,6 +94,7 @@ bool NzTerrainChunk::UpdateMesh(const std::array<float,150>& vertexData,NzTerrai
     return true;
 }
 
+//TO UPDATE
 bool NzTerrainChunk::RemoveMesh(NzTerrainNodeID meshIdentifiant)
 {
     //TOCHECK : 2 recherches dans le sparsebuffer alors qu'une suffirait ?
@@ -95,7 +120,8 @@ bool NzTerrainChunk::CreateBuffer()
 	//On ajoute un buffer
 	//TOCHECK : static ou dynamic ?
     m_vertexBuffers.emplace_back(&m_declaration,1750,nzBufferStorage_Hardware,nzBufferUsage_Static);
-    m_vertexBuffersMap.AddEmptyBuffer(1750);
+    m_vertexBuffersMap.emplace_back(1750);
+    m_freeSlotsAmount += 1750;
 
     return true;
 }

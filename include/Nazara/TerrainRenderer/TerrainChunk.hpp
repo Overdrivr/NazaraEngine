@@ -38,7 +38,8 @@ class NAZARA_API NzTerrainChunk
 
         std::vector<NzVertexBuffer> m_vertexBuffers;
         //IntervalBuffer
-        NzSparseBufferSet<NzTerrainNodeID> m_vertexBuffersMap;
+        std::vector<NzIntervalBuffer<NzTerrainNodeID>> m_vertexBuffersMap;
+        unsigned int m_freeSlotsAmount;
         //BoundingBox
         NzBoundingBoxf m_globalBoundingBox;
         //La déclaration de structure du buffer

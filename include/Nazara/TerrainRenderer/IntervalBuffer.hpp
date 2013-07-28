@@ -27,6 +27,10 @@ template <typename T> class NzIntervalBuffer
         //Returns the value's index OR -1 if the value cannot be located
         int FindValue(const T& value) const;
 
+        unsigned int GetFreeSlot() const;//TODO
+        bool FillFreeSlot(unsigned int index, const T& value);//TODO
+        bool FreeFilledSlot(unsigned int index);//TODO
+
         unsigned int GetFilledSlotsAmount() const;
         const std::list<NzBatch>& GetFilledIntervals() const;
         std::list<NzBatch> GetFilledIntervalsCopy();// POURQUOI NOM DIFFERENT ? A TESTER
