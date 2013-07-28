@@ -1,11 +1,11 @@
 // Copyright (C) 2012 Rémi Bèges
-// This file is part of the "Nazara Engine".
+// This file is part of the "Nazara Engine - Terrain Renderer module".
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #pragma once
 
-#ifndef NAZARA_TERRAINMASTERNODE_HPP
-#define NAZARA_TERRAINMASTERNODE_HPP
+#ifndef NAZARA_TERRAINCHUNKSMANAGER_HPP
+#define NAZARA_TERRAINCHUNKSMANAGER_HPP
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Math/Vector3.hpp>
@@ -72,4 +72,4 @@ class NAZARA_API NzTerrainChunksManager
         //unsigned int m_patchAmount;
 };
 
-#endif // NAZARA_TERRAINMASTERNODE_HPP
+#endif // NAZARA_TERRAINCHUNKSMANAGER_HPP
