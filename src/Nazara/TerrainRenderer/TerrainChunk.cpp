@@ -47,7 +47,7 @@ bool NzTerrainChunk::AddMesh(const std::array<float,150>& vertexData, const NzBo
         else
         {
             //Le buffer a bien été crée, le slot disponible est l'index 0 du dernier buffer
-            buffer = m_vertexBuffers.size();
+            buffer = m_vertexBuffers.size() - 1;
         }
 
     }
@@ -65,7 +65,7 @@ bool NzTerrainChunk::AddMesh(const std::array<float,150>& vertexData, const NzBo
         }
     }
 
-    if(m_vertexBuffers.at(buffer).Fill(vertexData.data(),index * 25,25))
+    if(!m_vertexBuffers.at(buffer).Fill(vertexData.data(),index * 25,25))
     {
         std::cout<<"NzTerrainChunk::AddMesh : Cannot fill vertex buffer number "<<buffer<<" at index "<<index * 25<<std::endl;
         return false;
