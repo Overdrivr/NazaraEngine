@@ -7,8 +7,8 @@
 #include <Nazara/Core/Log.hpp>
 #include <Nazara/Utility/Config.hpp>
 #include <cstdio>
-#include <map>
 #include <memory>
+#include <unordered_map>
 #include <Nazara/Graphics/Debug.hpp>
 
 NzOBJParser::NzOBJParser(NzInputStream& stream) :
@@ -98,7 +98,7 @@ bool NzOBJParser::Parse()
 	m_positions.reserve(100);
 	m_texCoords.reserve(100);
 
-	std::map<NzString, std::map<NzString, std::vector<Face>>> meshes;
+	std::unordered_map<NzString, std::unordered_map<NzString, std::vector<Face>>> meshes;
 
 	std::vector<Face>* currentMesh = &meshes[meshName][matName];
 
@@ -237,7 +237,7 @@ bool NzOBJParser::Parse()
 					UnrecognizedLine();
 				#endif
 
-				m_mtlLib = m_currentLine.Substr(m_currentLine.GetWordPosition(1));
+				m_mtlLib = m_currentLine.SubString(m_currentLine.GetWordPosition(1));
 				break;
 
 			case 'g':
@@ -251,7 +251,7 @@ bool NzOBJParser::Parse()
 					break;
 				}
 
-				NzString objectName = m_currentLine.Substr(m_currentLine.GetWordPosition(1));
+				NzString objectName = m_currentLine.SubString(m_currentLine.GetWordPosition(1));
 				if (objectName.IsEmpty())
 				{
 					#if NAZARA_UTILITY_STRICT_RESOURCE_PARSING
@@ -269,7 +269,7 @@ bool NzOBJParser::Parse()
 				#if NAZARA_UTILITY_STRICT_RESOURCE_PARSING
 				if (m_currentLine[1] == ' ')
 				{
-					NzString param = m_currentLine.Substr(2);
+					NzString param = m_currentLine.SubString(2);
 					if (param != "all" && param != "on" && param != "off" && !param.IsNumber())
 						UnrecognizedLine();
 				}
@@ -284,7 +284,7 @@ bool NzOBJParser::Parse()
 					UnrecognizedLine();
 				#endif
 
-				matName = m_currentLine.Substr(m_currentLine.GetWordPosition(1));
+				matName = m_currentLine.SubString(m_currentLine.GetWordPosition(1));
 				if (matName.IsEmpty())
 				{
 					#if NAZARA_UTILITY_STRICT_RESOURCE_PARSING
@@ -348,12 +348,12 @@ bool NzOBJParser::Parse()
 		}
 	}
 
-	std::map<NzString, unsigned int> materials;
+	std::unordered_map<NzString, unsigned int> materials;
 	unsigned int matCount = 0;
 
-	for (auto meshIt : meshes)
+	for (auto& meshIt : meshes)
 	{
-		for (auto matIt : meshIt.second)
+		for (auto& matIt : meshIt.second)
 		{
 			if (!matIt.second.empty())
 			{
@@ -382,8 +382,8 @@ bool NzOBJParser::Parse()
 	}
 
 	m_materials.resize(matCount);
-	for (auto it : materials)
-		m_materials[it.second] = it.first;
+	for (const std::pair<NzString, unsigned int>& pair : materials)
+		m_materials[pair.second] = pair.first;
 
 	return true;
 }
@@ -405,7 +405,7 @@ bool NzOBJParser::Advance(bool required)
 			m_lineCount++;
 
 			m_currentLine = m_stream.ReadLine();
-			m_currentLine = m_currentLine.SubstrTo("#"); // On ignore les commentaires
+			m_currentLine = m_currentLine.SubStringTo("#"); // On ignore les commentaires
 			m_currentLine.Simplify(); // Pour un traitement plus simple
 		}
 		while (m_currentLine.IsEmpty());

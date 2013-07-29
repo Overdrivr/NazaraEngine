@@ -54,7 +54,7 @@ bool NzSphere<T>::Contains(const NzSphere& sphere) const
 }
 
 template<typename T>
-bool NzSphere<T>::Contains(const NzCube<T>& cube) const
+bool NzSphere<T>::Contains(const NzBox<T>& box) const
 {
     if(!Contains(cube.GetBoundingSphere()) && !Intersect(cube.GetBoundingSphere()))
         return false;
@@ -168,7 +168,7 @@ T NzSphere<T>::GetSquaredRadius() const
 }
 /*
 template<typename T>
-bool NzSphere<T>::Intersect(const NzCube<T>& cube) const
+bool NzSphere<T>::Intersect(const NzBox<T>& box) const
 {
     T dmin(0.0);
 	T dmax(0.0);
@@ -251,7 +251,7 @@ NzSphere<T>& NzSphere<T>::Set(const NzVector3<T>& center, T Radius)
 }
 /*
 template<typename T>
-NzSphere<T>& NzCube<T>::Set(const NzCircle<T>& circle)
+NzSphere<T>& NzSphere<T>::Set(const NzCircle<T>& circle)
 {
 	x = circle.x;
 	y = circle.y;

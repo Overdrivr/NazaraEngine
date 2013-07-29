@@ -23,17 +23,18 @@ namespace
 		return (extension == "obj");
 	}
 
-	bool Check(NzInputStream& stream, const NzModelParameters& parameters)
+	nzTernary Check(NzInputStream& stream, const NzModelParameters& parameters)
 	{
 		NazaraUnused(stream);
 		NazaraUnused(parameters);
 
-		return true; ///FIXME: Pas bon
+		return nzTernary_Unknown;
 	}
 
 	bool Load(NzModel* model, NzInputStream& stream, const NzModelParameters& parameters)
 	{
 		NzOBJParser parser(stream);
+
 		if (!parser.Parse())
 		{
 			NazaraError("OBJ parser failed");
@@ -96,10 +97,10 @@ namespace
 				}
 			}
 
-			std::unique_ptr<NzIndexBuffer> indexBuffer(new NzIndexBuffer(indices.size(), vertexCount > std::numeric_limits<nzUInt16>::max(), parameters.mesh.storage, nzBufferUsage_Static));
+			std::unique_ptr<NzIndexBuffer> indexBuffer(new NzIndexBuffer(vertexCount > std::numeric_limits<nzUInt16>::max(), indices.size(), parameters.mesh.storage, nzBufferUsage_Static));
 			indexBuffer->SetPersistent(false);
 
-			std::unique_ptr<NzVertexBuffer> vertexBuffer(new NzVertexBuffer(NzMesh::GetDeclaration(), vertexCount, parameters.mesh.storage, nzBufferUsage_Static));
+			std::unique_ptr<NzVertexBuffer> vertexBuffer(new NzVertexBuffer(NzVertexDeclaration::Get(nzVertexLayout_XYZ_Normal_UV_Tangent), vertexCount, parameters.mesh.storage, nzBufferUsage_Static));
 			vertexBuffer->SetPersistent(false);
 
 			// Remplissage des indices
@@ -114,16 +115,17 @@ namespace
 			bool hasTexCoords = true;
 			NzBufferMapper<NzVertexBuffer> vertexMapper(vertexBuffer.get(), nzBufferAccess_WriteOnly);
 			NzMeshVertex* meshVertices = static_cast<NzMeshVertex*>(vertexMapper.GetPointer());
-			for (auto uvIt : vertices)
+			for (auto& uvIt : vertices)
 			{
-				for (auto normalIt : uvIt.second)
+				for (auto& normalIt : uvIt.second)
 				{
-					for (auto positionIt : normalIt.second)
+					for (auto& positionIt : normalIt.second)
 					{
 						NzMeshVertex& vertex = meshVertices[positionIt.second];
 
 						const NzVector4f& vec = positions[positionIt.first];
-						vertex.position.Set(vec.x/vec.w, vec.y/vec.w, vec.z/vec.w);
+						vertex.position.Set(vec.x, vec.y, vec.z);
+						vertex.position *= parameters.mesh.scale/vec.w;
 
 						int index;
 
@@ -155,12 +157,15 @@ namespace
 			}
 			vertexBuffer.release();
 
+			if (parameters.mesh.optimizeIndexBuffers)
+				indexBuffer->Optimize();
+
 			subMesh->SetIndexBuffer(indexBuffer.get());
 			indexBuffer.release();
 
 			subMesh->GenerateAABB();
 			subMesh->SetMaterialIndex(meshes[i].material);
-			subMesh->SetPrimitiveType(nzPrimitiveType_TriangleList);
+			subMesh->SetPrimitiveMode(nzPrimitiveMode_TriangleList);
 
 			if (hasNormals && hasTexCoords)
 				subMesh->GenerateTangents();
@@ -169,10 +174,8 @@ namespace
 			else
 				subMesh->GenerateNormals();
 
-			if (mesh->AddSubMesh(meshes[i].name + '_' + materials[meshes[i].material], subMesh.get()))
-				subMesh.release();
-			else
-				NazaraError("Failed to add SubMesh to Mesh");
+			mesh->AddSubMesh(meshes[i].name + '_' + materials[meshes[i].material], subMesh.get());
+			subMesh.release();
 		}
 
 		mesh->SetMaterialCount(parser.GetMaterialCount());
@@ -200,19 +203,38 @@ namespace
 							std::unique_ptr<NzMaterial> material(new NzMaterial);
 							material->SetPersistent(false);
 
+							nzUInt8 alphaValue = static_cast<nzUInt8>(mtlMat->alpha*255.f);
+
 							NzColor ambientColor(mtlMat->ambient);
-							ambientColor.a = mtlMat->alpha;
+							ambientColor.a = alphaValue;
 
 							NzColor diffuseColor(mtlMat->diffuse);
-							diffuseColor.a = mtlMat->alpha;
+							diffuseColor.a = alphaValue;
 
 							NzColor specularColor(mtlMat->specular);
-							specularColor.a = mtlMat->alpha;
+							specularColor.a = alphaValue;
 
 							material->SetAmbientColor(ambientColor);
 							material->SetDiffuseColor(diffuseColor);
 							material->SetSpecularColor(specularColor);
 							material->SetShininess(mtlMat->shininess);
+
+							bool hasAlphaMap = false;;
+							if (parameters.material.loadAlphaMap && !mtlMat->alphaMap.IsEmpty())
+							{
+								std::unique_ptr<NzTexture> alphaMap(new NzTexture);
+								alphaMap->SetPersistent(false);
+
+								if (alphaMap->LoadFromFile(baseDir + mtlMat->alphaMap))
+								{
+									hasAlphaMap = true;
+
+									material->SetAlphaMap(alphaMap.get());
+									alphaMap.release();
+								}
+								else
+									NazaraWarning("Failed to load alpha map (" + mtlMat->alphaMap + ')');
+							}
 
 							if (parameters.material.loadDiffuseMap && !mtlMat->diffuseMap.IsEmpty())
 							{
@@ -239,7 +261,18 @@ namespace
 									specularMap.release();
 								}
 								else
-									NazaraWarning("Failed to load specular map (" + mtlMat->diffuseMap + ')');
+									NazaraWarning("Failed to load specular map (" + mtlMat->specularMap + ')');
+							}
+
+							// Si nous avons une alpha map ou des couleurs transparentes,
+							// nous devons configurer le matériau pour accepter la transparence au mieux
+							if (hasAlphaMap || alphaValue != 255)
+							{
+								// On paramètre le matériau pour accepter la transparence au mieux
+								material->Enable(nzRendererParameter_Blend, true);
+								material->Enable(nzRendererParameter_DepthWrite, false);
+								material->SetDstBlend(nzBlendFunc_InvSrcAlpha);
+								material->SetSrcBlend(nzBlendFunc_SrcAlpha);
 							}
 
 							model->SetMaterial(meshes[i].material, material.get());

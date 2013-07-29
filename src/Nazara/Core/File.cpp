@@ -3,10 +3,10 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Core/File.hpp>
+#include <Nazara/Core/AbstractHash.hpp>
 #include <Nazara/Core/Config.hpp>
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Core/Hash.hpp>
-#include <Nazara/Core/HashImpl.hpp>
 #include <Nazara/Core/StringStream.hpp>
 #include <cstring>
 #include <utility>
@@ -162,14 +162,14 @@ NzString NzFile::GetDirectory() const
 {
 	NazaraLock(m_mutex)
 
-	return m_filePath.SubstrTo(NAZARA_DIRECTORY_SEPARATOR, -1, true, true);
+	return m_filePath.SubStringTo(NAZARA_DIRECTORY_SEPARATOR, -1, true, true);
 }
 
 NzString NzFile::GetFileName() const
 {
 	NazaraLock(m_mutex)
 
-	return m_filePath.SubstrFrom(NAZARA_DIRECTORY_SEPARATOR, -1, true);
+	return m_filePath.SubStringFrom(NAZARA_DIRECTORY_SEPARATOR, -1, true);
 }
 
 time_t NzFile::GetLastAccessTime() const
@@ -501,8 +501,8 @@ NzString NzFile::AbsolutePath(const NzString& filePath)
 	}
 	else if (path.StartsWith('\\')) // Spécial : '\' fait référence au disque racine
 	{
-		NzString drive = NzDirectory::GetCurrent().SubstrTo('\\');
-		NzString end = path.Substr(1, -1);
+		NzString drive = NzDirectory::GetCurrent().SubStringTo('\\');
+		NzString end = path.SubString(1, -1);
 		if (end.IsEmpty())
 			path = drive;
 		else
@@ -604,7 +604,7 @@ time_t NzFile::GetCreationTime(const NzString& filePath)
 
 NzString NzFile::GetDirectory(const NzString& filePath)
 {
-	return filePath.SubstrTo(NAZARA_DIRECTORY_SEPARATOR, -1, true, true);
+	return filePath.SubStringTo(NAZARA_DIRECTORY_SEPARATOR, -1, true, true);
 }
 
 time_t NzFile::GetLastAccessTime(const NzString& filePath)
@@ -631,7 +631,7 @@ NzHashDigest NzFile::GetHash(const NzString& filePath, nzHash hash)
 	return h.Hash(file);
 }
 
-NzHashDigest NzFile::GetHash(const NzString& filePath, NzHashImpl* hash)
+NzHashDigest NzFile::GetHash(const NzString& filePath, NzAbstractHash* hash)
 {
 	NzFile file(filePath);
 
@@ -707,7 +707,7 @@ bool NzFile::Rename(const NzString& sourcePath, const NzString& targetPath)
 	return NzFileImpl::Rename(NormalizePath(sourcePath), NormalizePath(targetPath));
 }
 
-bool NzFile::FillHash(NzHashImpl* hash) const
+bool NzFile::FillHash(NzAbstractHash* hash) const
 {
 	NzFile file(m_filePath);
 	if (!file.Open(NzFile::ReadOnly))

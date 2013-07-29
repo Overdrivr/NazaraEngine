@@ -4,30 +4,42 @@
 
 #include <Nazara/Graphics/TextureBackground.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
-#include <Nazara/Renderer/RenderTarget.hpp>
+#include <Nazara/Renderer/ShaderManager.hpp>
+#include <memory>
 #include <Nazara/Graphics/Debug.hpp>
 
-NzTextureBackground::NzTextureBackground(NzTexture* texture) :
-m_texture(texture)
+NzTextureBackground::NzTextureBackground()
 {
+	NzShaderManagerParams params;
+	params.target = nzShaderTarget_FullscreenQuad;
+	params.flags = 0;
+	params.fullscreenQuad.alphaMapping = false;
+	params.fullscreenQuad.alphaTest = false;
+	params.fullscreenQuad.diffuseMapping = true;
+
+	m_shader = NzShaderManager::Get(params);
+}
+
+NzTextureBackground::NzTextureBackground(NzTexture* texture) :
+NzTextureBackground()
+{
+	m_texture = texture;
 }
 
 void NzTextureBackground::Draw(const NzScene* scene) const
 {
 	NazaraUnused(scene);
 
-	const NzRenderTarget* target = NzRenderer::GetTarget();
-	NzRectui viewport = NzRenderer::GetViewport();
+	static NzRenderStates states;
 
-	// Sous forme de flottants pour la division flottante
-	float width = target->GetWidth();
-	float height = target->GetHeight();
+	m_shader->SendColor(m_shader->GetUniformLocation(nzShaderUniform_MaterialDiffuse), NzColor::White);
+	m_shader->SendInteger(m_shader->GetUniformLocation(nzShaderUniform_MaterialDiffuseMap), 0);
 
-	NzVector2f uv0(viewport.x/width, viewport.y/height);
-	NzVector2f uv1((viewport.x+viewport.width)/width, (viewport.y+viewport.height)/height);
-
+	NzRenderer::SetRenderStates(states);
+	NzRenderer::SetShader(m_shader);
 	NzRenderer::SetTexture(0, m_texture);
-	NzRenderer::DrawTexture(0, NzRectf(0.f, 0.f, width, height), uv0, uv1, 1.f);
+
+	NzRenderer::DrawFullscreenQuad();
 }
 
 nzBackgroundType NzTextureBackground::GetBackgroundType() const

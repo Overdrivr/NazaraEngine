@@ -27,8 +27,14 @@ class NzSphere
 		~NzSphere() = default;
 
 		bool Contains(T X, T Y, T Z) const;
+<<<<<<< HEAD
 		bool Contains(const NzSphere& sphere) const;
 		bool Contains(const NzCube<T>& cube) const;
+||||||| merged common ancestors
+		//bool Contains(const NzCube<T>& cube) const;
+=======
+		//bool Contains(const NzBox<T>& box) const;
+>>>>>>> upstream/master
 		bool Contains(const NzVector3<T>& point) const;
 
 		T Distance(T X, T Y, T Z) const;
@@ -44,7 +50,7 @@ class NzSphere
 		NzVector3<T> GetPositiveVertex(const NzVector3<T>& normal) const;
 		T GetSquaredRadius() const;
 
-		//bool Intersect(const NzCube<T>& cube) const;
+		//bool Intersect(const NzBox<T>& box) const;
 		bool Intersect(const NzSphere& sphere) const;
 
 		bool IsValid() const;

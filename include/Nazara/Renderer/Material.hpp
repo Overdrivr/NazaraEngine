@@ -14,13 +14,18 @@
 #include <Nazara/Core/ResourceRef.hpp>
 #include <Nazara/Core/String.hpp>
 #include <Nazara/Renderer/Enums.hpp>
+#include <Nazara/Renderer/RenderStates.hpp>
 #include <Nazara/Renderer/Shader.hpp>
 #include <Nazara/Renderer/Texture.hpp>
 #include <Nazara/Renderer/TextureSampler.hpp>
 
 struct NAZARA_API NzMaterialParams
 {
+	bool loadAlphaMap = true;
 	bool loadDiffuseMap = true;
+	bool loadEmissiveMap = true;
+	bool loadHeightMap = true;
+	bool loadNormalMap = true;
 	bool loadSpecularMap = true;
 
 	bool IsValid() const;
@@ -35,6 +40,7 @@ using NzMaterialRef = NzResourceRef<NzMaterial>;
 class NAZARA_API NzMaterial : public NzResource
 {
 	friend NzMaterialLoader;
+	friend class NzRenderer;
 
 	public:
 		NzMaterial();
@@ -44,14 +50,14 @@ class NAZARA_API NzMaterial : public NzResource
 
 		void Apply(const NzShader* shader) const;
 
-		void EnableAlphaBlending(bool alphaBlending);
-		void EnableFaceCulling(bool faceCulling);
+		void Enable(nzRendererParameter renderParameter, bool enable);
+		void EnableAlphaTest(bool alphaTest);
 		void EnableLighting(bool lighting);
-		void EnableZTest(bool zTest);
-		void EnableZWrite(bool zWrite);
 
+		NzTexture* GetAlphaMap() const;
+		float GetAlphaThreshold() const;
 		NzColor GetAmbientColor() const;
-		const NzShader* GetCustomShader() const;
+		nzRendererComparison GetDepthFunc() const;
 		NzColor GetDiffuseColor() const;
 		NzTexture* GetDiffuseMap() const;
 		NzTextureSampler& GetDiffuseSampler();
@@ -62,22 +68,25 @@ class NAZARA_API NzMaterial : public NzResource
 		nzFaceFilling GetFaceFilling() const;
 		NzTexture* GetHeightMap() const;
 		NzTexture* GetNormalMap() const;
-		nzUInt32 GetShaderFlags() const;
+		const NzRenderStates& GetRenderStates() const;
+		const NzShader* GetShader(nzShaderTarget target, nzUInt32 flags) const;
 		float GetShininess() const;
 		NzColor GetSpecularColor() const;
 		NzTexture* GetSpecularMap() const;
 		NzTextureSampler& GetSpecularSampler();
 		const NzTextureSampler& GetSpecularSampler() const;
 		nzBlendFunc GetSrcBlend() const;
-		nzRendererComparison GetZTestCompare() const;
 
-		bool HasCustomShader() const;
+		bool HasAlphaMap() const;
+		bool HasDiffuseMap() const;
+		bool HasEmissiveMap() const;
+		bool HasHeightMap() const;
+		bool HasNormalMap() const;
+		bool HasSpecularMap() const;
 
-		bool IsAlphaBlendingEnabled() const;
-		bool IsFaceCullingEnabled() const;
+		bool IsAlphaTestEnabled() const;
+		bool IsEnabled(nzRendererParameter renderParameter) const;
 		bool IsLightingEnabled() const;
-		bool IsZTestEnabled() const;
-		bool IsZWriteEnabled() const;
 
 		bool LoadFromFile(const NzString& filePath, const NzMaterialParams& params = NzMaterialParams());
 		bool LoadFromMemory(const void* data, std::size_t size, const NzMaterialParams& params = NzMaterialParams());
@@ -85,7 +94,11 @@ class NAZARA_API NzMaterial : public NzResource
 
 		void Reset();
 
+		bool SetAlphaMap(const NzString& texturePath);
+		void SetAlphaMap(NzTexture* map);
+		void SetAlphaThreshold(float alphaThreshold);
 		void SetAmbientColor(const NzColor& ambient);
+		void SetDepthFunc(nzRendererComparison depthFunc);
 		void SetDiffuseColor(const NzColor& diffuse);
 		bool SetDiffuseMap(const NzString& texturePath);
 		void SetDiffuseMap(NzTexture* map);
@@ -99,14 +112,14 @@ class NAZARA_API NzMaterial : public NzResource
 		void SetHeightMap(NzTexture* map);
 		bool SetNormalMap(const NzString& texturePath);
 		void SetNormalMap(NzTexture* map);
-		void SetCustomShader(const NzShader* shader);
+		void SetRenderStates(const NzRenderStates& states);
+		void SetShader(nzShaderTarget target, nzUInt32 flags, const NzShader* shader);
 		void SetShininess(float shininess);
 		void SetSpecularColor(const NzColor& specular);
 		bool SetSpecularMap(const NzString& texturePath);
 		void SetSpecularMap(NzTexture* map);
 		void SetSpecularSampler(const NzTextureSampler& sampler);
 		void SetSrcBlend(nzBlendFunc func);
-		void SetZTestCompare(nzRendererComparison compareFunc);
 
 		NzMaterial& operator=(const NzMaterial& material);
 		NzMaterial& operator=(NzMaterial&& material);
@@ -114,32 +127,38 @@ class NAZARA_API NzMaterial : public NzResource
 		static NzMaterial* GetDefault();
 
 	private:
-		void Copy(const NzMaterial& material);
+		struct ShaderUnit
+		{
+			NzShaderConstRef shader;
+			bool custom = false;
+		};
 
-		nzBlendFunc m_dstBlend;
-		nzBlendFunc m_srcBlend;
-		nzFaceCulling m_faceCulling;
-		nzFaceFilling m_faceFilling;
-		nzRendererComparison m_zTestCompareFunc;
-		nzUInt32 m_shaderFlags;
+		void Copy(const NzMaterial& material);
+		void GenerateShader(nzShaderTarget target, nzUInt32 flags) const;
+		void InvalidateShaders(nzShaderTarget target);
+
+		static bool Initialize();
+		static void Uninitialize();
+
 		NzColor m_ambientColor;
 		NzColor m_diffuseColor;
 		NzColor m_specularColor;
+		NzRenderStates m_states;
+		mutable ShaderUnit m_shaders[nzShaderTarget_Max+1][nzShaderFlags_Max+1];
 		NzTextureSampler m_diffuseSampler;
 		NzTextureSampler m_specularSampler;
-		mutable NzShaderConstRef m_customShader;
+		NzTextureRef m_alphaMap;
 		NzTextureRef m_diffuseMap;
 		NzTextureRef m_emissiveMap;
 		NzTextureRef m_heightMap;
 		NzTextureRef m_normalMap;
 		NzTextureRef m_specularMap;
-		bool m_alphaBlendingEnabled;
-		bool m_faceCullingEnabled;
+		bool m_alphaTestEnabled;
 		bool m_lightingEnabled;
-		bool m_zTestEnabled;
-		bool m_zWriteEnabled;
+		float m_alphaThreshold;
 		float m_shininess;
 
+		static NzMaterial* s_defaultMaterial;
 		static NzMaterialLoader::LoaderList s_loaders;
 };
 

@@ -2,7 +2,9 @@
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#define NAZARA_RENDERER_OPENGL // Nécessaire pour accéder à OpenGL
+#ifndef NAZARA_RENDERER_OPENGL
+#define NAZARA_RENDERER_OPENGL // Nécessaire pour inclure les headers OpenGL
+#endif
 
 #include <Nazara/Renderer/OpenGL.hpp>
 #include <Nazara/Graphics/SkyboxBackground.hpp>
@@ -20,7 +22,7 @@ namespace
 {
 	NzIndexBuffer* BuildIndexBuffer()
 	{
-		std::unique_ptr<NzIndexBuffer> indexBuffer(new NzIndexBuffer(36, false, nzBufferStorage_Hardware, nzBufferUsage_Static));
+		std::unique_ptr<NzIndexBuffer> indexBuffer(new NzIndexBuffer(false, 36, nzBufferStorage_Hardware, nzBufferUsage_Static));
 		indexBuffer->SetPersistent(false);
 
 		nzUInt16 indices[6*6] =
@@ -33,7 +35,7 @@ namespace
 			1, 6, 2, 1, 5, 6
 		};
 
-		if (!indexBuffer->Fill(indices, 0, 36))
+		if (!indexBuffer->FillIndices(indices, 0, 36))
 		{
 			NazaraError("Failed to create vertex buffer");
 			return nullptr;
@@ -112,24 +114,18 @@ namespace
 		return shader.release();
 	}
 
+	NzRenderStates BuildRenderStates()
+	{
+		NzRenderStates states;
+		states.parameters[nzRendererParameter_FaceCulling] = true;
+		states.faceCulling = nzFaceCulling_Front;
+
+		return states;
+	}
+
 	NzVertexBuffer* BuildVertexBuffer()
 	{
-		std::unique_ptr<NzVertexDeclaration> declaration(new NzVertexDeclaration);
-		declaration->SetPersistent(false);
-
-		NzVertexElement elements;
-		elements.offset = 0;
-		elements.type = nzElementType_Float3;
-		elements.usage = nzElementUsage_Position;
-
-		if (!declaration->Create(&elements, 1))
-		{
-			NazaraError("Failed to create declaration");
-			return nullptr;
-		}
-
-		std::unique_ptr<NzVertexBuffer> vertexBuffer(new NzVertexBuffer(declaration.get(), 8, nzBufferStorage_Hardware, nzBufferUsage_Static));
-		declaration.release();
+		std::unique_ptr<NzVertexBuffer> vertexBuffer(new NzVertexBuffer(NzVertexDeclaration::Get(nzVertexLayout_XYZ), 8, nzBufferStorage_Hardware, nzBufferUsage_Static));
 		vertexBuffer->SetPersistent(false);
 
 		float vertices[8*(sizeof(float)*3)] =
@@ -144,7 +140,7 @@ namespace
 			 1.0,  1.0, -1.0,
 		};
 
-		if (!vertexBuffer->Fill(vertices, 0, 8))
+		if (!vertexBuffer->FillVertices(vertices, 0, 8))
 		{
 			NazaraError("Failed to create vertex buffer");
 			return nullptr;
@@ -156,6 +152,7 @@ namespace
 	static NzIndexBuffer* s_indexBuffer = nullptr;
 	static NzShader* s_shader = nullptr;
 	static NzVertexBuffer* s_vertexBuffer = nullptr;
+	static unsigned int s_skyboxLocation;
 }
 
 NzSkyboxBackground::NzSkyboxBackground()
@@ -164,21 +161,18 @@ NzSkyboxBackground::NzSkyboxBackground()
 		s_indexBuffer = BuildIndexBuffer();
 
 	if (!s_shader)
+	{
 		s_shader = BuildShader();
+		s_skyboxLocation = s_shader->GetUniformLocation("Skybox");
+	}
 
 	if (!s_vertexBuffer)
 		s_vertexBuffer = BuildVertexBuffer();
 
 	m_indexBuffer = s_indexBuffer;
-	m_indexBuffer->AddResourceReference();
-
 	m_shader = s_shader;
-	m_shader->AddResourceReference();
-
 	m_sampler.SetWrapMode(nzSamplerWrap_Clamp); // Nécessaire pour ne pas voir les côtés
-
 	m_vertexBuffer = s_vertexBuffer;
-	m_vertexBuffer->AddResourceReference();
 }
 
 NzSkyboxBackground::NzSkyboxBackground(NzTexture* cubemapTexture) :
@@ -189,42 +183,36 @@ NzSkyboxBackground()
 
 NzSkyboxBackground::~NzSkyboxBackground()
 {
-	if (m_indexBuffer->RemoveResourceReference())
+	if (m_indexBuffer.Reset())
 		s_indexBuffer = nullptr;
 
-	if (m_shader->RemoveResourceReference())
+	if (m_shader.Reset())
 		s_shader = nullptr;
 
-	if (m_vertexBuffer->RemoveResourceReference())
+	if (m_vertexBuffer.Reset())
 		s_vertexBuffer = nullptr;
 }
 
 void NzSkyboxBackground::Draw(const NzScene* scene) const
 {
-	nzUInt8 textureUnit;
-	m_shader->SendTexture(m_shader->GetUniformLocation("Skybox"), m_texture, &textureUnit);
+	static NzRenderStates states(BuildRenderStates());
 
-	const NzCamera* camera = scene->GetActiveCamera();
+	m_shader->SendInteger(s_skyboxLocation, 0);
 
-	const NzMatrix4f& viewMatrix = camera->GetViewMatrix();
+	const NzMatrix4f& viewMatrix = NzRenderer::GetMatrix(nzMatrixType_View);
 	NzMatrix4f skyboxMatrix(viewMatrix);
 	skyboxMatrix.SetTranslation(NzVector3f::Zero());
 
-	NzRenderer::Enable(nzRendererParameter_Blend, false);
-	NzRenderer::Enable(nzRendererParameter_DepthTest, false);
-	NzRenderer::Enable(nzRendererParameter_FaceCulling, true);
-
-	NzRenderer::SetDepthFunc(nzRendererComparison_Less);
-	NzRenderer::SetFaceCulling(nzFaceCulling_Front);
-	NzRenderer::SetFaceFilling(nzFaceFilling_Fill);
 	NzRenderer::SetIndexBuffer(m_indexBuffer);
 	NzRenderer::SetMatrix(nzMatrixType_View, skyboxMatrix);
-	NzRenderer::SetMatrix(nzMatrixType_World, NzMatrix4f::Scale(NzVector3f(camera->GetZNear())));
+	NzRenderer::SetMatrix(nzMatrixType_World, NzMatrix4f::Scale(NzVector3f(scene->GetActiveCamera()->GetZNear())));
+	NzRenderer::SetRenderStates(states);
 	NzRenderer::SetShader(m_shader);
-	NzRenderer::SetTextureSampler(textureUnit, m_sampler);
+	NzRenderer::SetTexture(0, m_texture);
+	NzRenderer::SetTextureSampler(0, m_sampler);
 	NzRenderer::SetVertexBuffer(m_vertexBuffer);
 
-	NzRenderer::DrawIndexedPrimitives(nzPrimitiveType_TriangleList, 0, 36);
+	NzRenderer::DrawIndexedPrimitives(nzPrimitiveMode_TriangleList, 0, 36);
 
 	NzRenderer::SetMatrix(nzMatrixType_View, viewMatrix);
 }

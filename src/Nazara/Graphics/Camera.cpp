@@ -10,7 +10,6 @@
 
 NzCamera::NzCamera() :
 m_viewport(0.f, 0.f, 1.f, 1.f),
-m_upVector(NzVector3f::Up()),
 m_frustumUpdated(false),
 m_projectionMatrixUpdated(false),
 m_viewMatrixUpdated(false),
@@ -23,7 +22,7 @@ m_zNear(1.f)
 
 NzCamera::~NzCamera() = default;
 
-void NzCamera::Activate() const
+void NzCamera::Activate()
 {
 	#ifdef NAZARA_GRAPHICS_SAFE
 	if (!m_target)
@@ -93,10 +92,10 @@ float NzCamera::GetAspectRatio() const
 	return m_aspectRatio;
 }
 
-const NzBoundingBoxf& NzCamera::GetBoundingBox() const
+const NzBoundingVolumef& NzCamera::GetBoundingVolume() const
 {
-	///TODO: Remplacer par la bounding box du Frustum ?
-	static NzBoundingBoxf dummy(nzExtend_Null);
+	///TODO: Remplacer par le bounding volume du Frustum ?
+	static NzBoundingVolumef dummy(nzExtend_Null);
 	return dummy;
 }
 
@@ -129,11 +128,6 @@ nzSceneNodeType NzCamera::GetSceneNodeType() const
 const NzRenderTarget* NzCamera::GetTarget() const
 {
 	return m_target;
-}
-
-const NzVector3f& NzCamera::GetUpVector() const
-{
-	return m_upVector;
 }
 
 const NzMatrix4f& NzCamera::GetViewMatrix() const
@@ -177,14 +171,6 @@ void NzCamera::SetTarget(const NzRenderTarget& renderTarget)
 	SetTarget(&renderTarget);
 }
 
-void NzCamera::SetUpVector(const NzVector3f& upVector)
-{
-	m_upVector = upVector;
-
-	m_frustumUpdated = false;
-	m_viewMatrixUpdated = false;
-}
-
 void NzCamera::SetViewport(const NzRectf& viewport)
 {
 	m_viewport = viewport;
@@ -206,7 +192,7 @@ void NzCamera::SetZNear(float zNear)
 	m_projectionMatrixUpdated = false;
 }
 
-void NzCamera::AddToRenderQueue(NzRenderQueue& renderQueue) const
+void NzCamera::AddToRenderQueue(NzAbstractRenderQueue* renderQueue) const
 {
 	NazaraUnused(renderQueue);
 
@@ -231,7 +217,13 @@ void NzCamera::Unregister()
 
 void NzCamera::UpdateFrustum() const
 {
-	m_frustum.Build(m_fov, m_aspectRatio, m_zNear, m_zFar, m_derivedPosition, m_derivedPosition + m_derivedRotation*NzVector3f::Forward(), m_upVector);
+	if (!m_projectionMatrixUpdated)
+		UpdateProjectionMatrix();
+
+	if (!m_viewMatrixUpdated)
+		UpdateViewMatrix();
+
+	m_frustum.Extract(m_viewMatrix, m_projectionMatrix);
 	m_frustumUpdated = true;
 }
 
@@ -246,7 +238,7 @@ void NzCamera::UpdateViewMatrix() const
 	if (!m_derivedUpdated)
 		UpdateDerived();
 
-	m_viewMatrix.MakeLookAt(m_derivedPosition, m_derivedPosition + m_derivedRotation*NzVector3f::Forward(), m_upVector);
+	m_viewMatrix.MakeViewMatrix(m_derivedPosition, m_derivedRotation);
 	m_viewMatrixUpdated = true;
 }
 

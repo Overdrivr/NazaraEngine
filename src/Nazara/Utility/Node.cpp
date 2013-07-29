@@ -60,9 +60,33 @@ void NzNode::EnsureTransformMatrixUpdate() const
 		UpdateTransformMatrix();
 }
 
+NzVector3f NzNode::GetBackward() const
+{
+	if (!m_derivedUpdated)
+		UpdateDerived();
+
+	return m_derivedRotation * NzVector3f::Backward();
+}
+
 const std::vector<NzNode*>& NzNode::GetChilds() const
 {
 	return m_childs;
+}
+
+NzVector3f NzNode::GetDown() const
+{
+	if (!m_derivedUpdated)
+		UpdateDerived();
+
+	return m_derivedRotation * NzVector3f::Down();
+}
+
+NzVector3f NzNode::GetForward() const
+{
+	if (!m_derivedUpdated)
+		UpdateDerived();
+
+	return m_derivedRotation * NzVector3f::Forward();
 }
 
 bool NzNode::GetInheritPosition() const
@@ -93,6 +117,14 @@ NzQuaternionf NzNode::GetInitialRotation() const
 NzVector3f NzNode::GetInitialScale() const
 {
 	return m_initialScale;
+}
+
+NzVector3f NzNode::GetLeft() const
+{
+	if (!m_derivedUpdated)
+		UpdateDerived();
+
+	return m_derivedRotation * NzVector3f::Left();
 }
 
 const NzString& NzNode::GetName() const
@@ -126,6 +158,14 @@ NzVector3f NzNode::GetPosition(nzCoordSys coordSys) const
 
 	NazaraError("Coordinate system out of enum (0x" + NzString::Number(coordSys, 16) + ')');
 	return NzVector3f();
+}
+
+NzVector3f NzNode::GetRight() const
+{
+	if (!m_derivedUpdated)
+		UpdateDerived();
+
+	return m_derivedRotation * NzVector3f::Right();
 }
 
 NzQuaternionf NzNode::GetRotation(nzCoordSys coordSys) const
@@ -172,16 +212,41 @@ const NzMatrix4f& NzNode::GetTransformMatrix() const
 	return m_transformMatrix;
 }
 
+NzVector3f NzNode::GetUp() const
+{
+	if (!m_derivedUpdated)
+		UpdateDerived();
+
+	return m_derivedRotation * NzVector3f::Up();
+}
+
 bool NzNode::HasChilds() const
 {
 	return !m_childs.empty();
 }
 
-NzNode& NzNode::Interpolate(const NzNode& nodeA, const NzNode& nodeB, float interpolation)
+NzNode& NzNode::Interpolate(const NzNode& nodeA, const NzNode& nodeB, float interpolation, nzCoordSys coordSys)
 {
-	m_position = NzVector3f::Lerp(nodeA.m_position, nodeB.m_position, interpolation);
-	m_rotation = NzQuaternionf::Slerp(nodeA.m_rotation, nodeB.m_rotation, interpolation);
-	m_scale = NzVector3f::Lerp(nodeA.m_scale, nodeB.m_scale, interpolation);
+	switch (coordSys)
+	{
+		case nzCoordSys_Global:
+			if (!nodeA.m_derivedUpdated)
+				nodeA.UpdateDerived();
+
+			if (!nodeB.m_derivedUpdated)
+				nodeB.UpdateDerived();
+
+			m_position = ToLocalPosition(NzVector3f::Lerp(nodeA.m_derivedPosition, nodeB.m_derivedPosition, interpolation));
+			m_rotation = ToLocalRotation(NzQuaternionf::Slerp(nodeA.m_derivedRotation, nodeB.m_derivedRotation, interpolation));
+			m_scale = ToLocalScale(NzVector3f::Lerp(nodeA.m_derivedScale, nodeB.m_derivedScale, interpolation));
+			break;
+
+		case nzCoordSys_Local:
+			m_position = NzVector3f::Lerp(nodeA.m_position, nodeB.m_position, interpolation);
+			m_rotation = NzQuaternionf::Slerp(nodeA.m_rotation, nodeB.m_rotation, interpolation);
+			m_scale = NzVector3f::Lerp(nodeA.m_scale, nodeB.m_scale, interpolation);
+			break;
+	}
 
 	Invalidate();
 	return *this;
@@ -276,6 +341,7 @@ NzNode& NzNode::Scale(float scaleX, float scaleY, float scaleZ)
 
 void NzNode::SetInheritPosition(bool inheritPosition)
 {
+	///DOC: Un appel redondant est sans effet
 	if (m_inheritPosition != inheritPosition)
 	{
 		m_inheritPosition = inheritPosition;
@@ -443,10 +509,9 @@ void NzNode::SetRotation(const NzQuaternionf& rotation, nzCoordSys coordSys)
 		case nzCoordSys_Global:
 			if (m_parent && m_inheritRotation)
 			{
-				NzQuaternionf rot(m_initialRotation * m_parent->GetRotation());
+				NzQuaternionf rot(m_parent->GetRotation() * m_initialRotation);
 
-				m_rotation = rot.GetInverse() * q; ///FIXME: Vérifier si le résultat est correct
-				m_rotation.Normalize();
+				m_rotation = rot.GetConjugate() * q;
 			}
 			else
 				m_rotation = q;
@@ -490,6 +555,64 @@ void NzNode::SetScale(float scaleX, float scaleY, float scaleZ, nzCoordSys coord
 	SetScale(NzVector3f(scaleX, scaleY, scaleZ), coordSys);
 }
 
+void NzNode::SetTransformMatrix(const NzMatrix4f& matrix)
+{
+	SetPosition(matrix.GetTranslation(), nzCoordSys_Global);
+	SetRotation(matrix.GetRotation(), nzCoordSys_Global);
+	SetScale(matrix.GetScale(), nzCoordSys_Global);
+
+	m_transformMatrix = matrix;
+	m_transformMatrixUpdated = true;
+}
+
+NzVector3f NzNode::ToGlobalPosition(const NzVector3f& localPosition) const
+{
+	if (!m_derivedUpdated)
+		UpdateDerived();
+
+	return m_derivedPosition + (m_derivedScale * (m_derivedRotation * localPosition));
+}
+
+NzQuaternionf NzNode::ToGlobalRotation(const NzQuaternionf& localRotation) const
+{
+	if (!m_derivedUpdated)
+		UpdateDerived();
+
+	return m_derivedRotation * localRotation;
+}
+
+NzVector3f NzNode::ToGlobalScale(const NzVector3f& localScale) const
+{
+	if (!m_derivedUpdated)
+		UpdateDerived();
+
+	return m_derivedScale * localScale;
+}
+
+NzVector3f NzNode::ToLocalPosition(const NzVector3f& globalPosition) const
+{
+	if (!m_derivedUpdated)
+		UpdateDerived();
+
+	return (m_derivedRotation.GetConjugate()*(globalPosition - m_derivedPosition))/m_derivedScale;
+}
+
+NzQuaternionf NzNode::ToLocalRotation(const NzQuaternionf& globalRotation) const
+{
+	if (!m_derivedUpdated)
+		UpdateDerived();
+
+	return m_derivedRotation.GetConjugate() * globalRotation;
+}
+
+NzVector3f NzNode::ToLocalScale(const NzVector3f& globalScale) const
+{
+	if (!m_derivedUpdated)
+		UpdateDerived();
+
+	return globalScale / m_derivedScale;
+}
+
 NzNode& NzNode::operator=(const NzNode& node)
 {
 	SetParent(node.m_parent);
@@ -497,6 +620,10 @@ NzNode& NzNode::operator=(const NzNode& node)
 	m_inheritPosition = node.m_inheritPosition;
 	m_inheritRotation = node.m_inheritRotation;
 	m_inheritScale = node.m_inheritScale;
+	m_initialPosition = node.m_initialPosition;
+	m_initialRotation = node.m_initialRotation;
+	m_initialScale = node.m_initialScale;
+	m_name = node.m_name;
 	m_position = node.m_position;
 	m_rotation = node.m_rotation;
 	m_scale = node.m_scale;
@@ -581,6 +708,6 @@ void NzNode::UpdateTransformMatrix() const
 	if (!m_derivedUpdated)
 		UpdateDerived();
 
-	m_transformMatrix.MakeTransform(m_derivedPosition, m_derivedScale, m_derivedRotation);
+	m_transformMatrix.MakeTransform(m_derivedPosition, m_derivedRotation, m_derivedScale);
 	m_transformMatrixUpdated = true;
 }

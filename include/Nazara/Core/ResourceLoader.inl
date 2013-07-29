@@ -12,9 +12,9 @@
 template<typename Type, typename Parameters>
 bool NzResourceLoader<Type, Parameters>::IsExtensionSupported(const NzString& extension)
 {
-	for (auto loader = Type::s_loaders.begin(); loader != Type::s_loaders.end(); ++loader)
+	for (Loader& loader : Type::s_loaders)
 	{
-		ExtensionGetter isExtensionSupported = std::get<0>(*loader);
+		ExtensionGetter isExtensionSupported = std::get<0>(loader);
 
 		if (isExtensionSupported && isExtensionSupported(extension))
 			return true;
@@ -35,7 +35,7 @@ bool NzResourceLoader<Type, Parameters>::LoadFromFile(Type* resource, const NzSt
 	#endif
 
 	NzString path = NzFile::NormalizePath(filePath);
-	NzString ext = path.SubstrFrom('.', -1, true);
+	NzString ext = path.SubStringFrom('.', -1, true);
 	if (ext.IsEmpty())
 	{
 		NazaraError("Failed to get file extension from \"" + filePath + '"');
@@ -45,15 +45,15 @@ bool NzResourceLoader<Type, Parameters>::LoadFromFile(Type* resource, const NzSt
 	NzFile file(path); // Ouvert seulement en cas de besoin
 
 	bool found = false;
-	for (auto loader = Type::s_loaders.begin(); loader != Type::s_loaders.end(); ++loader)
+	for (Loader& loader : Type::s_loaders)
 	{
-		ExtensionGetter isExtensionSupported = std::get<0>(*loader);
+		ExtensionGetter isExtensionSupported = std::get<0>(loader);
 		if (!isExtensionSupported || !isExtensionSupported(ext))
 			continue;
 
-		StreamChecker checkFunc = std::get<1>(*loader);
-		StreamLoader streamLoader = std::get<2>(*loader);
-		FileLoader fileLoader = std::get<3>(*loader);
+		StreamChecker checkFunc = std::get<1>(loader);
+		StreamLoader streamLoader = std::get<2>(loader);
+		FileLoader fileLoader = std::get<3>(loader);
 
 		if (checkFunc && !file.IsOpen())
 		{
@@ -64,17 +64,25 @@ bool NzResourceLoader<Type, Parameters>::LoadFromFile(Type* resource, const NzSt
 			}
 		}
 
+		nzTernary recognized = nzTernary_Unknown;
 		if (fileLoader)
 		{
 			if (checkFunc)
 			{
 				file.SetCursorPos(0);
 
-				if (!checkFunc(file, parameters))
+				recognized = checkFunc(file, parameters);
+				if (recognized == nzTernary_False)
 					continue;
+				else
+					found = true;
+			}
+			else
+			{
+				recognized = nzTernary_Unknown;
+				found = true;
 			}
 
-			found = true;
 			if (fileLoader(resource, filePath, parameters))
 				return true;
 		}
@@ -82,17 +90,20 @@ bool NzResourceLoader<Type, Parameters>::LoadFromFile(Type* resource, const NzSt
 		{
 			file.SetCursorPos(0);
 
-			if (!checkFunc(file, parameters))
+			recognized = checkFunc(file, parameters);
+			if (recognized == nzTernary_False)
 				continue;
+			else if (recognized == nzTernary_True)
+				found = true;
 
 			file.SetCursorPos(0);
 
-			found = true;
 			if (streamLoader(resource, file, parameters))
 				return true;
 		}
 
-		NazaraWarning("Loader failed");
+		if (recognized == nzTernary_True)
+			NazaraWarning("Loader failed");
 	}
 
 	if (found)
@@ -130,26 +141,29 @@ bool NzResourceLoader<Type, Parameters>::LoadFromStream(Type* resource, NzInputS
 
 	nzUInt64 streamPos = stream.GetCursorPos();
 	bool found = false;
-	for (auto loader = Type::s_loaders.begin(); loader != Type::s_loaders.end(); ++loader)
+	for (Loader& loader : Type::s_loaders)
 	{
-		StreamChecker checkFunc = std::get<1>(*loader);
-		StreamLoader streamLoader = std::get<2>(*loader);
+		StreamChecker checkFunc = std::get<1>(loader);
+		StreamLoader streamLoader = std::get<2>(loader);
 
 		stream.SetCursorPos(streamPos);
 
 		// Le loader supporte-t-il les données ?
-		if (!checkFunc(stream, parameters))
+		nzTernary recognized = checkFunc(stream, parameters);
+		if (recognized == nzTernary_False)
 			continue;
+		else if (recognized == nzTernary_True)
+			found = true;
 
 		// On repositionne le stream à son ancienne position
 		stream.SetCursorPos(streamPos);
 
 		// Chargement de la ressource
-		found = true;
 		if (streamLoader(resource, stream, parameters))
 			return true;
 
-		NazaraWarning("Loader failed");
+		if (recognized == nzTernary_True)
+			NazaraWarning("Loader failed");
 	}
 
 	if (found)

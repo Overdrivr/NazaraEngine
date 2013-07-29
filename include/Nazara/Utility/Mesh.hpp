@@ -9,12 +9,13 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Core/InputStream.hpp>
+#include <Nazara/Core/Primitive.hpp>
 #include <Nazara/Core/Resource.hpp>
 #include <Nazara/Core/ResourceListener.hpp>
 #include <Nazara/Core/ResourceLoader.hpp>
 #include <Nazara/Core/ResourceRef.hpp>
 #include <Nazara/Core/String.hpp>
-#include <Nazara/Math/Cube.hpp>
+#include <Nazara/Math/Box.hpp>
 #include <Nazara/Utility/Skeleton.hpp>
 #include <Nazara/Utility/SubMesh.hpp>
 #include <Nazara/Utility/VertexStruct.hpp>
@@ -23,16 +24,23 @@ struct NAZARA_API NzMeshParams
 {
 	NzMeshParams(); // Vérifie que le storage par défaut est supporté (software autrement)
 
-	// Si ceci sera le stockage choisi par le loader
+	// Si ceci sera le stockage utilisé par les buffers
 	nzBufferStorage storage = nzBufferStorage_Hardware;
 
-	// Le loader doit-il charger une version animée du mesh si possible ?
+	// La mise à l'échelle éventuelle que subira le mesh
+	NzVector3f scale = NzVector3f::Unit();
+
+	// Charger une version animée du mesh si possible ?
 	bool animated = true;
+
+	// Faut-il optimiser les index buffers ? (Rendu plus rapide, mais le chargement dure plus longtemps)
+	bool optimizeIndexBuffers = true;
 
 	bool IsValid() const;
 };
 
 class NzAnimation;
+class NzPrimitiveList;
 class NzMesh;
 
 typedef NzVertexStruct_XYZ_Normal_UV_Tangent NzMeshVertex;
@@ -51,8 +59,11 @@ class NAZARA_API NzMesh : public NzResource, NzResourceListener
 		NzMesh() = default;
 		~NzMesh();
 
-		bool AddSubMesh(NzSubMesh* subMesh);
-		bool AddSubMesh(const NzString& identifier, NzSubMesh* subMesh);
+		void AddSubMesh(NzSubMesh* subMesh);
+		void AddSubMesh(const NzString& identifier, NzSubMesh* subMesh);
+
+		NzSubMesh* BuildSubMesh(const NzPrimitive& primitive, const NzMeshParams& params = NzMeshParams());
+		void BuildSubMeshes(const NzPrimitiveList& list, const NzMeshParams& params = NzMeshParams());
 
 		bool CreateSkeletal(unsigned int jointCount);
 		bool CreateStatic();
@@ -62,7 +73,7 @@ class NAZARA_API NzMesh : public NzResource, NzResourceListener
 		void GenerateNormalsAndTangents();
 		void GenerateTangents();
 
-		const NzCubef& GetAABB() const;
+		const NzBoxf& GetAABB() const;
 		NzString GetAnimation() const;
 		nzAnimationType GetAnimationType() const;
 		unsigned int GetJointCount() const;
@@ -91,6 +102,8 @@ class NAZARA_API NzMesh : public NzResource, NzResourceListener
 		bool LoadFromMemory(const void* data, std::size_t size, const NzMeshParams& params = NzMeshParams());
 		bool LoadFromStream(NzInputStream& stream, const NzMeshParams& params = NzMeshParams());
 
+		void Recenter();
+
 		void RemoveSubMesh(const NzString& identifier);
 		void RemoveSubMesh(unsigned int index);
 
@@ -98,7 +111,7 @@ class NAZARA_API NzMesh : public NzResource, NzResourceListener
 		void SetMaterial(unsigned int matIndex, const NzString& materialPath);
 		void SetMaterialCount(unsigned int matCount);
 
-		static const NzVertexDeclaration* GetDeclaration();
+		void Transform(const NzMatrix4f& matrix);
 
 	private:
 		void OnResourceReleased(const NzResource* resource, int index) override;

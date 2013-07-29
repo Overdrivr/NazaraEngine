@@ -4,10 +4,13 @@
 
 #include <Nazara/Renderer/OpenGL.hpp>
 #include <Nazara/Core/Error.hpp>
+#include <Nazara/Math/Basic.hpp>
 #include <Nazara/Renderer/Context.hpp>
+#include <cstring>
 #include <set>
 #include <sstream>
 #include <stdexcept>
+#include <unordered_map>
 #include <Nazara/Renderer/Debug.hpp>
 
 namespace
@@ -57,11 +60,23 @@ namespace
 		#endif
 	}
 
+	struct ContextStates
+	{
+		GLuint buffersBinding[nzBufferType_Max+1] = {0};
+		GLuint currentProgram = 0;
+		GLuint texturesBinding[32] = {0}; // 32 est pour l'instant la plus haute limite (GL_TEXTURE31)
+		NzRenderStates renderStates; // Toujours synchronisé avec OpenGL
+		unsigned int textureUnit = 0;
+	};
+
 	std::set<NzString> s_openGLextensionSet;
+	std::unordered_map<NzContext*, ContextStates> s_contexts;
+	thread_local ContextStates* s_contextStates = nullptr;
 	const char* s_rendererName = nullptr;
 	const char* s_vendorName = nullptr;
 	bool s_initialized = false;
 	bool s_openGLextensions[nzOpenGLExtension_Max+1] = {false};
+	unsigned int s_glslVersion = 0;
 	unsigned int s_openglVersion = 0;
 
 	bool LoadExtensionsString(const NzString& extensionString)
@@ -109,14 +124,331 @@ namespace
 	}
 }
 
+void NzOpenGL::ApplyStates(const NzRenderStates& states)
+{
+	#ifdef NAZARA_DEBUG
+	if (!s_contextStates)
+	{
+		NazaraError("No context activated");
+		return;
+	}
+	#endif
+
+	NzRenderStates& currentRenderStates = s_contextStates->renderStates;
+
+	// Les fonctions de blend n'a aucun intérêt sans blending
+	if (states.parameters[nzRendererParameter_Blend])
+	{
+		if (currentRenderStates.dstBlend != states.dstBlend ||
+		    currentRenderStates.srcBlend != states.srcBlend)
+		{
+			glBlendFunc(BlendFunc[states.srcBlend], BlendFunc[states.dstBlend]);
+			currentRenderStates.dstBlend = states.dstBlend;
+			currentRenderStates.srcBlend = states.srcBlend;
+		}
+	}
+
+	if (states.parameters[nzRendererParameter_DepthBuffer])
+	{
+		// La comparaison de profondeur n'a aucun intérêt sans depth buffer
+		if (currentRenderStates.depthFunc != states.depthFunc)
+		{
+			glDepthFunc(RendererComparison[states.depthFunc]);
+			currentRenderStates.depthFunc = states.depthFunc;
+		}
+
+		// Le DepthWrite n'a aucune importance si le DepthBuffer est désactivé
+		if (currentRenderStates.parameters[nzRendererParameter_DepthWrite] != states.parameters[nzRendererParameter_DepthWrite])
+		{
+			glDepthMask((states.parameters[nzRendererParameter_DepthWrite]) ? GL_TRUE : GL_FALSE);
+			currentRenderStates.parameters[nzRendererParameter_DepthWrite] = states.parameters[nzRendererParameter_DepthWrite];
+		}
+	}
+
+	// Inutile de changer le mode de face culling s'il n'est pas actif
+	if (states.parameters[nzRendererParameter_FaceCulling])
+	{
+		if (currentRenderStates.faceCulling != states.faceCulling)
+		{
+			glCullFace(FaceCulling[states.faceCulling]);
+			currentRenderStates.faceCulling = states.faceCulling;
+		}
+	}
+
+	if (currentRenderStates.faceFilling != states.faceFilling)
+	{
+		glPolygonMode(GL_FRONT_AND_BACK, FaceFilling[states.faceFilling]);
+		currentRenderStates.faceFilling = states.faceFilling;
+	}
+
+	// Ici encore, ça ne sert à rien de se soucier des fonctions de stencil sans qu'il soit activé
+	if (states.parameters[nzRendererParameter_StencilTest])
+	{
+		if (currentRenderStates.stencilCompare != states.stencilCompare ||
+		    currentRenderStates.stencilMask != states.stencilMask ||
+		    currentRenderStates.stencilReference != states.stencilReference)
+		{
+			glStencilFunc(RendererComparison[states.stencilCompare], states.stencilReference, states.stencilMask);
+			currentRenderStates.stencilCompare = states.stencilCompare;
+			currentRenderStates.stencilMask = states.stencilMask;
+			currentRenderStates.stencilReference = states.stencilReference;
+		}
+
+		// Ici encore, ça ne sert à rien de se soucier des fonctions de stencil sans qu'il soit activé
+		if (currentRenderStates.stencilFail != states.stencilFail ||
+		    currentRenderStates.stencilPass != states.stencilPass ||
+		    currentRenderStates.stencilZFail != states.stencilZFail)
+		{
+			glStencilOp(StencilOperation[states.stencilFail], StencilOperation[states.stencilZFail], StencilOperation[states.stencilPass]);
+			currentRenderStates.stencilFail = states.stencilFail;
+			currentRenderStates.stencilPass = states.stencilPass;
+			currentRenderStates.stencilZFail = states.stencilZFail;
+		}
+	}
+
+	if (!NzNumberEquals(currentRenderStates.lineWidth, states.lineWidth, 0.001f))
+	{
+		glLineWidth(states.lineWidth);
+		currentRenderStates.lineWidth = states.lineWidth;
+	}
+
+	if (!NzNumberEquals(currentRenderStates.pointSize, states.pointSize, 0.001f))
+	{
+		glPointSize(states.pointSize);
+		currentRenderStates.pointSize = states.pointSize;
+	}
+
+	// Paramètres de rendu
+	if (currentRenderStates.parameters[nzRendererParameter_Blend] != states.parameters[nzRendererParameter_Blend])
+	{
+		if (states.parameters[nzRendererParameter_Blend])
+			glEnable(GL_BLEND);
+		else
+			glDisable(GL_BLEND);
+
+		currentRenderStates.parameters[nzRendererParameter_Blend] = states.parameters[nzRendererParameter_Blend];
+	}
+
+	if (currentRenderStates.parameters[nzRendererParameter_ColorWrite] != states.parameters[nzRendererParameter_ColorWrite])
+	{
+		GLboolean param = (states.parameters[nzRendererParameter_ColorWrite]) ? GL_TRUE : GL_FALSE;
+		glColorMask(param, param, param, param);
+
+		currentRenderStates.parameters[nzRendererParameter_ColorWrite] = states.parameters[nzRendererParameter_ColorWrite];
+	}
+
+	if (currentRenderStates.parameters[nzRendererParameter_DepthBuffer] != states.parameters[nzRendererParameter_DepthBuffer])
+	{
+		if (states.parameters[nzRendererParameter_DepthBuffer])
+			glEnable(GL_DEPTH_TEST);
+		else
+			glDisable(GL_DEPTH_TEST);
+
+		currentRenderStates.parameters[nzRendererParameter_DepthBuffer] = states.parameters[nzRendererParameter_DepthBuffer];
+	}
+
+	if (currentRenderStates.parameters[nzRendererParameter_FaceCulling] != states.parameters[nzRendererParameter_FaceCulling])
+	{
+		if (states.parameters[nzRendererParameter_FaceCulling])
+			glEnable(GL_CULL_FACE);
+		else
+			glDisable(GL_CULL_FACE);
+
+		currentRenderStates.parameters[nzRendererParameter_FaceCulling] = states.parameters[nzRendererParameter_FaceCulling];
+	}
+
+	if (currentRenderStates.parameters[nzRendererParameter_ScissorTest] != states.parameters[nzRendererParameter_ScissorTest])
+	{
+		if (states.parameters[nzRendererParameter_ScissorTest])
+			glEnable(GL_SCISSOR_TEST);
+		else
+			glDisable(GL_SCISSOR_TEST);
+
+		currentRenderStates.parameters[nzRendererParameter_ScissorTest] = states.parameters[nzRendererParameter_ScissorTest];
+	}
+
+	if (currentRenderStates.parameters[nzRendererParameter_StencilTest] != states.parameters[nzRendererParameter_StencilTest])
+	{
+		if (states.parameters[nzRendererParameter_StencilTest])
+			glEnable(GL_STENCIL_TEST);
+		else
+			glDisable(GL_STENCIL_TEST);
+
+		currentRenderStates.parameters[nzRendererParameter_StencilTest] = states.parameters[nzRendererParameter_StencilTest];
+	}
+}
+
+void NzOpenGL::BindBuffer(nzBufferType type, GLuint id)
+{
+	#ifdef NAZARA_DEBUG
+	if (!s_contextStates)
+	{
+		NazaraError("No context activated");
+		return;
+	}
+	#endif
+
+	if (s_contextStates->buffersBinding[type] != id)
+	{
+		glBindBuffer(BufferTarget[type], id);
+		s_contextStates->buffersBinding[type] = id;
+	}
+}
+
+void NzOpenGL::BindProgram(GLuint id)
+{
+	#ifdef NAZARA_DEBUG
+	if (!s_contextStates)
+	{
+		NazaraError("No context activated");
+		return;
+	}
+	#endif
+
+	if (s_contextStates->currentProgram != id)
+	{
+		glUseProgram(id);
+		s_contextStates->currentProgram = id;
+	}
+}
+
+void NzOpenGL::BindTexture(nzImageType type, GLuint id)
+{
+	#ifdef NAZARA_DEBUG
+	if (!s_contextStates)
+	{
+		NazaraError("No context activated");
+		return;
+	}
+	#endif
+
+	if (s_contextStates->texturesBinding[s_contextStates->textureUnit] != id)
+	{
+		glBindTexture(TextureTarget[type], id);
+		s_contextStates->texturesBinding[s_contextStates->textureUnit] = id;
+	}
+}
+
+void NzOpenGL::BindTexture(unsigned int textureUnit, nzImageType type, GLuint id)
+{
+	#ifdef NAZARA_DEBUG
+	if (!s_contextStates)
+	{
+		NazaraError("No context activated");
+		return;
+	}
+	#endif
+
+	if (s_contextStates->texturesBinding[textureUnit] != id)
+	{
+		SetTextureUnit(textureUnit);
+
+		glBindTexture(TextureTarget[type], id);
+		s_contextStates->texturesBinding[textureUnit] = id;
+	}
+}
+
+void NzOpenGL::DeleteBuffer(nzBufferType type, GLuint id)
+{
+	#ifdef NAZARA_DEBUG
+	if (!s_contextStates)
+	{
+		NazaraError("No context activated");
+		return;
+	}
+	#endif
+
+	glDeleteBuffers(1, &id);
+	if (s_contextStates->buffersBinding[type] == id)
+		s_contextStates->buffersBinding[type] = 0;
+}
+
+void NzOpenGL::DeleteProgram(GLuint id)
+{
+	#ifdef NAZARA_DEBUG
+	if (!s_contextStates)
+	{
+		NazaraError("No context activated");
+		return;
+	}
+	#endif
+
+	glDeleteProgram(id);
+	if (s_contextStates->currentProgram == id)
+		s_contextStates->currentProgram = 0;
+}
+
+void NzOpenGL::DeleteTexture(GLuint id)
+{
+	#ifdef NAZARA_DEBUG
+	if (!s_contextStates)
+	{
+		NazaraError("No context activated");
+		return;
+	}
+	#endif
+
+	glDeleteTextures(1, &id);
+
+	for (GLuint& binding : s_contextStates->texturesBinding)
+	{
+		if (binding == id)
+			binding = 0;
+	}
+}
+
+GLuint NzOpenGL::GetCurrentBuffer(nzBufferType type)
+{
+	#ifdef NAZARA_DEBUG
+	if (!s_contextStates)
+	{
+		NazaraError("No context activated");
+		return 0;
+	}
+	#endif
+
+	return s_contextStates->buffersBinding[type];
+}
+
+GLuint NzOpenGL::GetCurrentProgram()
+{
+	#ifdef NAZARA_DEBUG
+	if (!s_contextStates)
+	{
+		NazaraError("No context activated");
+		return 0;
+	}
+	#endif
+
+	return s_contextStates->currentProgram;
+}
+
 NzOpenGLFunc NzOpenGL::GetEntry(const NzString& entryPoint)
 {
 	return LoadEntry(entryPoint.GetConstBuffer(), false);
 }
 
+unsigned int NzOpenGL::GetGLSLVersion()
+{
+	return s_glslVersion;
+}
+
 NzString NzOpenGL::GetRendererName()
 {
 	return s_rendererName;
+}
+
+unsigned int NzOpenGL::GetTextureUnit()
+{
+	#ifdef NAZARA_DEBUG
+	if (!s_contextStates)
+	{
+		NazaraError("No context activated");
+		return 0;
+	}
+	#endif
+
+	return s_contextStates->textureUnit;
 }
 
 NzString NzOpenGL::GetVendorName()
@@ -176,7 +508,7 @@ bool NzOpenGL::Initialize()
 	glXCreateContextAttribs = reinterpret_cast<PFNGLXCREATECONTEXTATTRIBSARBPROC>(LoadEntry("glXCreateContextAttribsARB", false));
 	#endif
 
-	// Récupération de la version d'OpenGL
+	// Récupération de la version d'OpenGL et du GLSL
 	// Ce code se base sur le fait que la carte graphique renverra un contexte de compatibilité avec la plus haute version supportée
 	// Ce qui semble vrai au moins chez ATI/AMD et NVidia, mais si quelqu'un à une meilleure idée ...
 	glGetString = reinterpret_cast<PFNGLGETSTRINGPROC>(LoadEntry("glGetString", false));
@@ -188,7 +520,11 @@ bool NzOpenGL::Initialize()
 		return false;
 	}
 
-	const GLubyte* version = glGetString(GL_VERSION);
+	const GLubyte* version;
+	unsigned int major;
+	unsigned int minor;
+
+	version = glGetString(GL_VERSION);
 	if (!version)
 	{
 		NazaraError("Unable to retrieve OpenGL version");
@@ -197,8 +533,8 @@ bool NzOpenGL::Initialize()
 		return false;
 	}
 
-	unsigned int major = version[0] - '0';
-	unsigned int minor = version[2] - '0';
+	major = version[0] - '0';
+	minor = version[2] - '0';
 
 	if (major == 0 || major > 9)
 	{
@@ -216,6 +552,39 @@ bool NzOpenGL::Initialize()
 	if (s_openglVersion < 200)
 	{
 		NazaraError("OpenGL version is too low, please upgrade your drivers or your video card");
+		Uninitialize();
+
+		return false;
+	}
+
+	version = glGetString(GL_SHADING_LANGUAGE_VERSION);
+	if (!version)
+	{
+		NazaraError("Unable to retrieve GLSL version");
+		Uninitialize();
+
+		return false;
+	}
+
+	major = version[0] - '0';
+	minor = version[2] - '0';
+
+	if (major == 0 || major > 9)
+	{
+		NazaraError("Unable to retrieve GLSL major version");
+		return false;
+	}
+
+	if (minor > 9)
+	{
+		NazaraWarning("Unable to retrieve GLSL minor version (using 0)");
+		minor = 0;
+	}
+
+	s_glslVersion = major*100 + minor*10;
+	if (s_glslVersion < 110)
+	{
+		NazaraError("GLSL version is too low, please upgrade your drivers or your video card");
 		Uninitialize();
 
 		return false;
@@ -574,6 +943,9 @@ bool NzOpenGL::Initialize()
 		}
 	}
 
+	// Shader_ImageLoadStore
+	s_openGLextensions[nzOpenGLExtension_Shader_ImageLoadStore] = (s_openglVersion >= 420 || IsSupported("GL_ARB_shader_image_load_store"));
+
 	// TextureArray
 	s_openGLextensions[nzOpenGLExtension_TextureArray] = (s_openglVersion >= 300 || IsSupported("GL_EXT_texture_array"));
 
@@ -630,6 +1002,7 @@ bool NzOpenGL::Initialize()
 	}
 
 	s_rendererName = reinterpret_cast<const char*>(glGetString(GL_RENDERER));
+	s_contextStates = nullptr;
 	s_vendorName = reinterpret_cast<const char*>(glGetString(GL_VENDOR));
 
 	return true;
@@ -648,6 +1021,15 @@ bool NzOpenGL::IsSupported(nzOpenGLExtension extension)
 bool NzOpenGL::IsSupported(const NzString& string)
 {
 	return s_openGLextensionSet.find(string) != s_openGLextensionSet.end();
+}
+
+void NzOpenGL::SetTextureUnit(unsigned int textureUnit)
+{
+	if (s_contextStates->textureUnit != textureUnit)
+	{
+		glActiveTexture(GL_TEXTURE0 + textureUnit);
+		s_contextStates->textureUnit = textureUnit;
+	}
 }
 
 bool NzOpenGL::TranslateFormat(nzPixelFormat pixelFormat, Format* format, FormatType type)
@@ -797,6 +1179,7 @@ void NzOpenGL::Uninitialize()
 		for (bool& ext : s_openGLextensions)
 			ext = false;
 
+		s_glslVersion = 0;
 		s_initialized = false;
 		s_openGLextensionSet.clear();
 		s_openglVersion = 0;
@@ -807,6 +1190,16 @@ void NzOpenGL::Uninitialize()
 	}
 }
 
+void NzOpenGL::OnContextDestruction(NzContext* context)
+{
+	s_contexts.erase(context);
+}
+
+void NzOpenGL::OnContextChange(NzContext* newContext)
+{
+	s_contextStates = (newContext) ? &s_contexts[newContext] : nullptr;
+}
+
 GLenum NzOpenGL::Attachment[nzAttachmentPoint_Max+1] =
 {
 	GL_COLOR_ATTACHMENT0,        // nzAttachmentPoint_Color
@@ -815,14 +1208,37 @@ GLenum NzOpenGL::Attachment[nzAttachmentPoint_Max+1] =
 	GL_STENCIL_ATTACHMENT        // nzAttachmentPoint_Stencil
 };
 
-nzUInt8 NzOpenGL::AttributeIndex[nzElementUsage_Max+1] =
+nzUInt8 NzOpenGL::AttributeIndex[nzAttributeUsage_Max+1] =
 {
-	2, // nzElementUsage_Diffuse
-	1, // nzElementUsage_Normal
-	0, // nzElementUsage_Position
-	3, // nzElementUsage_Tangent
+	10, // nzAttributeUsage_InstanceData0
+	11, // nzAttributeUsage_InstanceData1
+	12, // nzAttributeUsage_InstanceData2
+	13, // nzAttributeUsage_InstanceData3
+	14, // nzAttributeUsage_InstanceData4
+	15, // nzAttributeUsage_InstanceData5
+	2, // nzAttributeUsage_Normal
+	0, // nzAttributeUsage_Position
+	3, // nzAttributeUsage_Tangent
+	1, // nzAttributeUsage_TexCoord
+	4, // nzAttributeUsage_Userdata0
+	5, // nzAttributeUsage_Userdata1
+	6, // nzAttributeUsage_Userdata2
+	7, // nzAttributeUsage_Userdata3
+	8, // nzAttributeUsage_Userdata4
+	9  // nzAttributeUsage_Userdata5
+};
 
-	4  // nzElementUsage_TexCoord (Doit être le dernier de la liste car extensible)
+GLenum NzOpenGL::AttributeType[nzAttributeType_Max+1] =
+{
+	GL_UNSIGNED_BYTE, // nzAttributeType_Color
+	GL_DOUBLE,        // nzAttributeType_Double1
+	GL_DOUBLE,        // nzAttributeType_Double2
+	GL_DOUBLE,        // nzAttributeType_Double3
+	GL_DOUBLE,        // nzAttributeType_Double4
+	GL_FLOAT,         // nzAttributeType_Float1
+	GL_FLOAT,         // nzAttributeType_Float2
+	GL_FLOAT,         // nzAttributeType_Float3
+	GL_FLOAT          // nzAttributeType_Float4
 };
 
 GLenum NzOpenGL::BlendFunc[nzBlendFunc_Max+1] =
@@ -886,19 +1302,6 @@ GLenum NzOpenGL::CubemapFace[6] =
 	GL_TEXTURE_CUBE_MAP_NEGATIVE_Z  // nzCubemapFace_NegativeZ
 };
 
-GLenum NzOpenGL::ElementType[nzElementType_Max+1] =
-{
-	GL_UNSIGNED_BYTE, // nzElementType_Color
-	GL_DOUBLE,        // nzElementType_Double1
-	GL_DOUBLE,        // nzElementType_Double2
-	GL_DOUBLE,        // nzElementType_Double3
-	GL_DOUBLE,        // nzElementType_Double4
-	GL_FLOAT,         // nzElementType_Float1
-	GL_FLOAT,         // nzElementType_Float2
-	GL_FLOAT,         // nzElementType_Float3
-	GL_FLOAT          // nzElementType_Float4
-};
-
 GLenum NzOpenGL::FaceCulling[nzFaceCulling_Max+1] =
 {
 	GL_BACK,          // nzFaceCulling_Back
@@ -913,14 +1316,14 @@ GLenum NzOpenGL::FaceFilling[nzFaceFilling_Max+1] =
 	GL_FILL   // nzFaceFilling_Fill
 };
 
-GLenum NzOpenGL::PrimitiveType[nzPrimitiveType_Max+1] =
+GLenum NzOpenGL::PrimitiveMode[nzPrimitiveMode_Max+1] =
 {
-	GL_LINES,          // nzPrimitiveType_LineList,
-	GL_LINE_STRIP,     // nzPrimitiveType_LineStrip,
-	GL_POINTS,         // nzPrimitiveType_PointList,
-	GL_TRIANGLES,      // nzPrimitiveType_TriangleList,
-	GL_TRIANGLE_STRIP, // nzPrimitiveType_TriangleStrip,
-	GL_TRIANGLE_FAN    // nzPrimitiveType_TriangleFan
+	GL_LINES,          // nzPrimitiveMode_LineList
+	GL_LINE_STRIP,     // nzPrimitiveMode_LineStrip
+	GL_POINTS,         // nzPrimitiveMode_PointList
+	GL_TRIANGLES,      // nzPrimitiveMode_TriangleList
+	GL_TRIANGLE_STRIP, // nzPrimitiveMode_TriangleStrip
+	GL_TRIANGLE_FAN    // nzPrimitiveMode_TriangleFan
 };
 
 GLenum NzOpenGL::RendererComparison[nzRendererComparison_Max+1] =
@@ -936,12 +1339,13 @@ GLenum NzOpenGL::RendererComparison[nzRendererComparison_Max+1] =
 
 GLenum NzOpenGL::RendererParameter[nzRendererParameter_Max+1] =
 {
-	GL_BLEND,       // nzRendererParameter_Blend
-	GL_NONE,        // nzRendererParameter_ColorWrite
-	GL_DEPTH_TEST,  // nzRendererParameter_DepthTest
-	GL_NONE,        // nzRendererParameter_DepthWrite
-	GL_CULL_FACE,   // nzRendererParameter_FaceCulling
-	GL_STENCIL_TEST // nzRendererParameter_Stencil
+	GL_BLEND,        // nzRendererParameter_Blend
+	GL_NONE,         // nzRendererParameter_ColorWrite
+	GL_DEPTH_TEST,   // nzRendererParameter_DepthBuffer
+	GL_NONE,         // nzRendererParameter_DepthWrite
+	GL_CULL_FACE,    // nzRendererParameter_FaceCulling
+	GL_SCISSOR_TEST, // nzRendererParameter_ScissorTest
+	GL_STENCIL_TEST  // nzRendererParameter_StencilTest
 };
 
 GLenum NzOpenGL::SamplerWrapMode[nzSamplerWrap_Max+1] =

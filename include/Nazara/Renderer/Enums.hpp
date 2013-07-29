@@ -53,11 +53,17 @@ enum nzFaceFilling
 
 enum nzMatrixType
 {
+	// Matrices de base
 	nzMatrixType_Projection,
 	nzMatrixType_View,
 	nzMatrixType_World,
 
-	nzMatrixType_Max = nzMatrixType_World
+	// Matrices combinées
+	nzMatrixType_ViewProj,
+	nzMatrixType_WorldView,
+	nzMatrixType_WorldViewProj,
+
+	nzMatrixType_Max = nzMatrixType_WorldViewProj
 };
 
 enum nzPixelBufferType
@@ -88,9 +94,11 @@ enum nzRendererCap
 
 enum nzRendererClearFlags
 {
-	nzRendererClear_Color   = 0x01,
-	nzRendererClear_Depth   = 0x02,
-	nzRendererClear_Stencil = 0x04
+	nzRendererClear_Color   = 0x1,
+	nzRendererClear_Depth   = 0x2,
+	nzRendererClear_Stencil = 0x4,
+
+	nzRendererClear_Max = nzRendererClear_Stencil*2-1
 };
 
 enum nzRendererComparison
@@ -110,12 +118,13 @@ enum nzRendererParameter
 {
 	nzRendererParameter_Blend,
 	nzRendererParameter_ColorWrite,
-	nzRendererParameter_DepthTest,
+	nzRendererParameter_DepthBuffer,
 	nzRendererParameter_DepthWrite,
 	nzRendererParameter_FaceCulling,
-	nzRendererParameter_Stencil,
+	nzRendererParameter_ScissorTest,
+	nzRendererParameter_StencilTest,
 
-	nzRendererParameter_Max = nzRendererParameter_Stencil
+	nzRendererParameter_Max = nzRendererParameter_StencilTest
 };
 
 enum nzSamplerFilter
@@ -148,15 +157,11 @@ enum nzShaderFlags
 {
 	nzShaderFlags_None = 0,
 
-	nzShaderFlags_Deferred        = 0x001,
-	nzShaderFlags_DiffuseMapping  = 0x002,
-	nzShaderFlags_EmissiveMapping = 0x004,
-	nzShaderFlags_FlipUVs         = 0x008,
-	nzShaderFlags_Instancing      = 0x010,
-	nzShaderFlags_Lighting        = 0x020,
-	nzShaderFlags_NormalMapping   = 0x040,
-	nzShaderFlags_ParallaxMapping = 0x080,
-	nzShaderFlags_SpecularMapping = 0x100
+	//nzShaderFlags_Deferred        = 0x1,
+	nzShaderFlags_FlipUVs           = 0x1,
+	nzShaderFlags_Instancing        = 0x2,
+
+	nzShaderFlags_Max = nzShaderFlags_Instancing*2-1
 };
 
 enum nzShaderLanguage
@@ -167,6 +172,42 @@ enum nzShaderLanguage
 	nzShaderLanguage_GLSL,
 
 	nzShaderLanguage_Max = nzShaderLanguage_GLSL
+};
+
+enum nzShaderTarget
+{
+	nzShaderTarget_FullscreenQuad,
+	nzShaderTarget_Model,
+	nzShaderTarget_None,
+
+	nzShaderTarget_Max = nzShaderTarget_None
+};
+
+enum nzShaderUniform
+{
+	nzShaderUniform_CameraPosition,
+	nzShaderUniform_InvTargetSize,
+	nzShaderUniform_MaterialAlphaMap,
+	nzShaderUniform_MaterialAlphaThreshold,
+	nzShaderUniform_MaterialAmbient,
+	nzShaderUniform_MaterialDiffuse,
+	nzShaderUniform_MaterialDiffuseMap,
+	nzShaderUniform_MaterialEmissiveMap,
+	nzShaderUniform_MaterialHeightMap,
+	nzShaderUniform_MaterialNormalMap,
+	nzShaderUniform_MaterialShininess,
+	nzShaderUniform_MaterialSpecular,
+	nzShaderUniform_MaterialSpecularMap,
+	nzShaderUniform_ProjMatrix,
+	nzShaderUniform_SceneAmbient,
+	nzShaderUniform_TargetSize,
+	nzShaderUniform_ViewMatrix,
+	nzShaderUniform_ViewProjMatrix,
+	nzShaderUniform_WorldMatrix,
+	nzShaderUniform_WorldViewMatrix,
+	nzShaderUniform_WorldViewProjMatrix,
+
+	nzShaderUniform_Max = nzShaderUniform_WorldViewProjMatrix
 };
 
 enum nzShaderType

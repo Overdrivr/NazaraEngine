@@ -35,23 +35,20 @@
 
 #include <Nazara/Core/Config.hpp>
 
+// Identification du compilateur
 ///TODO: Rajouter des tests d'identification de compilateurs
-// NAZARA_THREADLOCAL n'existe qu'en attendant le support complet de thread_local
 #if defined(__BORLANDC__)
 	#define NAZARA_COMPILER_BORDLAND
 	#define NAZARA_DEPRECATED(txt)
 	#define NAZARA_FUNCTION __FUNC__
-	#define NAZARA_THREADLOCAL __declspec(thread)
 #elif defined(__clang__)
 	#define NAZARA_COMPILER_CLANG
 	#define NAZARA_DEPRECATED(txt) __attribute__((__deprecated__(txt)))
 	#define NAZARA_FUNCTION __PRETTY_FUNCTION__
-	#define NAZARA_THREADLOCAL __declspec(thread)
 #elif defined(__GNUC__) || defined(__MINGW32__)
 	#define NAZARA_COMPILER_GCC
 	#define NAZARA_DEPRECATED(txt) __attribute__((__deprecated__(txt)))
 	#define NAZARA_FUNCTION __PRETTY_FUNCTION__
-	#define NAZARA_THREADLOCAL __thread
 
 	#ifdef __MINGW32__
 		#define NAZARA_COMPILER_MINGW
@@ -63,23 +60,19 @@
 	#define NAZARA_COMPILER_INTEL
 	#define NAZARA_DEPRECATED(txt)
 	#define NAZARA_FUNCTION __FUNCTION__
-	#define NAZARA_THREADLOCAL __thread
 #elif defined(_MSC_VER)
 	#define NAZARA_COMPILER_MSVC
 	#define NAZARA_DEPRECATED(txt) __declspec(deprecated(txt))
 	#define NAZARA_FUNCTION __FUNCSIG__
-	#define NAZARA_THREADLOCAL __declspec(thread)
 #else
 	#define NAZARA_COMPILER_UNKNOWN
 	#define NAZARA_DEPRECATED(txt)
 	#define NAZARA_FUNCTION __func__ // __func__ est standard depuis le C++11
-	#define NAZARA_THREADLOCAL thread_local
 	#error This compiler is not fully supported
 #endif
 
-#define NazaraUnused(a) (void) a
-
-#if defined(_WIN32) || defined(__WIN32__)
+// Identification de la plateforme
+#if defined(_WIN32)
 	#define NAZARA_PLATFORM_WINDOWS
 
 	#if !defined(NAZARA_STATIC)
@@ -119,7 +112,7 @@
 			#define _WIN32_WINNT NAZARA_WINNT
 		#endif
 	#endif
-#elif defined(__linux__) || defined(linux) || defined(__linux)
+#elif defined(__linux__)
 	#define NAZARA_PLATFORM_LINUX
 	#define NAZARA_PLATFORM_POSIX
 
@@ -128,13 +121,9 @@
 	#else
 		#define NAZARA_API
 	#endif
-/*#elif defined(__APPLE__) || defined(macintosh) || defined(Macintosh)
+/*#elif defined(__APPLE__) && defined(__MACH__)
 	#define NAZARA_API
 	#define NAZARA_PLATFORM_MACOSX
-	#define NAZARA_PLATFORM_POSIX
-#elif defined(__FreeBSD__)
-	#define NAZARA_API
-	#define NAZARA_PLATFORM_FREEBSD
 	#define NAZARA_PLATFORM_POSIX*/
 #else
 	// À commenter pour tenter quand même une compilation
@@ -144,14 +133,21 @@
 	#define NAZARA_API
 #endif
 
+// Détection 64 bits
 #if !defined(NAZARA_PLATFORM_x64) && (defined(_WIN64) ||  defined(__amd64__) || defined(__x86_64__) || defined(__ia64__) || defined(__ia64) || \
     defined(_M_IA64) || defined(__itanium__) || defined(__MINGW64__))
 	#define NAZARA_PLATFORM_x64
 #endif
 
+// Définit NDEBUG si NAZARA_DEBUG n'est pas présent
 #if !defined(NAZARA_DEBUG) && !defined(NDEBUG)
 	#define NDEBUG
 #endif
+
+// Macros supplémentaires
+#define NazaraStringify(s) #s
+#define NazaraStringifyMacro(s) NazaraStringify(s) // http://gcc.gnu.org/onlinedocs/cpp/Stringification.html#Stringification
+#define NazaraUnused(a) (void) a
 
 #include <cstdint>
 

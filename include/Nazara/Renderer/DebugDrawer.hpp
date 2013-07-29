@@ -9,36 +9,38 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Core/Color.hpp>
-#include <Nazara/Math/BoundingBox.hpp>
-#include <Nazara/Math/Cube.hpp>
+#include <Nazara/Math/BoundingVolume.hpp>
+#include <Nazara/Math/Box.hpp>
 #include <Nazara/Math/Frustum.hpp>
-#include <Nazara/Math/OrientedCube.hpp>
-#include <Nazara/Utility/SubMesh.hpp>
+#include <Nazara/Math/OrientedBox.hpp>
+#include <Nazara/Utility/StaticMesh.hpp>
 
 class NzSkeleton;
 
 class NAZARA_API NzDebugDrawer
 {
 	public:
-		static void Draw(const NzBoundingBoxf& box);
-		static void Draw(const NzCubef& cube);
-		static void Draw(const NzCubei& cube);
-		static void Draw(const NzCubeui& cube);
+		static void Draw(const NzBoundingVolumef& volume);
+		static void Draw(const NzBoxf& box);
+		static void Draw(const NzBoxi& box);
+		static void Draw(const NzBoxui& box);
 		static void Draw(const NzFrustumf& frustum);
-		static void Draw(const NzOrientedCubef& orientedCube);
+		static void Draw(const NzOrientedBoxf& orientedBox);
 		static void Draw(const NzSkeleton* skeleton);
-		//static void DrawNormals(const NzSubMesh* subMesh);
-		//static void DrawTangents(const NzSubMesh* subMesh);
+		static void DrawBinormals(const NzStaticMesh* subMesh);
+		static void DrawNormals(const NzStaticMesh* subMesh);
+		static void DrawTangents(const NzStaticMesh* subMesh);
 
-		static bool Initialize();
+		static void EnableDepthBuffer(bool depthBuffer);
 
-		static bool GetDepthTest();
 		static float GetLineWidth();
 		static float GetPointSize();
 		static NzColor GetPrimaryColor();
 		static NzColor GetSecondaryColor();
 
-		static void SetDepthTest(bool shouldTest);
+		static bool Initialize();
+		static bool IsDepthBufferEnabled();
+
 		static void SetLineWidth(float width);
 		static void SetPointSize(float size);
 		static void SetPrimaryColor(const NzColor& color);

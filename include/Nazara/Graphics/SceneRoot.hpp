@@ -17,9 +17,9 @@ class NAZARA_API NzSceneRoot : public NzSceneNode
 	friend struct NzSceneImpl;
 
 	public:
-		void AddToRenderQueue(NzRenderQueue& renderQueue) const override;
+		void AddToRenderQueue(NzAbstractRenderQueue* renderQueue) const override;
 
-		const NzBoundingBoxf& GetBoundingBox() const override;
+		const NzBoundingVolumef& GetBoundingVolume() const override;
 		nzSceneNodeType GetSceneNodeType() const override;
 
 	private:

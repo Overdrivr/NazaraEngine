@@ -40,10 +40,10 @@ class NAZARA_API NzSkeletalMesh final : public NzSubMesh
 		bool Create(unsigned int vertexCount, unsigned int weightCount);
 		void Destroy();
 
-		const NzCubef& GetAABB() const;
+		const NzBoxf& GetAABB() const;
 		nzAnimationType GetAnimationType() const final;
-		void* GetBindPoseBuffer();
-		const void* GetBindPoseBuffer() const;
+		NzMeshVertex* GetBindPoseBuffer();
+		const NzMeshVertex* GetBindPoseBuffer() const;
 		const NzIndexBuffer* GetIndexBuffer() const override;
 		unsigned int GetVertexCount() const override;
 		NzVertexWeight* GetVertexWeight(unsigned int vertexIndex = 0);

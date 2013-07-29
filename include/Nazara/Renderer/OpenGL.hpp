@@ -15,6 +15,7 @@
 #include <Nazara/Core/String.hpp>
 #include <Nazara/Utility/Enums.hpp>
 #include <Nazara/Renderer/Enums.hpp>
+#include <Nazara/Renderer/RenderStates.hpp>
 
 // Inclusion des extensions
 #include <GL3/glext.h>
@@ -35,6 +36,7 @@ enum nzOpenGLExtension
 	nzOpenGLExtension_PixelBufferObject,
 	nzOpenGLExtension_SamplerObjects,
 	nzOpenGLExtension_SeparateShaderObjects,
+	nzOpenGLExtension_Shader_ImageLoadStore,
 	nzOpenGLExtension_TextureArray,
 	nzOpenGLExtension_TextureCompression_s3tc,
 	nzOpenGLExtension_TextureStorage,
@@ -43,15 +45,18 @@ enum nzOpenGLExtension
 	nzOpenGLExtension_Max = nzOpenGLExtension_VertexArrayObjects
 };
 
+class NzContext;
 using NzOpenGLFunc = void (*)();
 
 class NAZARA_API NzOpenGL
 {
+	friend NzContext;
+
 	public:
 		enum FormatType
 		{
 			FormatType_RenderBuffer,
-	//		FormatType_MultisampleTexture,
+//			FormatType_MultisampleTexture,
 			FormatType_Texture
 		};
 
@@ -65,19 +70,42 @@ class NAZARA_API NzOpenGL
 		NzOpenGL() = delete;
 		~NzOpenGL() = delete;
 
+		static void ApplyStates(const NzRenderStates& states);
+
+		static void BindBuffer(nzBufferType type, GLuint id);
+		static void BindProgram(GLuint id);
+		static void BindTexture(nzImageType type, GLuint id);
+		static void BindTexture(unsigned int textureUnit, nzImageType type, GLuint id);
+
+		static void DeleteBuffer(nzBufferType type, GLuint id);
+		static void DeleteProgram(GLuint id);
+		static void DeleteTexture(GLuint id);
+
+		static GLuint GetCurrentBuffer(nzBufferType type);
+		static GLuint GetCurrentProgram();
+		static GLuint GetCurrentTexture();
 		static NzOpenGLFunc GetEntry(const NzString& entryPoint);
+		static unsigned int GetGLSLVersion();
 		static NzString GetRendererName();
+		static unsigned int GetTextureUnit();
 		static NzString GetVendorName();
 		static unsigned int GetVersion();
+
 		static bool Initialize();
+
 		static bool IsInitialized();
 		static bool IsSupported(nzOpenGLExtension extension);
 		static bool IsSupported(const NzString& string);
+
+		static void SetTextureUnit(unsigned int textureUnit);
+
 		static bool TranslateFormat(nzPixelFormat pixelFormat, Format* format, FormatType target);
+
 		static void Uninitialize();
 
 		static GLenum Attachment[nzAttachmentPoint_Max+1];
-		static nzUInt8 AttributeIndex[nzElementUsage_Max+1];
+		static nzUInt8 AttributeIndex[nzAttributeUsage_Max+1];
+		static GLenum AttributeType[nzAttributeType_Max+1];
 		static GLenum BlendFunc[nzBlendFunc_Max+1];
 		static GLenum BufferLock[nzBufferAccess_Max+1];
 		static GLenum BufferLockRange[nzBufferAccess_Max+1];
@@ -85,10 +113,9 @@ class NAZARA_API NzOpenGL
 		static GLenum BufferTargetBinding[nzBufferType_Max+1];
 		static GLenum BufferUsage[nzBufferUsage_Max+1];
 		static GLenum CubemapFace[6]; // Un cube possède six faces et ça n'est pas prêt de changer
-		static GLenum ElementType[nzElementType_Max+1];
 		static GLenum FaceCulling[nzFaceCulling_Max+1];
 		static GLenum FaceFilling[nzFaceFilling_Max+1];
-		static GLenum PrimitiveType[nzPrimitiveType_Max+1];
+		static GLenum PrimitiveMode[nzPrimitiveMode_Max+1];
 		static GLenum RendererComparison[nzRendererComparison_Max+1];
 		static GLenum RendererParameter[nzRendererParameter_Max+1];
 		static GLenum SamplerWrapMode[nzSamplerWrap_Max+1];
@@ -97,6 +124,10 @@ class NAZARA_API NzOpenGL
 		static GLenum TextureTarget[nzImageType_Max+1];
 		static GLenum TextureTargetBinding[nzImageType_Max+1];
 		static GLenum TextureTargetProxy[nzImageType_Max+1];
+
+	private:
+		static void OnContextDestruction(NzContext* context);
+		static void OnContextChange(NzContext* newContext);
 };
 
 NAZARA_API extern PFNGLACTIVETEXTUREPROC            glActiveTexture;

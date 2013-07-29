@@ -21,10 +21,11 @@ includedirs
 libdirs "../lib"
 
 if (_OPTIONS["x64"]) then
+	defines "NAZARA_PLATFORM_x64"
 	libdirs "../extlibs/lib/x64"
+else
+	libdirs "../extlibs/lib/x86"
 end
-
-libdirs "../extlibs/lib/x86"
 
 targetdir "../lib"
 
@@ -35,9 +36,9 @@ configuration "Debug*"
 configuration "Release*"
 	flags { "EnableSSE", "EnableSSE2", "Optimize", "OptimizeSpeed", "NoFramePointer", "NoRTTI" }
 
--- Activation du SSE côté GCC
 configuration { "Release*", "codeblocks or codelite or gmake or xcode3*" }
-	buildoptions "-mfpmath=sse"
+	buildoptions "-mfpmath=sse" -- Utilisation du SSE pour les calculs flottants
+	buildoptions "-ftree-vectorize" -- Activation de la vectorisation du code
 
 configuration "*Static"
 	defines "NAZARA_STATIC"
@@ -56,9 +57,13 @@ configuration "DebugDLL"
 	targetsuffix "-d"
 
 configuration "codeblocks or codelite or gmake or xcode3*"
-	buildoptions "-std=c++11"
+	buildoptions "-std=c++11" -- On compile en C++11
+if (_OPTIONS["x64"]) then
+	buildoptions "-m64"
+end
 
 configuration { "linux or bsd or macosx", "gmake" }
 	buildoptions "-fvisibility=hidden"
 
-configuration {} -- Fin du filtre
+configuration "vs*"
+	defines "_CRT_SECURE_NO_WARNINGS"

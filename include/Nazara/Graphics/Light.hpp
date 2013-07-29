@@ -19,15 +19,15 @@ class NAZARA_API NzLight : public NzSceneNode
 	public:
 		NzLight(nzLightType type);
 		NzLight(const NzLight& light);
-		~NzLight();
+		~NzLight() = default;
 
-		void AddToRenderQueue(NzRenderQueue& renderQueue) const;
+		void AddToRenderQueue(NzAbstractRenderQueue* renderQueue) const override;
 
-		void Apply(const NzShader* shader, unsigned int lightUnit) const;
+		void Enable(const NzShader* shader, unsigned int lightUnit) const;
 
-		const NzBoundingBoxf& GetBoundingBox() const;
 		NzColor GetAmbientColor() const;
 		float GetAttenuation() const;
+		const NzBoundingVolumef& GetBoundingVolume() const;
 		NzColor GetDiffuseColor() const;
 		float GetInnerAngle() const;
 		nzLightType GetLightType() const;
@@ -46,19 +46,21 @@ class NAZARA_API NzLight : public NzSceneNode
 
 		NzLight& operator=(const NzLight& light);
 
+		static void Disable(const NzShader* shader, unsigned int lightUnit);
+
 	private:
 		void Invalidate();
 		void Register();
 		void Unregister();
-		void UpdateBoundingBox() const;
+		void UpdateBoundingVolume() const;
 		bool VisibilityTest(const NzFrustumf& frustum);
 
 		nzLightType m_type;
-		mutable NzBoundingBoxf m_boundingBox;
+		mutable NzBoundingVolumef m_boundingVolume;
 		NzColor m_ambientColor;
 		NzColor m_diffuseColor;
 		NzColor m_specularColor;
-		mutable bool m_boundingBoxUpdated;
+		mutable bool m_boundingVolumeUpdated;
 		float m_attenuation;
 		float m_innerAngle;
 		float m_outerAngle;

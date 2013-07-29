@@ -8,8 +8,8 @@
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Core/File.hpp>
 #include <list>
-#include <map>
 #include <memory>
+#include <unordered_map>
 #include <Nazara/Core/Debug.hpp>
 
 namespace
@@ -18,7 +18,7 @@ namespace
 	using PluginUnload = void (*)();
 
 	std::list<NzString> s_directories;
-	std::map<NzString, NzDynLib*> s_plugins;
+	std::unordered_map<NzString, NzDynLib*> s_plugins;
 
 	NzString s_pluginFiles[] =
 	{
@@ -44,7 +44,7 @@ bool NzPluginManager::AddDirectory(const NzString& directoryPath)
 
 bool NzPluginManager::Initialize()
 {
-	s_directories.push_back(NzFile::AbsolutePath('.'));
+	s_directories.push_back(NzFile::AbsolutePath("."));
 
 	NzString libDir = NzFile::AbsolutePath("lib");
 	if (NzDirectory::Exists(libDir))
@@ -150,7 +150,7 @@ void NzPluginManager::Uninitialize()
 {
 	s_directories.clear();
 
-	for (auto pair : s_plugins)
+	for (auto& pair : s_plugins)
 	{
 		PluginUnload func = reinterpret_cast<PluginUnload>(pair.second->GetSymbol("NzPluginUnload"));
 		if (func)

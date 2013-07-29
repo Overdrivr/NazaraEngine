@@ -8,12 +8,14 @@
 #define NAZARA_TEXTUREBACKGROUND_HPP
 
 #include <Nazara/Prerequesites.hpp>
-#include <Nazara/Graphics/Background.hpp>
+#include <Nazara/Graphics/AbstractBackground.hpp>
+#include <Nazara/Renderer/Shader.hpp>
 #include <Nazara/Renderer/Texture.hpp>
 
-class NAZARA_API NzTextureBackground : public NzBackground
+class NAZARA_API NzTextureBackground : public NzAbstractBackground
 {
 	public:
+		NzTextureBackground();
 		NzTextureBackground(NzTexture* texture);
 
 		void Draw(const NzScene* scene) const;
@@ -24,6 +26,7 @@ class NAZARA_API NzTextureBackground : public NzBackground
 		void SetTexture(NzTexture* texture);
 
 	private:
+		NzShaderConstRef m_shader;
 		NzTextureRef m_texture;
 };
 

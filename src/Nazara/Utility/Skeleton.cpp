@@ -3,14 +3,14 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Utility/Skeleton.hpp>
-#include <map>
+#include <unordered_map>
 #include <Nazara/Utility/Debug.hpp>
 
 struct NzSkeletonImpl
 {
-	std::map<NzString, unsigned int> jointMap; ///FIXME: unordered_map
+	std::unordered_map<NzString, unsigned int> jointMap;
 	std::vector<NzJoint> joints;
-	NzCubef aabb;
+	NzBoxf aabb;
 	bool aabbUpdated = false;
 	bool jointMapUpdated = false;
 };
@@ -51,24 +51,30 @@ void NzSkeleton::Destroy()
 	}
 }
 
-const NzCubef& NzSkeleton::GetAABB() const
+const NzBoxf& NzSkeleton::GetAABB() const
 {
 	#if NAZARA_UTILITY_SAFE
 	if (!m_impl)
 	{
 		NazaraError("Skeleton not created");
 
-		static NzCubef dummy;
+		static NzBoxf dummy;
 		return dummy;
 	}
 	#endif
 
 	if (!m_impl->aabbUpdated)
 	{
-		m_impl->aabb.MakeZero();
-
-		for (unsigned int i = 0; i < m_impl->joints.size(); ++i)
-			m_impl->aabb.ExtendTo(m_impl->joints[i].GetPosition());
+		unsigned int jointCount = m_impl->joints.size();
+		if (jointCount > 0)
+		{
+			NzVector3f pos = m_impl->joints[0].GetPosition();
+			m_impl->aabb.Set(pos.x, pos.y, pos.z, 0.f, 0.f, 0.f);
+			for (unsigned int i = 1; i < jointCount; ++i)
+				m_impl->aabb.ExtendTo(m_impl->joints[i].GetPosition());
+		}
+		else
+			m_impl->aabb.MakeZero();
 
 		m_impl->aabbUpdated = true;
 	}
@@ -268,7 +274,7 @@ void NzSkeleton::Interpolate(const NzSkeleton& skeletonA, const NzSkeleton& skel
 	NzJoint* jointsA = &skeletonA.m_impl->joints[0];
 	NzJoint* jointsB = &skeletonB.m_impl->joints[0];
 	for (unsigned int i = 0; i < m_impl->joints.size(); ++i)
-		m_impl->joints[i].Interpolate(jointsA[i], jointsB[i], interpolation);
+		m_impl->joints[i].Interpolate(jointsA[i], jointsB[i], interpolation, nzCoordSys_Local);
 
 	m_impl->aabbUpdated = false;
 }
@@ -315,7 +321,7 @@ void NzSkeleton::Interpolate(const NzSkeleton& skeletonA, const NzSkeleton& skel
 		}
 		#endif
 
-		m_impl->joints[index].Interpolate(jointsA[index], jointsB[index], interpolation);
+		m_impl->joints[index].Interpolate(jointsA[index], jointsB[index], interpolation, nzCoordSys_Local);
 	}
 
 	m_impl->aabbUpdated = false;

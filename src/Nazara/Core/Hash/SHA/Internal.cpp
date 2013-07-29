@@ -40,6 +40,7 @@
 #include <Nazara/Core/Hash/SHA/Internal.hpp>
 #include <Nazara/Core/Endianness.hpp>
 #include <cstring>
+#include <Nazara/Core/Debug.hpp>
 
 /*** ENDIAN REVERSAL MACROS *******************************************/
 #ifdef NAZARA_LITTLE_ENDIAN
@@ -66,7 +67,7 @@
  * 64-bit words):
  */
 #define ADDINC128(w,n)	{ \
-	(w)[0] += (nzUInt64)(n); \
+	(w)[0] += static_cast<nzUInt64>(n); \
 	if ((w)[0] < (n)) { \
 		(w)[1]++; \
 	} \
@@ -1032,7 +1033,7 @@ void SHA512_End(SHA_CTX* context, nzUInt8* digest)
 	}
 
 	/* Zero out state data */
-	std::memset(context, 0, sizeof(context));
+	std::memset(context, 0, sizeof(SHA_CTX));
 }
 
 
@@ -1072,5 +1073,5 @@ void SHA384_End(SHA_CTX* context, nzUInt8* digest)
 	}
 
 	/* Zero out state data */
-	std::memset(context, 0, sizeof(context));
+	std::memset(context, 0, sizeof(SHA_CTX));
 }

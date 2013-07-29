@@ -9,14 +9,15 @@
 
 #include <Nazara/Core/ResourceListener.hpp>
 #include <Nazara/Core/String.hpp>
+#include <Nazara/Renderer/AbstractShader.hpp>
 #include <Nazara/Renderer/OpenGL.hpp>
 #include <Nazara/Renderer/Shader.hpp>
-#include <Nazara/Renderer/ShaderImpl.hpp>
 #include <map>
+#include <unordered_map>
 
 class NzResource;
 
-class NzGLSLShader : public NzShaderImpl, NzResourceListener
+class NzGLSLShader : public NzAbstractShader, NzResourceListener
 {
 	public:
 		NzGLSLShader(NzShader* parent);
@@ -34,11 +35,11 @@ class NzGLSLShader : public NzShaderImpl, NzResourceListener
 		nzShaderLanguage GetLanguage() const;
 		NzString GetSourceCode(nzShaderType type) const;
 		int GetUniformLocation(const NzString& name) const;
+		int GetUniformLocation(nzShaderUniform uniform) const;
 
 		bool IsLoaded(nzShaderType type) const;
 
 		bool Load(nzShaderType type, const NzString& source);
-		bool Lock();
 
 		bool SendBoolean(int location, bool value);
 		bool SendColor(int location, const NzColor& color);
@@ -55,9 +56,6 @@ class NzGLSLShader : public NzShaderImpl, NzResourceListener
 		bool SendVector(int location, const NzVector4d& vector);
 		bool SendVector(int location, const NzVector4f& vector);
 
-		void Unbind();
-		void Unlock();
-
 	private:
 		void OnResourceCreated(const NzResource* resource, int index) override;
 		void OnResourceDestroy(const NzResource* resource, int index) override;
@@ -71,12 +69,13 @@ class NzGLSLShader : public NzShaderImpl, NzResourceListener
 			const NzTexture* texture;
 		};
 
-		mutable std::map<NzString, GLint> m_idCache; ///FIXME: unordered_map
-		std::map<GLint, TextureSlot> m_textures; ///FIXME: unordered_map
+		mutable std::unordered_map<NzString, GLint> m_idCache;
+		std::map<GLint, TextureSlot> m_textures;
 		GLuint m_program;
 		GLuint m_shaders[nzShaderType_Max+1];
 		NzShader* m_parent;
 		NzString m_log;
+		int m_uniformLocations[nzShaderUniform_Max+1];
 };
 
 #endif // NAZARA_GLSLSHADER_HPPs

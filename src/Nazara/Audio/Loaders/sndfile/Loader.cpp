@@ -10,6 +10,7 @@
 #include <Nazara/Core/File.hpp>
 #include <Nazara/Core/InputStream.hpp>
 #include <Nazara/Core/MemoryStream.hpp>
+#include <memory>
 #include <sndfile/sndfile.h>
 #include <Nazara/Audio/Debug.hpp>
 
@@ -69,7 +70,7 @@ namespace
 		return supportedExtensions.find(extension) != supportedExtensions.end();
 	}
 
-	bool Check(NzInputStream& stream, const NzSoundBufferParams& parameters)
+	nzTernary Check(NzInputStream& stream, const NzSoundBufferParams& parameters)
 	{
 		NazaraUnused(parameters);
 
@@ -78,10 +79,10 @@ namespace
 		if (file)
 		{
 			sf_close(file);
-			return true;
+			return nzTernary_True;
 		}
 		else
-			return false;
+			return nzTernary_False;
 	}
 
 	bool Load(NzSoundBuffer* soundBuffer, NzInputStream& stream, const NzSoundBufferParams& parameters)
@@ -112,28 +113,23 @@ namespace
 			sf_command(file, SFC_SET_SCALE_FLOAT_INT_READ, nullptr, SF_TRUE);
 
 		unsigned int sampleCount = infos.frames*infos.channels;
-		nzInt16* samples = new nzInt16[sampleCount];
-		if (sf_read_short(file, samples, sampleCount) != sampleCount)
+		std::unique_ptr<nzInt16[]> samples(new nzInt16[sampleCount]);
+
+		if (sf_read_short(file, samples.get(), sampleCount) != sampleCount)
 		{
+			sf_close(file);
 			NazaraError("Failed to read samples");
 
-			delete[] samples;
-			sf_close(file);
-
 			return false;
 		}
 
-		if (!soundBuffer->Create(format, infos.frames*infos.channels, infos.samplerate, samples))
+		if (!soundBuffer->Create(format, infos.frames*infos.channels, infos.samplerate, samples.get()))
 		{
+			sf_close(file);
 			NazaraError("Failed to create sound buffer");
 
-			delete[] samples;
-			sf_close(file);
-
 			return false;
 		}
-
-		delete[] samples;
 
 		return true;
 	}

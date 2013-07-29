@@ -3,16 +3,24 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Utility/Mesh.hpp>
+#include <Nazara/Core/Enums.hpp>
 #include <Nazara/Core/Error.hpp>
+#include <Nazara/Core/PrimitiveList.hpp>
+#include <Nazara/Math/Basic.hpp>
+#include <Nazara/Utility/Algorithm.hpp>
 #include <Nazara/Utility/Animation.hpp>
 #include <Nazara/Utility/Buffer.hpp>
+#include <Nazara/Utility/BufferMapper.hpp>
 #include <Nazara/Utility/Config.hpp>
+#include <Nazara/Utility/IndexMapper.hpp>
 #include <Nazara/Utility/SkeletalMesh.hpp>
 #include <Nazara/Utility/Skeleton.hpp>
+#include <Nazara/Utility/StaticMesh.hpp>
 #include <Nazara/Utility/SubMesh.hpp>
 #include <cstring>
-#include <deque>
-#include <map>
+#include <limits>
+#include <memory>
+#include <unordered_map>
 #include <Nazara/Utility/Debug.hpp>
 
 NzMeshParams::NzMeshParams()
@@ -29,16 +37,27 @@ bool NzMeshParams::IsValid() const
 		return false;
 	}
 
+	if (scale == NzVector3f::Zero())
+	{
+		NazaraError("Invalid scale");
+		return false;
+	}
+
 	return true;
 }
 
 struct NzMeshImpl
 {
-	std::map<NzString, unsigned int> subMeshMap;
+	NzMeshImpl()
+	{
+		materials.resize(1); // Un matériau par défaut
+	}
+
+	std::unordered_map<NzString, unsigned int> subMeshMap;
 	std::vector<NzString> materials;
 	std::vector<NzSubMesh*> subMeshes;
 	nzAnimationType animationType;
-	NzCubef aabb;
+	NzBoxf aabb;
 	NzSkeleton skeleton; // Uniquement pour les meshs squelettiques
 	NzString animationPath;
 	bool aabbUpdated = false;
@@ -50,80 +69,250 @@ NzMesh::~NzMesh()
 	Destroy();
 }
 
-bool NzMesh::AddSubMesh(NzSubMesh* subMesh)
+void NzMesh::AddSubMesh(NzSubMesh* subMesh)
 {
 	#if NAZARA_UTILITY_SAFE
 	if (!m_impl)
 	{
 		NazaraError("Mesh not created");
-		return false;
+		return;
 	}
 
 	if (!subMesh)
 	{
 		NazaraError("Invalid submesh");
-		return false;
+		return;
 	}
 
 	if (subMesh->GetAnimationType() != m_impl->animationType)
 	{
 		NazaraError("Submesh animation type must match mesh animation type");
-		return false;
+		return;
 	}
 	#endif
 
 	subMesh->AddResourceListener(this, m_impl->subMeshes.size());
+	subMesh->AddResourceReference();
 
 	m_impl->aabbUpdated = false; // On invalide l'AABB
 	m_impl->subMeshes.push_back(subMesh);
-
-	return true;
 }
 
-bool NzMesh::AddSubMesh(const NzString& identifier, NzSubMesh* subMesh)
+void NzMesh::AddSubMesh(const NzString& identifier, NzSubMesh* subMesh)
 {
 	#if NAZARA_UTILITY_SAFE
 	if (!m_impl)
 	{
 		NazaraError("Mesh not created");
-		return false;
+		return;
 	}
 
 	if (identifier.IsEmpty())
 	{
 		NazaraError("Identifier is empty");
-		return false;
+		return;
 	}
 
 	auto it = m_impl->subMeshMap.find(identifier);
 	if (it != m_impl->subMeshMap.end())
 	{
 		NazaraError("SubMesh identifier \"" + identifier + "\" is already used");
-		return false;
+		return;
 	}
 
 	if (!subMesh)
 	{
 		NazaraError("Invalid submesh");
-		return false;
+		return;
 	}
 
 	if (m_impl->animationType != subMesh->GetAnimationType())
 	{
 		NazaraError("Submesh animation type must match mesh animation type");
-		return false;
+		return;
 	}
 	#endif
 
 	int index = m_impl->subMeshes.size();
 
 	subMesh->AddResourceListener(this, index);
+	subMesh->AddResourceReference();
 
 	m_impl->aabbUpdated = false; // On invalide l'AABB
 	m_impl->subMeshes.push_back(subMesh);
 	m_impl->subMeshMap[identifier] = index;
+}
 
-	return true;
+NzSubMesh* NzMesh::BuildSubMesh(const NzPrimitive& primitive, const NzMeshParams& params)
+{
+	#if NAZARA_UTILITY_SAFE
+	if (!m_impl)
+	{
+		NazaraError("Mesh not created");
+		return nullptr;
+	}
+
+	if (m_impl->animationType != nzAnimationType_Static)
+	{
+		NazaraError("Mesh must be static");
+		return nullptr;
+	}
+
+	if (!params.IsValid())
+	{
+		NazaraError("Parameters must be valid");
+		return nullptr;
+	}
+	#endif
+
+	NzBoxf aabb;
+	std::unique_ptr<NzIndexBuffer> indexBuffer;
+	std::unique_ptr<NzVertexBuffer> vertexBuffer;
+
+	NzMatrix4f matrix(primitive.matrix);
+	matrix.ApplyScale(params.scale);
+
+	NzVertexDeclaration* declaration = NzVertexDeclaration::Get(nzVertexLayout_XYZ_Normal_UV_Tangent);
+
+	switch (primitive.type)
+	{
+		case nzPrimitiveType_Box:
+		{
+			unsigned int indexCount;
+			unsigned int vertexCount;
+			NzComputeBoxIndexVertexCount(primitive.box.subdivision, &indexCount, &vertexCount);
+
+			indexBuffer.reset(new NzIndexBuffer(vertexCount > std::numeric_limits<nzUInt16>::max(), indexCount, params.storage, nzBufferUsage_Static));
+			indexBuffer->SetPersistent(false);
+
+			vertexBuffer.reset(new NzVertexBuffer(declaration, vertexCount, params.storage, nzBufferUsage_Static));
+			vertexBuffer->SetPersistent(false);
+
+			NzBufferMapper<NzVertexBuffer> vertexMapper(vertexBuffer.get(), nzBufferAccess_WriteOnly);
+			NzIndexMapper indexMapper(indexBuffer.get(), nzBufferAccess_WriteOnly);
+
+			NzGenerateBox(primitive.box.lengths, primitive.box.subdivision, matrix, static_cast<NzMeshVertex*>(vertexMapper.GetPointer()), indexMapper.begin(), &aabb);
+			break;
+		}
+
+		case nzPrimitiveType_Plane:
+		{
+			unsigned int indexCount;
+			unsigned int vertexCount;
+			NzComputePlaneIndexVertexCount(primitive.plane.subdivision, &indexCount, &vertexCount);
+
+			indexBuffer.reset(new NzIndexBuffer(vertexCount > std::numeric_limits<nzUInt16>::max(), indexCount, params.storage, nzBufferUsage_Static));
+			indexBuffer->SetPersistent(false);
+
+			vertexBuffer.reset(new NzVertexBuffer(declaration, vertexCount, params.storage, nzBufferUsage_Static));
+			vertexBuffer->SetPersistent(false);
+
+			NzBufferMapper<NzVertexBuffer> vertexMapper(vertexBuffer.get(), nzBufferAccess_WriteOnly);
+			NzIndexMapper indexMapper(indexBuffer.get(), nzBufferAccess_WriteOnly);
+
+			NzGeneratePlane(primitive.plane.subdivision, primitive.plane.size, matrix, static_cast<NzMeshVertex*>(vertexMapper.GetPointer()), indexMapper.begin(), &aabb);
+			break;
+		}
+
+		case nzPrimitiveType_Sphere:
+		{
+			switch (primitive.sphere.type)
+			{
+				case nzSphereType_Cubic:
+				{
+					unsigned int indexCount;
+					unsigned int vertexCount;
+					NzComputeCubicSphereIndexVertexCount(primitive.sphere.cubic.subdivision, &indexCount, &vertexCount);
+
+					indexBuffer.reset(new NzIndexBuffer(vertexCount > std::numeric_limits<nzUInt16>::max(), indexCount, params.storage, nzBufferUsage_Static));
+					indexBuffer->SetPersistent(false);
+
+					vertexBuffer.reset(new NzVertexBuffer(declaration, vertexCount, params.storage, nzBufferUsage_Static));
+					vertexBuffer->SetPersistent(false);
+
+					NzBufferMapper<NzVertexBuffer> vertexMapper(vertexBuffer.get(), nzBufferAccess_WriteOnly);
+					NzIndexMapper indexMapper(indexBuffer.get(), nzBufferAccess_WriteOnly);
+
+					NzGenerateCubicSphere(primitive.sphere.size, primitive.sphere.cubic.subdivision, matrix, static_cast<NzMeshVertex*>(vertexMapper.GetPointer()), indexMapper.begin(), &aabb);
+					break;
+				}
+
+				case nzSphereType_Ico:
+				{
+					unsigned int indexCount;
+					unsigned int vertexCount;
+					NzComputeIcoSphereIndexVertexCount(primitive.sphere.ico.recursionLevel, &indexCount, &vertexCount);
+
+					indexBuffer.reset(new NzIndexBuffer(vertexCount > std::numeric_limits<nzUInt16>::max(), indexCount, params.storage, nzBufferUsage_Static));
+					indexBuffer->SetPersistent(false);
+
+					vertexBuffer.reset(new NzVertexBuffer(declaration, vertexCount, params.storage, nzBufferUsage_Static));
+					vertexBuffer->SetPersistent(false);
+
+					NzBufferMapper<NzVertexBuffer> vertexMapper(vertexBuffer.get(), nzBufferAccess_WriteOnly);
+					NzIndexMapper indexMapper(indexBuffer.get(), nzBufferAccess_WriteOnly);
+
+					NzGenerateIcoSphere(primitive.sphere.size, primitive.sphere.ico.recursionLevel, matrix, static_cast<NzMeshVertex*>(vertexMapper.GetPointer()), indexMapper.begin(), &aabb);
+					break;
+				}
+
+				case nzSphereType_UV:
+				{
+					unsigned int indexCount;
+					unsigned int vertexCount;
+					NzComputeUvSphereIndexVertexCount(primitive.sphere.uv.sliceCount, primitive.sphere.uv.stackCount, &indexCount, &vertexCount);
+
+					indexBuffer.reset(new NzIndexBuffer(vertexCount > std::numeric_limits<nzUInt16>::max(), indexCount, params.storage, nzBufferUsage_Static));
+					indexBuffer->SetPersistent(false);
+
+					vertexBuffer.reset(new NzVertexBuffer(declaration, vertexCount, params.storage, nzBufferUsage_Static));
+					vertexBuffer->SetPersistent(false);
+
+					NzBufferMapper<NzVertexBuffer> vertexMapper(vertexBuffer.get(), nzBufferAccess_WriteOnly);
+					NzIndexMapper indexMapper(indexBuffer.get(), nzBufferAccess_WriteOnly);
+
+					NzGenerateUvSphere(primitive.sphere.size, primitive.sphere.uv.sliceCount, primitive.sphere.uv.stackCount, matrix, static_cast<NzMeshVertex*>(vertexMapper.GetPointer()), indexMapper.begin(), &aabb);
+					break;
+				}
+			}
+			break;
+		}
+	}
+
+	std::unique_ptr<NzStaticMesh> subMesh(new NzStaticMesh(this));
+	if (!subMesh->Create(vertexBuffer.get()))
+	{
+		NazaraError("Failed to create StaticMesh");
+		return nullptr;
+	}
+	vertexBuffer.release();
+
+	if (params.optimizeIndexBuffers)
+		indexBuffer->Optimize();
+
+	subMesh->SetIndexBuffer(indexBuffer.get());
+	indexBuffer.release();
+
+	subMesh->SetAABB(aabb);
+	AddSubMesh(subMesh.get());
+
+	return subMesh.release();
+}
+
+void NzMesh::BuildSubMeshes(const NzPrimitiveList& list, const NzMeshParams& params)
+{
+	unsigned int primitiveCount = list.GetSize();
+
+	#if NAZARA_UTILITY_SAFE
+	if (primitiveCount == 0)
+	{
+		NazaraError("PrimitiveList must have at least one primitive");
+		return;
+	}
+	#endif
+
+	for (unsigned int i = 0; i < primitiveCount; ++i)
+		BuildSubMesh(list.GetPrimitive(i), params);
 }
 
 bool NzMesh::CreateSkeletal(unsigned int jointCount)
@@ -135,9 +324,10 @@ bool NzMesh::CreateSkeletal(unsigned int jointCount)
 	m_impl->jointCount = jointCount;
 	if (!m_impl->skeleton.Create(jointCount))
 	{
-		NazaraError("Failed to create skeleton");
-
 		delete m_impl;
+		m_impl = nullptr;
+
+		NazaraError("Failed to create skeleton");
 		return false;
 	}
 
@@ -163,7 +353,10 @@ void NzMesh::Destroy()
 		NotifyDestroy();
 
 		for (NzSubMesh* subMesh : m_impl->subMeshes)
+		{
 			subMesh->RemoveResourceListener(this);
+			subMesh->RemoveResourceReference();
+		}
 
 		delete m_impl;
 		m_impl = nullptr;
@@ -212,24 +405,29 @@ void NzMesh::GenerateTangents()
 		subMesh->GenerateTangents();
 }
 
-const NzCubef& NzMesh::GetAABB() const
+const NzBoxf& NzMesh::GetAABB() const
 {
 	#if NAZARA_UTILITY_SAFE
 	if (!m_impl)
 	{
 		NazaraError("Mesh not created");
 
-		static NzCubef dummy;
+		static NzBoxf dummy;
 		return dummy;
 	}
 	#endif
 
 	if (!m_impl->aabbUpdated)
 	{
-		m_impl->aabb.MakeZero();
-
-		for (NzSubMesh* subMesh : m_impl->subMeshes)
-			m_impl->aabb.ExtendTo(subMesh->GetAABB());
+		unsigned int subMeshCount = m_impl->subMeshes.size();
+		if (subMeshCount > 0)
+		{
+			m_impl->aabb.Set(m_impl->subMeshes[0]->GetAABB());
+			for (unsigned int i = 1; i < subMeshCount; ++i)
+				m_impl->aabb.ExtendTo(m_impl->subMeshes[i]->GetAABB());
+		}
+		else
+			m_impl->aabb.MakeZero();
 
 		m_impl->aabbUpdated = true;
 	}
@@ -243,7 +441,7 @@ NzString NzMesh::GetAnimation() const
 	if (!m_impl)
 	{
 		NazaraError("Mesh not created");
-		return nzAnimationType_Static;
+		return NzString();
 	}
 	#endif
 
@@ -578,6 +776,50 @@ bool NzMesh::LoadFromStream(NzInputStream& stream, const NzMeshParams& params)
 	return NzMeshLoader::LoadFromStream(this, stream, params);
 }
 
+void NzMesh::Recenter()
+{
+	#if NAZARA_UTILITY_SAFE
+	if (!m_impl)
+	{
+		NazaraError("Mesh not created");
+		return;
+	}
+
+	if (m_impl->animationType != nzAnimationType_Static)
+	{
+		NazaraError("Mesh must be static");
+		return;
+	}
+	#endif
+
+	// Le centre de notre mesh est le centre de l'AABB *globale*
+	NzVector3f center = GetAABB().GetCenter();
+
+	for (NzSubMesh* subMesh : m_impl->subMeshes)
+	{
+		NzStaticMesh* staticMesh = static_cast<NzStaticMesh*>(subMesh);
+
+		NzBufferMapper<NzVertexBuffer> mapper(staticMesh->GetVertexBuffer(), nzBufferAccess_ReadWrite);
+		NzMeshVertex* vertices = static_cast<NzMeshVertex*>(mapper.GetPointer());
+
+		unsigned int vertexCount = staticMesh->GetVertexCount();
+		for (unsigned int i = 0; i < vertexCount; ++i)
+		{
+			vertices->position -= center;
+			vertices++;
+		}
+
+		// l'AABB ne change pas de dimensions mais seulement de position, appliquons-lui le même procédé
+		NzBoxf aabb = staticMesh->GetAABB();
+		aabb.Translate(-center);
+
+		staticMesh->SetAABB(aabb);
+	}
+
+	// Il ne faut pas oublier d'invalider notre AABB
+	m_impl->aabbUpdated = false;
+}
+
 void NzMesh::RemoveSubMesh(const NzString& identifier)
 {
 	#if NAZARA_UTILITY_SAFE
@@ -601,10 +843,13 @@ void NzMesh::RemoveSubMesh(const NzString& identifier)
 
 	// On déplace l'itérateur du début d'une distance de x
 	auto it2 = m_impl->subMeshes.begin();
-	std::advance(it, index);
+	std::advance(it2, index);
 
 	// On libère la ressource
-	(*it2)->RemoveResourceListener(this);
+	NzSubMesh* subMesh = *it2;
+	subMesh->RemoveResourceListener(this);
+	subMesh->RemoveResourceReference();
+
 	m_impl->subMeshes.erase(it2);
 
 	m_impl->aabbUpdated = false; // On invalide l'AABB
@@ -631,7 +876,10 @@ void NzMesh::RemoveSubMesh(unsigned int index)
 	std::advance(it, index);
 
 	// On libère la ressource
-	(*it)->RemoveResourceListener(this);
+	NzSubMesh* subMesh = *it;
+	subMesh->RemoveResourceListener(this);
+	subMesh->RemoveResourceReference();
+
 	m_impl->subMeshes.erase(it);
 
 	m_impl->aabbUpdated = false; // On invalide l'AABB
@@ -677,6 +925,12 @@ void NzMesh::SetMaterialCount(unsigned int matCount)
 		NazaraError("Mesh not created");
 		return;
 	}
+
+	if (matCount == 0)
+	{
+		NazaraError("A mesh should have at least a material");
+		return;
+	}
 	#endif
 
 	m_impl->materials.resize(matCount);
@@ -686,39 +940,56 @@ void NzMesh::SetMaterialCount(unsigned int matCount)
 	{
 		unsigned int matIndex = subMesh->GetMaterialIndex();
 		if (matIndex >= matCount)
-			NazaraWarning("SubMesh " + NzString::Pointer(subMesh) + " material index is over mesh new material count (" + NzString::Number(matIndex) + " >= " + NzString::Number(matCount));
+		{
+			subMesh->SetMaterialIndex(0); // Pour empêcher un crash
+			NazaraWarning("SubMesh " + NzString::Pointer(subMesh) + " material index is over mesh new material count (" + NzString::Number(matIndex) + " >= " + NzString::Number(matCount) + "), setting it to first material");
+		}
 	}
 	#endif
 }
 
-const NzVertexDeclaration* NzMesh::GetDeclaration()
+void NzMesh::Transform(const NzMatrix4f& matrix)
 {
-	static NzVertexDeclaration declaration;
-
-	if (!declaration.IsValid())
+	#if NAZARA_UTILITY_SAFE
+	if (!m_impl)
 	{
-		// Déclaration correspondant à NzVertexStruct_XYZ_Normal_UV_Tangent
-		NzVertexElement elements[4];
-		elements[0].offset = 0;
-		elements[0].type = nzElementType_Float3;
-		elements[0].usage = nzElementUsage_Position;
-
-		elements[1].offset = 3*sizeof(float);
-		elements[1].type = nzElementType_Float3;
-		elements[1].usage = nzElementUsage_Normal;
-
-		elements[2].offset = 3*sizeof(float) + 3*sizeof(float);
-		elements[2].type = nzElementType_Float2;
-		elements[2].usage = nzElementUsage_TexCoord;
-
-		elements[3].offset = 3*sizeof(float) + 3*sizeof(float) + 2*sizeof(float);
-		elements[3].type = nzElementType_Float3;
-		elements[3].usage = nzElementUsage_Tangent;
-
-		declaration.Create(elements, 4);
+		NazaraError("Mesh not created");
+		return;
 	}
 
-	return &declaration;
+	if (m_impl->animationType != nzAnimationType_Static)
+	{
+		NazaraError("Mesh must be static");
+		return;
+	}
+	#endif
+
+	if (matrix.IsIdentity())
+		return;
+
+	for (NzSubMesh* subMesh : m_impl->subMeshes)
+	{
+		NzStaticMesh* staticMesh = static_cast<NzStaticMesh*>(subMesh);
+
+		NzBufferMapper<NzVertexBuffer> mapper(staticMesh->GetVertexBuffer(), nzBufferAccess_ReadWrite);
+		NzMeshVertex* vertices = static_cast<NzMeshVertex*>(mapper.GetPointer());
+
+		NzBoxf aabb(vertices->position.x, vertices->position.y, vertices->position.z, 0.f, 0.f, 0.f);
+
+		unsigned int vertexCount = staticMesh->GetVertexCount();
+		for (unsigned int i = 0; i < vertexCount; ++i)
+		{
+			vertices->position = matrix.Transform(vertices->position);
+			aabb.ExtendTo(vertices->position);
+
+			vertices++;
+		}
+
+		staticMesh->SetAABB(aabb);
+	}
+
+	// Il ne faut pas oublier d'invalider notre AABB
+	m_impl->aabbUpdated = false;
 }
 
 void NzMesh::OnResourceReleased(const NzResource* resource, int index)

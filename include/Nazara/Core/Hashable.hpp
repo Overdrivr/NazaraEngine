@@ -8,22 +8,10 @@
 #define HASHABLE_HPP_INCLUDED
 
 #include <Nazara/Prerequesites.hpp>
+#include <Nazara/Core/Enums.hpp>
 
-enum nzHash
-{
-	nzHash_CRC32,
-	nzHash_Fletcher16,
-	nzHash_MD5,
-	nzHash_SHA1,
-	nzHash_SHA224,
-	nzHash_SHA256,
-	nzHash_SHA384,
-	nzHash_SHA512,
-	nzHash_Whirlpool
-};
-
+class NzAbstractHash;
 class NzHashDigest;
-class NzHashImpl;
 
 class NAZARA_API NzHashable
 {
@@ -34,10 +22,10 @@ class NAZARA_API NzHashable
 		virtual ~NzHashable();
 
 		NzHashDigest GetHash(nzHash hash) const;
-		NzHashDigest GetHash(NzHashImpl* impl) const;
+		NzHashDigest GetHash(NzAbstractHash* impl) const;
 
 	private:
-		virtual bool FillHash(NzHashImpl* impl) const = 0;
+		virtual bool FillHash(NzAbstractHash* impl) const = 0;
 };
 
 #endif // HASHABLE_HPP_INCLUDED

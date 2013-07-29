@@ -31,7 +31,9 @@ class NzMatrix4
 		NzMatrix4(const NzMatrix4& matrix) = default;
 		~NzMatrix4() = default;
 
+		NzMatrix4& ApplyRotation(const NzQuaternion<T>& rotation);
 		NzMatrix4& ApplyScale(const NzVector3<T>& scale);
+		NzMatrix4& ApplyTranslation(const NzVector3<T>& translation);
 
 		NzMatrix4& Concatenate(const NzMatrix4& matrix);
 		NzMatrix4& ConcatenateAffine(const NzMatrix4& matrix);
@@ -53,6 +55,7 @@ class NzMatrix4
 		NzMatrix4& InverseAffine(bool* succeeded = nullptr);
 
 		bool IsAffine() const;
+		bool IsIdentity() const;
 
 		NzMatrix4& MakeIdentity();
 		NzMatrix4& MakeLookAt(const NzVector3<T>& eye, const NzVector3<T>& target, const NzVector3<T>& up = NzVector3<T>::Up());
@@ -61,7 +64,9 @@ class NzMatrix4
 		NzMatrix4& MakeRotation(const NzQuaternion<T>& rotation);
 		NzMatrix4& MakeScale(const NzVector3<T>& scale);
 		NzMatrix4& MakeTranslation(const NzVector3<T>& translation);
-		NzMatrix4& MakeTransform(const NzVector3<T>& translation, const NzVector3<T>& scale, const NzQuaternion<T>& rotation);
+		NzMatrix4& MakeTransform(const NzVector3<T>& translation, const NzQuaternion<T>& rotation);
+		NzMatrix4& MakeTransform(const NzVector3<T>& translation, const NzQuaternion<T>& rotation, const NzVector3<T>& scale);
+		NzMatrix4& MakeViewMatrix(const NzVector3<T>& translation, const NzQuaternion<T>& rotation);
 		NzMatrix4& MakeZero();
 
 		NzMatrix4& Set(T r11, T r12, T r13, T r14,
@@ -112,13 +117,17 @@ class NzMatrix4
 		static NzMatrix4 Rotate(const NzQuaternion<T>& rotation);
 		static NzMatrix4 Scale(const NzVector3<T>& scale);
 		static NzMatrix4 Translate(const NzVector3<T>& translation);
-		static NzMatrix4 Transform(const NzVector3<T>& translation, const NzVector3<T>& scale, const NzQuaternion<T>& rotation);
+		static NzMatrix4 Transform(const NzVector3<T>& translation, const NzQuaternion<T>& rotation);
+		static NzMatrix4 Transform(const NzVector3<T>& translation, const NzQuaternion<T>& rotation, const NzVector3<T>& scale);
+		static NzMatrix4 ViewMatrix(const NzVector3<T>& translation, const NzQuaternion<T>& rotation);
 		static NzMatrix4 Zero();
 
-		T m11, m12, m13, m14,
-		  m21, m22, m23, m24,
-		  m31, m32, m33, m34,
-		  m41, m42, m43, m44;
+		private:
+			T m11, m12, m13, m14,
+			  m21, m22, m23, m24,
+			  m31, m32, m33, m34,
+			  m41, m42, m43, m44;
+			mutable bool m_isIdentity;
 };
 
 template<typename T> std::ostream& operator<<(std::ostream& out, const NzMatrix4<T>& matrix);

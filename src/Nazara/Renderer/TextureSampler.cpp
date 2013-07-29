@@ -126,7 +126,7 @@ void NzTextureSampler::SetDefaultAnisotropyLevel(nzUInt8 anisotropyLevel)
 
 	if (s_useAnisotropicFilter)
 	{
-		for (auto pair : s_samplers)
+		for (const std::pair<nzUInt32, GLuint>& pair : s_samplers)
 		{
 			if (((pair.first >> 5) & 0xFF) == 0)
 				glSamplerParameterf(pair.second, GL_TEXTURE_MAX_ANISOTROPY_EXT, static_cast<float>(anisotropyLevel));
@@ -146,7 +146,7 @@ void NzTextureSampler::SetDefaultFilterMode(nzSamplerFilter filterMode)
 
 	s_defaultFilterMode = filterMode;
 
-	for (auto pair : s_samplers)
+	for (const std::pair<nzUInt32, GLuint>& pair : s_samplers)
 	{
 		if (((pair.first >> 1) & 0x3) == nzSamplerFilter_Default)
 		{
@@ -201,7 +201,7 @@ void NzTextureSampler::SetDefaultWrapMode(nzSamplerWrap wrapMode)
 	s_defaultWrapMode = wrapMode;
 
 	GLenum wrapEnum = NzOpenGL::SamplerWrapMode[wrapMode];
-	for (auto pair : s_samplers)
+	for (const std::pair<nzUInt32, GLuint>& pair : s_samplers)
 	{
 		if (((pair.first >> 3) & 0x3) == nzSamplerWrap_Default)
 		{
@@ -214,8 +214,10 @@ void NzTextureSampler::SetDefaultWrapMode(nzSamplerWrap wrapMode)
 
 void NzTextureSampler::Apply(const NzTexture* texture) const
 {
-	// On considère que la texture est déjà active lors de l'appel à cette fonction
-	GLenum target = NzOpenGL::TextureTarget[texture->GetType()];
+	nzImageType type = texture->GetType();
+	GLenum target = NzOpenGL::TextureTarget[type];
+
+	NzOpenGL::BindTexture(type, texture->GetOpenGLID());
 
 	if (s_useAnisotropicFilter)
 	{
@@ -259,7 +261,7 @@ void NzTextureSampler::Apply(const NzTexture* texture) const
 	}
 
 	GLenum wrapMode = NzOpenGL::SamplerWrapMode[(m_wrapMode == nzSamplerWrap_Default) ? s_defaultWrapMode : m_wrapMode];
-	switch (texture->GetType())
+	switch (type)
 	{
 		// Notez l'absence de "break" ici
 		case nzImageType_3D:
@@ -317,29 +319,18 @@ void NzTextureSampler::UpdateSamplerId() const
 		switch (filterMode)
 		{
 			case nzSamplerFilter_Bilinear:
-				if (m_mipmaps)
-					glSamplerParameteri(sampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-				else
-					glSamplerParameteri(sampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
+				glSamplerParameteri(sampler, GL_TEXTURE_MIN_FILTER, (m_mipmaps) ? GL_LINEAR_MIPMAP_NEAREST : GL_LINEAR);
 				glSamplerParameteri(sampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 				break;
 
 			case nzSamplerFilter_Nearest:
-				if (m_mipmaps)
-					glSamplerParameteri(sampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-				else
-					glSamplerParameteri(sampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
+				glSamplerParameteri(sampler, GL_TEXTURE_MIN_FILTER, (m_mipmaps) ? GL_NEAREST_MIPMAP_NEAREST : GL_NEAREST);
 				glSamplerParameteri(sampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 				break;
 
 			case nzSamplerFilter_Trilinear:
-				if (m_mipmaps)
-					glSamplerParameteri(sampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-				else
-					glSamplerParameteri(sampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // Filtrage bilinéaire
-
+				// Équivalent au filtrage bilinéaire si les mipmaps sont absentes
+				glSamplerParameteri(sampler, GL_TEXTURE_MIN_FILTER, (m_mipmaps) ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
 				glSamplerParameteri(sampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 				break;
 
@@ -383,8 +374,8 @@ bool NzTextureSampler::Initialize()
 
 void NzTextureSampler::Uninitialize()
 {
-	for (auto it = s_samplers.begin(); it != s_samplers.end(); ++it)
-		glDeleteSamplers(1, &it->second);
+	for (const std::pair<nzUInt32, GLuint>& pair : s_samplers)
+		glDeleteSamplers(1, &pair.second);
 
 	s_samplers.clear();
 }

@@ -3,6 +3,7 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Graphics/Model.hpp>
+#include <Nazara/Graphics/AbstractRenderQueue.hpp>
 #include <Nazara/Graphics/Config.hpp>
 #include <Nazara/Utility/SkeletalMesh.hpp>
 #include <Nazara/Utility/StaticMesh.hpp>
@@ -24,7 +25,7 @@ bool NzModelParameters::IsValid() const
 NzModel::NzModel() :
 m_currentSequence(nullptr),
 m_animationEnabled(true),
-m_boundingBoxUpdated(true),
+m_boundingVolumeUpdated(true),
 m_drawEnabled(true),
 m_matCount(0),
 m_skin(0),
@@ -35,10 +36,10 @@ m_skinCount(1)
 NzModel::NzModel(const NzModel& model) :
 NzSceneNode(model),
 m_materials(model.m_materials),
-m_boundingBox(model.m_boundingBox),
+m_boundingVolume(model.m_boundingVolume),
 m_currentSequence(model.m_currentSequence),
 m_animationEnabled(model.m_animationEnabled),
-m_boundingBoxUpdated(model.m_boundingBoxUpdated),
+m_boundingVolumeUpdated(model.m_boundingVolumeUpdated),
 m_drawEnabled(model.m_drawEnabled),
 m_interpolation(model.m_interpolation),
 m_currentFrame(model.m_currentFrame),
@@ -64,45 +65,9 @@ NzModel::~NzModel()
 	Reset();
 }
 
-void NzModel::AddToRenderQueue(NzRenderQueue& renderQueue) const
+void NzModel::AddToRenderQueue(NzAbstractRenderQueue* renderQueue) const
 {
-	if (!m_transformMatrixUpdated)
-		UpdateTransformMatrix();
-
-	unsigned int subMeshCount = m_mesh->GetSubMeshCount();
-	for (unsigned int i = 0; i < subMeshCount; ++i)
-	{
-		NzSubMesh* subMesh = m_mesh->GetSubMesh(i);
-		NzMaterial* material = m_materials[m_skin*m_matCount + subMesh->GetMaterialIndex()];
-
-		switch (subMesh->GetAnimationType())
-		{
-			case nzAnimationType_Skeletal:
-			{
-				NzSkeletalMesh* skeletalMesh = static_cast<NzSkeletalMesh*>(subMesh);
-				std::vector<NzRenderQueue::SkeletalData>& data = renderQueue.visibleSkeletalModels[material][skeletalMesh];
-
-				///TODO: Corriger cette abomination
-				data.resize(data.size()+1);
-				NzRenderQueue::SkeletalData& skeletalData = data.back();
-
-				skeletalData.skinnedVertices.resize(skeletalMesh->GetVertexCount());
-				skeletalData.transformMatrix = m_transformMatrix;
-
-				skeletalMesh->Skin(&skeletalData.skinnedVertices[0], &m_skeleton);
-				break;
-			}
-
-			case nzAnimationType_Static:
-			{
-				NzStaticMesh* staticMesh = static_cast<NzStaticMesh*>(subMesh);
-				std::vector<NzMatrix4f>& matrices = renderQueue.visibleStaticModels[material][staticMesh];
-
-				matrices.push_back(m_transformMatrix);
-				break;
-			}
-		}
-	}
+	renderQueue->AddModel(this);
 }
 
 void NzModel::AdvanceAnimation(float elapsedTime)
@@ -142,8 +107,8 @@ void NzModel::AdvanceAnimation(float elapsedTime)
 	}
 
 	m_animation->AnimateSkeleton(&m_skeleton, m_currentFrame, m_nextFrame, m_interpolation);
-	m_boundingBox.MakeNull();
-	m_boundingBoxUpdated = false;
+	m_boundingVolume.MakeNull();
+	m_boundingVolumeUpdated = false;
 }
 
 void NzModel::EnableAnimation(bool animation)
@@ -161,22 +126,22 @@ NzAnimation* NzModel::GetAnimation() const
 	return m_animation;
 }
 
-const NzBoundingBoxf& NzModel::GetBoundingBox() const
+const NzBoundingVolumef& NzModel::GetBoundingVolume() const
 {
 	#if NAZARA_GRAPHICS_SAFE
 	if (!m_mesh)
 	{
 		NazaraError("Model has no mesh");
 
-		static NzBoundingBoxf dummy(nzExtend_Null);
+		static NzBoundingVolumef dummy(nzExtend_Null);
 		return dummy;
 	}
 	#endif
 
-	if (!m_boundingBoxUpdated)
-		UpdateBoundingBox();
+	if (!m_boundingVolumeUpdated)
+		UpdateBoundingVolume();
 
-	return m_boundingBox;
+	return m_boundingVolume;
 }
 
 NzMaterial* NzModel::GetMaterial(const NzString& subMeshName) const
@@ -199,7 +164,7 @@ NzMaterial* NzModel::GetMaterial(const NzString& subMeshName) const
 	unsigned int matIndex = subMesh->GetMaterialIndex();
 	if (matIndex >= m_matCount)
 	{
-		NazaraError("Material index out of range (" + NzString::Number(matIndex) + " >= " + NzString::Number(m_matCount));
+		NazaraError("Material index out of range (" + NzString::Number(matIndex) + " >= " + NzString::Number(m_matCount) + ')');
 		return nullptr;
 	}
 
@@ -211,7 +176,7 @@ NzMaterial* NzModel::GetMaterial(unsigned int matIndex) const
 	#if NAZARA_GRAPHICS_SAFE
 	if (matIndex >= m_matCount)
 	{
-		NazaraError("Material index out of range (" + NzString::Number(matIndex) + " >= " + NzString::Number(m_matCount));
+		NazaraError("Material index out of range (" + NzString::Number(matIndex) + " >= " + NzString::Number(m_matCount) + ')');
 		return nullptr;
 	}
 	#endif
@@ -224,7 +189,7 @@ NzMaterial* NzModel::GetMaterial(unsigned int skinIndex, const NzString& subMesh
 	#if NAZARA_GRAPHICS_SAFE
 	if (skinIndex >= m_skinCount)
 	{
-		NazaraError("Skin index out of range (" + NzString::Number(skinIndex) + " >= " + NzString::Number(m_skinCount));
+		NazaraError("Skin index out of range (" + NzString::Number(skinIndex) + " >= " + NzString::Number(m_skinCount) + ')');
 		return nullptr;
 	}
 	#endif
@@ -239,7 +204,7 @@ NzMaterial* NzModel::GetMaterial(unsigned int skinIndex, const NzString& subMesh
 	unsigned int matIndex = subMesh->GetMaterialIndex();
 	if (matIndex >= m_matCount)
 	{
-		NazaraError("Material index out of range (" + NzString::Number(matIndex) + " >= " + NzString::Number(m_matCount));
+		NazaraError("Material index out of range (" + NzString::Number(matIndex) + " >= " + NzString::Number(m_matCount) + ')');
 		return nullptr;
 	}
 
@@ -251,13 +216,13 @@ NzMaterial* NzModel::GetMaterial(unsigned int skinIndex, unsigned int matIndex) 
 	#if NAZARA_GRAPHICS_SAFE
 	if (skinIndex >= m_skinCount)
 	{
-		NazaraError("Skin index out of range (" + NzString::Number(skinIndex) + " >= " + NzString::Number(m_skinCount));
+		NazaraError("Skin index out of range (" + NzString::Number(skinIndex) + " >= " + NzString::Number(m_skinCount) + ')');
 		return nullptr;
 	}
 
 	if (matIndex >= m_matCount)
 	{
-		NazaraError("Material index out of range (" + NzString::Number(matIndex) + " >= " + NzString::Number(m_matCount));
+		NazaraError("Material index out of range (" + NzString::Number(matIndex) + " >= " + NzString::Number(m_matCount) + ')');
 		return nullptr;
 	}
 	#endif
@@ -308,6 +273,11 @@ bool NzModel::HasAnimation() const
 bool NzModel::IsAnimationEnabled() const
 {
 	return m_animationEnabled;
+}
+
+bool NzModel::IsDrawable() const
+{
+	return m_mesh != nullptr && m_mesh->GetSubMeshCount() >= 1;
 }
 
 bool NzModel::IsDrawEnabled() const
@@ -504,7 +474,8 @@ void NzModel::SetMesh(NzMesh* mesh)
 
 	if (m_mesh)
 	{
-		m_boundingBoxUpdated = false;
+		m_boundingVolume.MakeNull();
+		m_boundingVolumeUpdated = false;
 
 		if (m_mesh->GetAnimationType() == nzAnimationType_Skeletal)
 			m_skeleton = *mesh->GetSkeleton(); // Copie du squelette template
@@ -519,16 +490,17 @@ void NzModel::SetMesh(NzMesh* mesh)
 		}
 
 		m_matCount = mesh->GetMaterialCount();
+		m_materials.clear();
 		m_materials.resize(m_matCount, NzMaterial::GetDefault());
 		m_skinCount = 1;
 	}
 	else
 	{
-		m_boundingBox.MakeNull();
-		m_boundingBoxUpdated = true;
+		m_boundingVolume.MakeNull();
+		m_boundingVolumeUpdated = true;
 		m_matCount = 0;
-		m_skinCount = 0;
 		m_materials.clear();
+		m_skinCount = 0;
 
 		SetAnimation(nullptr);
 	}
@@ -586,7 +558,7 @@ void NzModel::SetSkin(unsigned int skin)
 	#if NAZARA_GRAPHICS_SAFE
 	if (skin >= m_skinCount)
 	{
-		NazaraError("Skin index out of range (" + NzString::Number(skin) + " >= " + NzString::Number(m_skinCount));
+		NazaraError("Skin index out of range (" + NzString::Number(skin) + " >= " + NzString::Number(m_skinCount) + ')');
 		return;
 	}
 	#endif
@@ -614,8 +586,8 @@ NzModel& NzModel::operator=(const NzModel& node)
 
 	m_animation = node.m_animation;
 	m_animationEnabled = node.m_animationEnabled;
-	m_boundingBox = node.m_boundingBox;
-	m_boundingBoxUpdated = node.m_boundingBoxUpdated;
+	m_boundingVolume = node.m_boundingVolume;
+	m_boundingVolumeUpdated = node.m_boundingVolumeUpdated;
 	m_currentFrame = node.m_currentFrame;
 	m_currentSequence = node.m_currentSequence;
 	m_drawEnabled = node.m_drawEnabled;
@@ -639,8 +611,8 @@ NzModel& NzModel::operator=(NzModel&& node)
 
 	m_animation = std::move(node.m_animation);
 	m_animationEnabled = node.m_animationEnabled;
-	m_boundingBox = node.m_boundingBox;
-	m_boundingBoxUpdated = node.m_boundingBoxUpdated;
+	m_boundingVolume = node.m_boundingVolume;
+	m_boundingVolumeUpdated = node.m_boundingVolumeUpdated;
 	m_currentFrame = node.m_currentFrame;
 	m_currentSequence = node.m_currentSequence;
 	m_drawEnabled = node.m_drawEnabled;
@@ -662,7 +634,7 @@ void NzModel::Invalidate()
 {
 	NzSceneNode::Invalidate();
 
-	m_boundingBoxUpdated = false;
+	m_boundingVolumeUpdated = false;
 }
 
 void NzModel::Register()
@@ -682,29 +654,29 @@ void NzModel::Update()
 		AdvanceAnimation(m_scene->GetUpdateTime());
 }
 
-void NzModel::UpdateBoundingBox() const
+void NzModel::UpdateBoundingVolume() const
 {
-	if (m_boundingBox.IsNull())
+	if (m_boundingVolume.IsNull())
 	{
 		if (m_mesh->GetAnimationType() == nzAnimationType_Skeletal)
-			m_boundingBox.Set(m_skeleton.GetAABB());
+			m_boundingVolume.Set(m_skeleton.GetAABB());
 		else
-			m_boundingBox.Set(m_mesh->GetAABB());
+			m_boundingVolume.Set(m_mesh->GetAABB());
 	}
 
 	if (!m_transformMatrixUpdated)
 		UpdateTransformMatrix();
 
-	m_boundingBox.Update(m_transformMatrix);
-	m_boundingBoxUpdated = true;
+	m_boundingVolume.Update(m_transformMatrix);
+	m_boundingVolumeUpdated = true;
 }
 
 bool NzModel::VisibilityTest(const NzFrustumf& frustum)
 {
 	#if NAZARA_GRAPHICS_SAFE
-	if (!m_mesh)
+	if (!IsDrawable())
 	{
-		NazaraError("Model has no mesh");
+		NazaraError("Model is not drawable");
 		return false;
 	}
 	#endif
@@ -712,10 +684,10 @@ bool NzModel::VisibilityTest(const NzFrustumf& frustum)
 	if (!m_drawEnabled)
 		return false;
 
-	if (!m_boundingBoxUpdated)
-		UpdateBoundingBox();
+	if (!m_boundingVolumeUpdated)
+		UpdateBoundingVolume();
 
-	return frustum.Contains(m_boundingBox);
+	return frustum.Contains(m_boundingVolume);
 }
 
 NzModelLoader::LoaderList NzModel::s_loaders;

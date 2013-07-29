@@ -22,8 +22,8 @@
 
 namespace
 {
-	NAZARA_THREADLOCAL const NzContext* currentContext = nullptr;
-	NAZARA_THREADLOCAL const NzContext* threadContext = nullptr;
+	thread_local NzContext* currentContext = nullptr;
+	thread_local NzContext* threadContext = nullptr;
 
 	std::vector<NzContext*> contexts;
 
@@ -153,7 +153,7 @@ bool NzContext::Create(const NzContextParameters& parameters)
 		return false;
 	}
 
-	if (!m_impl->Activate())
+	if (!SetActive(true))
 	{
 		NazaraError("Failed to activate context");
 
@@ -167,7 +167,7 @@ bool NzContext::Create(const NzContextParameters& parameters)
 	if (m_parameters.antialiasingLevel > 0)
 		glEnable(GL_MULTISAMPLE);
 
-	if (NzOpenGL::IsSupported(nzOpenGLExtension_DebugOutput) && m_parameters.debugMode)
+	if (m_parameters.debugMode && NzOpenGL::IsSupported(nzOpenGLExtension_DebugOutput))
 	{
 		glDebugMessageCallback(&DebugCallback, this);
 
@@ -187,8 +187,8 @@ void NzContext::Destroy()
 	{
 		NotifyDestroy();
 
-		if (currentContext == this)
-			NzContextImpl::Desactivate();
+		NzOpenGL::OnContextDestruction(this);
+		SetActive(false);
 
 		m_impl->Destroy();
 		delete m_impl;
@@ -219,7 +219,7 @@ bool NzContext::IsActive() const
 	return currentContext == this;
 }
 
-bool NzContext::SetActive(bool active) const
+bool NzContext::SetActive(bool active)
 {
 	#ifdef NAZARA_RENDERER_SAFE
 	if (!m_impl)
@@ -247,6 +247,8 @@ bool NzContext::SetActive(bool active) const
 
 		currentContext = nullptr;
 	}
+
+	NzOpenGL::OnContextChange(currentContext);
 
 	return true;
 }
@@ -300,17 +302,17 @@ bool NzContext::EnsureContext()
 	return true;
 }
 
-const NzContext* NzContext::GetCurrent()
+NzContext* NzContext::GetCurrent()
 {
 	return currentContext;
 }
 
-const NzContext* NzContext::GetReference()
+NzContext* NzContext::GetReference()
 {
 	return s_reference;
 }
 
-const NzContext* NzContext::GetThreadContext()
+NzContext* NzContext::GetThreadContext()
 {
 	EnsureContext();
 

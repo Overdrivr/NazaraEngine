@@ -13,16 +13,16 @@ NzSceneRoot::NzSceneRoot(NzScene* scene)
 
 NzSceneRoot::~NzSceneRoot() = default;
 
-void NzSceneRoot::AddToRenderQueue(NzRenderQueue& renderQueue) const
+void NzSceneRoot::AddToRenderQueue(NzAbstractRenderQueue* renderQueue) const
 {
 	NazaraUnused(renderQueue);
 
 	NazaraInternalError("SceneNode::AddToRenderQueue() called on SceneRoot");
 }
 
-const NzBoundingBoxf& NzSceneRoot::GetBoundingBox() const
+const NzBoundingVolumef& NzSceneRoot::GetBoundingVolume() const
 {
-	static NzBoundingBoxf infinite(nzExtend_Infinite);
+	static NzBoundingVolumef infinite(nzExtend_Infinite);
 	return infinite;
 }
 

@@ -7,20 +7,32 @@
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Core/File.hpp>
 #include <Nazara/Core/String.hpp>
+#include <Nazara/Renderer/AbstractShader.hpp>
 #include <Nazara/Renderer/Config.hpp>
 #include <Nazara/Renderer/GLSLShader.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
-#include <Nazara/Renderer/ShaderImpl.hpp>
 #include <stdexcept>
 #include <Nazara/Renderer/Debug.hpp>
 
-NzShader::NzShader(nzShaderLanguage language)
+NzShader::NzShader() :
+m_flags(nzShaderFlags_None),
+m_impl(nullptr),
+m_compiled(false)
+{
+}
+
+NzShader::NzShader(nzShaderLanguage language) :
+m_flags(nzShaderFlags_None),
+m_impl(nullptr),
+m_compiled(false)
 {
 	Create(language);
 }
 
 NzShader::NzShader(NzShader&& shader) :
-m_impl(shader.m_impl)
+m_flags(shader.m_flags),
+m_impl(shader.m_impl),
+m_compiled(shader.m_compiled)
 {
 	shader.m_impl = nullptr;
 }
@@ -75,6 +87,7 @@ bool NzShader::Compile()
 	if (m_impl->Compile())
 	{
 		m_compiled = true;
+
 		return true;
 	}
 	else
@@ -170,6 +183,19 @@ int NzShader::GetUniformLocation(const NzString& name) const
 	#endif
 
 	return m_impl->GetUniformLocation(name);
+}
+
+int NzShader::GetUniformLocation(nzShaderUniform uniform) const
+{
+	#ifdef NAZARA_DEBUG
+	if (uniform > nzShaderUniform_Max)
+	{
+		NazaraError("Shader uniform out of enum");
+		return -1;
+	}
+	#endif
+
+	return m_impl->GetUniformLocation(uniform);
 }
 
 bool NzShader::HasUniform(const NzString& name) const
@@ -298,19 +324,6 @@ bool NzShader::LoadFromFile(nzShaderType type, const NzString& filePath)
 	return m_impl->Load(type, source);
 }
 
-bool NzShader::Lock()
-{
-	#if NAZARA_RENDERER_SAFE
-	if (!m_impl)
-	{
-		NazaraError("Shader not created");
-		return false;
-	}
-	#endif
-
-	return m_impl->Lock();
-}
-
 bool NzShader::SendBoolean(int location, bool value) const
 {
 	#if NAZARA_RENDERER_SAFE
@@ -319,13 +332,10 @@ bool NzShader::SendBoolean(int location, bool value) const
 		NazaraError("Shader not created");
 		return false;
 	}
+	#endif
 
 	if (location == -1)
-	{
-		NazaraError("Invalid location");
 		return false;
-	}
-	#endif
 
 	return m_impl->SendBoolean(location, value);
 }
@@ -338,13 +348,10 @@ bool NzShader::SendColor(int location, const NzColor& color) const
 		NazaraError("Shader not created");
 		return false;
 	}
+	#endif
 
 	if (location == -1)
-	{
-		NazaraError("Invalid location");
 		return false;
-	}
-	#endif
 
 	return m_impl->SendColor(location, color);
 }
@@ -363,13 +370,10 @@ bool NzShader::SendDouble(int location, double value) const
 		NazaraError("Shader not created");
 		return false;
 	}
+	#endif
 
 	if (location == -1)
-	{
-		NazaraError("Invalid location");
 		return false;
-	}
-	#endif
 
 	return m_impl->SendDouble(location, value);
 }
@@ -382,13 +386,10 @@ bool NzShader::SendFloat(int location, float value) const
 		NazaraError("Shader not created");
 		return false;
 	}
+	#endif
 
 	if (location == -1)
-	{
-		NazaraError("Invalid location");
 		return false;
-	}
-	#endif
 
 	return m_impl->SendFloat(location, value);
 }
@@ -401,13 +402,10 @@ bool NzShader::SendInteger(int location, int value) const
 		NazaraError("Shader not created");
 		return false;
 	}
+	#endif
 
 	if (location == -1)
-	{
-		NazaraError("Invalid location");
 		return false;
-	}
-	#endif
 
 	return m_impl->SendInteger(location, value);
 }
@@ -426,13 +424,10 @@ bool NzShader::SendMatrix(int location, const NzMatrix4d& matrix) const
 		NazaraError("Shader not created");
 		return false;
 	}
+	#endif
 
 	if (location == -1)
-	{
-		NazaraError("Invalid location");
 		return false;
-	}
-	#endif
 
 	return m_impl->SendMatrix(location, matrix);
 }
@@ -445,13 +440,10 @@ bool NzShader::SendMatrix(int location, const NzMatrix4f& matrix) const
 		NazaraError("Shader not created");
 		return false;
 	}
+	#endif
 
 	if (location == -1)
-	{
-		NazaraError("Invalid location");
 		return false;
-	}
-	#endif
 
 	return m_impl->SendMatrix(location, matrix);
 }
@@ -464,13 +456,10 @@ bool NzShader::SendTexture(int location, const NzTexture* texture, nzUInt8* text
 		NazaraError("Shader not created");
 		return false;
 	}
+	#endif
 
 	if (location == -1)
-	{
-		NazaraError("Invalid location");
 		return false;
-	}
-	#endif
 
 	return m_impl->SendTexture(location, texture, textureUnit);
 }
@@ -489,13 +478,10 @@ bool NzShader::SendVector(int location, const NzVector2d& vector) const
 		NazaraError("Shader not created");
 		return false;
 	}
+	#endif
 
 	if (location == -1)
-	{
-		NazaraError("Invalid location");
 		return false;
-	}
-	#endif
 
 	return m_impl->SendVector(location, vector);
 }
@@ -508,13 +494,10 @@ bool NzShader::SendVector(int location, const NzVector2f& vector) const
 		NazaraError("Shader not created");
 		return false;
 	}
+	#endif
 
 	if (location == -1)
-	{
-		NazaraError("Invalid location");
 		return false;
-	}
-	#endif
 
 	return m_impl->SendVector(location, vector);
 }
@@ -533,13 +516,10 @@ bool NzShader::SendVector(int location, const NzVector3d& vector) const
 		NazaraError("Shader not created");
 		return false;
 	}
+	#endif
 
 	if (location == -1)
-	{
-		NazaraError("Invalid location");
 		return false;
-	}
-	#endif
 
 	return m_impl->SendVector(location, vector);
 }
@@ -552,13 +532,10 @@ bool NzShader::SendVector(int location, const NzVector3f& vector) const
 		NazaraError("Shader not created");
 		return false;
 	}
+	#endif
 
 	if (location == -1)
-	{
-		NazaraError("Invalid location");
 		return false;
-	}
-	#endif
 
 	return m_impl->SendVector(location, vector);
 }
@@ -577,13 +554,10 @@ bool NzShader::SendVector(int location, const NzVector4d& vector) const
 		NazaraError("Shader not created");
 		return false;
 	}
+	#endif
 
 	if (location == -1)
-	{
-		NazaraError("Invalid location");
 		return false;
-	}
-	#endif
 
 	return m_impl->SendVector(location, vector);
 }
@@ -596,13 +570,10 @@ bool NzShader::SendVector(int location, const NzVector4f& vector) const
 		NazaraError("Shader not created");
 		return false;
 	}
+	#endif
 
 	if (location == -1)
-	{
-		NazaraError("Invalid location");
 		return false;
-	}
-	#endif
 
 	return m_impl->SendVector(location, vector);
 }
@@ -610,19 +581,6 @@ bool NzShader::SendVector(int location, const NzVector4f& vector) const
 void NzShader::SetFlags(nzUInt32 flags)
 {
 	m_flags = flags;
-}
-
-void NzShader::Unlock()
-{
-	#if NAZARA_RENDERER_SAFE
-	if (!m_impl)
-	{
-		NazaraError("Shader not created");
-		return;
-	}
-	#endif
-
-	return m_impl->Unlock();
 }
 
 NzShader& NzShader::operator=(NzShader&& shader)
@@ -660,7 +618,7 @@ bool NzShader::IsTypeSupported(nzShaderType type)
 			return true;
 
 		case nzShaderType_Geometry:
-			return false; // ??
+			return NzOpenGL::GetVersion() >= 320;
 
 		default:
 			NazaraError("Shader type not handled (0x" + NzString::Number(type, 16) + ')');

@@ -16,6 +16,7 @@
 #include <Nazara/Utility/Loaders/PCX.hpp>
 #include <Nazara/Utility/Loaders/STB.hpp>
 #include <Nazara/Utility/PixelFormat.hpp>
+#include <Nazara/Utility/VertexDeclaration.hpp>
 #include <Nazara/Utility/Window.hpp>
 #include <Nazara/Utility/Debug.hpp>
 
@@ -60,6 +61,14 @@ bool NzUtility::Initialize()
 		return false;
 	}
 
+	if (!NzVertexDeclaration::Initialize())
+	{
+		NazaraError("Failed to initialize vertex declarations");
+		Uninitialize();
+
+		return false;
+	}
+
 	if (!NzWindow::Initialize())
 	{
 		NazaraError("Failed to initialize window's system");
@@ -76,9 +85,11 @@ bool NzUtility::Initialize()
 	NzLoaders_STB_Register(); // Loader générique (STB)
 
 	/// Loaders spécialisés
+	// Animation
+	NzLoaders_MD5Anim_Register(); // Loader de fichiers .md5anim (v10)
+
 	// Mesh
 	NzLoaders_MD2_Register(); // Loader de fichiers .md2 (v8)
-	NzLoaders_MD5Anim_Register(); // Loader de fichiers .md5anim (v10)
 	NzLoaders_MD5Mesh_Register(); // Loader de fichiers .md5mesh (v10)
 
 	// Image
@@ -109,11 +120,13 @@ void NzUtility::Uninitialize()
 	s_moduleReferenceCounter = 0;
 
 	NzLoaders_MD2_Unregister();
+	NzLoaders_MD5Anim_Unregister();
 	NzLoaders_MD5Mesh_Unregister();
 	NzLoaders_PCX_Unregister();
 	NzLoaders_STB_Unregister();
 
 	NzWindow::Uninitialize();
+	NzVertexDeclaration::Uninitialize();
 	NzPixelFormat::Uninitialize();
 	NzBuffer::Uninitialize();
 

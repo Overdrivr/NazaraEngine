@@ -24,20 +24,23 @@ namespace
 		return (extension == "md2");
 	}
 
-	bool Check(NzInputStream& stream, const NzMeshParams& parameters)
+	nzTernary Check(NzInputStream& stream, const NzMeshParams& parameters)
 	{
 		NazaraUnused(parameters);
 
 		nzUInt32 magic[2];
-		if (stream.Read(&magic[0], 2*sizeof(nzUInt32)) != 2*sizeof(nzUInt32))
-			return false;
+		if (stream.Read(&magic[0], 2*sizeof(nzUInt32)) == 2*sizeof(nzUInt32))
+		{
+			#ifdef NAZARA_BIG_ENDIAN
+			NzByteSwap(&magic[0], sizeof(nzUInt32));
+			NzByteSwap(&magic[1], sizeof(nzUInt32));
+			#endif
 
-		#ifdef NAZARA_BIG_ENDIAN
-		NzByteSwap(&magic[0], sizeof(nzUInt32));
-		NzByteSwap(&magic[1], sizeof(nzUInt32));
-		#endif
+			if (magic[0] == md2Ident && magic[1] == 8)
+				return nzTernary_True;
+		}
 
-		return magic[0] == md2Ident && magic[1] == 8;
+		return nzTernary_False;
 	}
 
 	bool Load(NzMesh* mesh, NzInputStream& stream, const NzMeshParams& parameters)
@@ -99,7 +102,8 @@ namespace
 
 		/// Chargement des submesh
 		// Actuellement le loader ne charge qu'un submesh
-		std::unique_ptr<NzIndexBuffer> indexBuffer(new NzIndexBuffer(header.num_tris * 3, false, parameters.storage, nzBufferUsage_Static));
+		std::unique_ptr<NzIndexBuffer> indexBuffer(new NzIndexBuffer(false, header.num_tris * 3, parameters.storage, nzBufferUsage_Static));
+		indexBuffer->SetPersistent(false);
 
 		/// Lecture des triangles
 		std::vector<md2_triangle> triangles(header.num_tris);
@@ -145,9 +149,7 @@ namespace
 		}
 		#endif
 
-		const unsigned int indexFix[3] = {0, 2, 1}; // Pour respécifier les indices dans le bon ordre
-
-		std::unique_ptr<NzVertexBuffer> vertexBuffer(new NzVertexBuffer(NzMesh::GetDeclaration(), header.num_vertices, parameters.storage, nzBufferUsage_Static));
+		std::unique_ptr<NzVertexBuffer> vertexBuffer(new NzVertexBuffer(NzVertexDeclaration::Get(nzVertexLayout_XYZ_Normal_UV_Tangent), header.num_vertices, parameters.storage, nzBufferUsage_Static));
 		std::unique_ptr<NzStaticMesh> subMesh(new NzStaticMesh(mesh));
 		if (!subMesh->Create(vertexBuffer.get()))
 		{
@@ -155,9 +157,10 @@ namespace
 			return false;
 		}
 
-		subMesh->SetIndexBuffer(indexBuffer.get());
+		if (parameters.optimizeIndexBuffers)
+			indexBuffer->Optimize();
 
-		indexBuffer->SetPersistent(false);
+		subMesh->SetIndexBuffer(indexBuffer.get());
 		indexBuffer.release();
 
 		/// Chargement des vertices
@@ -180,10 +183,15 @@ namespace
 		NzByteSwap(&translate.z, sizeof(float));
 		#endif
 
+		// Un personnage de taille moyenne fait ~50 unités de haut dans Quake 2
+		// Avec Nazara, 1 unité = 1 mètre, nous devons donc adapter l'échelle
+		scale *= parameters.scale/29.f; // 50/29 = 1.72 (Soit 1.72 mètre, proche de la taille moyenne d'un individu)
+
 		NzBufferMapper<NzVertexBuffer> vertexMapper(vertexBuffer.get(), nzBufferAccess_DiscardAndWrite);
 		NzMeshVertex* vertex = reinterpret_cast<NzMeshVertex*>(vertexMapper.GetPointer());
 
 		/// Chargement des coordonnées de texture
+		const unsigned int indexFix[3] = {0, 2, 1}; // Pour respécifier les indices dans le bon ordre
 		for (unsigned int i = 0; i < header.num_tris; ++i)
 		{
 			for (unsigned int j = 0; j < 3; ++j)

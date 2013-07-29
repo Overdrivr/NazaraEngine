@@ -4,6 +4,7 @@
 
 #include <Nazara/Graphics/Light.hpp>
 #include <Nazara/Core/Error.hpp>
+#include <Nazara/Graphics/AbstractRenderQueue.hpp>
 #include <Nazara/Math/Basic.hpp>
 #include <Nazara/Math/Sphere.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
@@ -18,11 +19,11 @@ m_type(type),
 m_ambientColor((type == nzLightType_Directional) ? NzColor(50, 50, 50) : NzColor::Black),
 m_diffuseColor(NzColor::White),
 m_specularColor(NzColor::White),
-m_boundingBoxUpdated(false),
+m_boundingVolumeUpdated(false),
 m_attenuation(0.9f),
 m_innerAngle(15.f),
 m_outerAngle(45.f),
-m_radius(500.f)
+m_radius(5.f)
 {
 }
 
@@ -32,26 +33,12 @@ NzSceneNode(light)
 	std::memcpy(this, &light, sizeof(NzLight)); // Aussi simple que ça
 }
 
-NzLight::~NzLight()
+void NzLight::AddToRenderQueue(NzAbstractRenderQueue* renderQueue) const
 {
+	renderQueue->AddLight(this);
 }
 
-void NzLight::AddToRenderQueue(NzRenderQueue& renderQueue) const
-{
-	switch (m_type)
-	{
-		case nzLightType_Directional:
-			renderQueue.directionnalLights.push_back(this);
-			break;
-
-		case nzLightType_Point:
-		case nzLightType_Spot:
-			renderQueue.visibleLights.push_back(this);
-			break;
-	}
-}
-
-void NzLight::Apply(const NzShader* shader, unsigned int lightUnit) const
+void NzLight::Enable(const NzShader* shader, unsigned int lightUnit) const
 {
 	/*
 	struct Light
@@ -79,6 +66,7 @@ void NzLight::Apply(const NzShader* shader, unsigned int lightUnit) const
 	-P3: float cosInnerAngle + float cosOuterAngle
 	*/
 
+	///TODO: Optimiser
 	int typeLocation = shader->GetUniformLocation("Lights[0].type");
 	int ambientLocation = shader->GetUniformLocation("Lights[0].ambient");
 	int diffuseLocation = shader->GetUniformLocation("Lights[0].diffuse");
@@ -129,12 +117,12 @@ void NzLight::Apply(const NzShader* shader, unsigned int lightUnit) const
 	}
 }
 
-const NzBoundingBoxf& NzLight::GetBoundingBox() const
+const NzBoundingVolumef& NzLight::GetBoundingVolume() const
 {
-	if (!m_boundingBoxUpdated)
-		UpdateBoundingBox();
+	if (!m_boundingVolumeUpdated)
+		UpdateBoundingVolume();
 
-	return m_boundingBox;
+	return m_boundingVolume;
 }
 
 NzColor NzLight::GetAmbientColor() const
@@ -206,16 +194,16 @@ void NzLight::SetOuterAngle(float outerAngle)
 {
 	m_outerAngle = outerAngle;
 
-	m_boundingBox.MakeNull();
-	m_boundingBoxUpdated = false;
+	m_boundingVolume.MakeNull();
+	m_boundingVolumeUpdated = false;
 }
 
 void NzLight::SetRadius(float radius)
 {
 	m_radius = radius;
 
-	m_boundingBox.MakeNull();
-	m_boundingBoxUpdated = false;
+	m_boundingVolume.MakeNull();
+	m_boundingVolumeUpdated = false;
 }
 
 void NzLight::SetSpecularColor(const NzColor& specular)
@@ -230,11 +218,17 @@ NzLight& NzLight::operator=(const NzLight& light)
 	return *this;
 }
 
+void NzLight::Disable(const NzShader* shader, unsigned int lightUnit)
+{
+	///TODO: Optimiser
+	shader->SendInteger(shader->GetUniformLocation("Lights[" + NzString::Number(lightUnit) + "].type"), -1);
+}
+
 void NzLight::Invalidate()
 {
 	NzSceneNode::Invalidate();
 
-	m_boundingBoxUpdated = false;
+	m_boundingVolumeUpdated = false;
 }
 
 void NzLight::Register()
@@ -245,28 +239,28 @@ void NzLight::Unregister()
 {
 }
 
-void NzLight::UpdateBoundingBox() const
+void NzLight::UpdateBoundingVolume() const
 {
-	if (m_boundingBox.IsNull())
+	if (m_boundingVolume.IsNull())
 	{
 		switch (m_type)
 		{
 			case nzLightType_Directional:
-				m_boundingBox.MakeInfinite();
-				m_boundingBoxUpdated = true;
+				m_boundingVolume.MakeInfinite();
+				m_boundingVolumeUpdated = true;
 				return; // Rien d'autre à faire
 
 			case nzLightType_Point:
 			{
 				NzVector3f radius(m_radius);
-				m_boundingBox.Set(-radius, radius);
+				m_boundingVolume.Set(-radius, radius);
 				break;
 			}
 
 			case nzLightType_Spot:
 			{
-				// On forme un cube sur l'origine
-				NzCubef cube(NzVector3f::Zero());
+				// On forme une boite sur l'origine
+				NzBoxf box(NzVector3f::Zero());
 
 				// On calcule le reste des points
 				float height = m_radius;
@@ -278,13 +272,13 @@ void NzLight::UpdateBoundingBox() const
 				NzVector3f lExtend = NzVector3f::Left()*radius;
 				NzVector3f uExtend = NzVector3f::Up()*radius;
 
-				// Et on ajoute ensuite les quatres extrêmités de la pyramide
-				cube.ExtendTo(base + lExtend + uExtend);
-				cube.ExtendTo(base + lExtend - uExtend);
-				cube.ExtendTo(base - lExtend + uExtend);
-				cube.ExtendTo(base - lExtend - uExtend);
+				// Et on ajoute ensuite les quatres extrémités de la pyramide
+				box.ExtendTo(base + lExtend + uExtend);
+				box.ExtendTo(base + lExtend - uExtend);
+				box.ExtendTo(base - lExtend + uExtend);
+				box.ExtendTo(base - lExtend - uExtend);
 
-				m_boundingBox.Set(cube);
+				m_boundingVolume.Set(box);
 				break;
 			}
 		}
@@ -299,18 +293,18 @@ void NzLight::UpdateBoundingBox() const
 			if (!m_derivedUpdated)
 				UpdateDerived();
 
-			m_boundingBox.Update(NzMatrix4f::Translate(m_derivedPosition)); // Notre BoundingBox ne changera que selon la position
+			m_boundingVolume.Update(NzMatrix4f::Translate(m_derivedPosition)); // Notre BoundingBox ne changera que selon la position
 			break;
 
 		case nzLightType_Spot:
 			if (!m_transformMatrixUpdated)
 				UpdateTransformMatrix();
 
-			m_boundingBox.Update(m_transformMatrix);
+			m_boundingVolume.Update(m_transformMatrix);
 			break;
 	}
 
-	m_boundingBoxUpdated = true;
+	m_boundingVolumeUpdated = true;
 }
 
 bool NzLight::VisibilityTest(const NzFrustumf& frustum)
@@ -328,10 +322,10 @@ bool NzLight::VisibilityTest(const NzFrustumf& frustum)
 			return frustum.Contains(NzSpheref(m_derivedPosition, m_radius));
 
 		case nzLightType_Spot:
-			if (!m_boundingBoxUpdated)
-				UpdateBoundingBox();
+			if (!m_boundingVolumeUpdated)
+				UpdateBoundingVolume();
 
-			return frustum.Contains(m_boundingBox);
+			return frustum.Contains(m_boundingVolume);
 	}
 
 	NazaraError("Invalid light type (0x" + NzString::Number(m_type, 16) + ')');
