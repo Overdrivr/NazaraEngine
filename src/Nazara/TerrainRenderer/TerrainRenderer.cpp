@@ -56,6 +56,22 @@ bool NzTerrainRenderer::Initialize()
 	}
 
 	// Initialisation du module
+	 //La structure du vertex buffer
+    NzVertexElement m_elements[2];
+
+    m_elements[0].usage = nzElementUsage_Position;
+    m_elements[0].offset = 0;
+    m_elements[0].type = nzElementType_Float3;
+
+    m_elements[1].usage = nzElementUsage_Normal;
+    m_elements[1].offset = 3*sizeof(float);
+    m_elements[1].type = nzElementType_Float3;
+
+	if (!m_declaration.Create(m_elements, 2))
+	{
+	    NazaraError("Failed to initialize terrain renderer module : Failed to create vertex declaration");
+	    return false;
+	}
 
 	NazaraNotice("Initialized: TerrainRenderer module");
 

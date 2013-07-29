@@ -11,7 +11,6 @@
 #include <Nazara/Utility/VertexBuffer.hpp>
 #include <Nazara/TerrainRenderer/TerrainNodeID.hpp>
 #include <Nazara/TerrainRenderer/IntervalBuffer.hpp>
-
 #include <Nazara/Math/BoundingBox.hpp>
 #include <queue>
 #include <array>
@@ -41,8 +40,6 @@ class NAZARA_API NzTerrainChunk
         unsigned int m_freeSlotsAmount;
         //BoundingBox
         NzBoundingBoxf m_globalBoundingBox;
-        //La déclaration de structure du buffer
-        NzVertexDeclaration m_declaration;
 };
 
 #endif // NAZARA_TERRAINCHUNK_HPP

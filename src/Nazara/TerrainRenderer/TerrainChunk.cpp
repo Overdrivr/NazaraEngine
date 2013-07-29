@@ -10,21 +10,6 @@
 
 NzTerrainChunk::NzTerrainChunk()
 {
-    //La structure du vertex buffer
-    //TODO : A deplacer dans module, fournir une méthode statique pour récupérer la déclaration
-    NzVertexElement m_elements[2];
-
-    m_elements[0].usage = nzElementUsage_Position;
-    m_elements[0].offset = 0;
-    m_elements[0].type = nzElementType_Float3;
-
-    m_elements[1].usage = nzElementUsage_Normal;
-    m_elements[1].offset = 3*sizeof(float);
-    m_elements[1].type = nzElementType_Float3;
-
-	if (!m_declaration.Create(m_elements, 2))
-		std::cout << "NzTerrainChunk::CreateBuffer : Failed to create vertex declaration" << std::endl;
-
     m_freeSlotsAmount = 0;
 }
 
