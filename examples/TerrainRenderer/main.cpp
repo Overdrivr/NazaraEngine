@@ -208,7 +208,10 @@ int main()
 		scene.Cull();
 		scene.UpdateVisible();
 
+		// Dessin du chunk
+        NzRenderer::SetIndexBuffer(&(NzTerrainRenderer::GetIndexBuffer()));
         NzTerrainRenderer::DrawTerrainChunk(chunk);
+
         scene.Draw();
 		// Nous mettons à jour l'écran
 		window.Display();
