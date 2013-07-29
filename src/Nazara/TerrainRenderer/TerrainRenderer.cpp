@@ -51,6 +51,11 @@ const NzIndexBuffer& NzTerrainRenderer::GetIndexBuffer()
     return *m_indexBuffer;
 }
 
+const NzShader& NzTerrainRenderer::GetShader()
+{
+    return *m_shader;
+}
+
 const NzVertexDeclaration& NzTerrainRenderer::GetVertexDeclaration()
 {
     return m_declaration;
