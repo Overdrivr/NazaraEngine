@@ -35,4 +35,7 @@
 // Active les tests de sécurité basés sur le code (Conseillé pour le développement)
 #define NAZARA_TERRAINRENDERER_SAFE 1
 
+// Le node de slots disponibles dans un vertex buffer
+const unsigned int VERTEX_BUFFER_SLOT_AMOUNT = 1750;
+
 #endif // NAZARA_CONFIG_TERRAINRENDERER_HPP

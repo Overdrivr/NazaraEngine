@@ -6,6 +6,7 @@
 #include <Nazara/Core/Core.hpp>
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Core/Log.hpp>
+#include <Nazara/Utility/IndexBuffer.hpp>
 #include <Nazara/TerrainRenderer/Config.hpp>
 #include <Nazara/TerrainRenderer/Debug.hpp>
 
@@ -13,6 +14,7 @@ namespace
 {
     //La déclaration de structure de tous les vertex buffer
     NzVertexDeclaration m_declaration;
+    NzIndexBuffer* m_indexBuffer;
 }
 
 void NzTerrainRenderer::DrawTerrainChunk(const NzTerrainChunk& chunk)
@@ -67,7 +69,8 @@ bool NzTerrainRenderer::Initialize()
 	}
 
 	// Initialisation du module
-	 //La structure du vertex buffer
+
+    // La structure du vertex buffer
     NzVertexElement m_elements[2];
 
     m_elements[0].usage = nzElementUsage_Position;
@@ -82,6 +85,45 @@ bool NzTerrainRenderer::Initialize()
 	{
 	    NazaraError("Failed to initialize terrain renderer module : Failed to create vertex declaration");
 	    return false;
+	}
+
+	//L'index buffer
+    unsigned int rowIndex[24];
+
+    for(int i(0) ; i < 4 ; ++i)
+    {
+        rowIndex[i*6] = i;
+        rowIndex[i*6+1] = i + 6;
+        rowIndex[i*6+2] = i + 1;
+        rowIndex[i*6+3] = i;
+        rowIndex[i*6+4] = i + 5;
+        rowIndex[i*6+5] = i + 6;
+    }
+
+    unsigned int indexes[96];
+
+    for(unsigned int i(0) ; i < 4 ; ++i)
+        for(unsigned int j(0) ; j < 24 ; ++j)
+        {
+            indexes[i*24+j] = rowIndex[j] + i*5;
+        }
+
+    std::vector<unsigned int> allIndexes;
+    allIndexes.reserve(VERTEX_BUFFER_SLOT_AMOUNT * 96);
+
+    for(int i(0) ; i < VERTEX_BUFFER_SLOT_AMOUNT ; ++i)
+        for(int j(0) ; j < 96 ; ++j)
+        {
+            allIndexes.push_back(indexes[j] + 25 * i);
+        }
+
+	m_indexBuffer = new NzIndexBuffer(VERTEX_BUFFER_SLOT_AMOUNT * 96, true, nzBufferStorage_Hardware);
+
+	if (!m_indexBuffer->Fill(allIndexes.data(), 0, VERTEX_BUFFER_SLOT_AMOUNT * 96))
+	{
+		NazaraError("Failed to initialize terrain renderer module : Failed to create index buffer");
+		delete m_indexBuffer;
+		return false;
 	}
 
 	NazaraNotice("Initialized: TerrainRenderer module");
@@ -107,6 +149,8 @@ void NzTerrainRenderer::Uninitialize()
 
 	// Libération du module
 	s_moduleReferenceCounter = 0;
+
+    delete m_indexBuffer;
 
 	NazaraNotice("Uninitialized: TerrainRenderer module");
 
