@@ -42,9 +42,9 @@ void NzTerrainRenderer::DrawTerrainChunk(const NzTerrainChunk& chunk)
     }
 }
 
-const NzVertexDeclaration& GetVertexDeclaration() const
+const NzVertexDeclaration& NzTerrainRenderer::GetVertexDeclaration()
 {
-    return m_vertexDeclaration;
+    return m_declaration;
 }
 
 bool NzTerrainRenderer::Initialize()

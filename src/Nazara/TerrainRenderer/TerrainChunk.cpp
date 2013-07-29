@@ -5,6 +5,7 @@
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/TerrainRenderer/Config.hpp>
 #include <Nazara/TerrainRenderer/TerrainChunk.hpp>
+#include <Nazara/TerrainRenderer/TerrainRenderer.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
 #include <Nazara/TerrainRenderer/Debug.hpp>
 
@@ -123,14 +124,9 @@ bool NzTerrainChunk::RemoveMesh(NzTerrainNodeID meshIdentifiant)
 
 bool NzTerrainChunk::CreateBuffer()
 {
-    #if NAZARA_TERRAINRENDERER_SAFE
-    if(!m_declaration.IsValid())
-        return false;
-    #endif
-
 	//On ajoute un buffer
 	//TOCHECK : static ou dynamic ?
-    m_vertexBuffers.emplace_back(&m_declaration,1750,nzBufferStorage_Hardware,nzBufferUsage_Static);
+    m_vertexBuffers.emplace_back(&(NzTerrainRenderer::GetVertexDeclaration()),1750,nzBufferStorage_Hardware,nzBufferUsage_Static);
     m_vertexBuffersMap.emplace_back(NzIntervalBuffer<NzTerrainNodeID>(1750));
     m_freeSlotsAmount += 1750;
 
