@@ -41,9 +41,9 @@ int main()
         for(int y(0) ; y < 5 ; ++y)
         {
             //On génère une grille
-            data.at(((x + 5 * y))*6) = x * 100.f;
-            data.at(((x + 5 * y))*6 + 1) = y * 100.f;
-            data.at(((x + 5 * y))*6 + 2) = 0.f;
+            data.at(((x + 5 * y))*6) = x * 1000.f;
+            data.at(((x + 5 * y))*6 + 1) = 0.f;
+            data.at(((x + 5 * y))*6 + 2) = y * 1000.f;
             //Normales vers le haut
             data.at(((x + 5 * y))*6 + 3) = 0.f;
             data.at(((x + 5 * y))*6 + 4) = 1.f;
@@ -209,6 +209,7 @@ int main()
 		scene.UpdateVisible();
 
 		// Dessin du chunk
+		NzRenderer::Enable(nzRendererParameter_FaceCulling, false);
         NzRenderer::SetIndexBuffer(&(NzTerrainRenderer::GetIndexBuffer()));
         NzTerrainRenderer::DrawTerrainChunk(chunk);
 
