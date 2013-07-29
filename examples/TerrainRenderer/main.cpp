@@ -210,6 +210,7 @@ int main()
 
 		// Dessin du chunk
 		NzRenderer::Enable(nzRendererParameter_FaceCulling, false);
+		NzRenderer::SetShader(&(NzTerrainRenderer::GetShader()));
         NzRenderer::SetIndexBuffer(&(NzTerrainRenderer::GetIndexBuffer()));
         NzTerrainRenderer::DrawTerrainChunk(chunk);
 
