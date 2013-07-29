@@ -9,6 +9,7 @@
 #include <Nazara/Utility/IndexBuffer.hpp>
 #include <Nazara/Renderer/Shader.hpp>
 #include <Nazara/TerrainRenderer/Config.hpp>
+#include <iostream>
 #include <Nazara/TerrainRenderer/Debug.hpp>
 
 namespace
@@ -163,7 +164,7 @@ bool NzTerrainRenderer::Initialize()
     "vec2 uvTileConversion(float slope, float altitude, vec2 uv);\n"
     "void main()\n"
     "{\n"
-    "vec3 upVector = vec3(0.0,1.0,0.0);\n"
+    "/*vec3 upVector = vec3(0.0,1.0,0.0);\n"
     "float slope = dot(normal,upVector);\n"
     "float altitude = position.y;\n"
     "float tex_scale = 512.0;\n"
@@ -181,7 +182,8 @@ bool NzTerrainRenderer::Initialize()
     "vec4 col2 = texture2D(terrainTexture,coord2);\n"
     "vec4 col3 = texture2D(terrainTexture,coord3);\n"
 
-    "out_Color = col1 * weights.xxxx + col2 * weights.yyyy + col3 * weights.zzzz;\n"
+    "out_Color = col1 * weights.xxxx + col2 * weights.yyyy + col3 * weights.zzzz;*/\n"
+    "out_Color = vec4(1.0,1.0,1.0,0.0);\n"
     "}\n"
     "vec2 uvTileConversion(float slope, float altitude, vec2 uv)\n"
     "{\n"

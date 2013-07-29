@@ -4,6 +4,7 @@
 #include <Nazara/Utility.hpp>
 #include <Nazara/TerrainRenderer/TerrainRenderer.hpp>
 #include <Nazara/TerrainRenderer/TerrainChunk.hpp>
+#include <Nazara/Math/Matrix4.hpp>
 #include <iostream>
 #include <sstream>
 
@@ -53,7 +54,7 @@ int main()
     chunk.AddMesh(data,box,id);
 
     ///Code classique pour ouvrir une fenêtre avec Nazara
-    NzString windowTitle("DynaTerrain example");
+    NzString windowTitle("Terrain Renderer example");
 	NzRenderWindow window(NzVideoMode(800,600,32),windowTitle,nzWindowStyle_Default);
 	window.SetFramerateLimit(100);
 	window.EnableVerticalSync(false);
@@ -61,9 +62,10 @@ int main()
     NzRenderer::SetClearColor(25, 25, 25);
 
 	/// Caméra
-	NzVector3f camPos(-2000.f, 1800.f, 2000.f);
+	//NzVector3f camPos(-2000.f, 1800.f, 2000.f);
 	//NzVector3f camPos(7241.f, 12618.f, 3130.f);
-	NzEulerAnglesf camRot(-30.f, -45.f, 0.f);
+	NzVector3f camPos(-1000.f, 2300.f, 340.f);
+	NzEulerAnglesf camRot(-30.f, -90.f, 0.f);
 	NzCamera camera;
 	camera.SetPosition(camPos);
 	camera.SetRotation(camRot);
@@ -73,33 +75,13 @@ int main()
 	camera.SetTarget(window);
 	camera.SetParent(scene);
 
-    /// Lampe
-	NzLight spotLight(nzLightType_Spot);
-	spotLight.SetParent(camera);
-
-    ///Gestion du temps
+    /// Gestion du temps
     NzClock secondClock, updateClock; // Des horloges pour gérer le temps
 	unsigned int fps = 0; // Compteur de FPS
 	float camSpeed = 50.f;
 	float sensitivity = 0.2f;
 
-	///Skybox
-
-	NzTexture* texture = new NzTexture;
-	if (texture->LoadCubemapFromFile("resources/skyboxsun5deg2.png"))
-	{
-		texture->SetPersistent(false);
-		NzSkyboxBackground* background = new NzSkyboxBackground(texture);
-		scene.SetBackground(background);
-		std::cout<<"Skybox loaded successfully."<<endl;
-	}
-	else
-	{
-		delete texture;
-		std::cout << "Failed to load skybox." << std::endl;
-	}
-
-	// Quelques variables
+	/// Quelques variables
 	bool camMode = true;
     bool drawWireframe = false;
     bool terrainUpdate = true;
@@ -203,18 +185,18 @@ int main()
 			updateClock.Restart();
 		}
 
+
+
         camera.Activate();
-		scene.Update();
-		scene.Cull();
-		scene.UpdateVisible();
 
 		// Dessin du chunk
-		NzRenderer::Enable(nzRendererParameter_FaceCulling, false);
+		NzRenderer::Enable(nzRendererParameter_DepthTest, true);
+		NzRenderer::Clear(nzRendererClear_Color | nzRendererClear_Depth);
 		NzRenderer::SetShader(&(NzTerrainRenderer::GetShader()));
+        NzRenderer::SetFaceFilling(nzFaceFilling_Line);
         NzRenderer::SetIndexBuffer(&(NzTerrainRenderer::GetIndexBuffer()));
         NzTerrainRenderer::DrawTerrainChunk(chunk);
 
-        scene.Draw();
 		// Nous mettons à jour l'écran
 		window.Display();
 
