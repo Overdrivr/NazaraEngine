@@ -9,6 +9,12 @@
 #include <Nazara/TerrainRenderer/Config.hpp>
 #include <Nazara/TerrainRenderer/Debug.hpp>
 
+namespace
+{
+    //La déclaration de structure de tous les vertex buffer
+    NzVertexDeclaration m_declaration;
+}
+
 void NzTerrainRenderer::DrawTerrainChunk(const NzTerrainChunk& chunk)
 {
     // Pour itérer sur les vertex buffers
@@ -34,6 +40,11 @@ void NzTerrainRenderer::DrawTerrainChunk(const NzTerrainChunk& chunk)
         }
         ++i;
     }
+}
+
+const NzVertexDeclaration& GetVertexDeclaration() const
+{
+    return m_vertexDeclaration;
 }
 
 bool NzTerrainRenderer::Initialize()

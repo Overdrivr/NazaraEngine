@@ -21,6 +21,8 @@ class NAZARA_API NzTerrainRenderer
 
         static void DrawTerrainChunk(const NzTerrainChunk& chunk);
 
+        static const NzVertexDeclaration& GetVertexDeclaration() const;
+
 		static bool Initialize();
 
 		static bool IsInitialized();
@@ -29,8 +31,6 @@ class NAZARA_API NzTerrainRenderer
 
 	private:
 		static unsigned int s_moduleReferenceCounter;
-		//La déclaration de structure de tous les vertex buffer
-        NzVertexDeclaration m_declaration;
 };
 
 #endif // NAZARA_TERRAINRENDERER_HPP
