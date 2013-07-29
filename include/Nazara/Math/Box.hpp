@@ -33,6 +33,8 @@ class NzBox
 		bool Contains(const NzBox& box) const;
 		bool Contains(const NzVector3<T>& point) const;
 
+		T DistanceTo(const NzVector3<T>& point);
+
 		NzBox& ExtendTo(T X, T Y, T Z);
 		NzBox& ExtendTo(const NzBox& box);
 		NzBox& ExtendTo(const NzVector3<T>& point);

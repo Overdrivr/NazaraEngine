@@ -75,8 +75,7 @@ bool NzBox<T>::Contains(const NzVector3<T>& point) const
 }
 
 template<typename T>
-<<<<<<< HEAD:include/Nazara/Math/Cube.inl
-T NzCube<T>::DistanceTo(const NzVector3<T>& point)
+T NzBox<T>::DistanceTo(const NzVector3<T>& point)
 {
     int xconf = 0;
     int yconf = 0;
@@ -175,12 +174,7 @@ T NzCube<T>::DistanceTo(const NzVector3<T>& point)
 }
 
 template<typename T>
-NzCube<T>& NzCube<T>::ExtendTo(T X, T Y, T Z)
-||||||| merged common ancestors
-NzCube<T>& NzCube<T>::ExtendTo(T X, T Y, T Z)
-=======
 NzBox<T>& NzBox<T>::ExtendTo(T X, T Y, T Z)
->>>>>>> upstream/master:include/Nazara/Math/Box.inl
 {
 	width = std::max(x + width, X);
 	height = std::max(y + height, Y);

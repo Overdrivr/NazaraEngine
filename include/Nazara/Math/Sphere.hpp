@@ -8,7 +8,7 @@
 #define NAZARA_SPHERE_HPP
 
 #include <Nazara/Core/String.hpp>
-#include <Nazara/Math/Cube.hpp>
+#include <Nazara/Math/Box.hpp>
 #include <Nazara/Math/Vector3.hpp>
 
 template <typename T> class NzCube;
@@ -27,14 +27,8 @@ class NzSphere
 		~NzSphere() = default;
 
 		bool Contains(T X, T Y, T Z) const;
-<<<<<<< HEAD
 		bool Contains(const NzSphere& sphere) const;
-		bool Contains(const NzCube<T>& cube) const;
-||||||| merged common ancestors
-		//bool Contains(const NzCube<T>& cube) const;
-=======
-		//bool Contains(const NzBox<T>& box) const;
->>>>>>> upstream/master
+		bool Contains(const NzBox<T>& cube) const;
 		bool Contains(const NzVector3<T>& point) const;
 
 		T Distance(T X, T Y, T Z) const;
