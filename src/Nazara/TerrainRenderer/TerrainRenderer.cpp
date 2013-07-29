@@ -44,6 +44,11 @@ void NzTerrainRenderer::DrawTerrainChunk(const NzTerrainChunk& chunk)
     }
 }
 
+const NzIndexBuffer& NzTerrainRenderer::GetIndexBuffer()
+{
+    return *m_indexBuffer;
+}
+
 const NzVertexDeclaration& NzTerrainRenderer::GetVertexDeclaration()
 {
     return m_declaration;
