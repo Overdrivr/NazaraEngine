@@ -23,7 +23,6 @@ class NAZARA_API NzTerrainRenderer
 
         static const NzIndexBuffer& GetIndexBuffer();
         static const NzShader& GetShader();
-        static const NzVertexDeclaration& GetVertexDeclaration();
 
 		static bool Initialize();
 

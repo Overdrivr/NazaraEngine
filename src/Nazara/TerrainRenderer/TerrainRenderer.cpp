@@ -14,9 +14,8 @@
 
 namespace
 {
-    //La déclaration de structure de tous les vertex buffer
-    NzVertexDeclaration m_declaration;
     NzIndexBuffer* m_indexBuffer;
+    //Même shader pour tous les terrains pour l'instant
     NzShader* m_shader;
 }
 
@@ -57,11 +56,6 @@ const NzShader& NzTerrainRenderer::GetShader()
     return *m_shader;
 }
 
-const NzVertexDeclaration& NzTerrainRenderer::GetVertexDeclaration()
-{
-    return m_declaration;
-}
-
 bool NzTerrainRenderer::Initialize()
 {
 	if (s_moduleReferenceCounter++ != 0)
@@ -82,10 +76,6 @@ bool NzTerrainRenderer::Initialize()
 	}
 
 	// Initialisation du module
-
-    /// La structure du vertex buffer
-    m_declaration.EnableAttribute(nzAttributeUsage_Position,nzAttributeType_Float3,0);
-    m_declaration.EnableAttribute(nzAttributeUsage_Normal,nzAttributeType_Float3,3);
 
 	///L'index buffer
     unsigned int rowIndex[24];
@@ -117,11 +107,11 @@ bool NzTerrainRenderer::Initialize()
             allIndexes.push_back(indexes[j] + 25 * i);
         }
 
-	m_indexBuffer = new NzIndexBuffer(VERTEX_BUFFER_SLOT_AMOUNT * 96, true, nzBufferStorage_Hardware);
+	m_indexBuffer = new NzIndexBuffer(false, VERTEX_BUFFER_SLOT_AMOUNT * 96, nzBufferStorage_Hardware);
 
 	if (!m_indexBuffer->Fill(allIndexes.data(), 0, VERTEX_BUFFER_SLOT_AMOUNT * 96))
 	{
-		NazaraError("Failed to initialize terrain renderer module : Failed to create index buffer");
+		NazaraError("Failed to initialize terrain renderer module : Failed to create/fill index buffer");
 		delete m_indexBuffer;
 		return false;
 	}

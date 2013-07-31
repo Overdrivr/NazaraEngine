@@ -73,7 +73,7 @@ int main()
 	camera.SetZFar(100000.f);
 	camera.SetZNear(10.f);
 	camera.SetTarget(window);
-	camera.SetParent(scene);
+	//camera.SetParent(scene);
 
     /// Gestion du temps
     NzClock secondClock, updateClock; // Des horloges pour gérer le temps
@@ -85,6 +85,8 @@ int main()
 	bool camMode = true;
     bool drawWireframe = false;
     bool terrainUpdate = true;
+
+    NzRenderStates renderStates;
 
     std::cout<<"Starting main loop"<<std::endl;
 
@@ -190,8 +192,9 @@ int main()
         camera.Activate();
 
 		// Dessin du chunk
-		//NzRenderer::Enable(nzRendererParameter_DepthTest, true);
 		NzRenderer::Clear(nzRendererClear_Color | nzRendererClear_Depth);
+		NzRenderer::Enable(nzRendererParameter_DepthWrite, true);
+		NzRenderer::Enable(nzRendererParameter_DepthBuffer, true);
 		NzRenderer::SetShader(&(NzTerrainRenderer::GetShader()));
         NzRenderer::SetFaceFilling(nzFaceFilling_Line);
         NzRenderer::SetIndexBuffer(&(NzTerrainRenderer::GetIndexBuffer()));

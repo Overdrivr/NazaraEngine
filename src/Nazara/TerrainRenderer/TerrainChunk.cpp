@@ -127,9 +127,9 @@ bool NzTerrainChunk::CreateBuffer()
 {
 	//On ajoute un buffer
 	//TOCHECK : static ou dynamic ?
-    m_vertexBuffers.emplace_back(&(NzTerrainRenderer::GetVertexDeclaration()),1750,nzBufferStorage_Hardware,nzBufferUsage_Static);
-    m_vertexBuffersMap.emplace_back(NzIntervalBuffer<NzTerrainNodeID>(1750));
-    m_freeSlotsAmount += 1750;
+    m_vertexBuffers.emplace_back(NzVertexDeclaration::Get(nzVertexLayout_XYZ_UV),VERTEX_BUFFER_SLOT_AMOUNT,nzBufferStorage_Hardware,nzBufferUsage_Static);
+    m_vertexBuffersMap.emplace_back(NzIntervalBuffer<NzTerrainNodeID>(VERTEX_BUFFER_SLOT_AMOUNT));
+    m_freeSlotsAmount += VERTEX_BUFFER_SLOT_AMOUNT;
 
     return true;
 }
