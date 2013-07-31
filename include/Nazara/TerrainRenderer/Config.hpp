@@ -36,6 +36,6 @@
 #define NAZARA_TERRAINRENDERER_SAFE 1
 
 // Le node de slots disponibles dans un vertex buffer
-const unsigned int VERTEX_BUFFER_SLOT_AMOUNT = 1750;
+const unsigned int VERTEX_BUFFER_SLOT_AMOUNT = 256;
 
 #endif // NAZARA_CONFIG_TERRAINRENDERER_HPP

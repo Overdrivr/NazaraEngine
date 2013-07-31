@@ -56,28 +56,28 @@ bool NzSphere<T>::Contains(const NzSphere& sphere) const
 template<typename T>
 bool NzSphere<T>::Contains(const NzBox<T>& box) const
 {
-    if(!Contains(cube.GetBoundingSphere()) && !Intersect(cube.GetBoundingSphere()))
+    if(!Contains(box.GetBoundingSphere()) && !Intersect(box.GetBoundingSphere()))
         return false;
 
-    if(Contains(cube.GetBoundingSphere()))
+    if(Contains(box.GetBoundingSphere()))
         return true;
 
     //Brute force : il doit être possible de faire mieux (minkowski ?)
-    if(!Contains(cube.GetPosition()))
+    if(!Contains(box.GetPosition()))
         return false;
-    if(!Contains(cube.GetPosition() + NzVector3<T>(cube.width, F(0.0),      F(0.0))))
+    if(!Contains(box.GetPosition() + NzVector3<T>(box.width,  F(0.0),      F(0.0))))
         return false;
-    if(!Contains(cube.GetPosition() + NzVector3<T>(cube.width, cube.height, F(0.0))))
+    if(!Contains(box.GetPosition() + NzVector3<T>(box.width,  box.height,  F(0.0))))
         return false;
-    if(!Contains(cube.GetPosition() + NzVector3<T>(F(0.0),     cube.height, F(0.0))))
+    if(!Contains(box.GetPosition() + NzVector3<T>(F(0.0),     box.height,  F(0.0))))
         return false;
-    if(!Contains(cube.GetPosition() + NzVector3<T>(F(0.0),     F(0.0),      cube.depth)))
+    if(!Contains(box.GetPosition() + NzVector3<T>(F(0.0),     F(0.0),      box.depth)))
         return false;
-    if(!Contains(cube.GetPosition() + NzVector3<T>(cube.width, F(0.0),      cube.depth)))
+    if(!Contains(box.GetPosition() + NzVector3<T>(box.width,  F(0.0),      box.depth)))
         return false;
-    if(!Contains(cube.GetPosition() + NzVector3<T>(cube.width, cube.height, cube.depth)))
+    if(!Contains(box.GetPosition() + NzVector3<T>(box.width,  box.height,  box.depth)))
         return false;
-    if(!Contains(cube.GetPosition() + NzVector3<T>(F(0.0),     cube.height, cube.depth)))
+    if(!Contains(box.GetPosition() + NzVector3<T>(F(0.0),     box.height,  box.depth)))
         return false;
 
     return true;
@@ -130,14 +130,14 @@ NzVector3<T> NzSphere<T>::GetNegativeVertex(const NzVector3<T>& normal) const
 }
 
 template<typename T>
-NzCube<T> NzSphere<T>::GetBoundingCube() const
+NzBox<T> NzSphere<T>::GetBoundingBox() const
 {
-    return NzCube<T>(x - radius,
-                     y - radius,
-                     z - radius,
-                     2 * radius,
-                     2 * radius,
-                     2 * radius);
+    return NzBox<T>(x - radius,
+                    y - radius,
+                    z - radius,
+                    2 * radius,
+                    2 * radius,
+                    2 * radius);
 }
 
 template<typename T>

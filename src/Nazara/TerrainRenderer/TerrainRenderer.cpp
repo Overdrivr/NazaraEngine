@@ -41,7 +41,7 @@ void NzTerrainRenderer::DrawTerrainChunk(const NzTerrainChunk& chunk)
                 //(*it).x -> firstIndex;
                 //(*it).y -> vertexCount;
             //Pour dessiner 1 patch (25 vertex) il nous faut 96 index
-            NzRenderer::DrawIndexedPrimitives(nzPrimitiveType_TriangleList, (*itBatches).Start()*96, (*itBatches).Count()*96);
+            NzRenderer::DrawIndexedPrimitives(nzPrimitiveMode_TriangleList, (*itBatches).Start()*96, (*itBatches).Count()*96);
         }
         ++i;
     }
@@ -84,21 +84,8 @@ bool NzTerrainRenderer::Initialize()
 	// Initialisation du module
 
     /// La structure du vertex buffer
-    NzVertexElement m_elements[2];
-
-    m_elements[0].usage = nzElementUsage_Position;
-    m_elements[0].offset = 0;
-    m_elements[0].type = nzElementType_Float3;
-
-    m_elements[1].usage = nzElementUsage_Normal;
-    m_elements[1].offset = 3*sizeof(float);
-    m_elements[1].type = nzElementType_Float3;
-
-	if (!m_declaration.Create(m_elements, 2))
-	{
-	    NazaraError("Failed to initialize terrain renderer module : Failed to create vertex declaration");
-	    return false;
-	}
+    m_declaration.EnableAttribute(nzAttributeUsage_Position,nzAttributeType_Float3,0);
+    m_declaration.EnableAttribute(nzAttributeUsage_Normal,nzAttributeType_Float3,3);
 
 	///L'index buffer
     unsigned int rowIndex[24];

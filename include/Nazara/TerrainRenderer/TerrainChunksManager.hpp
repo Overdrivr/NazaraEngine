@@ -15,7 +15,7 @@
 //#include <Nazara/DynaTerrain/TerrainNode.hpp>
 #include <Nazara/DynaTerrain/Enums.hpp>
 //#include <Nazara/Graphics/SceneNode.hpp>
-#include <Nazara/Math/BoundingBox.hpp>
+#include <Nazara/Math/BoundingVolume.hpp>
 #include <Nazara/TerrainRenderer/TerrainChunk.hpp>
 #include <Nazara/TerrainRenderer/TerrainRenderer.hpp>
 #include <vector>
@@ -34,7 +34,7 @@ class NAZARA_API NzTerrainChunksManager
         NzTerrainChunk* LocateChunk(NzVector2f location);
         void DrawChunks() const;
 
-		const NzBoundingBoxf& GetGlobalBoundingBox() const;
+		const NzBoundingVolumef& GetGlobalBoundingBox() const;
 		//unsigned int GetFreeBuffersAmount() const;
 		//virtual nzSceneNodeType GetSceneNodeType() const;
 
@@ -65,7 +65,7 @@ class NAZARA_API NzTerrainChunksManager
         //std::vector<std::unique_ptr<NzTerrainNode>> m_zones;
         std::vector<NzTerrainChunk> m_chunks;
 
-        NzBoundingBoxf m_aabb;
+        NzBoundingVolumef m_aabb;
 
         //unsigned int m_bufferSize;
         //unsigned int m_patchSize;

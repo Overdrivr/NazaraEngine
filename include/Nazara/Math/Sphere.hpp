@@ -11,7 +11,7 @@
 #include <Nazara/Math/Box.hpp>
 #include <Nazara/Math/Vector3.hpp>
 
-template <typename T> class NzCube;
+template <typename T> class NzBox;
 
 template<typename T>
 class NzSphere
@@ -28,7 +28,7 @@ class NzSphere
 
 		bool Contains(T X, T Y, T Z) const;
 		bool Contains(const NzSphere& sphere) const;
-		bool Contains(const NzBox<T>& cube) const;
+		bool Contains(const NzBox<T>& box) const;
 		bool Contains(const NzVector3<T>& point) const;
 
 		T Distance(T X, T Y, T Z) const;
@@ -37,7 +37,7 @@ class NzSphere
 		NzSphere& ExtendTo(T X, T Y, T Z);
 		NzSphere& ExtendTo(const NzVector3<T>& point);
 
-		NzCube<T> GetBoundingCube() const;
+		NzBox<T> GetBoundingBox() const;
 		NzVector3<T> GetCenter() const;
 		NzVector3<T> GetNegativeVertex(const NzVector3<T>& normal) const;
 		NzVector3<T> GetPosition() const;

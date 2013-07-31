@@ -11,7 +11,7 @@
 #include <Nazara/Utility/VertexBuffer.hpp>
 #include <Nazara/TerrainRenderer/TerrainNodeID.hpp>
 #include <Nazara/TerrainRenderer/IntervalBuffer.hpp>
-#include <Nazara/Math/BoundingBox.hpp>
+#include <Nazara/Math/BoundingVolume.hpp>
 #include <queue>
 #include <array>
 #include <vector>
@@ -26,7 +26,7 @@ class NAZARA_API NzTerrainChunk
         NzTerrainChunk();
         ~NzTerrainChunk();
 
-        bool AddMesh(const std::array<float,150>& vertexData, const NzBoundingBoxf& meshBoundingBox, NzTerrainNodeID meshIdentifiant);
+        bool AddMesh(const std::array<float,150>& vertexData, const NzBoundingVolumef& meshBoundingBox, NzTerrainNodeID meshIdentifiant);
         bool UpdateMesh(const std::array<float,150>& vertexData,NzTerrainNodeID meshIdentifiant);
         bool RemoveMesh(NzTerrainNodeID meshIdentifiant);
 
@@ -39,7 +39,7 @@ class NAZARA_API NzTerrainChunk
         std::vector<NzIntervalBuffer<NzTerrainNodeID>> m_vertexBuffersMap;
         unsigned int m_freeSlotsAmount;
         //BoundingBox
-        NzBoundingBoxf m_globalBoundingBox;
+        NzBoundingVolumef m_globalBoundingBox;
 };
 
 #endif // NAZARA_TERRAINCHUNK_HPP

@@ -19,8 +19,9 @@ NzTerrainChunk::~NzTerrainChunk()
     //dtor
 }
 
-bool NzTerrainChunk::AddMesh(const std::array<float,150>& vertexData, const NzBoundingBoxf& meshBoundingBox, NzTerrainNodeID meshIdentifiant)
+bool NzTerrainChunk::AddMesh(const std::array<float,150>& vertexData, const NzBoundingVolumef& meshBoundingBox, NzTerrainNodeID meshIdentifiant)
 {
+    //TODO : Gestion bounding box
     int buffer = 0;
     int index = 0;
 

@@ -34,7 +34,7 @@ int main()
     /// On crée un chunk de terrain manuellement
     NzTerrainChunk chunk;
     NzTerrainNodeID id;//L'identifiant unique du maillage uploadé, on s'en passe ici
-    NzBoundingBoxf box;//La bounding box du maillage, on s'en passe ici
+    NzBoundingVolumef box;//La bounding box du maillage, on s'en passe ici
 
     std::array<float,150> data;
 
@@ -190,7 +190,7 @@ int main()
         camera.Activate();
 
 		// Dessin du chunk
-		NzRenderer::Enable(nzRendererParameter_DepthTest, true);
+		//NzRenderer::Enable(nzRendererParameter_DepthTest, true);
 		NzRenderer::Clear(nzRendererClear_Color | nzRendererClear_Depth);
 		NzRenderer::SetShader(&(NzTerrainRenderer::GetShader()));
         NzRenderer::SetFaceFilling(nzFaceFilling_Line);
