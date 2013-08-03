@@ -134,7 +134,7 @@ bool NzTerrainRenderer::Initialize()
 
     const char* fragmentSource =
     "#version 140\n"
-    "uniform sampler2D terrainTexture;\n"
+    "/*uniform sampler2D terrainTexture;*/\n"
     "out vec4 out_Color;\n"
     "in vec3 normal;\n"
     "in vec3 position;\n"
@@ -160,7 +160,7 @@ bool NzTerrainRenderer::Initialize()
     "vec4 col3 = texture2D(terrainTexture,coord3);\n"
 
     "out_Color = col1 * weights.xxxx + col2 * weights.yyyy + col3 * weights.zzzz;*/\n"
-    "out_Color = vec4(1.0,1.0,1.0,0.0);\n"
+    "out_Color = vec4(1.0,0.0,1.0,0.0);\n"
     "}\n"
     "vec2 uvTileConversion(float slope, float altitude, vec2 uv)\n"
     "{\n"

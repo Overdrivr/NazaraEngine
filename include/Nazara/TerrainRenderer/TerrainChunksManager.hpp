@@ -42,16 +42,9 @@ class NAZARA_API NzTerrainChunksManager
 
         //NzVertexBuffer* QueryFreeBuffer();
 
-        //bool RemovePatch(const NzTerrainNodeID& ID);
-        //void ReturnBuffer(NzVertexBuffer* buffer);
-
-        //FIX ME : Renommer en AddMesh
-        //bool SubmitPatch(const std::array<float,150>& subBuffer, const NzTerrainNodeID& ID);
-
-        //FIX ME : Il n'est pas utile de réenvoyer toutes les vertices lors d'un update
-        //Avec un index buffer 16 fois plus grand contenant les 16 configuration
-        //il est possible en donnant un offset à la donnée d'utiliser un différent index de ses vertices
-        //bool UpdatePatch(const std::array<float,150>& subBuffer, const NzTerrainNodeID& ID);
+        bool AddMesh(const std::array<float,150>& vertexData, const NzBoundingVolumef& meshBoundingBox, NzTerrainNodeID meshIdentifiant);
+        bool UpdateMesh(const std::array<float,150>& vertexData,NzTerrainNodeID meshIdentifiant);
+        bool RemoveMesh(NzTerrainNodeID meshIdentifiant);
 
     protected:
         //virtual bool VisibilityTest(const NzFrustumf& frustum);
