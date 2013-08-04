@@ -33,14 +33,16 @@ nzSceneNodeType NzTerrainBase::GetSceneNodeType() const
 
 void NzTerrainBase::Draw() const
 {
-    if (!m_transformMatrixUpdated)
-		UpdateTransformMatrix();
+    //A RAJOUTER DANS PLANET !!!
+    //if (!m_transformMatrixUpdated)
+	//	UpdateTransformMatrix();
+    //NzRenderer::SetMatrix(nzMatrixType_World,m_transformMatrix);
 
     //TODO : A BOUGER !
     //nzUInt8 textureUnit;
 	//m_shader->SendTexture(m_shader->GetUniformLocation("terrainTexture"), &m_terrainTexture, &textureUnit);
 
-    NzRenderer::SetMatrix(nzMatrixType_World,m_transformMatrix);
+
     //NzRenderer::SetFaceCulling(nzFaceCulling_Back);
     //NzRenderer::SetFaceFilling(m_faceFilling);
     //NzRenderer::Enable(nzRendererParameter_FaceCulling, false);

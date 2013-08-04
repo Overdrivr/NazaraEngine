@@ -33,7 +33,11 @@ NzDynamicTerrain::~NzDynamicTerrain()
 
 void NzDynamicTerrain::Draw() const
 {
-    NzDynaTerrainMainClassBase::Draw();
+    if(!m_transformMatrixUpdated)
+        UpdateTransformMatrix();
+
+    NzRenderer::SetMatrix(nzMatrixType_World,m_transformMatrix);
+
     quadtree->Render();
     //quadtree2->Render();
     //quadtree3->Render();
@@ -41,10 +45,10 @@ void NzDynamicTerrain::Draw() const
 
 void NzDynamicTerrain::Initialize()
 {
-    NzDynaTerrainMainClassBase::Initialize(static_cast<NzDynaTerrainConfigurationBase>(m_configuration));
+    //NzDynaTerrainMainClassBase::Initialize(static_cast<NzDynaTerrainConfigurationBase>(m_configuration));
 
     //FIXME : Construire l'index buffer, en coordination avec le dispatcher
-    NzDynaTerrainMainClassBase::CreateIndexBuffer(256);
+    //NzDynaTerrainMainClassBase::CreateIndexBuffer(256);
 
     //m_configuration.x_offset = 0;
     //m_configuration.y_offset = 0;
