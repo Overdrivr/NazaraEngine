@@ -21,6 +21,7 @@
 #include <Nazara/Core/Clock.hpp>
 #include <map>
 
+//TODO URGENT : Remplacer calls au dispatcher
 //TODO : Gain réels du pool ? voir boost Pool
 
 class NAZARA_API NzTerrainQuadTree
@@ -38,7 +39,7 @@ class NAZARA_API NzTerrainQuadTree
         // Interaction avec les quadtrees voisins
         void ConnectNeighbor(NzTerrainQuadTree* neighbour, nzDirection callerDirection, nzDirection calleeDirection);
         void DisconnectNeighbor(NzTerrainQuadTree* neighbour, nzDirection direction);//DO NOT USE : Modifs todo
-        //NzTerrainQuadTree* GetContainingQuadTree(const NzTerrainNodeID& nodeID);//DO NOT USE : Outdated
+        NzTerrainQuadTree* GetContainingQuadTree(const NzTerrainNodeID& nodeID);//DO NOT USE : Outdated
         NzTerrainQuadTree* GetNeighbourQuadTree(nzDirection direction);
         nzDirection GetNeighbourDirection(NzTerrainQuadTree* neighbour);
         nzConnectionType GetConnectionType(NzTerrainQuadTree* neighbour);
@@ -91,20 +92,12 @@ class NAZARA_API NzTerrainQuadTree
         NzHeightSource2D* m_heightSource2D;
         NzHeightSource3D* m_heightSource3D;
 
-
-        // Une matrice outil, utile ?
-        //NzMatrix4f m_rotationMatrix;
-
         // Les voisins du quadtree
         NzTerrainQuadTree* m_neighbours[4];
         std::map<NzTerrainQuadTree*,nzConnectionType> m_connectionType;
         std::map<NzTerrainQuadTree*,nzDirection> m_connectionDirectionLookup;
 
-        // Utile ?
-        //std::map<float,unsigned int>::iterator it;
-
-
-        // Les pools d'objets, utiles ?
+        NzMatrix4f m_rotationMatrix;
 
 
         unsigned int m_subdivisionsAmount;

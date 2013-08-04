@@ -16,12 +16,12 @@ NzTerrainBase::NzTerrainBase()
 
 }
 
-void NzTerrainBase::AddToRenderQueue(NzRenderQueue& renderQueue) const
+void NzTerrainBase::AddToRenderQueue(NzForwardRenderQueue& renderQueue) const
 {
-    renderQueue.otherDrawables.push_back(this);
+    renderQueue.AddDrawable(this);
 }
 
-const NzBoundingBoxf& NzTerrainBase::GetBoundingBox() const
+const NzBoundingVolumef& NzTerrainBase::GetBoundingBox() const
 {
     return m_aabb;
 }
@@ -50,7 +50,7 @@ nzSceneNodeType NzTerrainBase::GetSceneNodeType() const
      //m_sampler.SetWrapMode(nzSamplerWrap_Repeat);
 //}
 
-void NzTerrainsBase::Update(const NzVector3f& cameraPosition)
+void NzTerrainBase::Update(const NzVector3f& cameraPosition)
 {
 
 }

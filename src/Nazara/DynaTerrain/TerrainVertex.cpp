@@ -6,7 +6,7 @@
 #include <Nazara/DynaTerrain/Config.hpp>
 #include <Nazara/DynaTerrain/TerrainVertex.hpp>
 #include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
-#include <Nazara/DynaTerrain/TerrainNodeID.hpp>
+#include <Nazara/TerrainRenderer/TerrainNodeID.hpp>
 #include <Nazara/DynaTerrain/Debug.hpp>
 
 NzTerrainVertex::NzTerrainVertex()

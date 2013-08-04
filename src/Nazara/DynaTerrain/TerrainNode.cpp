@@ -6,6 +6,7 @@
 #include <Nazara/DynaTerrain/Config.hpp>
 #include <Nazara/DynaTerrain/TerrainNode.hpp>
 #include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
+#include <Nazara/DynaTerrain/DynaTerrain.hpp>
 #include <stack>
 #include <iostream>
 #include <Nazara/DynaTerrain/Debug.hpp>
@@ -45,7 +46,7 @@ void NzTerrainNode::CleanTree(unsigned int minDepth)
                 else
                     m_children[i]->CleanTree(minDepth);
 
-                m_data->quadtree->ReturnNodeToPool(m_children[i]);
+                m_data->quadtree->DeleteNode(m_children[i]);
                 m_children[i] = nullptr;
             }
         }
@@ -86,7 +87,7 @@ void NzTerrainNode::DeletePatch()
     NzDynaTerrain::ReturnTerrainPatch(m_patch);
 }
 
-const NzCubef& NzTerrainNode::GetAABB() const
+const NzBoundingVolumef& NzTerrainNode::GetAABB() const
 {
     return m_aabb;
 }
@@ -234,7 +235,7 @@ bool NzTerrainNode::IsValid() const
     return m_isInitialized;
 }
 
-void NzTerrainNode::Initialize(TerrainNodeData *data, NzTerrainInternalNode* parent, nzLocation loc)
+void NzTerrainNode::Initialize(nzTerrainNodeData *data, NzTerrainNode* parent, nzLocation loc)
 {
     InitializeData(data,parent,loc);
     CreatePatch();
@@ -369,7 +370,7 @@ bool NzTerrainNode::Refine()
     }
 
     nzDirection first, second;
-    NzTerrainInternalNode* temp = nullptr;
+    NzTerrainNode* temp = nullptr;
 
     nzDirection dirDirection[4] = {TOP,BOTTOM,LEFT,RIGHT};
     nzDirection invDirection[4] = {BOTTOM,TOP,RIGHT,LEFT};
@@ -570,7 +571,7 @@ void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction, bool isNotR
     }
 
     NzTerrainQuadTree* tempQuad;
-    NzTerrainInternalNode* tempNode;
+    NzTerrainNode* tempNode;
 
     //Si on ne cherche pas à atteindre une case externe
     if(tempID.IsValid())
@@ -666,9 +667,9 @@ void NzTerrainNode::Update(const NzVector3f& cameraPosition)
     #endif
 
     //A) On calcule la précision optimale du node tenant compte de sa distance à la caméra
-    float distance = m_aabb.DistanceTo(cameraPosition);
+    float distance = m_aabb.aabb.DistanceTo(cameraPosition);
 
-    int rayon = m_data->quadtree->TransformDistanceToCameraInRadiusIndex(distance);
+    int rayon = NzDynaTerrain::GetPrecisionLevelFromDistance(distance);
 
     //B) Si la précision optimale est inférieure à la précision actuelle
         //Si le node est une feuille, on l'ajoute à la liste de subdivision
@@ -699,16 +700,16 @@ void NzTerrainNode::Update(const NzVector3f& cameraPosition)
     }
 }
 
-void NzTerrainNode::Initialize(TerrainNodeData *data, NzTerrainInternalNode* parent, const NzPatch& patch, nzLocation loc)
+void NzTerrainNode::Initialize(nzTerrainNodeData *data, NzTerrainNode* parent, const NzPatch& parentPatch, nzLocation loc)
 {
     InitializeData(data,parent,loc);
-    m_patch = m_data->quadtree->GetPatchFromPool();
-    m_patch->InitializeFromParent(m_nodeID,m_data,patch);
+    m_patch = NzDynaTerrain::GetTerrainPatch();
+    m_patch->InitializeFromParent(m_nodeID,m_data,parentPatch);
     m_aabb = m_patch->GetAABB();
     m_patch->UploadMesh();
 }
 
-void NzTerrainNode::InitializeData(TerrainNodeData *data, NzTerrainInternalNode* parent, nzLocation loc)
+void NzTerrainNode::InitializeData(nzTerrainNodeData *data, NzTerrainNode* parent, nzLocation loc)
 {
     m_isInitialized = true;
     m_data = data;

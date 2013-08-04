@@ -31,6 +31,7 @@ class NAZARA_API NzDynaTerrainConfigurationBase
         virtual bool IsValid() const;
 
         float maxHeight;
+        unsigned int terrainMinimalPrecision;
 
         //NzString groundTextures;
 

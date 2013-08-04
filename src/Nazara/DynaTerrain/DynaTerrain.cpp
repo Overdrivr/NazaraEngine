@@ -14,7 +14,7 @@
 
 namespace
 {
-    unsigned int m_terrainMinimalPrecision = 2;
+
     //unsigned int maxSlopePrecision;
     unsigned int m_maximalPrecision = 6;
     unsigned int m_radiusAmount = 3;

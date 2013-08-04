@@ -61,8 +61,7 @@ class NAZARA_API NzTerrainNode
 
 
     private:
-        //?? différence entre les deux
-        void Initialize(nzTerrainNodeData *data, NzTerrainNode* parent, const NzPatch& patch, nzLocation loc = TOPLEFT);
+        void Initialize(nzTerrainNodeData *data, NzTerrainNode* parent, const NzPatch& parentPatch, nzLocation loc = TOPLEFT);
         void InitializeData(nzTerrainNodeData *data, NzTerrainNode* parent, nzLocation loc = TOPLEFT);
 
         void HandleNeighborSubdivision(nzDirection direction, bool isNotReversible = false);

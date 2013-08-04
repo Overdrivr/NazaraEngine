@@ -10,6 +10,7 @@
 #include <Nazara/Math/Matrix4.hpp>
 #include <Nazara/Math/Quaternion.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
+#include <Nazara/DynaTerrain/DynaTerrain.hpp>
 #include <iostream>
 #include <cmath>
 #include <Nazara/DynaTerrain/Debug.hpp>
@@ -50,10 +51,10 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzPlanetConfiguration& configuration,
 
 void NzTerrainQuadTree::Construct()
 {
-    m_dispatcher.Initialize(m_commonConfiguration.minPrecision);
+    //m_dispatcher.Initialize(m_commonConfiguration.minPrecision);
 
     m_data.quadtree = this;
-    m_data.dispatcher = &m_dispatcher;
+    //m_data.dispatcher = &m_dispatcher;
 
     m_root = NzDynaTerrain::GetTerrainNode();
     m_root->Initialize(&m_data,nullptr);
@@ -136,9 +137,9 @@ void NzTerrainQuadTree::Initialize()
 {
     m_isInitialized = true;
     //On subdivise l'arbre équitablement au niveau minimum
-    m_root->HierarchicalSubdivide(m_commonConfiguration.minPrecision,true);
+    m_root->HierarchicalSubdivide(m_commonConfiguration.terrainMinimalPrecision,true);
     //Si on doit améliorer l'arbre là où la pente est la plus forte, on le fait également
-    m_root->HierarchicalSlopeBasedSubdivide(m_commonConfiguration.maxSlopePrecision);
+    //m_root->HierarchicalSlopeBasedSubdivide(m_commonConfiguration.maxSlopePrecision);
 }
 
 NzTerrainQuadTree* NzTerrainQuadTree::GetContainingQuadTree(const NzTerrainNodeID& nodeID)
@@ -188,7 +189,7 @@ float NzTerrainQuadTree::GetMaximumHeight() const
     return m_commonConfiguration.maxHeight;
 }
 
-NzTerrainInternalNode* NzTerrainQuadTree::GetNode(const NzTerrainNodeID& nodeID)
+NzTerrainNode* NzTerrainQuadTree::GetNode(const NzTerrainNodeID& nodeID)
 {
     if(m_nodesMap.count(nodeID) == 1)
         return m_nodesMap.at(nodeID);
@@ -196,7 +197,7 @@ NzTerrainInternalNode* NzTerrainQuadTree::GetNode(const NzTerrainNodeID& nodeID)
         return nullptr;
 }
 
-NzTerrainInternalNode* NzTerrainQuadTree::GetRootNode()
+NzTerrainNode* NzTerrainQuadTree::GetRootNode()
 {
     return m_root;
 }
@@ -205,7 +206,7 @@ void NzTerrainQuadTree::DeleteNode(NzTerrainNode* node)
 {
     //Avant de supprimer un node, on l'envèle des tasks lists si besoin
 
-    std::map<NzTerrainNodeID,NzTerrainInternalNode*>::iterator it = m_refinementQueue.find(node->GetNodeID());
+    std::map<NzTerrainNodeID,NzTerrainNode*>::iterator it = m_refinementQueue.find(node->GetNodeID());
 
     if(it != m_refinementQueue.end())
         m_refinementQueue.erase(it);
@@ -283,7 +284,7 @@ NzVector3f NzTerrainQuadTree::GetVertexPosition(const NzTerrainNodeID& nodeID, i
 
 }
 
-void NzTerrainQuadTree::RegisterLeaf(NzTerrainInternalNode* node)
+void NzTerrainQuadTree::RegisterLeaf(NzTerrainNode* node)
 {
     if(m_nodesMap.count(node->GetNodeID()) == 0)
     {
@@ -292,16 +293,16 @@ void NzTerrainQuadTree::RegisterLeaf(NzTerrainInternalNode* node)
     }
 }
 
-bool NzTerrainQuadTree::UnRegisterLeaf(NzTerrainInternalNode* node)
+bool NzTerrainQuadTree::UnRegisterLeaf(NzTerrainNode* node)
 {
     m_leaves.remove(node);
 
     return true;
 }
 
-bool NzTerrainQuadTree::UnRegisterNode(NzTerrainInternalNode* node)
+bool NzTerrainQuadTree::UnRegisterNode(NzTerrainNode* node)
 {
-    std::map<NzTerrainNodeID,NzTerrainInternalNode*>::iterator it = m_nodesMap.find(node->GetNodeID());
+    std::map<NzTerrainNodeID,NzTerrainNode*>::iterator it = m_nodesMap.find(node->GetNodeID());
 
     if(it != m_nodesMap.end())
     {
@@ -322,7 +323,7 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
 {
 
     nzUInt64 maxTime = 10;//ms
-    std::map<NzTerrainNodeID,NzTerrainInternalNode*>::iterator it;
+    std::map<NzTerrainNodeID,NzTerrainNode*>::iterator it;
     int subdivisionsPerFrame = 0;
     updateClock.Restart();
 
@@ -370,17 +371,17 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
     }
 }
 
-void NzTerrainQuadTree::AddLeaveToSubdivisionQueue(NzTerrainInternalNode* node)
+void NzTerrainQuadTree::AddLeaveToSubdivisionQueue(NzTerrainNode* node)
 {
     m_subdivisionQueue[node->GetNodeID()] = node;
 }
 
-void NzTerrainQuadTree::AddNodeToRefinementQueue(NzTerrainInternalNode* node)
+void NzTerrainQuadTree::AddNodeToRefinementQueue(NzTerrainNode* node)
 {
     m_refinementQueue[node->GetNodeID()] = node;
 }
 
-void NzTerrainQuadTree::TryRemoveNodeFromRefinementQueue(NzTerrainInternalNode* node)
+void NzTerrainQuadTree::TryRemoveNodeFromRefinementQueue(NzTerrainNode* node)
 {
     m_refinementQueue.erase(node->GetNodeID());
 }

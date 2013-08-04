@@ -11,7 +11,7 @@ NzDynaTerrainConfigurationBase::NzDynaTerrainConfigurationBase()
 {
     //La hauteur maximale du terrain/planète (sous condition que la source de hauteur renvoie bien des valeurs dans [0;1])
     maxHeight = 1000.f;
-
+    terrainMinimalPrecision = 2;
     x_offset = 0;
     y_offset = 0;
 }

@@ -40,7 +40,7 @@ class NAZARA_API NzTerrainBase : public NzDrawable, public NzSceneNode
         virtual void Update(const NzVector3f& cameraPosition);
 
     protected:
-        virtual void AddToRenderQueue(NzRenderQueue& renderQueue) const;
+        virtual void AddToRenderQueue(NzForwardRenderQueue& renderQueue) const;
 
         NzBoundingVolumef m_aabb;
     private:
