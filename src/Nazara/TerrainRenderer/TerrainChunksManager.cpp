@@ -20,12 +20,17 @@ NzTerrainChunksManager::NzTerrainChunksManager(float edgelenght, unsigned int de
 bool NzTerrainChunksManager::AddMesh(const std::array<float,150>& vertexData, const NzBoundingVolumef& meshBoundingBox, NzTerrainNodeID meshIdentifiant)
 {
     // On trouve le chunk devant accueillir le mesh
-    // C'est une technique simple mais ça devrait fonctionner pour l'instant
-    // On clampe par sécurité, ajouter warning si en dehors de la zone ?
-    unsigned int x = static_cast<int>(std::min(std::max(meshBoundingBox.aabb.x,0),m_edgeLenght) / m_gridStep);
-    unsigned int y = static_cast<int>(std::min(std::max(meshBoundingBox.aabb.y,0),m_edgeLenght) / m_gridStep);
+    if(meshBoundingBox.aabb.x < 0 || meshBoundingBox.aabb.x > m_edgeLenght ||
+       meshBoundingBox.aabb.y < 0 || meshBoundingBox.aabb.y > m_edgeLenght)
+    {
+        NazaraError("NzTerrainChunksManager::AddMesh : Mesh location outside supported area");
+        return false;
+    }
 
-    m_chunks.at(x + m_depth * y)->AddMesh(vertexData,meshBoundingBox,meshIdentifiant);
+    unsigned int x = static_cast<int>(meshBoundingBox.aabb.x / m_gridStep);
+    unsigned int y = static_cast<int>(meshBoundingBox.aabb.y / m_gridStep);
+
+    m_chunks.at(x + m_depth * y).AddMesh(vertexData,meshBoundingBox,meshIdentifiant);
     return true;
 }
 
@@ -50,22 +55,34 @@ NzTerrainChunk* NzTerrainChunksManager::LocateChunk(NzVector2f location)
 bool NzTerrainChunksManager::UpdateMesh(const std::array<float,150>& vertexData, const NzBoundingVolumef& meshBoundingBox, NzTerrainNodeID meshIdentifiant)
 {
     // On trouve le chunk devant accueillir le mesh
-    // Mêmes remarques que pour AddMesh
-    unsigned int x = static_cast<int>(std::min(std::max(meshBoundingBox.aabb.x,0),m_edgeLenght) / m_gridStep);
-    unsigned int y = static_cast<int>(std::min(std::max(meshBoundingBox.aabb.y,0),m_edgeLenght) / m_gridStep);
+    if(meshBoundingBox.aabb.x < 0 || meshBoundingBox.aabb.x > m_edgeLenght ||
+       meshBoundingBox.aabb.y < 0 || meshBoundingBox.aabb.y > m_edgeLenght)
+    {
+        NazaraError("NzTerrainChunksManager::AddMesh : Mesh location outside supported area");
+        return false;
+    }
 
-    m_chunks.at(x + m_depth * y)->UpdateMesh(vertexData,meshIdentifiant);
+    unsigned int x = static_cast<int>(meshBoundingBox.aabb.x / m_gridStep);
+    unsigned int y = static_cast<int>(meshBoundingBox.aabb.y / m_gridStep);
+
+    m_chunks.at(x + m_depth * y).UpdateMesh(vertexData,meshIdentifiant);
     return true;
 }
 
 bool NzTerrainChunksManager::RemoveMesh(const NzBoundingVolumef& meshBoundingBox, NzTerrainNodeID meshIdentifiant)
 {
     // On trouve le chunk devant accueillir le mesh
-    // Mêmes remarques que pour AddMesh
-    unsigned int x = static_cast<int>(std::min(std::max(meshBoundingBox.aabb.x,0),m_edgeLenght) / m_gridStep);
-    unsigned int y = static_cast<int>(std::min(std::max(meshBoundingBox.aabb.y,0),m_edgeLenght) / m_gridStep);
+    if(meshBoundingBox.aabb.x < 0 || meshBoundingBox.aabb.x > m_edgeLenght ||
+       meshBoundingBox.aabb.y < 0 || meshBoundingBox.aabb.y > m_edgeLenght)
+    {
+        NazaraError("NzTerrainChunksManager::AddMesh : Mesh location outside supported area");
+        return false;
+    }
 
-    m_chunks.at(x + m_depth * y)->RemoveMesh(meshIdentifiant);
+    unsigned int x = static_cast<int>(meshBoundingBox.aabb.x / m_gridStep);
+    unsigned int y = static_cast<int>(meshBoundingBox.aabb.y / m_gridStep);
+
+    m_chunks.at(x + m_depth * y).RemoveMesh(meshIdentifiant);
     return true;
 }
 

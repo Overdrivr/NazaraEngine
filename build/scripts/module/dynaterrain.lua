@@ -24,22 +24,26 @@ else
 		links "NazaraUtility-s-d"
 		links "NazaraRenderer-s-d"
 		links "NazaraGraphics-s-d"
+		links "NazaraTerrainRenderer-s-d"
 
 	configuration "ReleaseStatic"
 		links "NazaraCore-s"
 		links "NazaraUtility-s"
 		links "NazaraRenderer-s"
 		links "NazaraGraphics-s"
+		links "NazaraTerrainRenderer-s"
 
 	configuration "DebugDLL"
 		links "NazaraCore-d"
 		links "NazaraUtility-d"
 		links "NazaraRenderer-d"
 		links "NazaraGraphics-d"
+		links "NazaraTerrainRenderer-d"
 
 	configuration "ReleaseDLL"
 		links "NazaraCore"
 		links "NazaraUtility"
 		links "NazaraRenderer"
 		links "NazaraGraphics"
+		links "NazaraTerrainRenderer"
 end
