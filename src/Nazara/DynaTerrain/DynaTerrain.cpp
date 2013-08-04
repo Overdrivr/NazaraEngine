@@ -37,7 +37,7 @@ static void NzDynaTerrain::ConfigurePrecisionSettings(unsigned int maximalPrecis
     NzDynaTerrain::ComputeRadii();
 }
 
-static unsigned int NzDynaTerrain::GetPrecisionLevelFromDistance(float distance)
+unsigned int NzDynaTerrain::GetPrecisionLevelFromDistance(float distance)
 {
     if(distance > m_cameraRadiuses.rbegin()->first)
         return -1;
@@ -51,6 +51,21 @@ static unsigned int NzDynaTerrain::GetPrecisionLevelFromDistance(float distance)
         return it->second;
 
     return -2;
+}
+
+NzTerrainNode* NzDynaTerrain::GetTerrainNode()
+{
+    return m_nodesPool.GetObjectPtr();
+}
+
+NzPatch* NzDynaTerrain::GetTerrainPatch()
+{
+    return m_patchesPool.GetObjectPtr();
+}
+
+NzTerrainVertex* NzDynaTerrain::GetTerrainVertex()
+{
+    return m_verticesPool.GetObjectPtr();
 }
 
 bool NzDynaTerrain::Initialize()
@@ -81,6 +96,21 @@ bool NzDynaTerrain::Initialize()
 bool NzDynaTerrain::IsInitialized()
 {
 	return s_moduleReferenceCounter != 0;
+}
+
+void NzDynaTerrain::ReturnTerrainNode(NzTerrainNode* node)
+{
+    return m_nodesPool.ReturnObjectPtr(node);
+}
+
+void NzDynaTerrain::ReturnTerrainPatch(NzPatch* patch)
+{
+    return m_patchesPool.ReturnObjectPtr(patch),
+}
+
+void NzDynaTerrain::ReturnTerrainVertex(NzTerrainVertex* vertex)
+{
+    return m_verticesPool.ReturnObjectPtr(vertex);
 }
 
 void NzDynaTerrain::Uninitialize()
