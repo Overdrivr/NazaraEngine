@@ -22,8 +22,20 @@ class NAZARA_API NzDynaTerrain
                                                unsigned int radiusAmount,
                                                float smallerRadius,
                                                float radiusSizeIncrement);
+
+        //TODO : Changer return to unsigned quand terrain à nouveau fonctionnel
+        static int GetPrecisionLevelFromDistance(float distance);
+
+        static NzTerrainNode* GetTerrainNode();
+        static NzPatch* GetTerrainPatch();
+        static NzTerrainVertex* GetTerrainVertex();
+
 		static bool Initialize();
 		static bool IsInitialized();
+
+		static void ReturnTerrainNode(NzTerrainNode* node);
+        static void ReturnTerrainPatch(NzPatch* patch);
+        static void ReturnTerrainVertex(NzTerrainVertex* vertex);
 
 		static void Uninitialize();
 
