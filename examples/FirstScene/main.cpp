@@ -36,6 +36,8 @@ int main()
 		return EXIT_FAILURE;
 	}
 
+	NzDebugDrawer::Initialize();
+
 	// Nazara étant initialisé, nous pouvons créer la scène
 	// Une scène représente tout ce qui est visible par une ou plusieurs caméras.
 	// La plupart du temps vous n'aurez pas besoin de plus d'une scène, mais cela peut se révéler utile pour mieux
@@ -346,6 +348,7 @@ int main()
 
 		// Pour terminer, il y a l'affichage en lui-même, de façon organisée et optimisée (Batching)
 		scene.Draw();
+		NzDebugDrawer::Draw(spaceship.GetBoundingVolume());
 
 		// Après avoir dessiné sur la fenêtre, il faut s'assurer qu'elle affiche cela
 		// Cet appel ne fait rien d'autre qu'échanger les buffers de rendu (Double Buffering)

@@ -27,14 +27,48 @@ int main()
 		std::getchar();
 		return EXIT_FAILURE;
 	}
+/*
+    NzInitializer<NzDebugDrawer> nzDebugRender;
+	if (!nzDebugRender)
+	{
+		std::cout << "Failed to initialize Debug Renderer, see NazaraLog.log for further informations" << std::endl;
+		std::getchar();
+		return EXIT_FAILURE;
+	}*/
 
+	NzDebugDrawer::Initialize();
 
     NzScene scene;
 
+    /*NzTexture* texture = new NzTexture;
+	if (texture->LoadCubemapFromFile("resources/skybox-space.png"))
+	{
+		// Si la création du cubemap a fonctionné
+
+		// Nous indiquons que la texture est "non-persistente", autrement dit elle sera libérée automatiquement par le moteur
+		// à l'instant précis où elle ne sera plus utilisée, dans ce cas-ci, ce sera à la libération de l'objet skybox,
+		// ceci arrivant lorsqu'un autre background est affecté à la scène, ou lorsque la scène sera libérée
+		texture->SetPersistent(false);
+
+		// Nous créons le background en lui affectant la texture
+		NzSkyboxBackground* background = new NzSkyboxBackground(texture);
+
+		// Nous pouvons en profiter pour paramétrer le background.
+		// Cependant, nous n'avons rien de spécial à faire ici, nous pouvons donc l'envoyer à la scène.
+		scene.SetBackground(background);
+
+		// Comme indiqué plus haut, la scène s'occupera automatiquement de la libération de notre background
+	}
+	else
+	{
+		delete texture; // Le chargement a échoué, nous libérons la texture
+		std::cout << "Failed to load skybox" << std::endl;
+	}*/
+
     /// On crée un chunk de terrain manuellement
-    NzTerrainChunk chunk;
+    /*NzTerrainChunk chunk;
     NzTerrainNodeID id;//L'identifiant unique du maillage uploadé, on s'en passe ici
-    NzBoundingVolumef box;//La bounding box du maillage, on s'en passe ici
+    NzBoundingVolumef box(10.f,10.f,10.f,100.f,100.f,100.f);//La bounding box du maillage, on s'en passe ici
 
     std::array<float,150> data;
 
@@ -51,7 +85,7 @@ int main()
             data.at(((x + 5 * y))*6 + 5) = 0.f;
         }
 
-    chunk.AddMesh(data,box,id);
+    chunk.AddMesh(data,box,id);*/
 
     ///Code classique pour ouvrir une fenêtre avec Nazara
     NzString windowTitle("Terrain Renderer example");
@@ -59,7 +93,6 @@ int main()
 	window.SetFramerateLimit(100);
 	window.EnableVerticalSync(false);
 	window.SetCursor(nzWindowCursor_None);
-    NzRenderer::SetClearColor(25, 25, 25);
 
 	/// Caméra
 	//NzVector3f camPos(-2000.f, 1800.f, 2000.f);
@@ -72,8 +105,8 @@ int main()
 	camera.SetFOV(70.f);
 	camera.SetZFar(100000.f);
 	camera.SetZNear(10.f);
+	camera.SetParent(scene);
 	camera.SetTarget(window);
-	//camera.SetParent(scene);
 
     /// Gestion du temps
     NzClock secondClock, updateClock; // Des horloges pour gérer le temps
@@ -86,9 +119,16 @@ int main()
     bool drawWireframe = false;
     bool terrainUpdate = true;
 
-    NzRenderStates renderStates;
+    //std::cout<<NzDebugDrawer::GetLineWidth()<<std::endl;
+    //std::cout<<NzDebugDrawer::GetPointSize()<<std::endl;
+    //std::cout<<NzDebugDrawer::GetPrimaryColor()<<std::endl;
+    //NzDebugDrawer::EnableDepthBuffer(true);
 
-    std::cout<<"Starting main loop"<<std::endl;
+    //NzRenderStates renderStates;
+    //renderStates.parameters[nzRendererParameter_DepthBuffer] = true;
+    //renderStates.parameters[nzRendererParameter_DepthWrite] = true;
+
+    //std::cout<<"Starting main loop"<<std::endl;
 
 	while (window.IsOpen())
 	{
@@ -191,14 +231,24 @@ int main()
 
         camera.Activate();
 
+        //NzRenderer::SetClearColor(25, 25, 25);
+        //NzRenderer::Clear(nzRendererClear_Color | nzRendererClear_Depth);
+		scene.Update();
+		scene.Cull();
+		scene.UpdateVisible();
+		scene.Draw();
+		NzDebugDrawer::Draw(box);
+
 		// Dessin du chunk
-		NzRenderer::Clear(nzRendererClear_Color | nzRendererClear_Depth);
-		NzRenderer::Enable(nzRendererParameter_DepthWrite, true);
-		NzRenderer::Enable(nzRendererParameter_DepthBuffer, true);
-		NzRenderer::SetShader(&(NzTerrainRenderer::GetShader()));
+		//NzRenderer::SetRenderStates(renderStates);
+		//NzRenderer::SetShader(&(NzTerrainRenderer::GetShader()));
+
+
+		/*
+
         NzRenderer::SetFaceFilling(nzFaceFilling_Line);
         NzRenderer::SetIndexBuffer(&(NzTerrainRenderer::GetIndexBuffer()));
-        NzTerrainRenderer::DrawTerrainChunk(chunk);
+        NzTerrainRenderer::DrawTerrainChunk(chunk);*/
 
 		// Nous mettons à jour l'écran
 		window.Display();
