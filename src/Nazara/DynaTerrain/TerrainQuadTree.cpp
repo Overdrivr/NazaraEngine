@@ -50,19 +50,15 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzPlanetConfiguration& configuration,
 
 void NzTerrainQuadTree::Construct()
 {
-    m_nodesPool.SetChunkSize(5000);
-    m_patchesPool.SetChunkSize(1000);
-    m_verticesPool.SetChunkSize(1000);
-
     m_dispatcher.Initialize(m_commonConfiguration.minPrecision);
 
     m_data.quadtree = this;
     m_data.dispatcher = &m_dispatcher;
 
-    m_root = m_nodesPool.GetObjectPtr();
+    m_root = NzDynaTerrain::GetTerrainNode();
     m_root->Initialize(&m_data,nullptr);
 
-    m_leaves.push_back(m_root);//I
+    m_leaves.push_back(m_root);//Utile ?
     m_nodesMap[NzTerrainNodeID(0,0,0)] = m_root;
 
     m_subdivisionsAmount = 0;
@@ -72,23 +68,12 @@ void NzTerrainQuadTree::Construct()
     m_neighbours[2] = nullptr;
     m_neighbours[3] = nullptr;
 
-    m_poolReallocationSize = 200;
-    m_poolAllocatedSpace = 0;
     m_maxOperationsPerFrame = 0;
 
 }
 
 NzTerrainQuadTree::~NzTerrainQuadTree()
 {
-    //cout<<"Maximum amount of operations per frame : "<<m_maxOperationsPerFrame<<std::endl;
-    cout<<"Libération de "<<m_nodesPool.GetPoolSize()<<" node(s)."<<endl;
-    NzClock clk;
-    clk.Restart();
-    m_nodesPool.ReleaseAll();
-    m_patchesPool.ReleaseAll();
-    clk.Pause();
-    //cout<<"Arbre libere en "<<clk.GetMilliseconds()/1000.f<<" s "<<endl;
-    //cout<<"NbNodes non supprimes : "<<m_root->GetNodeAmount()<< endl;
     m_isInitialized = false;
 }
 
@@ -155,11 +140,6 @@ void NzTerrainQuadTree::Initialize()
     //Si on doit améliorer l'arbre là où la pente est la plus forte, on le fait également
     m_root->HierarchicalSlopeBasedSubdivide(m_commonConfiguration.maxSlopePrecision);
 }
-
-//void NzTerrainQuadTree::Render()
-//{
-    //m_dispatcher.Draw();
-//}
 
 NzTerrainQuadTree* NzTerrainQuadTree::GetContainingQuadTree(const NzTerrainNodeID& nodeID)
 {
@@ -241,7 +221,7 @@ void NzTerrainQuadTree::DeleteNode(NzTerrainNode* node)
     if(it != m_nodesMap.end())
         m_nodesMap.erase(it);
 
-    m_nodesPool.ReturnObjectPtr(node);
+    NzDynaTerrain::ReturnTerrainNode(node);
 }
 
 unsigned int NzTerrainQuadTree::GetSubdivisionsAmount()
@@ -376,10 +356,10 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
             break;
 
         if(!(it->second->IsValid()))
-            std::cout<<"problem node not valid"<<std::endl;
+            NazaraWarning("NzTerrainQuadTree::Update : Attempted to refine non valid node");
 
         if(it->second == nullptr)
-            std::cout<<"problem node == nullptr"<<std::endl;
+            NazaraWarning("NzTerrainQuadTree::Update : Attempted to refine non existing node");
 
         if(it->second->HierarchicalRefine())
         {

@@ -87,6 +87,9 @@ bool NzDynaTerrain::Initialize()
 	}
 
 	// Initialisation du module
+	m_nodesPool.SetChunkSize(5000);
+    m_patchesPool.SetChunkSize(1000);
+    m_verticesPool.SetChunkSize(1000);
 
 	NazaraNotice("Initialized: DynaTerrain module");
 
@@ -126,6 +129,10 @@ void NzDynaTerrain::Uninitialize()
 
 	// Libération du module
 	s_moduleReferenceCounter = 0;
+
+    m_nodesPool.ReleaseAll();
+    m_patchesPool.ReleaseAll();
+    m_verticesPool.ReleaseAll();
 
 	NazaraNotice("Uninitialized: DynaTerrain module");
 

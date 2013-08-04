@@ -53,7 +53,6 @@ class NAZARA_API NzTerrainQuadTree
 
         // Opérations principales
         void Initialize();
-        //void Render();
         void Update(const NzVector3f& cameraPosition);
 
     protected:
@@ -92,7 +91,7 @@ class NAZARA_API NzTerrainQuadTree
 
 
         // Une matrice outil, utile ?
-        NzMatrix4f m_rotationMatrix;
+        //NzMatrix4f m_rotationMatrix;
 
         // Les voisins du quadtree
         NzTerrainQuadTree* m_neighbours[4];
@@ -100,7 +99,7 @@ class NAZARA_API NzTerrainQuadTree
         std::map<NzTerrainQuadTree*,nzDirection> m_connectionDirectionLookup;
 
         // Utile ?
-        std::map<float,unsigned int>::iterator it;
+        //std::map<float,unsigned int>::iterator it;
 
 
         // Les pools d'objets, utiles ?
@@ -109,9 +108,6 @@ class NAZARA_API NzTerrainQuadTree
         unsigned int m_subdivisionsAmount;
         unsigned int m_maxOperationsPerFrame;
         NzClock updateClock;
-
-        unsigned int m_poolReallocationSize;
-        unsigned int m_poolAllocatedSpace;
 
         bool m_isInitialized;
 
