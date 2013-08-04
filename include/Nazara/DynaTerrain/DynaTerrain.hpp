@@ -10,19 +10,27 @@
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Core/Initializer.hpp>
 
+//TODO : Ajouter la possibilité de changer la longeur d'un radius à la main à partir de son indice
+
 class NAZARA_API NzDynaTerrain
 {
 	public:
 		NzDynaTerrain() = delete;
 		~NzDynaTerrain() = delete;
 
+        static void ConfigurePrecisionSettings(unsigned int maximalPrecision,
+                                               unsigned int radiusAmount,
+                                               float smallerRadius,
+                                               float radiusSizeIncrement);
 		static bool Initialize();
-
 		static bool IsInitialized();
 
 		static void Uninitialize();
 
+
 	private:
+        static void ComputeRadii();
+
 		static unsigned int s_moduleReferenceCounter;
 };
 

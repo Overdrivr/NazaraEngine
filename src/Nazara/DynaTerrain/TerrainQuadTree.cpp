@@ -76,14 +76,6 @@ void NzTerrainQuadTree::Construct()
     m_poolAllocatedSpace = 0;
     m_maxOperationsPerFrame = 0;
 
-    float radius = m_commonConfiguration.higherCameraPrecisionRadius;
-    for(int i(0) ; i < m_commonConfiguration.cameraRadiusAmount ; ++i)
-    {
-        m_cameraRadiuses[radius] = m_commonConfiguration.higherCameraPrecision - i;
-        //std::cout<<"radius "<<m_configuration.higherCameraPrecision - i<<" = "<<radius<<std::endl;
-        radius *= m_commonConfiguration.radiusSizeIncrement;
-    }
-
 }
 
 NzTerrainQuadTree::~NzTerrainQuadTree()

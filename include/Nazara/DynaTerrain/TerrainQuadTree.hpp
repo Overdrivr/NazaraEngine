@@ -109,8 +109,6 @@ class NAZARA_API NzTerrainQuadTree
         std::map<NzTerrainQuadTree*,nzConnectionType> m_connectionType;
         std::map<NzTerrainQuadTree*,nzDirection> m_connectionDirectionLookup;
 
-        // Une copie des tailles des rayons de camera, bof bof de l'avoir ici
-        std::map<float,unsigned int> m_cameraRadiuses;
         // Utile ?
         std::map<float,unsigned int>::iterator it;
 
