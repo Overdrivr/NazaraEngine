@@ -14,6 +14,8 @@
 #include <Nazara/Math/Sphere.hpp>
 #include <Nazara/Math/Vector3.hpp>
 
+template <typename T> class NzSphere;
+
 template<typename T>
 class NzBox
 {

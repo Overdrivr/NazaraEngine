@@ -8,8 +8,8 @@
 #define NAZARA_DYNAMICPLANET_HPP
 
 #include <Nazara/Prerequesites.hpp>
-#include <Nazara/DynaTerrain/HeightSource3D.hpp>
-#include <Nazara/DynaTerrain/TerrainConfiguration.hpp>
+#include <Nazara/DynaTerrain/HeightSource/HeightSource3D.hpp>
+#include <Nazara/DynaTerrain/Configuration/TerrainConfiguration.hpp>
 #include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
 #include <Nazara/DynaTerrain/DynaTerrainMainClassBase.hpp>
 #include <vector>

@@ -8,6 +8,7 @@
 #define NAZARA_DYNATERRAIN_HPP
 
 #include <Nazara/Prerequesites.hpp>
+#include <Nazara/DynaTerrain/TerrainNode.hpp>
 #include <Nazara/Core/Initializer.hpp>
 
 //TODO : Ajouter la possibilité de changer la longeur d'un radius à la main à partir de son indice

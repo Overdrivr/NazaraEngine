@@ -4,7 +4,7 @@
 
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/DynaTerrain/Config.hpp>
-#include <Nazara/DynaTerrain/TerrainConfiguration.hpp>
+#include <Nazara/DynaTerrain/Configuration/TerrainConfiguration.hpp>
 #include <Nazara/DynaTerrain/Debug.hpp>
 
 NzTerrainConfiguration::NzTerrainConfiguration()

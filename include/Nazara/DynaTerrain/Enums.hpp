@@ -38,6 +38,7 @@ enum nzQuadTreeType
 };
 
 class NzTerrainChunksManager;
+class NzTerrainQuadTree;
 
 struct nzTerrainNodeData
 {

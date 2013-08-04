@@ -11,13 +11,12 @@
 #include <Nazara/Core/String.hpp>
 #include <Nazara/Math/Matrix4.hpp>
 #include <Nazara/DynaTerrain/TerrainNode.hpp>
-//#include <Nazara/DynaTerrain/TerrainMasterNode.hpp>
 #include <Nazara/DynaTerrain/ObjectPool.hpp>
-#include <Nazara/DynaTerrain/TerrainNodeID.hpp>
-#include <Nazara/DynaTerrain/TerrainConfiguration.hpp>
-#include <Nazara/DynaTerrain/PlanetConfiguration.hpp>
-#include <Nazara/DynaTerrain/HeightSource2D.hpp>
-#include <Nazara/DynaTerrain/HeightSource3D.hpp>
+#include <Nazara/TerrainRenderer/TerrainNodeID.hpp>
+#include <Nazara/DynaTerrain/Configuration/TerrainConfiguration.hpp>
+#include <Nazara/DynaTerrain/Configuration/PlanetConfiguration.hpp>
+#include <Nazara/DynaTerrain/HeightSource/HeightSource2D.hpp>
+#include <Nazara/DynaTerrain/HeightSource/HeightSource3D.hpp>
 #include <Nazara/DynaTerrain/Enums.hpp>
 #include <Nazara/Core/Clock.hpp>
 

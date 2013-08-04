@@ -11,9 +11,9 @@
 #include <Nazara/Math/Vector2.hpp>
 #include <Nazara/Math/Vector3.hpp>
 #include <Nazara/DynaTerrain/Enums.hpp>
-#include <Nazara/DynaTerrain/TerrainNodeID.hpp>
+#include <Nazara/TerrainRenderer/TerrainNodeID.hpp>
 #include <array>
-#include <Nazara/Math/Cube.hpp>
+#include <Nazara/Math/BoundingVolume.hpp>
 #include <Nazara/DynaTerrain/TerrainVertex.hpp>
 
 class NAZARA_API NzPatch
@@ -22,12 +22,12 @@ class NAZARA_API NzPatch
         NzPatch();
         ~NzPatch() = default;
 
-        NzCubef& GetAABB();
-        const NzCubef& GetAABB() const;
+        NzBoundingVolumef& GetAABB();
+        const NzBoundingVolumef& GetAABB() const;
         float GetGlobalSlope() const;
 
-        void Initialize(NzTerrainNodeID nodeID, TerrainNodeData* data);
-        void InitializeFromParent(NzTerrainNodeID nodeID, TerrainNodeData* data, const NzPatch& parentPatch);
+        void Initialize(NzTerrainNodeID nodeID, nzTerrainNodeData* data);
+        void InitializeFromParent(NzTerrainNodeID nodeID, nzTerrainNodeData* data, const NzPatch& parentPatch);
         void Invalidate();
 
         void SetConfiguration(nzDirection neighborLocation, unsigned int levelDifference, bool autoUpdate = true);
@@ -42,9 +42,9 @@ class NAZARA_API NzPatch
         void ComputeSlope();
         void ComputeHeights();
 
-        TerrainNodeData* m_data;
+        nzTerrainNodeData* m_data;
         NzTerrainNodeID m_id;
-        NzCubef m_aabb;
+        NzBoundingVolumef m_aabb;
         unsigned short int m_configuration;
         std::array<NzVector3f,49> m_vertexPositions;
         std::array<NzVector3f,25> m_vertexNormals;
@@ -54,7 +54,6 @@ class NAZARA_API NzPatch
         bool m_isInitialized;
         bool m_fromScratch;
 
-        //std::array<std::array<NzTerrainVertex*, 7>,7> m_vertices;
         std::array<std::array<NzTerrainVertex,7>,7> m_vertices;
 };
 

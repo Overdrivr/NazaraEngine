@@ -8,7 +8,7 @@
 #define NAZARA_HEIGHTSOURCE2D_HPP
 
 #include <Nazara/Prerequesites.hpp>
-#include <Nazara/DynaTerrain/HeightSourceBase.hpp>
+#include <Nazara/DynaTerrain/HeightSource/HeightSourceBase.hpp>
 #include <vector>
 
 class NAZARA_API NzHeightSource2D : public NzHeightSourceBase

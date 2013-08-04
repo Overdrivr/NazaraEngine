@@ -8,7 +8,7 @@
 #define NAZARA_TERRAINCONFIGURATION_HPP
 
 #include <Nazara/Prerequesites.hpp>
-#include <Nazara/DynaTerrain/DynaTerrainConfigurationBase.hpp>
+#include <Nazara/DynaTerrain/Configuration/DynaTerrainConfigurationBase.hpp>
 #include <Nazara/Math/EulerAngles.hpp>
 
 class NAZARA_API NzTerrainConfiguration : public NzDynaTerrainConfigurationBase

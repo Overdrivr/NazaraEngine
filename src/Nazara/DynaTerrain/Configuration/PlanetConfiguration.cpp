@@ -4,7 +4,7 @@
 
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/DynaTerrain/Config.hpp>
-#include <Nazara/DynaTerrain/PlanetConfiguration.hpp>
+#include <Nazara/DynaTerrain/Configuration/PlanetConfiguration.hpp>
 #include <Nazara/DynaTerrain/Debug.hpp>
 
 NzPlanetConfiguration::NzPlanetConfiguration()

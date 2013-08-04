@@ -7,6 +7,8 @@
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Core/Log.hpp>
 #include <Nazara/DynaTerrain/ObjectPool.hpp>
+#include <map>
+#include <Nazara/TerrainRenderer/TerrainRenderer.hpp>
 #include <Nazara/DynaTerrain/Config.hpp>
 #include <Nazara/DynaTerrain/Debug.hpp>
 
@@ -21,13 +23,13 @@ namespace
 
     std::map<float,unsigned int> m_precisionRadii;
 
-    NzObjectPool<NzTerrainInternalNode> m_nodesPool;
+    NzObjectPool<NzTerrainNode> m_nodesPool;
     NzObjectPool<NzPatch> m_patchesPool;
     NzObjectPool<NzTerrainVertex> m_verticesPool;
 }
 
-static void NzDynaTerrain::ConfigurePrecisionSettings(unsigned int maximalPrecision, unsigned int radiusAmount,
-                                                      float smallerRadius, float radiusSizeIncrement)
+void NzDynaTerrain::ConfigurePrecisionSettings(unsigned int maximalPrecision, unsigned int radiusAmount,
+                                               float smallerRadius, float radiusSizeIncrement)
 {
     m_maximalPrecision = maximalPrecision;
     m_radiusAmount = radiusAmount;
@@ -37,17 +39,17 @@ static void NzDynaTerrain::ConfigurePrecisionSettings(unsigned int maximalPrecis
     NzDynaTerrain::ComputeRadii();
 }
 
-unsigned int NzDynaTerrain::GetPrecisionLevelFromDistance(float distance)
+int NzDynaTerrain::GetPrecisionLevelFromDistance(float distance)
 {
-    if(distance > m_cameraRadiuses.rbegin()->first)
+    if(distance > m_precisionRadii.rbegin()->first)
         return -1;
 
-    if(distance < m_cameraRadiuses.begin()->first)
+    if(distance < m_precisionRadii.begin()->first)
         return m_maximalPrecision;
 
-    it = m_cameraRadiuses.lower_bound(distance);
+    std::map<float,unsigned int>::iterator it = m_precisionRadii.lower_bound(distance);
 
-    if(it != m_cameraRadiuses.end())
+    if(it != m_precisionRadii.end())
         return it->second;
 
     return -2;
@@ -91,6 +93,8 @@ bool NzDynaTerrain::Initialize()
     m_patchesPool.SetChunkSize(1000);
     m_verticesPool.SetChunkSize(1000);
 
+    NzDynaTerrain::ComputeRadii();
+
 	NazaraNotice("Initialized: DynaTerrain module");
 
 	return true;
@@ -108,7 +112,7 @@ void NzDynaTerrain::ReturnTerrainNode(NzTerrainNode* node)
 
 void NzDynaTerrain::ReturnTerrainPatch(NzPatch* patch)
 {
-    return m_patchesPool.ReturnObjectPtr(patch),
+    return m_patchesPool.ReturnObjectPtr(patch);
 }
 
 void NzDynaTerrain::ReturnTerrainVertex(NzTerrainVertex* vertex)
@@ -140,7 +144,7 @@ void NzDynaTerrain::Uninitialize()
 	NzCore::Uninitialize();
 }
 
-static void NzDynaTerrain::ComputeRadii()
+void NzDynaTerrain::ComputeRadii()
 {
     float radius = m_smallerRadius;
 

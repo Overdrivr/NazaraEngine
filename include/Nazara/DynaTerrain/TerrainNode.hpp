@@ -13,7 +13,7 @@
 #include <Nazara/Math/Sphere.hpp>
 #include <Nazara/DynaTerrain/Patch.hpp>
 #include <Nazara/DynaTerrain/Enums.hpp>
-#include <Nazara/DynaTerrain/TerrainNodeID.hpp>
+#include <Nazara/TerrainRenderer/TerrainNodeID.hpp>
 
 class NzTerrainQuadTree;
 class NzHeightSource;
@@ -36,7 +36,7 @@ class NAZARA_API NzTerrainNode
         void DeletePatch();
 
         // Getters
-        const NzCubef& GetAABB() const;
+        const NzBoundingVolumef& GetAABB() const;
         NzTerrainNode* GetChild(nzLocation location);
         NzTerrainNode* GetChild(unsigned int i);
         unsigned int GetLevel() const;
@@ -49,7 +49,7 @@ class NAZARA_API NzTerrainNode
 
         // Actions principales
         void Update(const NzVector3f& cameraPosition);
-        void Initialize(TerrainNodeData *data, NzTerrainNode* parent, nzLocation loc = TOPLEFT);
+        void Initialize(nzTerrainNodeData *data, NzTerrainNode* parent, nzLocation loc = TOPLEFT);
         void Invalidate();
         bool Refine();
         bool Subdivide(bool isNotReversible = false);
@@ -62,15 +62,15 @@ class NAZARA_API NzTerrainNode
 
     private:
         //?? différence entre les deux
-        void Initialize(TerrainNodeData *data, NzTerrainInternalNode* parent, const NzPatch& patch, nzLocation loc = TOPLEFT);
-        void InitializeData(TerrainNodeData *data, NzTerrainInternalNode* parent, nzLocation loc = TOPLEFT);
+        void Initialize(nzTerrainNodeData *data, NzTerrainNode* parent, const NzPatch& patch, nzLocation loc = TOPLEFT);
+        void InitializeData(nzTerrainNodeData *data, NzTerrainNode* parent, nzLocation loc = TOPLEFT);
 
         void HandleNeighborSubdivision(nzDirection direction, bool isNotReversible = false);
 
 
-        TerrainNodeData* m_data;
-        NzTerrainInternalNode* m_parent;
-        NzTerrainInternalNode* m_children[4];
+        nzTerrainNodeData* m_data;
+        NzTerrainNode* m_parent;
+        NzTerrainNode* m_children[4];
 
         bool m_isLeaf;
         bool m_isRoot;
@@ -78,7 +78,7 @@ class NAZARA_API NzTerrainNode
 
         //L'identifiant unique du node
         NzTerrainNodeID m_nodeID;
-        NzCubef m_aabb;
+        NzBoundingVolumef m_aabb;
         NzPatch* m_patch;
         //L'emplacement du node par rapport au parent
         nzLocation m_location;
