@@ -32,16 +32,7 @@ class NAZARA_API NzDynaTerrainConfigurationBase
 
         float maxHeight;
 
-        unsigned int minPrecision;
-
-        unsigned int maxSlopePrecision;
-
-        unsigned int higherCameraPrecision;
-        float higherCameraPrecisionRadius;
-        unsigned int cameraRadiusAmount;
-        float radiusSizeIncrement;
-
-        NzString groundTextures;
+        //NzString groundTextures;
 
     protected:
         int x_offset;
