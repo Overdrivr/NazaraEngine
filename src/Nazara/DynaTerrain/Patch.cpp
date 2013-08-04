@@ -16,11 +16,6 @@ NzPatch::NzPatch()
     m_isInitialized = false;
 }
 
-NzPatch::~NzPatch()
-{
-    //dtor
-}
-
 void NzPatch::ComputeHeights()
 {
     int j;
@@ -206,8 +201,6 @@ void NzPatch::InitializeFromParent(NzTerrainNodeID nodeID, TerrainNodeData* data
     ComputeHeights();
     ComputeNormals();
     ComputeSlope();
-
-
 }
 
 void NzPatch::Invalidate()
@@ -355,9 +348,9 @@ void NzPatch::UploadMesh(bool firstTime)
         }
 
     if(firstTime)
-        m_data->dispatcher->SubmitPatch(m_uploadedData,m_id);
+        m_data->chunksManager->AddMesh(m_uploadedData,m_aabb, m_id);
     else
-        m_data->dispatcher->UpdatePatch(m_uploadedData,m_id);
+        m_data->chunksManager->UpdateMesh(m_uploadedData,m_aabb, m_id);
 
     m_isUploaded = true;
 }
@@ -366,7 +359,7 @@ void NzPatch::UnUploadMesh()
 {
     if(m_isUploaded)
     {
-        m_data->dispatcher->RemovePatch(m_id);
+        m_data->chunksManager->RemoveMesh(m_aabb, m_id);
         m_isUploaded = false;
     }
 }

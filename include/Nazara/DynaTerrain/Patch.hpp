@@ -20,7 +20,7 @@ class NAZARA_API NzPatch
 {
     public:
         NzPatch();
-        ~NzPatch();
+        ~NzPatch() = default;
 
         NzCubef& GetAABB();
         const NzCubef& GetAABB() const;
