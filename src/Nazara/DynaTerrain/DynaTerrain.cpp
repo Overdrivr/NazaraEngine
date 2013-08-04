@@ -6,6 +6,7 @@
 #include <Nazara/Core/Core.hpp>
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Core/Log.hpp>
+#include <Nazara/DynaTerrain/ObjectPool.hpp>
 #include <Nazara/DynaTerrain/Config.hpp>
 #include <Nazara/DynaTerrain/Debug.hpp>
 
@@ -13,14 +14,16 @@ namespace
 {
     unsigned int m_terrainMinimalPrecision = 2;
     //unsigned int maxSlopePrecision;
-
     unsigned int m_maximalPrecision = 6;
     unsigned int m_radiusAmount = 3;
-
     float m_smallerRadius = 50.f;
     float m_radiusSizeIncrement = 2.f;
 
     std::map<float,unsigned int> m_precisionRadii;
+
+    NzObjectPool<NzTerrainInternalNode> m_nodesPool;
+    NzObjectPool<NzPatch> m_patchesPool;
+    NzObjectPool<NzTerrainVertex> m_verticesPool;
 }
 
 static void NzDynaTerrain::ConfigurePrecisionSettings(unsigned int maximalPrecision, unsigned int radiusAmount,
@@ -30,6 +33,24 @@ static void NzDynaTerrain::ConfigurePrecisionSettings(unsigned int maximalPrecis
     m_radiusAmount = radiusAmount;
     m_smallerRadius = smallerRadius;
     m_radiusSizeIncrement = radiusSizeIncrement;
+
+    NzDynaTerrain::ComputeRadii();
+}
+
+static unsigned int NzDynaTerrain::GetPrecisionLevelFromDistance(float distance)
+{
+    if(distance > m_cameraRadiuses.rbegin()->first)
+        return -1;
+
+    if(distance < m_cameraRadiuses.begin()->first)
+        return m_maximalPrecision;
+
+    it = m_cameraRadiuses.lower_bound(distance);
+
+    if(it != m_cameraRadiuses.end())
+        return it->second;
+
+    return -2;
 }
 
 bool NzDynaTerrain::Initialize()

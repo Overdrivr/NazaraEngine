@@ -83,11 +83,6 @@ class NAZARA_API NzTerrainQuadTree
         std::map<NzTerrainNodeID,NzTerrainInternalNode*> m_subdivisionQueue;
         std::map<NzTerrainNodeID,NzTerrainInternalNode*> m_refinementQueue;
 
-        //Returns -1 if the distance to the camera is too big
-        //or the radius index otherwise
-        // Pour calculer le niveau de subdivision souhaité d'un node
-        virtual int TransformDistanceToCameraInRadiusIndex(float distance);
-
         //NzTerrainMasterNode m_dispatcher;
 
         // Configuration du terrain, bof bof
@@ -114,9 +109,7 @@ class NAZARA_API NzTerrainQuadTree
 
 
         // Les pools d'objets, utiles ?
-        NzObjectPool<NzTerrainInternalNode> m_nodesPool;
-        NzObjectPool<NzPatch> m_patchesPool;
-        NzObjectPool<NzTerrainVertex> m_verticesPool;
+
 
         unsigned int m_subdivisionsAmount;
         unsigned int m_maxOperationsPerFrame;

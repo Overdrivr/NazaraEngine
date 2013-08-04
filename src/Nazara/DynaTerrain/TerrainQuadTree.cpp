@@ -427,19 +427,3 @@ void NzTerrainQuadTree::TryRemoveNodeFromRefinementQueue(NzTerrainInternalNode* 
 {
     m_refinementQueue.erase(node->GetNodeID());
 }
-
-int NzTerrainQuadTree::TransformDistanceToCameraInRadiusIndex(float distance)
-{
-    if(distance > m_cameraRadiuses.rbegin()->first)
-        return -1;
-
-    if(distance < m_cameraRadiuses.begin()->first)
-        return m_commonConfiguration.higherCameraPrecision;
-
-    it = m_cameraRadiuses.lower_bound(distance);
-
-    if(it != m_cameraRadiuses.end())
-        return it->second;
-
-    return -2;
-}
