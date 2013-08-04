@@ -73,7 +73,7 @@ void NzTerrainNode::CreatePatch()
     }
     #endif
 
-    m_patch = m_data->quadtree->GetPatchFromPool();
+    m_patch = NzDynaTerrain::GetTerrainPatch();
     m_patch->Initialize(m_nodeID,m_data);
     m_aabb = m_patch->GetAABB();
     m_patch->UploadMesh();
@@ -83,7 +83,7 @@ void NzTerrainNode::DeletePatch()
 {
     m_patch->UnUploadMesh();
     m_patch->Invalidate();
-    m_data->quadtree->ReturnPatchToPool(m_patch);
+    NzDynaTerrain::ReturnTerrainPatch(m_patch);
 }
 
 const NzCubef& NzTerrainNode::GetAABB() const
@@ -306,10 +306,10 @@ bool NzTerrainNode::Subdivide(bool isNotReversible)
     m_patch->UnUploadMesh();
 
     //On récupère des pointeurs valides pour les nodes
-    m_children[TOPLEFT] = m_data->quadtree->GetNodeFromPool();
-    m_children[TOPRIGHT] = m_data->quadtree->GetNodeFromPool();
-    m_children[BOTTOMLEFT] = m_data->quadtree->GetNodeFromPool();
-    m_children[BOTTOMRIGHT] = m_data->quadtree->GetNodeFromPool();
+    m_children[TOPLEFT] = NzDynaTerrain::GetTerrainNode();
+    m_children[TOPRIGHT] = NzDynaTerrain::GetTerrainNode();
+    m_children[BOTTOMLEFT] = NzDynaTerrain::GetTerrainNode();
+    m_children[BOTTOMRIGHT] = NzDynaTerrain::GetTerrainNode();
 
     m_children[TOPLEFT]->Initialize(m_data,this,*m_patch,TOPLEFT);
     m_children[TOPRIGHT]->Initialize(m_data,this,*m_patch,TOPRIGHT);
@@ -430,7 +430,7 @@ bool NzTerrainNode::Refine()
     {
         m_data->quadtree->UnRegisterLeaf(m_children[i]);
         m_children[i]->Invalidate();
-        m_data->quadtree->ReturnNodeToPool(m_children[i]);
+        m_data->quadtree->DeleteNode(m_children[i]);
         m_children[i] = nullptr;
     }
 
