@@ -221,7 +221,7 @@ NzTerrainInternalNode* NzTerrainQuadTree::GetRootNode()
     return m_root;
 }
 
-void NzTerrainQuadTree::DeleteNode(NzTerrainInternalNode* node)
+void NzTerrainQuadTree::DeleteNode(NzTerrainNode* node)
 {
     //Avant de supprimer un node, on l'envèle des tasks lists si besoin
 
@@ -242,26 +242,6 @@ void NzTerrainQuadTree::DeleteNode(NzTerrainInternalNode* node)
         m_nodesMap.erase(it);
 
     m_nodesPool.ReturnObjectPtr(node);
-}
-
-NzPatch* NzTerrainQuadTree::GetPatchFromPool()
-{
-    return m_patchesPool.GetObjectPtr();
-}
-
-void NzTerrainQuadTree::ReturnPatchToPool(NzPatch* patch)
-{
-    m_patchesPool.ReturnObjectPtr(patch);
-}
-
-NzTerrainVertex* NzTerrainQuadTree::GetVertexFromPool()
-{
-    return m_verticesPool.GetObjectPtr();
-}
-
-void NzTerrainQuadTree::ReturnVertexToPool(NzTerrainVertex* vertex)
-{
-    m_verticesPool.ReturnObjectPtr(vertex);
 }
 
 unsigned int NzTerrainQuadTree::GetSubdivisionsAmount()
