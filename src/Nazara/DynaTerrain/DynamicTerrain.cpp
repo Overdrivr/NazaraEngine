@@ -38,7 +38,9 @@ void NzDynamicTerrain::Draw() const
 
     NzRenderer::SetMatrix(nzMatrixType_World,m_transformMatrix);
 
-    quadtree->Render();
+    //TODO !!
+    //quadtree.m_chunksManager->Render();
+
     //quadtree2->Render();
     //quadtree3->Render();
 }

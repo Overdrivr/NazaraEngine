@@ -27,21 +27,24 @@ NzDynamicPlanet::~NzDynamicPlanet()
 
 void NzDynamicPlanet::Draw() const
 {
-    NzDynaTerrainMainClassBase::Draw();
+    if (!m_transformMatrixUpdated)
+		UpdateTransformMatrix();
+
+    NzRenderer::SetMatrix(nzMatrixType_World,m_transformMatrix);
+
+    //TODO !!
+    //quadtree.m_chunksManager->Render();
+
     //quadtrees.at(0)->Render();
-    quadtrees.at(1)->Render();
+    //quadtrees.at(1)->Render();
     //quadtrees.at(2)->Render();
     //quadtrees.at(3)->Render();
-    quadtrees.at(4)->Render();
+    //quadtrees.at(4)->Render();
     ///quadtrees.at(5)->Render();
 }
 
 void NzDynamicPlanet::Initialize()
 {
-    NzDynaTerrainMainClassBase::Initialize(static_cast<NzDynaTerrainConfigurationBase>(m_configuration));
-
-    //FIXME : Construire l'index buffer, en coordination avec le dispatcher
-    NzDynaTerrainMainClassBase::CreateIndexBuffer(256);
 
     quadtrees.emplace_back(new NzTerrainQuadTree(m_configuration,m_heightSource));
     quadtrees.at(0)->Initialize();

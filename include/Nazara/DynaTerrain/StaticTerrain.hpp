@@ -8,14 +8,14 @@
 #define NAZARA_STATICTERRAIN_HPP
 
 #include <Nazara/Prerequesites.hpp>
-#include <Nazara/DynaTerrain/HeightSource2D.hpp>
-#include <Nazara/DynaTerrain/TerrainConfiguration.hpp>
+#include <Nazara/DynaTerrain/HeightSource/HeightSource2D.hpp>
+#include <Nazara/DynaTerrain/Configuration/TerrainConfiguration.hpp>
 #include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
-#include <Nazara/DynaTerrain/DynaTerrainMainClassBase.hpp>
+#include <Nazara/DynaTerrain/TerrainBase.hpp>
 
 //TODO : Ramener les textures dans NzDynaTerrainMainCLass, ce n'est pas à la classe de config de s'en occuper
 
-class NAZARA_API NzStaticTerrain : public NzDynaTerrainMainClassBase
+class NAZARA_API NzStaticTerrain : public NzTerrainBase
 {
     public:
         NzStaticTerrain(NzHeightSource2D* heightSource);

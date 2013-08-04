@@ -31,30 +31,6 @@ nzSceneNodeType NzTerrainBase::GetSceneNodeType() const
     return nzSceneNodeType_User;
 }
 
-void NzTerrainBase::Draw() const
-{
-    //A RAJOUTER DANS PLANET !!!
-    //if (!m_transformMatrixUpdated)
-	//	UpdateTransformMatrix();
-    //NzRenderer::SetMatrix(nzMatrixType_World,m_transformMatrix);
-
-    //TODO : A BOUGER !
-    //nzUInt8 textureUnit;
-	//m_shader->SendTexture(m_shader->GetUniformLocation("terrainTexture"), &m_terrainTexture, &textureUnit);
-
-
-    //NzRenderer::SetFaceCulling(nzFaceCulling_Back);
-    //NzRenderer::SetFaceFilling(m_faceFilling);
-    //NzRenderer::Enable(nzRendererParameter_FaceCulling, false);
-
-    //NzRenderer::Enable(nzRendererParameter_Blend, false);
-    //NzRenderer::Enable(nzRendererParameter_DepthTest, true);
-    //NzRenderer::Enable(nzRendererParameter_FaceCulling, false);
-    //NzRenderer::SetShader(m_shader);
-    //NzRenderer::SetTextureSampler(textureUnit, m_sampler);
-    //NzRenderer::SetIndexBuffer(m_indexBuffer);
-}
-
 //void NzTerrainBase::Initialize(const NzDynaTerrainConfigurationBase& configuration)
 //{
     //if(!m_terrainTexture.LoadFromFile(configuration.groundTextures))

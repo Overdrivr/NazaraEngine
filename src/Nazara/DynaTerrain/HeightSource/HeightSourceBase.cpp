@@ -3,7 +3,7 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Core/Error.hpp>
-#include <Nazara/DynaTerrain/HeightSourceBase.hpp>
+#include <Nazara/DynaTerrain/HeightSource/HeightSourceBase.hpp>
 #include <Nazara/DynaTerrain/Config.hpp>
 #include <iostream>
 #include <Nazara/Core/File.hpp>

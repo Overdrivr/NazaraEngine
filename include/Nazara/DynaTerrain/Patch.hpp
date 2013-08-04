@@ -16,6 +16,8 @@
 #include <Nazara/Math/BoundingVolume.hpp>
 #include <Nazara/DynaTerrain/TerrainVertex.hpp>
 
+//TODO : Renommer m_aabb en boundingVolume
+
 class NAZARA_API NzPatch
 {
     public:

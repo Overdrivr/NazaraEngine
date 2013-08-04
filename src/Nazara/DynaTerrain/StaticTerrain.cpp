@@ -16,16 +16,11 @@ NzStaticTerrain::NzStaticTerrain(NzHeightSource2D* heightSource)
     m_heightSource = heightSource;
 }
 
-NzStaticTerrain::NzStaticTerrain(NzHeightSource2D* heightSource)
+NzStaticTerrain::~NzStaticTerrain()
 {
-    m_heightSource = heightSource;
-}
-
-NzStaticTerrain::~NzDynamicTerrain()
-{
-    delete quadtree;
-    delete quadtree2;
-    delete quadtree3;
+    //delete quadtree;
+    //delete quadtree2;
+    //delete quadtree3;
 }
 
 void NzStaticTerrain::Draw() const
@@ -38,14 +33,10 @@ void NzStaticTerrain::Draw() const
 
 void NzStaticTerrain::Initialize(const NzVector2f& size, unsigned int resolution)
 {
-    NzDynaTerrainMainClassBase::Initialize(static_cast<NzDynaTerrainConfigurationBase>(m_configuration));//??
-
-    //FIXME : Construire l'index buffer, en coordination avec le dispatcher
-    NzDynaTerrainMainClassBase::CreateIndexBuffer(256);
 
     //m_configuration.x_offset = 0;
     //m_configuration.y_offset = 0;
-    quadtree = new NzTerrainQuadTree(m_configuration,m_heightSource);
+    /*quadtree = new NzTerrainQuadTree(m_configuration,m_heightSource);
     quadtree->Initialize();
 
     NzTerrainConfiguration second = m_configuration;
@@ -62,7 +53,7 @@ void NzStaticTerrain::Initialize(const NzVector2f& size, unsigned int resolution
     quadtree3 = new NzTerrainQuadTree(third,m_heightSource);
     quadtree3->Initialize();
     quadtree->ConnectNeighbor(quadtree3,RIGHT,LEFT);
-    quadtree3->ConnectNeighbor(quadtree2,BOTTOM,RIGHT);
+    quadtree3->ConnectNeighbor(quadtree2,BOTTOM,RIGHT);*/
 }
 
 void NzStaticTerrain::Update(const NzVector3f& cameraPosition)
@@ -70,7 +61,7 @@ void NzStaticTerrain::Update(const NzVector3f& cameraPosition)
     //On transforme la position de la caméra du repère global dans le repère local
     NzVector3f localCamPos = cameraPosition - this->GetPosition();
 
-    quadtree->Update(localCamPos);
-    quadtree2->Update(localCamPos);
-    quadtree3->Update(localCamPos);
+    //quadtree->Update(localCamPos);
+    //quadtree2->Update(localCamPos);
+    //quadtree3->Update(localCamPos);
 }

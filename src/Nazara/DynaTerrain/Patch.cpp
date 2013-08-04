@@ -5,8 +5,8 @@
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/DynaTerrain/Config.hpp>
 #include <Nazara/DynaTerrain/Patch.hpp>
-#include <Nazara/DynaTerrain/TerrainMasterNode.hpp>
 #include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
+#include <Nazara/TerrainRenderer/TerrainChunksManager.hpp>
 #include <cmath>
 #include <iostream>
 #include <Nazara/DynaTerrain/Debug.hpp>
@@ -32,20 +32,20 @@ void NzPatch::ComputeHeights()
         m_vertices[6].at(j).ComputePosition(m_data->quadtree, m_id,NzVector2i(5,j0));
     }
 
-    m_aabb.x = m_vertices[1][1].GetPosition().x;
-    m_aabb.y = m_vertices[1][1].GetPosition().y;
-    m_aabb.z = m_vertices[1][1].GetPosition().z;
-    m_aabb.width = 0.1f;
-    m_aabb.depth = 0.1f;
-    m_aabb.height = 0.1f;
+    m_aabb.aabb.x = m_vertices[1][1].GetPosition().x;
+    m_aabb.aabb.y = m_vertices[1][1].GetPosition().y;
+    m_aabb.aabb.z = m_vertices[1][1].GetPosition().z;
+    m_aabb.aabb.width = 0.1f;
+    m_aabb.aabb.depth = 0.1f;
+    m_aabb.aabb.height = 0.1f;
 
     for(int j(1) ; j < 6 ; ++j)
     {
-        m_aabb.ExtendTo(m_vertices[1][j].GetPosition());
-        m_aabb.ExtendTo(m_vertices[2][j].GetPosition());
-        m_aabb.ExtendTo(m_vertices[3][j].GetPosition());
-        m_aabb.ExtendTo(m_vertices[4][j].GetPosition());
-        m_aabb.ExtendTo(m_vertices[5][j].GetPosition());
+        m_aabb.aabb.ExtendTo(m_vertices[1][j].GetPosition());
+        m_aabb.aabb.ExtendTo(m_vertices[2][j].GetPosition());
+        m_aabb.aabb.ExtendTo(m_vertices[3][j].GetPosition());
+        m_aabb.aabb.ExtendTo(m_vertices[4][j].GetPosition());
+        m_aabb.aabb.ExtendTo(m_vertices[5][j].GetPosition());
     }
 }
 
@@ -108,12 +108,12 @@ void NzPatch::ComputeSlope()
         m_slope = std::pow(m_slope,inv_sensitivity);
 }
 
-NzCubef& NzPatch::GetAABB()
+NzBoundingVolumef& NzPatch::GetAABB()
 {
     return m_aabb;
 }
 
-const NzCubef& NzPatch::GetAABB() const
+const NzBoundingVolumef& NzPatch::GetAABB() const
 {
     return m_aabb;
 }
@@ -123,7 +123,7 @@ float NzPatch::GetGlobalSlope() const
     return m_slope;
 }
 
-void NzPatch::Initialize(NzTerrainNodeID nodeID, TerrainNodeData* data)
+void NzPatch::Initialize(NzTerrainNodeID nodeID, nzTerrainNodeData* data)
 {
     m_id = nodeID;
     m_data = data;
@@ -150,7 +150,7 @@ void NzPatch::Initialize(NzTerrainNodeID nodeID, TerrainNodeData* data)
     ComputeSlope();
 }
 
-void NzPatch::InitializeFromParent(NzTerrainNodeID nodeID, TerrainNodeData* data, const NzPatch& parentPatch)
+void NzPatch::InitializeFromParent(NzTerrainNodeID nodeID, nzTerrainNodeData* data, const NzPatch& parentPatch)
 {
     m_id = nodeID;
     m_data = data;

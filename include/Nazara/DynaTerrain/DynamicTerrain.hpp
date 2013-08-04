@@ -8,16 +8,16 @@
 #define NAZARA_DYNAMICTERRAIN_HPP
 
 #include <Nazara/Prerequesites.hpp>
-#include <Nazara/DynaTerrain/HeightSource2D.hpp>
-#include <Nazara/DynaTerrain/TerrainConfiguration.hpp>
+#include <Nazara/DynaTerrain/HeightSource/HeightSource2D.hpp>
+#include <Nazara/DynaTerrain/Configuration/TerrainConfiguration.hpp>
 #include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
-#include <Nazara/DynaTerrain/DynaTerrainMainClassBase.hpp>
+#include <Nazara/DynaTerrain/TerrainBase.hpp>
 #include <Nazara/TerrainRenderer/TerrainChunk.hpp>
 #include <vector>
 
 //TODO : Ramener les textures dans NzDynaTerrainMainCLass, ce n'est pas à la classe de config de s'en occuper
 //TODO : Définir une taille maximale (visible) du terrain. Travailler avec 4,16 ou 32 quadtrees pour gérer le déplacement
-class NAZARA_API NzDynamicTerrain : public NzDynaTerrainMainClassBase
+class NAZARA_API NzDynamicTerrain : public NzTerrainBase
 {
     public:
 

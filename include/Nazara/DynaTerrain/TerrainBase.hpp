@@ -9,13 +9,13 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Renderer/Shader.hpp>
-#include <Nazara/DynaTerrain/TerrainConfiguration.hpp>
+#include <Nazara/DynaTerrain/Configuration/TerrainConfiguration.hpp>
 #include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
 #include <Nazara/Utility/IndexBuffer.hpp>
 #include <Nazara/Renderer/Texture.hpp>
 #include <Nazara/Graphics/SceneNode.hpp>
 #include <Nazara/Graphics/Drawable.hpp>
-#include <Nazara/Graphics/RenderQueue.hpp>
+#include <Nazara/Graphics/ForwardRenderQueue.hpp>
 #include <Nazara/Renderer/TextureSampler.hpp>
 
 /// BASE CLASS OF THE TERRAIN/PLANET
@@ -30,10 +30,10 @@ class NAZARA_API NzTerrainBase : public NzDrawable, public NzSceneNode
         NzTerrainBase();
         ~NzTerrainBase() = default;
 
-        virtual const NzBoundingBoxf& GetBoundingBox() const;
+        virtual const NzBoundingVolumef& GetBoundingBox() const;
 		virtual nzSceneNodeType GetSceneNodeType() const;
 
-		virtual void Draw() const;
+		virtual void Draw() const = 0;
 
         //virtual void Initialize(const NzDynaTerrainConfigurationBase& configuration);
 
@@ -42,7 +42,7 @@ class NAZARA_API NzTerrainBase : public NzDrawable, public NzSceneNode
     protected:
         virtual void AddToRenderQueue(NzRenderQueue& renderQueue) const;
 
-        NzBoundingBoxf m_aabb;
+        NzBoundingVolumef m_aabb;
     private:
 
         //TODO : A BOUGER

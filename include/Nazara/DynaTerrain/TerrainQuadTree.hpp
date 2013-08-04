@@ -19,6 +19,7 @@
 #include <Nazara/DynaTerrain/HeightSource/HeightSource3D.hpp>
 #include <Nazara/DynaTerrain/Enums.hpp>
 #include <Nazara/Core/Clock.hpp>
+#include <map>
 
 //TODO : Gain réels du pool ? voir boost Pool
 
@@ -27,6 +28,8 @@ class NAZARA_API NzTerrainQuadTree
     public:
         friend class NzTerrainNode;
         friend class NzTerrainConfiguration;
+        friend class NzDynamicPlanet;
+        friend class NzDynamicTerrain;
 
         NzTerrainQuadTree(const NzTerrainConfiguration& configuration, NzHeightSource2D* heightSource);
         NzTerrainQuadTree(const NzPlanetConfiguration& configuration, NzHeightSource3D* heightSource, const NzEulerAnglesf& quadtreeOrientation = NzEulerAnglesf(0.f,0.f,0.f));
@@ -42,8 +45,8 @@ class NAZARA_API NzTerrainQuadTree
 
         // Interaction avec les nodes
         unsigned int GetLeafNodesAmount() const;
-        NzTerrainInternalNode* GetNode(const NzTerrainNodeID& nodeID);
-        NzTerrainInternalNode* GetRootNode();
+        NzTerrainNode* GetNode(const NzTerrainNodeID& nodeID);
+        NzTerrainNode* GetRootNode();
 
         // Informations
         virtual NzVector3f GetVertexPosition(const NzTerrainNodeID& nodeID, int x, int y);
@@ -60,21 +63,21 @@ class NAZARA_API NzTerrainQuadTree
         NzTerrainNode* m_root;
         nzTerrainNodeData m_data;// A intégrer dans le node ?
         // Pour récupérer un pointer de node à partir de son identifiant
-        std::map<NzTerrainNodeID,NzTerrainInternalNode*> m_nodesMap;
-        std::list<NzTerrainInternalNode*> m_leaves;
+        std::map<NzTerrainNodeID,NzTerrainNode*> m_nodesMap;
+        std::list<NzTerrainNode*> m_leaves;
 
         void DeleteNode(NzTerrainNode* node);
 
-        void RegisterLeaf(NzTerrainInternalNode* node);
-        bool UnRegisterLeaf(NzTerrainInternalNode* node);
-        bool UnRegisterNode(NzTerrainInternalNode* node);
+        void RegisterLeaf(NzTerrainNode* node);
+        bool UnRegisterLeaf(NzTerrainNode* node);
+        bool UnRegisterNode(NzTerrainNode* node);
 
         // Opérations sur les nodes
-        void AddLeaveToSubdivisionQueue(NzTerrainInternalNode* node);
-        void AddNodeToRefinementQueue(NzTerrainInternalNode* node);
-        void TryRemoveNodeFromRefinementQueue(NzTerrainInternalNode* node);
-        std::map<NzTerrainNodeID,NzTerrainInternalNode*> m_subdivisionQueue;
-        std::map<NzTerrainNodeID,NzTerrainInternalNode*> m_refinementQueue;
+        void AddLeaveToSubdivisionQueue(NzTerrainNode* node);
+        void AddNodeToRefinementQueue(NzTerrainNode* node);
+        void TryRemoveNodeFromRefinementQueue(NzTerrainNode* node);
+        std::map<NzTerrainNodeID,NzTerrainNode*> m_subdivisionQueue;
+        std::map<NzTerrainNodeID,NzTerrainNode*> m_refinementQueue;
 
         //NzTerrainMasterNode m_dispatcher;
 
