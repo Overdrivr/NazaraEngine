@@ -39,7 +39,6 @@ class NAZARA_API NzDynaTerrain
 
 		static void Uninitialize();
 
-
 	private:
         static void ComputeRadii();
 

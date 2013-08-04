@@ -221,13 +221,10 @@ NzTerrainInternalNode* NzTerrainQuadTree::GetRootNode()
     return m_root;
 }
 
-NzTerrainInternalNode* NzTerrainQuadTree::GetNodeFromPool()
+void NzTerrainQuadTree::DeleteNode(NzTerrainInternalNode* node)
 {
-    return m_nodesPool.GetObjectPtr();
-}
+    //Avant de supprimer un node, on l'envèle des tasks lists si besoin
 
-void NzTerrainQuadTree::ReturnNodeToPool(NzTerrainInternalNode* node)
-{
     std::map<NzTerrainNodeID,NzTerrainInternalNode*>::iterator it = m_refinementQueue.find(node->GetNodeID());
 
     if(it != m_refinementQueue.end())

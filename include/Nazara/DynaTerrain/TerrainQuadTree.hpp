@@ -65,13 +65,8 @@ class NAZARA_API NzTerrainQuadTree
         std::map<NzTerrainNodeID,NzTerrainInternalNode*> m_nodesMap;
         std::list<NzTerrainInternalNode*> m_leaves;
 
-        //Utile ?
-        NzTerrainInternalNode* GetNodeFromPool();
-        void ReturnNodeToPool(NzTerrainInternalNode* node);
-        NzPatch* GetPatchFromPool();
-        void ReturnPatchToPool(NzPatch* patch);
-        NzTerrainVertex* GetVertexFromPool();
-        void ReturnVertexToPool(NzTerrainVertex* vertex);
+        void DeleteNode(NzTerrainNode* node);
+
         void RegisterLeaf(NzTerrainInternalNode* node);
         bool UnRegisterLeaf(NzTerrainInternalNode* node);
         bool UnRegisterNode(NzTerrainInternalNode* node);
