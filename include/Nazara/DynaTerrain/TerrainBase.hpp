@@ -28,35 +28,26 @@ class NAZARA_API NzTerrainBase : public NzDrawable, public NzSceneNode
 {
     public:
         NzTerrainBase();
-        ~NzTerrainBase();
+        ~NzTerrainBase() = default;
 
         virtual const NzBoundingBoxf& GetBoundingBox() const;
 		virtual nzSceneNodeType GetSceneNodeType() const;
 
 		virtual void Draw() const;
 
-        virtual void Initialize(const NzDynaTerrainConfigurationBase& configuration);
-
-        void SetFaceFilling(const nzFaceFilling& faceFilling);
+        //virtual void Initialize(const NzDynaTerrainConfigurationBase& configuration);
 
         virtual void Update(const NzVector3f& cameraPosition);
 
     protected:
         virtual void AddToRenderQueue(NzRenderQueue& renderQueue) const;
 
-        virtual bool VisibilityTest(const NzFrustumf& frustum);
-
         NzBoundingBoxf m_aabb;
     private:
 
-        NzTexture m_terrainTexture;
-        NzTextureSampler m_sampler;
-
-        NzIndexBuffer* m_indexBuffer;
-        unsigned int m_bufferCapacity;
-
-        NzShader* m_shader;
-        nzFaceFilling m_faceFilling;
+        //TODO : A BOUGER
+        //NzTexture m_terrainTexture;
+        //NzTextureSampler m_sampler;
 };
 
 #endif // NAZARA_TERRAINBASE_HPP

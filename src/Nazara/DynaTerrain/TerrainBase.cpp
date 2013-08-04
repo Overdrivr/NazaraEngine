@@ -13,15 +13,7 @@ using namespace std;
 
 NzTerrainBase::NzTerrainBase()
 {
-    m_faceFilling = nzFaceFilling_Fill;
-}
 
-NzTerrainBase::~NzTerrainBase()
-{
-    if(m_shader)
-        delete m_shader;
-    m_shader = nullptr;
-    delete m_indexBuffer;
 }
 
 void NzTerrainBase::AddToRenderQueue(NzRenderQueue& renderQueue) const
@@ -44,54 +36,43 @@ void NzTerrainBase::Draw() const
     if (!m_transformMatrixUpdated)
 		UpdateTransformMatrix();
 
-    nzUInt8 textureUnit;
-	m_shader->SendTexture(m_shader->GetUniformLocation("terrainTexture"), &m_terrainTexture, &textureUnit);
+    //TODO : A BOUGER !
+    //nzUInt8 textureUnit;
+	//m_shader->SendTexture(m_shader->GetUniformLocation("terrainTexture"), &m_terrainTexture, &textureUnit);
 
     NzRenderer::SetMatrix(nzMatrixType_World,m_transformMatrix);
-    NzRenderer::SetFaceCulling(nzFaceCulling_Back);
-    NzRenderer::SetFaceFilling(m_faceFilling);
-    NzRenderer::Enable(nzRendererParameter_FaceCulling, false);
+    //NzRenderer::SetFaceCulling(nzFaceCulling_Back);
+    //NzRenderer::SetFaceFilling(m_faceFilling);
+    //NzRenderer::Enable(nzRendererParameter_FaceCulling, false);
 
     //NzRenderer::Enable(nzRendererParameter_Blend, false);
-    NzRenderer::Enable(nzRendererParameter_DepthTest, true);
+    //NzRenderer::Enable(nzRendererParameter_DepthTest, true);
     //NzRenderer::Enable(nzRendererParameter_FaceCulling, false);
-    NzRenderer::SetShader(m_shader);
-    NzRenderer::SetTextureSampler(textureUnit, m_sampler);
-    NzRenderer::SetIndexBuffer(m_indexBuffer);
+    //NzRenderer::SetShader(m_shader);
+    //NzRenderer::SetTextureSampler(textureUnit, m_sampler);
+    //NzRenderer::SetIndexBuffer(m_indexBuffer);
 }
 
-void NzTerrainBase::Initialize(const NzDynaTerrainConfigurationBase& configuration)
-{
-    BuildShader();
-
-    if(!m_terrainTexture.LoadFromFile(configuration.groundTextures))
-        std::cout<<"Could not load texture "<<configuration.groundTextures<<std::endl;
+//void NzTerrainBase::Initialize(const NzDynaTerrainConfigurationBase& configuration)
+//{
+    //if(!m_terrainTexture.LoadFromFile(configuration.groundTextures))
+    //    std::cout<<"Could not load texture "<<configuration.groundTextures<<std::endl;
 
     //m_terrainTexture.EnableMipmapping(false);
 
-
-    float radius = configuration.higherCameraPrecisionRadius;
+    //TODO : A BOUGER DANS NzDynaTerrain, d'ailleurs la configuration de la camera devrait se faire là,
+    // pas pour chaque terrain
+    /*float radius = configuration.higherCameraPrecisionRadius;
     for(int i(0) ; i < configuration.cameraRadiusAmount ; ++i)
     {
         std::cout<<"radius "<<configuration.higherCameraPrecision - i<<" = "<<radius<<std::endl;
         radius *= configuration.radiusSizeIncrement;
-    }
+    }*/
 
-     m_sampler.SetWrapMode(nzSamplerWrap_Repeat);
-}
-
-void NzTerrainBase::SetFaceFilling(const nzFaceFilling& faceFilling)
-{
-    m_faceFilling = faceFilling;
-}
+     //m_sampler.SetWrapMode(nzSamplerWrap_Repeat);
+//}
 
 void NzTerrainsBase::Update(const NzVector3f& cameraPosition)
 {
 
-}
-
-bool NzTerrainBase::VisibilityTest(const NzFrustumf& frustum)
-{
-    //FIX ME
-    return true;
 }
