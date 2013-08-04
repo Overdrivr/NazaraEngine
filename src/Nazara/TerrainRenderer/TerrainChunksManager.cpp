@@ -11,26 +11,27 @@ NzTerrainChunksManager::NzTerrainChunksManager(float edgelenght, unsigned int de
 {
     m_edgeLenght = edgelenght;
     m_depth = depth;
+    m_gridStep = m_edgeLenght / m_depth;//std::pow(m_depth,2); ??
 
-    for(unsigned int i(0) ; i < m_depth*m_depth ; ++i)
+    for(unsigned int i(0) ; i < m_depth * m_depth ; ++i)
         m_chunks.emplace_back();
 }
 
-/*
-void NzTerrainMasterNode::AddToRenderQueue(NzRenderQueue& renderQueue) const
+bool NzTerrainChunksManager::AddMesh(const std::array<float,150>& vertexData, const NzBoundingVolumef& meshBoundingBox, NzTerrainNodeID meshIdentifiant)
 {
-    renderQueue.otherDrawables.push_back(static_cast<NzDrawable>(this));
-}
-*/
+    // On trouve le chunk devant accueillir le mesh
+    // C'est une technique simple mais ça devrait fonctionner pour l'instant
+    // On clampe par sécurité, ajouter warning si en dehors de la zone ?
+    unsigned int x = static_cast<int>(std::min(std::max(meshBoundingBox.aabb.x,0),m_edgeLenght) / m_gridStep);
+    unsigned int y = static_cast<int>(std::min(std::max(meshBoundingBox.aabb.y,0),m_edgeLenght) / m_gridStep);
 
-NzTerrainChunk* NzTerrainChunksManager::LocateChunk(NzVector2f location)
-{
-    return &(m_chunks.at(location.x + location.y * m_depth));
+    m_chunks.at(x + m_depth * y)->AddMesh(vertexData,meshBoundingBox,meshIdentifiant);
+    return true;
 }
 
 void NzTerrainChunksManager::DrawChunks() const
 {
-    for(unsigned int i(0) ; i < m_depth*m_depth ; ++i)
+    for(unsigned int i(0) ; i < m_depth * m_depth ; ++i)
     {
         NzTerrainRenderer::DrawTerrainChunk(m_chunks.at(i));
     }
@@ -40,6 +41,40 @@ const NzBoundingVolumef& NzTerrainChunksManager::GetGlobalBoundingBox() const
 {
     return m_aabb;
 }
+
+NzTerrainChunk* NzTerrainChunksManager::LocateChunk(NzVector2f location)
+{
+    return &(m_chunks.at(location.x + m_depth * location.y));
+}
+
+bool NzTerrainChunksManager::UpdateMesh(const std::array<float,150>& vertexData, const NzBoundingVolumef& meshBoundingBox, NzTerrainNodeID meshIdentifiant)
+{
+    // On trouve le chunk devant accueillir le mesh
+    // Mêmes remarques que pour AddMesh
+    unsigned int x = static_cast<int>(std::min(std::max(meshBoundingBox.aabb.x,0),m_edgeLenght) / m_gridStep);
+    unsigned int y = static_cast<int>(std::min(std::max(meshBoundingBox.aabb.y,0),m_edgeLenght) / m_gridStep);
+
+    m_chunks.at(x + m_depth * y)->UpdateMesh(vertexData,meshIdentifiant);
+    return true;
+}
+
+bool NzTerrainChunksManager::RemoveMesh(const NzBoundingVolumef& meshBoundingBox, NzTerrainNodeID meshIdentifiant)
+{
+    // On trouve le chunk devant accueillir le mesh
+    // Mêmes remarques que pour AddMesh
+    unsigned int x = static_cast<int>(std::min(std::max(meshBoundingBox.aabb.x,0),m_edgeLenght) / m_gridStep);
+    unsigned int y = static_cast<int>(std::min(std::max(meshBoundingBox.aabb.y,0),m_edgeLenght) / m_gridStep);
+
+    m_chunks.at(x + m_depth * y)->RemoveMesh(meshIdentifiant);
+    return true;
+}
+
+        /*
+void NzTerrainMasterNode::AddToRenderQueue(NzRenderQueue& renderQueue) const
+{
+    renderQueue.otherDrawables.push_back(static_cast<NzDrawable>(this));
+}
+*/
 
 /*
 unsigned int NzTerrainMasterNode::GetFreeBuffersAmount() const
@@ -52,51 +87,6 @@ nzSceneNodeType NzTerrainMasterNode::GetSceneNodeType() const
     return nzSceneNodeType_User;
 }*/
 /*
-bool NzTerrainMasterNode::RemovePatch(const NzTerrainNodeID& ID)
-{
-    if(m_isReady)
-    {
-        //On récupère la zone devant accueillir le patch
-        NzTerrainNodeID temp;
-        temp.locx = ID.locx * m_zonesAmountX/std::pow(2,ID.depth);
-        temp.locy = ID.locy * m_zonesAmountX/std::pow(2,ID.depth);
-
-        if(temp.locx < m_zonesAmountX && temp.locy < m_zonesAmountX)
-        {
-            //std::cout<<"submitting patch to zone "<<temp.sx<<" | "<<temp.sy<<std::endl;
-            //std::cout<<"Trying Removing patch "<<ID.lvl<<"|"<<ID.sx<<"|"<<ID.sy<<" in Zone "<<temp.lvl<<"|"<<temp.sx<<"|"<<temp.sy<<" with buf"<<std::endl;
-            m_zones.at(temp.locx + m_zonesAmountX * temp.locy)->RemovePatch(ID);
-            return true;
-        }
-        else
-        {
-            std::cout<<"Removing patch "<<ID.depth<<"|"<<ID.locx<<"|"<<ID.locy<<" outside supported area :"<<m_zonesAmountX<<std::endl;
-            return false;
-        }
-    }
-    std::cout<<"Impossible to remove patch"<<std::endl;
-    return false;
-}
-
-bool NzTerrainMasterNode::Initialize(unsigned int zoneDepth)
-{
-    ///---- On crée la déclaration de vertices
-
-
-    ///-----On crée toutes les zones nécessaires
-    m_zoneDepth = zoneDepth;
-    m_zonesAmountX = std::pow(2,m_zoneDepth);
-    //On crée le nombre de zones demandé
-    for(unsigned int i(0) ; i < m_zonesAmountX * m_zonesAmountX ; ++i)
-    {
-        std::unique_ptr<NzTerrainNode> zone(new NzTerrainNode(this,m_patchAmount));
-        m_zones.push_back(std::move(zone));
-    }
-
-    m_isReady = true;
-    return true;
-}
-
 NzVertexBuffer* NzTerrainMasterNode::QueryFreeBuffer()
 {
     NzVertexBuffer* buffer = nullptr;
@@ -121,57 +111,4 @@ void NzTerrainMasterNode::ReturnBuffer(NzVertexBuffer* buffer)
     m_freeBuffers.push(buffer);
 }
 
-bool NzTerrainMasterNode::SubmitPatch(const std::array<float,150>& subBuffer, const NzTerrainNodeID& ID)
-{
-    if(!m_isReady)
-        return false;
-
-    //On récupère la zone devant accueillir le patch
-    NzTerrainNodeID temp;
-    temp.locx = ID.locx * m_zonesAmountX / std::pow(2,ID.depth);
-    temp.locy = ID.locy * m_zonesAmountX / std::pow(2,ID.depth);
-
-    if(temp.locx < m_zonesAmountX && temp.locy < m_zonesAmountX)
-    {
-        m_zones.at(temp.locx + m_zonesAmountX * temp.locy)->AddPatch(subBuffer,ID);
-        return true;
-    }
-    else
-    {
-        std::cout<<"Submitting patch "<<ID.depth<<"|"<<ID.locx<<"|"<<ID.locy<<" outside supported area :"<<m_zonesAmountX<<std::endl;
-        return false;
-    }
-}
-
-bool NzTerrainMasterNode::UpdatePatch(const std::array<float,150>& subBuffer, const NzTerrainNodeID& ID)
-{
-    if(m_isReady)
-    {
-        //On récupère la zone devant accueillir le patch
-        NzTerrainNodeID temp;
-        temp.locx = ID.locx * m_zonesAmountX / std::pow(2,ID.depth);
-        temp.locy = ID.locy * m_zonesAmountX / std::pow(2,ID.depth);
-
-        if(temp.locx < m_zonesAmountX && temp.locy < m_zonesAmountX)
-        {
-            m_zones.at(temp.locx + m_zonesAmountX * temp.locy)->UpdatePatch(subBuffer,ID);
-            return true;
-        }
-        else
-        {
-            std::cout<<"Updating patch "<<ID.depth<<"|"<<ID.locx<<"|"<<ID.locy<<" outside supported area :"<<m_zonesAmountX<<std::endl;
-            return false;
-        }
-    }
-    else
-        return false;
-}
-*/
-
-/*
-virtual bool NzTerrainMasterNode::VisibilityTest(const NzFrustumf& frustum)
-{
-    //FIX ME
-    return true;
-}
 */

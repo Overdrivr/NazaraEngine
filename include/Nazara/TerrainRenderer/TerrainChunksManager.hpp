@@ -23,28 +23,32 @@
 #include <memory>
 
 //FIX ME : Utiliser un arbre en structure interne pour le fast culling
-//
+//TODO : Rajouter position au chunk manager, modifs à faire dans addMesh,Update,Remove
 class NAZARA_API NzTerrainChunksManager
 {
     public:
         NzTerrainChunksManager(float edgelenght, unsigned int depth);
         ~NzTerrainChunksManager() = default;
 
-        //virtual void AddToRenderQueue(NzRenderQueue& renderQueue) const;
-        NzTerrainChunk* LocateChunk(NzVector2f location);
+        bool AddMesh(const std::array<float,150>& vertexData, const NzBoundingVolumef& meshBoundingBox, NzTerrainNodeID meshIdentifiant);
+
         void DrawChunks() const;
 
 		const NzBoundingVolumef& GetGlobalBoundingBox() const;
+
+		NzTerrainChunk* LocateChunk(NzVector2f location);
+
+		bool RemoveMesh(const NzBoundingVolumef& meshBoundingBox, NzTerrainNodeID meshIdentifiant);
+
+		bool UpdateMesh(const std::array<float,150>& vertexData, const NzBoundingVolumef& meshBoundingBox, NzTerrainNodeID meshIdentifiant);
+
+		//virtual void AddToRenderQueue(NzRenderQueue& renderQueue) const;
 		//unsigned int GetFreeBuffersAmount() const;
 		//virtual nzSceneNodeType GetSceneNodeType() const;
 
         //bool Initialize();
 
         //NzVertexBuffer* QueryFreeBuffer();
-
-        bool AddMesh(const std::array<float,150>& vertexData, const NzBoundingVolumef& meshBoundingBox, NzTerrainNodeID meshIdentifiant);
-        bool UpdateMesh(const std::array<float,150>& vertexData,NzTerrainNodeID meshIdentifiant);
-        bool RemoveMesh(NzTerrainNodeID meshIdentifiant);
 
     protected:
         //virtual bool VisibilityTest(const NzFrustumf& frustum);
@@ -54,6 +58,7 @@ class NAZARA_API NzTerrainChunksManager
         //bool m_isReady;
         unsigned int m_depth;
         float m_edgeLenght;
+        float m_gridStep;
 
         //std::vector<std::unique_ptr<NzTerrainNode>> m_zones;
         std::vector<NzTerrainChunk> m_chunks;
