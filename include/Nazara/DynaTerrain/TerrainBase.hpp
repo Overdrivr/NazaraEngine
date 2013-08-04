@@ -44,9 +44,6 @@ class NAZARA_API NzTerrainBase : public NzDrawable, public NzSceneNode
     protected:
         virtual void AddToRenderQueue(NzRenderQueue& renderQueue) const;
 
-        void BuildShader();
-        void CreateIndexBuffer(unsigned int bufferCapacity, bool appendConfigurations = false);
-
         virtual bool VisibilityTest(const NzFrustumf& frustum);
 
         NzBoundingBoxf m_aabb;
