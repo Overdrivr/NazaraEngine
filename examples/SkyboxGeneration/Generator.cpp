@@ -17,20 +17,40 @@ void Generator::Generate(NzImage& image)
 {
     NzVector3f p;
 
-    if(!ambientColormap.LoadFromFile("resources/ambientColormap2.png"))
+    if(!ambientColormap.LoadFromFile("resources/ambientColormap.png"))
         return;
 
+    float offset = static_cast<float>(tileSize);
+    NzVector3f center(offset/2.f);
 
     //FRONT
     for(int i(0) ; i < tileSize ; ++i)
         for(int j(0) ; j < tileSize ; ++j)
         {
             p.x = 0.f;
-            p.y = static_cast<float>(-j) + 511.f;
-            p.z = static_cast<float>(-i) + 511.f;
+            p.y = static_cast<float>(-j) + offset;
+            p.z = static_cast<float>(-i) + offset;
 
-            image.SetPixelColor(ComputePixelColor(p),i,j + 512);
+            p = (p - center).Normalize();
+            p *= offset * 0.5f;
+
+            image.SetPixelColor(ComputePixelColor(p),i,j + tileSize);
         }
+
+    //BACK
+    for(int i(0) ; i < tileSize ; ++i)
+        for(int j(0) ; j < tileSize ; ++j)
+        {
+            p.x = offset;
+            p.y = static_cast<float>(-j) + offset;
+            p.z = static_cast<float>(i);
+
+            p = (p - center).Normalize();
+            p *= offset * 0.5f;
+
+            image.SetPixelColor(ComputePixelColor(p),i + 2 * tileSize,j + tileSize);
+        }
+
 
     //BOTTOM
     for(int i(0) ; i < tileSize ; ++i)
@@ -40,7 +60,24 @@ void Generator::Generate(NzImage& image)
             p.y = 0.f;
             p.z = static_cast<float>(j);
 
-            image.SetPixelColor(ComputePixelColor(p),i + 512,j + 1024);
+            p = (p - center).Normalize();
+            p *= offset * 0.5f;
+
+            image.SetPixelColor(ComputePixelColor(p),i + tileSize,j + 2 * tileSize);
+        }
+
+    //TOP
+    for(int i(0) ; i < tileSize ; ++i)
+        for(int j(0) ; j < tileSize ; ++j)
+        {
+            p.x = static_cast<float>(i);
+            p.y = offset;
+            p.z = static_cast<float>(-j) + offset;
+
+            p = (p - center).Normalize();
+            p *= offset * 0.5f;
+
+            image.SetPixelColor(ComputePixelColor(p),i + tileSize,j);
         }
 
     //RIGHT
@@ -48,10 +85,27 @@ void Generator::Generate(NzImage& image)
         for(int j(0) ; j < tileSize ; ++j)
         {
             p.x = static_cast<float>(i);
-            p.y = static_cast<float>(-j)+511.f;
+            p.y = static_cast<float>(-j) + offset;
             p.z = 0.f;
 
-            image.SetPixelColor(ComputePixelColor(p),i + 512,j + 512);
+            p = (p - center).Normalize();
+            p *= offset * 0.5f;
+
+            image.SetPixelColor(ComputePixelColor(p),i + tileSize,j + tileSize);
+        }
+
+    //LEFT
+    for(int i(0) ; i < tileSize ; ++i)
+        for(int j(0) ; j < tileSize ; ++j)
+        {
+            p.x = static_cast<float>(-i) + offset;
+            p.y = static_cast<float>(-j) + offset;
+            p.z = offset;
+
+            p = (p - center).Normalize();
+            p *= offset * 0.5f;
+
+            image.SetPixelColor(ComputePixelColor(p),i + 3 * tileSize,j + tileSize);
         }
 }
 
