@@ -21,6 +21,8 @@ class NzColor
 		NzColor(const NzColor& color) = default;
 		~NzColor() = default;
 
+		static NzColor Blend(const NzColor& c1, const NzColor& c2, nzColorBlendingMode blendingMode);
+
 		NzString ToString() const;
 
 		NzColor operator+(const NzColor& angles) const;

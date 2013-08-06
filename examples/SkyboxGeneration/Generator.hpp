@@ -17,9 +17,13 @@ class Generator
     protected:
     private:
         NzFBM3D* ambient;
+        NzFBM3D* deepAmbient;
         float ambientRes;
+        float deepAmbientRes;
         std::array<NzColor,12> colorLayers;
+        std::array<float,12> layersWeight;
         NzImage ambientColormap;
+        NzImage deepAmbientColormap;
 };
 
 #endif // GENERATOR_HPP

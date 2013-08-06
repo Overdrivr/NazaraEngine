@@ -47,7 +47,7 @@ int main()
 
     ///Code classique pour ouvrir une fenêtre avec Nazara
     NzString windowTitle("Terrain Renderer example");
-	NzRenderWindow window(NzVideoMode(800,600,32),windowTitle,nzWindowStyle_Default);
+	NzRenderWindow window(NzVideoMode(1268,680,32),windowTitle,nzWindowStyle_Default);
 	window.SetFramerateLimit(100);
 	window.EnableVerticalSync(false);
 	window.SetCursor(nzWindowCursor_None);

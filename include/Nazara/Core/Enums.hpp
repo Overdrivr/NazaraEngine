@@ -7,6 +7,17 @@
 #ifndef NAZARA_ENUMS_CORE_HPP
 #define NAZARA_ENUMS_CORE_HPP
 
+enum nzColorBlendingMode
+{
+    nzColorBlendingMode_Add,
+    nzColorBlendingMode_Substract,
+    nzColorBlendingMode_Average,
+    nzColorBlendingMode_Lighten,
+    nzColorBlendingMode_Darken,
+
+    nzColorBlendingMode_Max = nzColorBlendingMode_Add
+};
+
 enum nzCoordSys
 {
 	nzCoordSys_Global,

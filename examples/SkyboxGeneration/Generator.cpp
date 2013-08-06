@@ -4,13 +4,15 @@ Generator::Generator()
 {
     srand(123456789);
     ambient = new NzFBM3D(SIMPLEX,1234567891);
+    deepAmbient = new NzFBM3D(SIMPLEX,9537154861);
     ambientRes = 1/500.f;
-
+    deepAmbientRes = 1/1500.f;
 }
 
 Generator::~Generator()
 {
     delete ambient;
+    delete deepAmbient;
 }
 
 void Generator::Generate(NzImage& image)
@@ -18,6 +20,8 @@ void Generator::Generate(NzImage& image)
     NzVector3f p;
 
     if(!ambientColormap.LoadFromFile("resources/ambientColormap.png"))
+        return;
+    if(!deepAmbientColormap.LoadFromFile("resources/deepAmbientColormap.png"))
         return;
 
     float offset = static_cast<float>(tileSize);
@@ -118,12 +122,25 @@ NzColor Generator::ComputePixelColor(const NzVector3f& p)
     // l'artéfact provoqué par un gradient très doux, à savoir des cassures très visibles
     // Il donne également un grain à l'image et la rend plus réaliste
     lsb = (rand() % 100 - 50)/(100.f * 15.f);
-
     // Calcul du bruit (un fbm3D), on ajuste l'intervalle à [0;1]
     density = ambient->GetValue(p.x,p.y,p.z,ambientRes) * 0.5 + 0.5 + lsb;
-
     // On se sert d'un gradient généré sous inkscape pour choisir une couleur associée à la densité
     colorLayers[0] = ambientColormap.GetPixelColor(0,static_cast<unsigned int>(density * 255.f));
 
-    return colorLayers[0];
+
+    lsb = (rand() % 100 - 50)/(100.f * 15.f);
+    density = 1.f - (deepAmbient->GetValue(p.x,p.y,p.z,deepAmbientRes) * 0.5 + 0.5 + lsb);
+    colorLayers[1] = deepAmbientColormap.GetPixelColor(0,static_cast<unsigned int>(density * 255.f));
+
+
+    // 0 : Ambient
+    // 1 : Deep Ambient
+    // 5 : Etoiles
+    return NzColor::Blend(colorLayers[1],colorLayers[0],nzColorBlendingMode_Lighten);
+    //return colorLayers[1];
 }
+
+
+
+
+

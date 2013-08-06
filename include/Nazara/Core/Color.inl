@@ -36,6 +36,46 @@ a(alpha)
 {
 }
 
+inline NzColor NzColor::Blend(const NzColor& c1, const NzColor& c2, nzColorBlendingMode blendingMode)
+{
+    switch(blendingMode)
+    {
+        case nzColorBlendingMode_Add :
+            return NzColor(std::min(static_cast<nzUInt16>(c1.r) + c2.r, 255),
+                           std::min(static_cast<nzUInt16>(c1.g) + c2.g, 255),
+                           std::min(static_cast<nzUInt16>(c1.b) + c2.b, 255),
+                           std::min(static_cast<nzUInt16>(c1.a) + c2.a, 255));
+            break;
+
+        case nzColorBlendingMode_Average :
+            return NzColor((static_cast<nzUInt16>(c1.r) + c2.r) / 2,
+                           (static_cast<nzUInt16>(c1.g) + c2.g) / 2,
+                           (static_cast<nzUInt16>(c1.b) + c2.b) / 2);
+            break;
+
+        case nzColorBlendingMode_Substract :
+            return NzColor((static_cast<nzUInt16>(c1.r) + c2.r) < 255 ? 0 : static_cast<nzInt16>(c1.r) + c2.r - 255,
+                           (static_cast<nzUInt16>(c1.g) + c2.g) < 255 ? 0 : static_cast<nzInt16>(c1.g) + c2.g - 255,
+                           (static_cast<nzUInt16>(c1.b) + c2.b) < 255 ? 0 : static_cast<nzInt16>(c1.b) + c2.b - 255,
+                           (static_cast<nzUInt16>(c1.a) + c2.a) < 255 ? 0 : static_cast<nzInt16>(c1.a) + c2.a - 255);
+            break;
+
+        case nzColorBlendingMode_Lighten :
+            return NzColor(c2.r > c1.r ? c2.r : c1.r,
+                           c2.g > c1.g ? c2.g : c1.g,
+                           c2.b > c1.b ? c2.b : c1.b,
+                           c2.a > c1.a ? c2.a : c1.a);
+            break;
+
+        case nzColorBlendingMode_Darken :
+            return NzColor(c2.r > c1.r ? c1.r : c2.r,
+                           c2.g > c1.g ? c1.g : c2.g,
+                           c2.b > c1.b ? c1.b : c2.b,
+                           c2.a > c1.a ? c1.a : c2.a);
+            break;
+    }
+}
+
 inline NzString NzColor::ToString() const
 {
 	NzStringStream ss;
@@ -52,17 +92,17 @@ inline NzString NzColor::ToString() const
 inline NzColor NzColor::operator+(const NzColor& color) const
 {
 	return NzColor(std::min(static_cast<nzUInt16>(r) + color.r, 255),
-	               std::min(static_cast<nzUInt16>(r) + color.r, 255),
-				   std::min(static_cast<nzUInt16>(r) + color.r, 255),
-	               std::min(static_cast<nzUInt16>(r) + color.r, 255));
+	               std::min(static_cast<nzUInt16>(g) + color.g, 255),
+				   std::min(static_cast<nzUInt16>(b) + color.b, 255),
+	               std::min(static_cast<nzUInt16>(a) + color.a, 255));
 }
 
 inline NzColor NzColor::operator*(const NzColor& color) const
 {
-	return NzColor(static_cast<nzUInt16>(r) * color.r/255,
-	               static_cast<nzUInt16>(r) * color.r/255,
-				   static_cast<nzUInt16>(r) * color.r/255,
-	               static_cast<nzUInt16>(r) * color.r/255);
+	return NzColor(static_cast<nzUInt16>(r) * color.r / 255,
+	               static_cast<nzUInt16>(g) * color.g / 255,
+				   static_cast<nzUInt16>(b) * color.b / 255,
+	               static_cast<nzUInt16>(a) * color.a / 255);
 }
 
 inline NzColor NzColor::operator+=(const NzColor& color)
