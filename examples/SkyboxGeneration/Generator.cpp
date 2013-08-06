@@ -3,17 +3,79 @@
 Generator::Generator()
 {
     srand(123456789);
-    ambient = new NzFBM3D(SIMPLEX,1234567891);
-    deepAmbient = new NzFBM3D(SIMPLEX,9537154861);
-    ambientRes = 1/500.f;
-    deepAmbientRes = 1/1500.f;
+    ambient = new NzFBM3D(SIMPLEX,123456789);
+    imgx = 2048;
+    imgy = 1536;
+    ambientLayer.Create(nzImageType_2D,nzPixelFormat_RGBA8,imgx,imgy);
+    starLayer.Create(nzImageType_2D,nzPixelFormat_RGBA8,imgx,imgy);
 }
 
 Generator::~Generator()
 {
     delete ambient;
-    delete deepAmbient;
 }
+
+void Generator::BlendLayers(NzImage& finalImage)
+{
+    NzColor c1,c2,c3;
+    for(unsigned int i(0) ; i < imgx ; ++i)
+        for(unsigned int j(0) ; j < imgy ; ++j)
+        {
+            c1 = ambientLayer.GetPixelColor(i,j);
+            c2 = starLayer.GetPixelColor(i,j);
+            c3 = NzColor::Blend(c1,c2,nzColorBlendingMode_Lighten);
+            finalImage.SetPixelColor(c3,i,j);
+        }
+}
+
+void Generator::ComputeAmbientColor(unsigned x, unsigned y, const NzVector3f& p)
+{
+    float ambientRes = 1/400.f;
+
+    float lsb, density;
+
+    // Ajouter un faible offset aléatoire ( +- 1 LSB) au calcul de bruit permet d'effacer
+    // l'artéfact provoqué par un gradient très doux, à savoir des cassures très visibles
+    // Il donne également un grain à l'image et la rend plus réaliste
+    lsb = (rand() % 100 - 50)/(100.f * 15.f);
+    // Calcul du bruit (un fbm3D), on ajuste l'intervalle à [0;1]
+    density = ambient->GetValue(p.x,p.y,p.z,ambientRes) * 0.5 + 0.5 + lsb;
+    // On se sert d'un gradient généré sous inkscape pour choisir une couleur associée à la densité
+    ambientLayer.SetPixelColor(ambientColormap.GetPixelColor(0,static_cast<unsigned int>(density * 255.f)),x,y);
+}
+
+void Generator::ComputeForStars(const NzVector3f& p)
+{
+
+}
+
+void Generator::DrawSingleStar(unsigned int x, unsigned int y, float innerRadius, float falloffRadius, float falloff)
+{
+    float distance, density, lsb;
+    unsigned int xc, yc;
+
+    for(int i(static_cast<int>(- falloffRadius)) ; i <= static_cast<int>(falloffRadius) ; ++i)
+        for(int j(static_cast<int>(- falloffRadius)) ; j <= static_cast<int>(falloffRadius) ; ++j)
+        {
+            if(i*i + j*j < static_cast<int>(falloffRadius * falloffRadius))
+            {
+
+                float distance = std::sqrt(static_cast<float>(i*i + j*j)) - innerRadius;
+                float density = 255.f * std::exp(- falloff * distance);
+
+                if(i*i + j*j < static_cast<int>(innerRadius * innerRadius))
+                    density = 255.f;
+
+                lsb = (rand() % 100 - 50)/(50.f);
+
+                //TODO : index wrapping for borders
+
+                starLayer.SetPixelColor(NzColor(static_cast<nzUInt8>(density + lsb)),x+i,y+j);
+            }
+        }
+}
+
+
 
 void Generator::Generate(NzImage& image)
 {
@@ -38,7 +100,7 @@ void Generator::Generate(NzImage& image)
             p = (p - center).Normalize();
             p *= offset * 0.5f;
 
-            image.SetPixelColor(ComputePixelColor(p),i,j + tileSize);
+            ComputeAmbientColor(i,j + tileSize,p);
         }
 
     //BACK
@@ -52,7 +114,7 @@ void Generator::Generate(NzImage& image)
             p = (p - center).Normalize();
             p *= offset * 0.5f;
 
-            image.SetPixelColor(ComputePixelColor(p),i + 2 * tileSize,j + tileSize);
+            ComputeAmbientColor(i + 2 * tileSize,j + tileSize,p);
         }
 
 
@@ -67,7 +129,7 @@ void Generator::Generate(NzImage& image)
             p = (p - center).Normalize();
             p *= offset * 0.5f;
 
-            image.SetPixelColor(ComputePixelColor(p),i + tileSize,j + 2 * tileSize);
+            ComputeAmbientColor(i + tileSize,j + 2 * tileSize,p);
         }
 
     //TOP
@@ -81,7 +143,7 @@ void Generator::Generate(NzImage& image)
             p = (p - center).Normalize();
             p *= offset * 0.5f;
 
-            image.SetPixelColor(ComputePixelColor(p),i + tileSize,j);
+            ComputeAmbientColor(i + tileSize,j,p);
         }
 
     //RIGHT
@@ -95,7 +157,7 @@ void Generator::Generate(NzImage& image)
             p = (p - center).Normalize();
             p *= offset * 0.5f;
 
-            image.SetPixelColor(ComputePixelColor(p),i + tileSize,j + tileSize);
+            ComputeAmbientColor(i + tileSize,j + tileSize,p);
         }
 
     //LEFT
@@ -109,36 +171,13 @@ void Generator::Generate(NzImage& image)
             p = (p - center).Normalize();
             p *= offset * 0.5f;
 
-            image.SetPixelColor(ComputePixelColor(p),i + 3 * tileSize,j + tileSize);
+            ComputeAmbientColor(i + 3 * tileSize,j + tileSize,p);
         }
+    DrawSingleStar(512,512,10.f,35.f,0.2);
+    BlendLayers(image);
 }
 
-NzColor Generator::ComputePixelColor(const NzVector3f& p)
-{
-    float lsb, density;
-    NzColor finalColor;
 
-    // Ajouter un faible offset aléatoire ( +- 1 LSB) au calcul de bruit permet d'effacer
-    // l'artéfact provoqué par un gradient très doux, à savoir des cassures très visibles
-    // Il donne également un grain à l'image et la rend plus réaliste
-    lsb = (rand() % 100 - 50)/(100.f * 15.f);
-    // Calcul du bruit (un fbm3D), on ajuste l'intervalle à [0;1]
-    density = ambient->GetValue(p.x,p.y,p.z,ambientRes) * 0.5 + 0.5 + lsb;
-    // On se sert d'un gradient généré sous inkscape pour choisir une couleur associée à la densité
-    colorLayers[0] = ambientColormap.GetPixelColor(0,static_cast<unsigned int>(density * 255.f));
-
-
-    lsb = (rand() % 100 - 50)/(100.f * 15.f);
-    density = 1.f - (deepAmbient->GetValue(p.x,p.y,p.z,deepAmbientRes) * 0.5 + 0.5 + lsb);
-    colorLayers[1] = deepAmbientColormap.GetPixelColor(0,static_cast<unsigned int>(density * 255.f));
-
-
-    // 0 : Ambient
-    // 1 : Deep Ambient
-    // 5 : Etoiles
-    return NzColor::Blend(colorLayers[1],colorLayers[0],nzColorBlendingMode_Lighten);
-    //return colorLayers[1];
-}
 
 
 
