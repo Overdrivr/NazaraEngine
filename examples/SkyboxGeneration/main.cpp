@@ -42,7 +42,6 @@ int main()
     texture.LoadCubemapFromImage(generatedImage);
     //texture.SetPersistent(false);
     NzSkyboxBackground background(&texture);
-
     scene.SetBackground(&background);
 
     ///Code classique pour ouvrir une fenêtre avec Nazara

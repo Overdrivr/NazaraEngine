@@ -25,14 +25,17 @@ class Generator
         ~Generator();
     protected:
     private:
+        NzVector2ui IndexWrap(NzVector2ui coordinates);
+        NzVector2ui FromSphereToCube(const NzVector3f& p);
         NzFBM3D* ambient;
         unsigned int imgx, imgy;
 
         NzImage ambientColormap;
-        NzImage deepAmbientColormap;
 
         NzImage ambientLayer;
         NzImage starLayer;
+
+        NzMatrix4f cubeToSphere;
 };
 
 #endif // GENERATOR_HPP

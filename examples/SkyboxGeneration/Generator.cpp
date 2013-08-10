@@ -8,6 +8,8 @@ Generator::Generator()
     imgy = 1536;
     ambientLayer.Create(nzImageType_2D,nzPixelFormat_RGBA8,imgx,imgy);
     starLayer.Create(nzImageType_2D,nzPixelFormat_RGBA8,imgx,imgy);
+
+
 }
 
 Generator::~Generator()
@@ -53,6 +55,7 @@ void Generator::DrawSingleStar(unsigned int x, unsigned int y, float innerRadius
 {
     float distance, density, lsb;
     unsigned int xc, yc;
+    NzVector2ui pixel;
 
     for(int i(static_cast<int>(- falloffRadius)) ; i <= static_cast<int>(falloffRadius) ; ++i)
         for(int j(static_cast<int>(- falloffRadius)) ; j <= static_cast<int>(falloffRadius) ; ++j)
@@ -68,9 +71,12 @@ void Generator::DrawSingleStar(unsigned int x, unsigned int y, float innerRadius
 
                 lsb = (rand() % 100 - 50)/(50.f);
 
-                //TODO : index wrapping for borders
+                pixel.x = x + i;
+                pixel.y = y + j;
 
-                starLayer.SetPixelColor(NzColor(static_cast<nzUInt8>(density + lsb)),x+i,y+j);
+                //pixel = IndexWrap(pixel);
+
+                starLayer.SetPixelColor(NzColor(static_cast<nzUInt8>(density + lsb)),pixel.x,pixel.y);
             }
         }
 }
@@ -82,8 +88,6 @@ void Generator::Generate(NzImage& image)
     NzVector3f p;
 
     if(!ambientColormap.LoadFromFile("resources/ambientColormap.png"))
-        return;
-    if(!deepAmbientColormap.LoadFromFile("resources/deepAmbientColormap.png"))
         return;
 
     float offset = static_cast<float>(tileSize);
@@ -173,12 +177,46 @@ void Generator::Generate(NzImage& image)
 
             ComputeAmbientColor(i + 3 * tileSize,j + tileSize,p);
         }
-    DrawSingleStar(512,512,10.f,35.f,0.2);
+    DrawSingleStar(712,712,33.f,37.f,1.f);
     BlendLayers(image);
 }
 
+NzVector2ui Generator::IndexWrap(NzVector2ui coordinates)
+{
+    NzVector2ui wrap = coordinates;
+    wrap /= tileSize;
 
+    if(wrap.x > 3)
+        coordinates.x -= 4 * tileSize;
 
+    if(wrap.x < 0)
+        coordinates.x += 4 * tileSize;
+
+    if(wrap.y > 2)
+        coordinates.y -= 3 * tileSize;
+
+    if(wrap.y < 0)
+        coordinates.y += 3 * tileSize;
+
+    //if(wrap.x + wrap.y == 0)
+      // (coordinates.x >= 2 * tileSize && coordinates.x < 3 * tileSize))
+
+    return coordinates;
+}
+
+NzVector2ui FromSphereToCube(const NzVector3f& p)
+{
+    float R1,R2;
+    NzVector2i uv;
+
+    p.x > p.z ? R1 = p.x : p.z;
+    p.x > p.y ? R2 = p.x : p.y;
+
+    // Position par rapport au centre d'une face d'un cube de côté 2
+    uv.x = static_cast<int>(std::sqrt(R1*R1 - 1));
+    uv.y = static_cast<int>(std::sqrt(R2*R2 - 1));
+
+}
 
 
 
