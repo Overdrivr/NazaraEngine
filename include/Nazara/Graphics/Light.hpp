@@ -12,7 +12,7 @@
 #include <Nazara/Graphics/Enums.hpp>
 #include <Nazara/Graphics/SceneNode.hpp>
 
-class NzShader;
+class NzShaderProgram;
 
 class NAZARA_API NzLight : public NzSceneNode
 {
@@ -23,7 +23,7 @@ class NAZARA_API NzLight : public NzSceneNode
 
 		void AddToRenderQueue(NzAbstractRenderQueue* renderQueue) const override;
 
-		void Enable(const NzShader* shader, unsigned int lightUnit) const;
+		void Enable(const NzShaderProgram* program, unsigned int lightUnit) const;
 
 		NzColor GetAmbientColor() const;
 		float GetAttenuation() const;
@@ -46,14 +46,14 @@ class NAZARA_API NzLight : public NzSceneNode
 
 		NzLight& operator=(const NzLight& light);
 
-		static void Disable(const NzShader* shader, unsigned int lightUnit);
+		static void Disable(const NzShaderProgram* program, unsigned int lightUnit);
 
 	private:
 		void Invalidate();
 		void Register();
 		void Unregister();
 		void UpdateBoundingVolume() const;
-		bool VisibilityTest(const NzFrustumf& frustum);
+		bool VisibilityTest(const NzCamera* camera) override;
 
 		nzLightType m_type;
 		mutable NzBoundingVolumef m_boundingVolume;

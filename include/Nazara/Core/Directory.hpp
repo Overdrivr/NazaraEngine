@@ -36,6 +36,8 @@ class NAZARA_API NzDirectory
 
 		void Close();
 
+		bool Exists() const;
+
 		NzString GetPattern() const;
 		NzString GetResultName() const;
 		NzString GetResultPath() const;
@@ -55,6 +57,7 @@ class NAZARA_API NzDirectory
 		static bool Create(const NzString& dirPath, bool recursive = false);
 		static bool Exists(const NzString& dirPath);
 		static NzString GetCurrent();
+		static const char* GetCurrentFileRelativeToEngine(const char* currentFile);
 		static bool Remove(const NzString& dirPath, bool emptyDirectory = false);
 		static bool SetCurrent(const NzString& dirPath);
 

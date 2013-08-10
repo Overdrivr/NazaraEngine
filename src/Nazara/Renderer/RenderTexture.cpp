@@ -2,10 +2,10 @@
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <Nazara/Renderer/OpenGL.hpp>
 #include <Nazara/Renderer/RenderTexture.hpp>
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Renderer/Context.hpp>
+#include <Nazara/Renderer/OpenGL.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
 #include <vector>
 #include <Nazara/Renderer/Debug.hpp>
@@ -317,6 +317,9 @@ bool NzRenderTexture::Create(unsigned int width, unsigned int height, bool lock)
 		return false;
 	}
 
+	NotifyParametersChange();
+	NotifySizeChange();
+
 	return true;
 }
 
@@ -324,11 +327,12 @@ void NzRenderTexture::Destroy()
 {
 	if (m_impl)
 	{
+		bool canFreeFBO = true;
 		#if NAZARA_RENDERER_SAFE
 		if (NzContext::GetCurrent() != m_impl->context)
 		{
-			NazaraError("RenderTexture can only be used with it's creation context");
-			return;
+			NazaraWarning("RenderTexture should be destroyed by it's creation context, this will cause leaks");
+			canFreeFBO = false;
 		}
 		#endif
 
@@ -339,7 +343,7 @@ void NzRenderTexture::Destroy()
 			if (attachment.isUsed)
 			{
 				if (attachment.isBuffer)
-					glDeleteRenderbuffers(1, &attachment.buffer);
+					glDeleteRenderbuffers(1, &attachment.buffer); // Les Renderbuffers sont partagés entre les contextes: Ne posera pas de problème
 				else
 				{
 					attachment.texture->SetRenderTexture(nullptr);
@@ -348,7 +352,8 @@ void NzRenderTexture::Destroy()
 			}
 		}
 
-		glDeleteFramebuffers(1, &m_impl->fbo);
+		if (canFreeFBO)
+			glDeleteFramebuffers(1, &m_impl->fbo);
 
 		delete m_impl;
 		m_impl = nullptr;
@@ -433,6 +438,7 @@ NzRenderTargetParameters NzRenderTexture::GetParameters() const
 	}
 	#endif
 
+	///TODO
 	return NzRenderTargetParameters();
 }
 
@@ -636,11 +642,15 @@ void NzRenderTexture::Desactivate() const
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 }
 
-void NzRenderTexture::OnResourceDestroy(const NzResource* resource, int index)
+bool NzRenderTexture::OnResourceDestroy(const NzResource* resource, int index)
 {
 	if (resource == m_impl->context)
-		// Notre context a été détruit, libérons la RenderTexture pour éviter un leak
+	{
+		// Notre contexte va être détruit, libérons la RenderTexture pour éviter un leak
 		Destroy();
+
+		return false;
+	}
 	else
 	{
 		// Sinon, c'est une texture
@@ -652,5 +662,7 @@ void NzRenderTexture::OnResourceDestroy(const NzResource* resource, int index)
 
 		m_impl->checked = false;
 		m_impl->drawBuffersUpdated = false;
+
+		return true;
 	}
 }

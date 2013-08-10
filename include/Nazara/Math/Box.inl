@@ -327,6 +327,12 @@ T NzBox<T>::GetRadius() const
 }
 
 template<typename T>
+NzSphere<T> NzBox<T>::GetSquaredBoundingSphere() const
+{
+	return NzSphere<T>(GetCenter(), GetSquaredRadius());
+}
+
+template<typename T>
 T NzBox<T>::GetSquaredRadius() const
 {
 	NzVector3<T> size(GetLengths());

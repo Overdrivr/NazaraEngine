@@ -2,12 +2,12 @@
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <Nazara/Renderer/OpenGL.hpp>
 #include <Nazara/Renderer/Context.hpp>
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Core/Log.hpp>
 #include <Nazara/Core/StringStream.hpp>
 #include <Nazara/Renderer/Config.hpp>
+#include <Nazara/Renderer/OpenGL.hpp>
 #include <vector>
 
 #if defined(NAZARA_PLATFORM_WINDOWS)
@@ -27,7 +27,7 @@ namespace
 
 	std::vector<NzContext*> contexts;
 
-	void CALLBACK DebugCallback(unsigned int source, unsigned int type, unsigned int id, unsigned int severity, int length, const char* message, void* userParam)
+	void CALLBACK DebugCallback(unsigned int source, unsigned int type, unsigned int id, unsigned int severity, int length, const char* message, const void* userParam)
 	{
 		NazaraUnused(length);
 
@@ -50,7 +50,7 @@ namespace
 				break;
 
 			case GL_DEBUG_SOURCE_THIRD_PARTY:
-				ss << "Shader compiler";
+				ss << "Third party";
 				break;
 
 			case GL_DEBUG_SOURCE_APPLICATION:

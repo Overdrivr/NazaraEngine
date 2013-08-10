@@ -6,7 +6,7 @@
 #include <Nazara/Core/Config.hpp>
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Core/File.hpp>
-//#include <Nazara/Core/ThreadLocal.hpp>
+#include <cstring>
 
 #if defined(NAZARA_PLATFORM_WINDOWS)
 	#include <Nazara/Core/Win32/DirectoryImpl.hpp>
@@ -20,8 +20,7 @@
 
 namespace
 {
-	NzString currentPath(NzDirectoryImpl::GetCurrent());
-	//static ThreadLocal<NzString> currentPath(NzDirectoryImpl::GetCurrent());
+	/*thread_local*/ NzString currentPath(NzDirectoryImpl::GetCurrent());
 }
 
 NzDirectory::NzDirectory() :
@@ -50,6 +49,16 @@ void NzDirectory::Close()
 		delete m_impl;
 		m_impl = nullptr;
 	}
+}
+
+bool NzDirectory::Exists() const
+{
+	NazaraLock(m_mutex);
+
+	if (IsOpen())
+		return true; // Le fichier est ouvert, donc il existe
+	else
+		return Exists(m_dirPath);
 }
 
 NzString NzDirectory::GetPattern() const
@@ -293,6 +302,30 @@ bool NzDirectory::Exists(const NzString& dirPath)
 NzString NzDirectory::GetCurrent()
 {
 	return currentPath;
+}
+
+const char* NzDirectory::GetCurrentFileRelativeToEngine(const char* currentFile)
+{
+	///FIXME: Est-ce que cette méthode est au bon endroit ?
+	static int offset = -1;
+
+	if (offset < 0)
+	{
+		const char* directoryFile = __FILE__;
+		const char* ptr = std::strstr(directoryFile, "NazaraEngine/src/Nazara/Core/Directory.cpp");
+		if (ptr)
+			offset = ptr - directoryFile;
+		else
+		{
+			ptr = std::strstr(directoryFile, "NazaraEngine\\src\\Nazara\\Core\\Directory.cpp");
+			if (ptr)
+				offset = ptr - directoryFile;
+			else
+				offset = 0;
+		}
+	}
+
+	return &currentFile[offset];
 }
 
 bool NzDirectory::Remove(const NzString& dirPath, bool emptyDirectory)

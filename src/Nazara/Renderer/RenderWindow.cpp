@@ -2,11 +2,11 @@
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <Nazara/Renderer/OpenGL.hpp>
 #include <Nazara/Renderer/RenderWindow.hpp>
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Core/Thread.hpp>
 #include <Nazara/Renderer/Context.hpp>
+#include <Nazara/Renderer/OpenGL.hpp>
 #include <Nazara/Renderer/Texture.hpp>
 #include <stdexcept>
 #include <Nazara/Renderer/Debug.hpp>
@@ -293,6 +293,9 @@ bool NzRenderWindow::OnWindowCreated()
 
 	if (!SetActive(true)) // Les fenêtres s'activent à la création
 		NazaraWarning("Failed to activate window");
+
+	NotifyParametersChange();
+	NotifySizeChange();
 
 	m_clock.Restart();
 

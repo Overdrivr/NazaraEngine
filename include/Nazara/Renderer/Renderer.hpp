@@ -22,7 +22,7 @@ class NzContext;
 class NzIndexBuffer;
 class NzMaterial;
 class NzRenderTarget;
-class NzShader;
+class NzShaderProgram;
 class NzVertexBuffer;
 
 class NAZARA_API NzRenderer
@@ -41,8 +41,10 @@ class NAZARA_API NzRenderer
 
 		static void Enable(nzRendererParameter parameter, bool enable);
 
+
 		static void Flush();
 
+		static NzVertexBuffer* GetInstanceBuffer();
 		static float GetLineWidth();
 		static NzMatrix4f GetMatrix(nzMatrixType type);
 		static nzUInt8 GetMaxAnisotropyLevel();
@@ -52,7 +54,7 @@ class NAZARA_API NzRenderer
 		static float GetPointSize();
 		static const NzRenderStates& GetRenderStates();
 		static NzRectui GetScissorRect();
-		static const NzShader* GetShader();
+		static const NzShaderProgram* GetShaderProgram();
 		static const NzRenderTarget* GetTarget();
 		static NzRectui GetViewport();
 
@@ -72,14 +74,12 @@ class NAZARA_API NzRenderer
 		static void SetFaceCulling(nzFaceCulling cullingMode);
 		static void SetFaceFilling(nzFaceFilling fillingMode);
 		static void SetIndexBuffer(const NzIndexBuffer* indexBuffer);
-		static void SetInstancingData(const void* instancingData, unsigned int instanceCount);
-		static void SetInstancingDeclaration(const NzVertexDeclaration* declaration, unsigned int* newMaxInstanceCount);
 		static void SetLineWidth(float size);
 		static void SetMatrix(nzMatrixType type, const NzMatrix4f& matrix);
 		static void SetPointSize(float size);
 		static void SetRenderStates(const NzRenderStates& states);
 		static void SetScissorRect(const NzRectui& viewport);
-		static void SetShader(const NzShader* shader);
+		static void SetShaderProgram(const NzShaderProgram* shader);
 		static void SetStencilCompareFunction(nzRendererComparison compareFunc);
 		static void SetStencilFailOperation(nzStencilOperation failOperation);
 		static void SetStencilMask(nzUInt32 mask);

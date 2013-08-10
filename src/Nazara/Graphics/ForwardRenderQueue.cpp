@@ -136,7 +136,7 @@ void NzForwardRenderQueue::AddModel(const NzModel* model)
 					if (pair.second)
 						material->AddResourceListener(this, ResourceType_Material);
 
-					auto& meshMap = pair.first->second.second;
+					auto& meshMap = std::get<2>(pair.first->second);
 
 					auto pair2 = meshMap.insert(std::make_pair(staticMesh, StaticMeshContainer::mapped_type()));
 					if (pair2.second)
@@ -144,7 +144,13 @@ void NzForwardRenderQueue::AddModel(const NzModel* model)
 
 					std::vector<StaticData>& staticDataContainer = pair2.first->second;
 
-					staticDataContainer.resize(staticDataContainer.size()+1);
+					unsigned int instanceCount = staticDataContainer.size() + 1;
+
+					// As-t-on suffisamment d'instances pour que le coût d'utilisation de l'instancing soit payé ?
+					if (instanceCount >= NAZARA_GRAPHICS_INSTANCING_MIN_INSTANCES_COUNT)
+						std::get<0>(pair.first->second) = true; // Apparemment oui, activons l'instancing avec ce matériau
+
+					staticDataContainer.resize(instanceCount);
 					StaticData& data = staticDataContainer.back();
 
 					data.aabb = staticMesh->GetAABB();
@@ -200,7 +206,7 @@ void NzForwardRenderQueue::Sort(const NzCamera& camera)
 	std::sort(transparentsModels.begin(), transparentsModels.end(), comparator);
 }
 
-void NzForwardRenderQueue::OnResourceDestroy(const NzResource* resource, int index)
+bool NzForwardRenderQueue::OnResourceDestroy(const NzResource* resource, int index)
 {
 	switch (index)
 	{
@@ -211,7 +217,7 @@ void NzForwardRenderQueue::OnResourceDestroy(const NzResource* resource, int ind
 		case ResourceType_SkeletalMesh:
 		{
 			for (auto& pair : opaqueModels)
-				pair.second.first.erase(static_cast<const NzSkeletalMesh*>(resource));
+				std::get<1>(pair.second).erase(static_cast<const NzSkeletalMesh*>(resource));
 
 			break;
 		}
@@ -219,13 +225,13 @@ void NzForwardRenderQueue::OnResourceDestroy(const NzResource* resource, int ind
 		case ResourceType_StaticMesh:
 		{
 			for (auto& pair : opaqueModels)
-				pair.second.second.erase(static_cast<const NzStaticMesh*>(resource));
+				std::get<2>(pair.second).erase(static_cast<const NzStaticMesh*>(resource));
 
 			break;
 		}
 	}
 
-	resource->RemoveResourceListener(this);
+	return false; // Nous ne voulons plus recevoir d'évènement de cette ressource
 }
 
 bool NzForwardRenderQueue::SkeletalMeshComparator::operator()(const NzSkeletalMesh* subMesh1, const NzSkeletalMesh* subMesh2)
@@ -269,11 +275,11 @@ bool NzForwardRenderQueue::ModelMaterialComparator::operator()(const NzMaterial*
 	///TODO: Comparaison des shaders
 	for (unsigned int i = 0; i <= nzShaderFlags_Max; ++i)
 	{
-		const NzShader* shader1 = mat1->GetShader(nzShaderTarget_Model, i);
-		const NzShader* shader2 = mat2->GetShader(nzShaderTarget_Model, i);
+		const NzShaderProgram* program1 = mat1->GetShaderProgram(nzShaderTarget_Model, i);
+		const NzShaderProgram* program2 = mat2->GetShaderProgram(nzShaderTarget_Model, i);
 
-		if (shader1 != shader2)
-			return shader1 < shader2;
+		if (program1 != program2)
+			return program1 < program2;
 	}
 
 	const NzTexture* diffuseMap1 = mat1->GetDiffuseMap();

@@ -14,6 +14,8 @@
 #include <Nazara/Renderer/RenderTarget.hpp>
 #include <Nazara/Renderer/Texture.hpp>
 
+///TODO: Faire fonctionner les RenderTexture indépendamment du contexte (un FBO par classe et par contexte l'utilisant)
+
 struct NzRenderTextureImpl;
 
 class NAZARA_API NzRenderTexture : public NzRenderTarget, NzResourceListener, NzNonCopyable
@@ -51,7 +53,7 @@ class NAZARA_API NzRenderTexture : public NzRenderTarget, NzResourceListener, Nz
 		void Desactivate() const override;
 
 	private:
-		void OnResourceDestroy(const NzResource* resource, int index) override;
+		bool OnResourceDestroy(const NzResource* resource, int index) override;
 
 		NzRenderTextureImpl* m_impl = nullptr;
 };

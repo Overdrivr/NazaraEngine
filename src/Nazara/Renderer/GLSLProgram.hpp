@@ -4,24 +4,24 @@
 
 #pragma once
 
-#ifndef NAZARA_GLSLSHADER_HPP
-#define NAZARA_GLSLSHADER_HPP
+#ifndef NAZARA_GLSLPROGRAM_HPP
+#define NAZARA_GLSLPROGRAM_HPP
 
 #include <Nazara/Core/ResourceListener.hpp>
 #include <Nazara/Core/String.hpp>
-#include <Nazara/Renderer/AbstractShader.hpp>
+#include <Nazara/Renderer/AbstractShaderProgram.hpp>
 #include <Nazara/Renderer/OpenGL.hpp>
-#include <Nazara/Renderer/Shader.hpp>
+#include <Nazara/Renderer/ShaderProgram.hpp>
 #include <map>
 #include <unordered_map>
 
 class NzResource;
 
-class NzGLSLShader : public NzAbstractShader, NzResourceListener
+class NzGLSLProgram : public NzAbstractShaderProgram, NzResourceListener
 {
 	public:
-		NzGLSLShader(NzShader* parent);
-		~NzGLSLShader() = default;
+		NzGLSLProgram(NzShaderProgram* parent);
+		~NzGLSLProgram() = default;
 
 		bool Bind();
 		bool BindTextures();
@@ -31,15 +31,18 @@ class NzGLSLShader : public NzAbstractShader, NzResourceListener
 		bool Create();
 		void Destroy();
 
+		NzByteArray GetBinary() const;
 		NzString GetLog() const;
 		nzShaderLanguage GetLanguage() const;
 		NzString GetSourceCode(nzShaderType type) const;
 		int GetUniformLocation(const NzString& name) const;
 		int GetUniformLocation(nzShaderUniform uniform) const;
 
+		bool IsBinaryRetrievable() const;
 		bool IsLoaded(nzShaderType type) const;
 
-		bool Load(nzShaderType type, const NzString& source);
+		bool LoadFromBinary(const void* buffer, unsigned int size);
+		bool LoadShader(nzShaderType type, const NzString& source);
 
 		bool SendBoolean(int location, bool value);
 		bool SendColor(int location, const NzColor& color);
@@ -57,9 +60,11 @@ class NzGLSLShader : public NzAbstractShader, NzResourceListener
 		bool SendVector(int location, const NzVector4f& vector);
 
 	private:
-		void OnResourceCreated(const NzResource* resource, int index) override;
-		void OnResourceDestroy(const NzResource* resource, int index) override;
+		bool OnResourceCreated(const NzResource* resource, int index) override;
+		bool OnResourceDestroy(const NzResource* resource, int index) override;
 		void OnResourceReleased(const NzResource* resource, int index) override;
+		void PreLinkage();
+		bool PostLinkage();
 
 		struct TextureSlot
 		{
@@ -73,9 +78,9 @@ class NzGLSLShader : public NzAbstractShader, NzResourceListener
 		std::map<GLint, TextureSlot> m_textures;
 		GLuint m_program;
 		GLuint m_shaders[nzShaderType_Max+1];
-		NzShader* m_parent;
+		NzShaderProgram* m_parent;
 		NzString m_log;
 		int m_uniformLocations[nzShaderUniform_Max+1];
 };
 
-#endif // NAZARA_GLSLSHADER_HPPs
+#endif // NAZARA_GLSLPROGRAM_HPP

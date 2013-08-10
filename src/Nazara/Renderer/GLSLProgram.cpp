@@ -2,22 +2,22 @@
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <Nazara/Renderer/OpenGL.hpp>
-#include <Nazara/Renderer/GLSLShader.hpp>
+#include <Nazara/Renderer/GLSLProgram.hpp>
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Core/String.hpp>
 #include <Nazara/Renderer/Context.hpp>
+#include <Nazara/Renderer/OpenGL.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
 #include <Nazara/Renderer/Texture.hpp>
 #include <Nazara/Utility/VertexDeclaration.hpp>
 #include <Nazara/Renderer/Debug.hpp>
 
-NzGLSLShader::NzGLSLShader(NzShader* parent) :
+NzGLSLProgram::NzGLSLProgram(NzShaderProgram* parent) :
 m_parent(parent)
 {
 }
 
-bool NzGLSLShader::Bind()
+bool NzGLSLProgram::Bind()
 {
 	#ifdef NAZARA_DEBUG
 	if (NzContext::GetCurrent() == nullptr)
@@ -32,7 +32,7 @@ bool NzGLSLShader::Bind()
 	return true;
 }
 
-bool NzGLSLShader::BindTextures()
+bool NzGLSLProgram::BindTextures()
 {
 	for (const std::pair<GLint, TextureSlot>& pair : m_textures)
 	{
@@ -44,76 +44,18 @@ bool NzGLSLShader::BindTextures()
 	return true;
 }
 
-bool NzGLSLShader::Compile()
+bool NzGLSLProgram::Compile()
 {
 	NzContext::EnsureContext();
 
-	m_idCache.clear();
-	m_textures.clear();
+	PreLinkage();
 
 	glLinkProgram(m_program);
 
-	GLint success;
-	glGetProgramiv(m_program, GL_LINK_STATUS, &success);
-
-	if (success == GL_TRUE)
-	{
-		static NzString successStr("Linkage successful");
-		m_log = successStr;
-
-		// Pour éviter de se tromper entre le nom et la constante
-		#define CacheUniform(name) m_uniformLocations[nzShaderUniform_##name] = GetUniformLocation(#name)
-
-		CacheUniform(CameraPosition);
-		CacheUniform(InvTargetSize);
-		CacheUniform(MaterialAlphaMap);
-		CacheUniform(MaterialAlphaThreshold);
-		CacheUniform(MaterialAmbient);
-		CacheUniform(MaterialDiffuse);
-		CacheUniform(MaterialDiffuseMap);
-		CacheUniform(MaterialEmissiveMap);
-		CacheUniform(MaterialHeightMap);
-		CacheUniform(MaterialNormalMap);
-		CacheUniform(MaterialShininess);
-		CacheUniform(MaterialSpecular);
-		CacheUniform(MaterialSpecularMap);
-		CacheUniform(ProjMatrix);
-		CacheUniform(SceneAmbient);
-		CacheUniform(TargetSize);
-		CacheUniform(ViewMatrix);
-		CacheUniform(ViewProjMatrix);
-		CacheUniform(WorldMatrix);
-		CacheUniform(WorldViewMatrix);
-		CacheUniform(WorldViewProjMatrix);
-
-		#undef CacheUniform
-
-		return true;
-	}
-	else
-	{
-		// On remplit le log avec l'erreur de compilation
-		GLint length = 0;
-		glGetProgramiv(m_program, GL_INFO_LOG_LENGTH, &length);
-		if (length > 1)
-		{
-			m_log.Clear(true);
-			m_log.Reserve(length+15-2); // La taille retournée est celle du buffer (Avec caractère de fin)
-			m_log.Prepend("Linkage error: ");
-			m_log.Resize(length+15-2); // Extension du buffer d'écriture pour ajouter le log
-
-			glGetProgramInfoLog(m_program, length-1, nullptr, &m_log[19]);
-		}
-		else
-			m_log = "Linkage failed but no info log found";
-
-		NazaraError(m_log);
-
-		return false;
-	}
+	return PostLinkage();
 }
 
-bool NzGLSLShader::Create()
+bool NzGLSLProgram::Create()
 {
 	NzContext::EnsureContext();
 
@@ -157,10 +99,13 @@ bool NzGLSLShader::Create()
 	for (int i = 0; i <= nzShaderType_Max; ++i)
 		m_shaders[i] = 0;
 
+	if (NzOpenGL::IsSupported(nzOpenGLExtension_GetProgramBinary))
+		glProgramParameteri(m_program, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
+
 	return true;
 }
 
-void NzGLSLShader::Destroy()
+void NzGLSLProgram::Destroy()
 {
 	NzContext::EnsureContext();
 
@@ -170,23 +115,48 @@ void NzGLSLShader::Destroy()
 	NzOpenGL::DeleteProgram(m_program);
 }
 
-NzString NzGLSLShader::GetLog() const
+NzByteArray NzGLSLProgram::GetBinary() const
+{
+	NzByteArray byteArray;
+
+	NzContext::EnsureContext();
+
+	GLint binaryLength = 0;
+	glGetProgramiv(m_program, GL_PROGRAM_BINARY_LENGTH, &binaryLength);
+
+	if (binaryLength > 0)
+	{
+		byteArray.Resize(sizeof(nzUInt64) + binaryLength);
+
+		nzUInt8* buffer = byteArray.GetBuffer();
+
+		GLenum binaryFormat;
+		glGetProgramBinary(m_program, binaryLength, nullptr, &binaryFormat, &buffer[sizeof(nzUInt64)]);
+
+		// On stocke le format au début du binaire
+		*reinterpret_cast<nzUInt64*>(&buffer[0]) = binaryFormat;
+	}
+
+	return byteArray;
+}
+
+NzString NzGLSLProgram::GetLog() const
 {
 	return m_log;
 }
 
-nzShaderLanguage NzGLSLShader::GetLanguage() const
+nzShaderLanguage NzGLSLProgram::GetLanguage() const
 {
 	return nzShaderLanguage_GLSL;
 }
 
-NzString NzGLSLShader::GetSourceCode(nzShaderType type) const
+NzString NzGLSLProgram::GetSourceCode(nzShaderType type) const
 {
 	NzContext::EnsureContext();
 
 	NzString source;
 
-	GLint length;
+	GLint length = 0;
 	glGetShaderiv(m_shaders[type], GL_SHADER_SOURCE_LENGTH, &length);
 	if (length > 1)
 	{
@@ -197,7 +167,7 @@ NzString NzGLSLShader::GetSourceCode(nzShaderType type) const
 	return source;
 }
 
-int NzGLSLShader::GetUniformLocation(const NzString& name) const
+int NzGLSLProgram::GetUniformLocation(const NzString& name) const
 {
 	auto it = m_idCache.find(name);
 	GLint id;
@@ -214,17 +184,48 @@ int NzGLSLShader::GetUniformLocation(const NzString& name) const
 	return id;
 }
 
-int NzGLSLShader::GetUniformLocation(nzShaderUniform uniform) const
+int NzGLSLProgram::GetUniformLocation(nzShaderUniform uniform) const
 {
 	return m_uniformLocations[uniform];
 }
 
-bool NzGLSLShader::IsLoaded(nzShaderType type) const
+bool NzGLSLProgram::IsBinaryRetrievable() const
+{
+	return NzOpenGL::IsSupported(nzOpenGLExtension_GetProgramBinary);
+}
+
+bool NzGLSLProgram::IsLoaded(nzShaderType type) const
 {
 	return m_shaders[type] != 0;
 }
 
-bool NzGLSLShader::Load(nzShaderType type, const NzString& source)
+bool NzGLSLProgram::LoadFromBinary(const void* buffer, unsigned int size)
+{
+	#if NAZARA_RENDERER_SAFE
+	if (!glProgramBinary)
+	{
+		NazaraError("GL_ARB_get_program_binary not supported");
+		return false;
+	}
+	#endif
+
+	NzContext::EnsureContext();
+
+	const nzUInt8* ptr = reinterpret_cast<const nzUInt8*>(buffer);
+
+	// On récupère le format au début du binaire
+	///TODO: ByteStream ?
+	GLenum binaryFormat = static_cast<GLenum>(*reinterpret_cast<const nzUInt64*>(&ptr[0]));
+	ptr += sizeof(nzUInt64);
+
+	PreLinkage();
+
+	glProgramBinary(m_program, binaryFormat, ptr, size-sizeof(nzUInt64));
+
+	return PostLinkage();
+}
+
+bool NzGLSLProgram::LoadShader(nzShaderType type, const NzString& source)
 {
 	NzContext::EnsureContext();
 
@@ -283,7 +284,7 @@ bool NzGLSLShader::Load(nzShaderType type, const NzString& source)
 	}
 }
 
-bool NzGLSLShader::SendBoolean(int location, bool value)
+bool NzGLSLProgram::SendBoolean(int location, bool value)
 {
 	if (glProgramUniform1i)
 		glProgramUniform1i(m_program, location, value);
@@ -296,7 +297,7 @@ bool NzGLSLShader::SendBoolean(int location, bool value)
 	return true;
 }
 
-bool NzGLSLShader::SendColor(int location, const NzColor& color)
+bool NzGLSLProgram::SendColor(int location, const NzColor& color)
 {
 	NzVector4f vecColor(color.r/255.f, color.g/255.f, color.b/255.f, color.a/255.f);
 
@@ -311,7 +312,7 @@ bool NzGLSLShader::SendColor(int location, const NzColor& color)
 	return true;
 }
 
-bool NzGLSLShader::SendDouble(int location, double value)
+bool NzGLSLProgram::SendDouble(int location, double value)
 {
 	if (glProgramUniform1d)
 		glProgramUniform1d(m_program, location, value);
@@ -324,7 +325,7 @@ bool NzGLSLShader::SendDouble(int location, double value)
 	return true;
 }
 
-bool NzGLSLShader::SendFloat(int location, float value)
+bool NzGLSLProgram::SendFloat(int location, float value)
 {
 	if (glProgramUniform1f)
 		glProgramUniform1f(m_program, location, value);
@@ -337,7 +338,7 @@ bool NzGLSLShader::SendFloat(int location, float value)
 	return true;
 }
 
-bool NzGLSLShader::SendInteger(int location, int value)
+bool NzGLSLProgram::SendInteger(int location, int value)
 {
 	if (glProgramUniform1i)
 		glProgramUniform1i(m_program, location, value);
@@ -350,7 +351,7 @@ bool NzGLSLShader::SendInteger(int location, int value)
 	return true;
 }
 
-bool NzGLSLShader::SendMatrix(int location, const NzMatrix4d& matrix)
+bool NzGLSLProgram::SendMatrix(int location, const NzMatrix4d& matrix)
 {
 	if (glProgramUniformMatrix4dv)
 		glProgramUniformMatrix4dv(m_program, location, 1, GL_FALSE, matrix);
@@ -363,7 +364,7 @@ bool NzGLSLShader::SendMatrix(int location, const NzMatrix4d& matrix)
 	return true;
 }
 
-bool NzGLSLShader::SendMatrix(int location, const NzMatrix4f& matrix)
+bool NzGLSLProgram::SendMatrix(int location, const NzMatrix4f& matrix)
 {
 	if (glProgramUniformMatrix4fv)
 		glProgramUniformMatrix4fv(m_program, location, 1, GL_FALSE, matrix);
@@ -376,7 +377,7 @@ bool NzGLSLShader::SendMatrix(int location, const NzMatrix4f& matrix)
 	return true;
 }
 
-bool NzGLSLShader::SendTexture(int location, const NzTexture* texture, nzUInt8* textureUnit)
+bool NzGLSLProgram::SendTexture(int location, const NzTexture* texture, nzUInt8* textureUnit)
 {
 	auto it = m_textures.find(location);
 	if (it != m_textures.end())
@@ -441,7 +442,7 @@ bool NzGLSLShader::SendTexture(int location, const NzTexture* texture, nzUInt8* 
 	return true;
 }
 
-bool NzGLSLShader::SendVector(int location, const NzVector2d& vector)
+bool NzGLSLProgram::SendVector(int location, const NzVector2d& vector)
 {
 	if (glProgramUniform2dv)
 		glProgramUniform2dv(m_program, location, 1, vector);
@@ -454,7 +455,7 @@ bool NzGLSLShader::SendVector(int location, const NzVector2d& vector)
 	return true;
 }
 
-bool NzGLSLShader::SendVector(int location, const NzVector2f& vector)
+bool NzGLSLProgram::SendVector(int location, const NzVector2f& vector)
 {
 	if (glProgramUniform2fv)
 		glProgramUniform2fv(m_program, location, 1, vector);
@@ -467,7 +468,7 @@ bool NzGLSLShader::SendVector(int location, const NzVector2f& vector)
 	return true;
 }
 
-bool NzGLSLShader::SendVector(int location, const NzVector3d& vector)
+bool NzGLSLProgram::SendVector(int location, const NzVector3d& vector)
 {
 	if (glProgramUniform3dv)
 		glProgramUniform3dv(m_program, location, 1, vector);
@@ -480,7 +481,7 @@ bool NzGLSLShader::SendVector(int location, const NzVector3d& vector)
 	return true;
 }
 
-bool NzGLSLShader::SendVector(int location, const NzVector3f& vector)
+bool NzGLSLProgram::SendVector(int location, const NzVector3f& vector)
 {
 	if (glProgramUniform3fv)
 		glProgramUniform3fv(m_program, location, 1, vector);
@@ -493,7 +494,7 @@ bool NzGLSLShader::SendVector(int location, const NzVector3f& vector)
 	return true;
 }
 
-bool NzGLSLShader::SendVector(int location, const NzVector4d& vector)
+bool NzGLSLProgram::SendVector(int location, const NzVector4d& vector)
 {
 	if (glProgramUniform4dv)
 		glProgramUniform4dv(m_program, location, 1, vector);
@@ -506,7 +507,7 @@ bool NzGLSLShader::SendVector(int location, const NzVector4d& vector)
 	return true;
 }
 
-bool NzGLSLShader::SendVector(int location, const NzVector4f& vector)
+bool NzGLSLProgram::SendVector(int location, const NzVector4f& vector)
 {
 	if (glProgramUniform4fv)
 		glProgramUniform4fv(m_program, location, 1, vector);
@@ -519,7 +520,7 @@ bool NzGLSLShader::SendVector(int location, const NzVector4f& vector)
 	return true;
 }
 
-void NzGLSLShader::OnResourceCreated(const NzResource* resource, int index)
+bool NzGLSLProgram::OnResourceCreated(const NzResource* resource, int index)
 {
 	NazaraUnused(resource);
 
@@ -529,7 +530,7 @@ void NzGLSLShader::OnResourceCreated(const NzResource* resource, int index)
 	if (it == m_textures.end())
 	{
 		NazaraInternalError("Invalid index (" + NzString::Number(index) + ')');
-		return;
+		return false;
 	}
 	#endif
 
@@ -539,15 +540,17 @@ void NzGLSLShader::OnResourceCreated(const NzResource* resource, int index)
 	if (slot.texture != resource)
 	{
 		NazaraInternalError("Wrong texture at location #" + NzString::Number(index));
-		return;
+		return false;
 	}
 	#endif
 
 	slot.enabled = true;
 	slot.updated = false;
+
+	return true;
 }
 
-void NzGLSLShader::OnResourceDestroy(const NzResource* resource, int index)
+bool NzGLSLProgram::OnResourceDestroy(const NzResource* resource, int index)
 {
 	NazaraUnused(resource);
 
@@ -557,7 +560,7 @@ void NzGLSLShader::OnResourceDestroy(const NzResource* resource, int index)
 	if (it == m_textures.end())
 	{
 		NazaraInternalError("Invalid index (" + NzString::Number(index) + ')');
-		return;
+		return false;
 	}
 	#endif
 
@@ -567,17 +570,86 @@ void NzGLSLShader::OnResourceDestroy(const NzResource* resource, int index)
 	if (slot.texture != resource)
 	{
 		NazaraInternalError("Wrong texture at location #" + NzString::Number(index));
-		return;
+		return false;
 	}
 	#endif
 
 	slot.enabled = false;
+
+	return true;
 }
 
-void NzGLSLShader::OnResourceReleased(const NzResource* resource, int index)
+void NzGLSLProgram::OnResourceReleased(const NzResource* resource, int index)
 {
 	if (m_textures.erase(index) == 0)
 		NazaraInternalError("Texture " + NzString::Pointer(resource) + " not found");
+}
 
-	resource->RemoveResourceListener(this);
+void NzGLSLProgram::PreLinkage()
+{
+	m_idCache.clear();
+	m_textures.clear();
+}
+
+bool NzGLSLProgram::PostLinkage()
+{
+	// On suppose qu'un contexte OpenGL est actif à l'appel de cette fonction
+	GLint success;
+	glGetProgramiv(m_program, GL_LINK_STATUS, &success);
+
+	if (success == GL_TRUE)
+	{
+		static NzString successStr("Linkage successful");
+		m_log = successStr;
+
+		// Pour éviter de se tromper entre le nom et la constante
+		#define CacheUniform(name) m_uniformLocations[nzShaderUniform_##name] = GetUniformLocation(#name)
+
+		CacheUniform(CameraPosition);
+		CacheUniform(InvTargetSize);
+		CacheUniform(MaterialAlphaMap);
+		CacheUniform(MaterialAlphaThreshold);
+		CacheUniform(MaterialAmbient);
+		CacheUniform(MaterialDiffuse);
+		CacheUniform(MaterialDiffuseMap);
+		CacheUniform(MaterialEmissiveMap);
+		CacheUniform(MaterialHeightMap);
+		CacheUniform(MaterialNormalMap);
+		CacheUniform(MaterialShininess);
+		CacheUniform(MaterialSpecular);
+		CacheUniform(MaterialSpecularMap);
+		CacheUniform(ProjMatrix);
+		CacheUniform(SceneAmbient);
+		CacheUniform(TargetSize);
+		CacheUniform(ViewMatrix);
+		CacheUniform(ViewProjMatrix);
+		CacheUniform(WorldMatrix);
+		CacheUniform(WorldViewMatrix);
+		CacheUniform(WorldViewProjMatrix);
+
+		#undef CacheUniform
+
+		return true;
+	}
+	else
+	{
+		// On remplit le log avec l'erreur de compilation
+		GLint length = 0;
+		glGetProgramiv(m_program, GL_INFO_LOG_LENGTH, &length);
+		if (length > 1)
+		{
+			m_log.Clear(true);
+			m_log.Reserve(length+15-2); // La taille retournée est celle du buffer (Avec caractère de fin)
+			m_log.Prepend("Linkage error: ");
+			m_log.Resize(length+15-2); // Extension du buffer d'écriture pour ajouter le log
+
+			glGetProgramInfoLog(m_program, length-1, nullptr, &m_log[19]);
+		}
+		else
+			m_log = "Linkage failed but no info log found";
+
+		NazaraError(m_log);
+
+		return false;
+	}
 }

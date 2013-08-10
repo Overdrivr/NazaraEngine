@@ -21,14 +21,14 @@ class NAZARA_API NzByteArray : public NzHashable
 		struct SharedArray;
 
 		NzByteArray();
-		NzByteArray(const nzUInt8* buffer, unsigned int length);
+		explicit NzByteArray(unsigned int size);
+		NzByteArray(const void* buffer, unsigned int size);
 		NzByteArray(const NzByteArray& buffer);
 		NzByteArray(NzByteArray&& buffer) noexcept;
 		NzByteArray(SharedArray* sharedArray);
 		~NzByteArray();
 
-		NzByteArray& Append(nzUInt8 byte);
-		NzByteArray& Append(const nzUInt8* buffer, unsigned int length);
+		NzByteArray& Append(const void* buffer, unsigned int size);
 		NzByteArray& Append(const NzByteArray& array);
 
 		void Clear(bool keepBuffer = false);
@@ -38,20 +38,20 @@ class NAZARA_API NzByteArray : public NzHashable
 		const nzUInt8* GetConstBuffer() const;
 		unsigned int GetSize() const;
 
-		NzByteArray& Insert(int pos, nzUInt8 byte);
-		NzByteArray& Insert(int pos, const nzUInt8* buffer, unsigned int length);
+		NzByteArray& Insert(int pos, const void* buffer, unsigned int size);
 		NzByteArray& Insert(int pos, const NzByteArray& array);
 
 		bool IsEmpty() const;
 
-		NzByteArray& Prepend(nzUInt8 byte);
-		NzByteArray& Prepend(const nzUInt8* buffer, unsigned int length);
+		NzByteArray& Prepend(const void* buffer, unsigned int size);
 		NzByteArray& Prepend(const NzByteArray& array);
 
 		void Reserve(unsigned int bufferSize);
 
-		NzByteArray& Resize(int size, nzUInt8 byte = 0);
-		NzByteArray Resized(int size, nzUInt8 byte = 0) const;
+		NzByteArray& Resize(int size);
+		NzByteArray& Resize(int size, nzUInt8 byte);
+		NzByteArray Resized(int size) const;
+		NzByteArray Resized(int size, nzUInt8 byte) const;
 
 		NzByteArray SubArray(int startPos, int endPos = -1) const;
 
@@ -81,9 +81,7 @@ class NAZARA_API NzByteArray : public NzHashable
 		NzByteArray& operator=(const NzByteArray& array);
 		NzByteArray& operator=(NzByteArray&& array) noexcept;
 
-		NzByteArray operator+(nzUInt8 byte) const;
 		NzByteArray operator+(const NzByteArray& array) const;
-		NzByteArray& operator+=(nzUInt8 byte);
 		NzByteArray& operator+=(const NzByteArray& array);
 
 		static int Compare(const NzByteArray& first, const NzByteArray& second);
