@@ -35,8 +35,8 @@ class NAZARA_API NzBatch
 
     protected:
     private:
-        unsigned int m_index;
-        unsigned int m_count;
+        nzUInt16 m_index;
+        nzUInt16 m_count;
 };
 
 #endif // NAZARA_BATCH_HPP

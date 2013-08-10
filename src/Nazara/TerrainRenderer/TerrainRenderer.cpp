@@ -25,6 +25,8 @@ void NzTerrainRenderer::DrawTerrainChunk(const NzTerrainChunk& chunk)
     // Pour itérer sur les vertex buffers
     auto itBuffers = chunk.m_vertexBuffers.begin();
     unsigned int i = 0;
+    nzUInt16 index;
+    nzUInt16 offset;
 
     for( ; itBuffers != chunk.m_vertexBuffers.end() ; ++itBuffers)
     {
@@ -41,7 +43,9 @@ void NzTerrainRenderer::DrawTerrainChunk(const NzTerrainChunk& chunk)
                 //(*it).x -> firstIndex;
                 //(*it).y -> vertexCount;
             //Pour dessiner 1 patch (25 vertex) il nous faut 96 index
-            NzRenderer::DrawIndexedPrimitives(nzPrimitiveMode_LineStrip, (*itBatches).Start()*96, (*itBatches).Count()*96);
+            offset = (*itBatches).Start()*96;
+            index = (*itBatches).Count()*96;
+            NzRenderer::DrawIndexedPrimitives(nzPrimitiveMode_TriangleList,offset,index);
         }
         ++i;
     }
@@ -84,8 +88,8 @@ bool NzTerrainRenderer::Initialize()
     for(int i(0) ; i < 4 ; ++i)
     {
         rowIndex[i*6] = i;
-        rowIndex[i*6+1] = i + 6;
-        rowIndex[i*6+2] = i + 1;
+        rowIndex[i*6+1] = i + 1;
+        rowIndex[i*6+2] = i + 6;
         rowIndex[i*6+3] = i;
         rowIndex[i*6+4] = i + 5;
         rowIndex[i*6+5] = i + 6;
@@ -121,11 +125,11 @@ bool NzTerrainRenderer::Initialize()
     NzBufferMapper<NzIndexBuffer> mapper(m_indexBuffer, nzBufferAccess_ReadOnly);
     const nzUInt16* indices = reinterpret_cast<const nzUInt16*>(mapper.GetPointer());
 
-        for(int i(0) ; i < 96 ; ++i)
+        for(int i(0) ; i < 64 ; ++i)
         {
             std::cout<<i<<" | "<<indices[i]<<std::endl;
 
-            if (indices[i] >= 150)
+            if (indices[i] >= 25)
                 std::cout << "Erreur" << std::endl;
         }
 
