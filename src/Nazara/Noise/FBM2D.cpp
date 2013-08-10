@@ -9,11 +9,11 @@
 #include <Nazara/Noise/Simplex2D.hpp>
 #include <Nazara/Noise/Debug.hpp>
 
-NzFBM2D::NzFBM2D(nzNoises source, unsigned int seed)
+NzFBM2D::NzFBM2D(nzNoise source, unsigned int seed)
 {
     switch(source)
     {
-        case PERLIN:
+        case nzNoise_perlin:
             m_source = new NzPerlin2D();
         break;
 

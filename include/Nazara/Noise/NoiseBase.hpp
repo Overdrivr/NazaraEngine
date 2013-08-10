@@ -9,12 +9,7 @@
 
 #include <Nazara/Prerequesites.hpp>
 
-enum nzNoises
-{
-    PERLIN,
-    SIMPLEX,
-    CELL
-};
+
 
 class NAZARA_API NzNoiseBase
 {

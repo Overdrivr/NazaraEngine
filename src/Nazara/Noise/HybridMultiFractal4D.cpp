@@ -9,11 +9,11 @@
 #include <Nazara/Noise/Simplex4D.hpp>
 #include <Nazara/Noise/Debug.hpp>
 
-NzHybridMultiFractal4D::NzHybridMultiFractal4D(nzNoises source, unsigned int seed)
+NzHybridMultiFractal4D::NzHybridMultiFractal4D(nzNoise source, unsigned int seed)
 {
     switch(source)
     {
-        case PERLIN:
+        case nzNoise_perlin:
             m_source = new NzPerlin4D();
         break;
 

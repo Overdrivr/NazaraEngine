@@ -66,7 +66,7 @@ int main()
 	}*/
 
     /// On crée un chunk de terrain manuellement
-    /*NzTerrainChunk chunk;
+    NzTerrainChunk chunk;
     NzTerrainNodeID id;//L'identifiant unique du maillage uploadé, on s'en passe ici
     NzBoundingVolumef box(10.f,10.f,10.f,100.f,100.f,100.f);//La bounding box du maillage, on s'en passe ici
 
@@ -85,7 +85,7 @@ int main()
             data.at(((x + 5 * y))*6 + 5) = 0.f;
         }
 
-    chunk.AddMesh(data,box,id);*/
+    chunk.AddMesh(data,box,id);
 
     ///Code classique pour ouvrir une fenêtre avec Nazara
     NzString windowTitle("Terrain Renderer example");

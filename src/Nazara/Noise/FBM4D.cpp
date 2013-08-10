@@ -9,11 +9,11 @@
 #include <Nazara/Noise/Simplex4D.hpp>
 #include <Nazara/Noise/Debug.hpp>
 
-NzFBM4D::NzFBM4D(nzNoises source, unsigned int seed)
+NzFBM4D::NzFBM4D(nzNoise source, unsigned int seed)
 {
     switch(source)
     {
-        case PERLIN:
+        case nzNoise_perlin:
             m_source = new NzPerlin4D();
         break;
 

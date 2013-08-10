@@ -8,7 +8,7 @@
 #include <Nazara/Noise/Debug.hpp>
 #include <iterator>
 
-NzWorley2D::NzWorley2D(worleyFunction function)
+NzWorley2D::NzWorley2D(nzWorleyFunction function)
 {
     m_function = function;
     scale[0] = 1.f / std::sqrt(2);
@@ -107,7 +107,7 @@ float NzWorley2D::GetValue(float x, float y, float resolution)
     return it->first * scale[m_function];
 }
 
-void NzWorley2D::SetFunction(worleyFunction function)
+void NzWorley2D::SetFunction(nzWorleyFunction function)
 {
     m_function = function;
 }

@@ -10,6 +10,7 @@
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Noise/NoiseBase.hpp>
 #include <Nazara/Noise/Abstract2DNoise.hpp>
+#include <Nazara/Noise/Enums.hpp>
 #include <Nazara/Math/Vector2.hpp>
 #include <random>
 #include <map>
@@ -17,13 +18,13 @@
 class NAZARA_API NzWorley2D : public NzAbstract2DNoise
 {
     public:
-        NzWorley2D(worleyFunction function = F1);
+        NzWorley2D(nzWorleyFunction function = nzWorleyFunction_F1);
         NzWorley2D(unsigned int seed);
 
         float GetValue(float x, float y, float resolution);
         //FIX ME : Rajouter fonction pour récupérer l'état complet après un calcul
 
-        void SetFunction(worleyFunction function);
+        void SetFunction(nzWorleyFunction function);
         ~NzWorley2D() = default;
     protected:
     private:
@@ -33,7 +34,7 @@ class NAZARA_API NzWorley2D : public NzAbstract2DNoise
         std::map<float,NzVector2f>::iterator it;
         std::minstd_rand0 randomNumberGenerator;
         float scale[4];
-        worleyFunction m_function;
+        nzWorleyFunction m_function;
 
         int seed;
         int x0, y0;

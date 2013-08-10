@@ -10,11 +10,12 @@
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Noise/ComplexNoiseBase.hpp>
 #include <Nazara/Noise/Abstract3DNoise.hpp>
+#include <Nazara/Noise/Enums.hpp>
 
 class NAZARA_API NzFBM3D : public NzAbstract3DNoise, public NzComplexNoiseBase
 {
     public:
-        NzFBM3D(nzNoises source, unsigned int seed);
+        NzFBM3D(nzNoise source, unsigned int seed);
         float GetValue(float x, float y, float z, float resolution);
         ~NzFBM3D();
     protected:
@@ -22,7 +23,7 @@ class NAZARA_API NzFBM3D : public NzAbstract3DNoise, public NzComplexNoiseBase
         NzAbstract3DNoise* m_source;
         float m_value;
         float m_remainder;
-        nzNoises m_noiseType;
+        nzNoise m_noiseType;
 };
 
 #endif // FBM3D_HPP

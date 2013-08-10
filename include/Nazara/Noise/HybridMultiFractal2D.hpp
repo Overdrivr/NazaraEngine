@@ -10,11 +10,12 @@
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Noise/ComplexNoiseBase.hpp>
 #include <Nazara/Noise/Abstract2DNoise.hpp>
+#include <Nazara/Noise/Enums.hpp>
 
 class NAZARA_API NzHybridMultiFractal2D : public NzAbstract2DNoise, public NzComplexNoiseBase
 {
     public:
-        NzHybridMultiFractal2D(nzNoises source, unsigned int seed);
+        NzHybridMultiFractal2D(nzNoise source, unsigned int seed);
         float GetValue(float x, float y, float resolution);
         ~NzHybridMultiFractal2D();
     protected:
@@ -25,7 +26,7 @@ class NAZARA_API NzHybridMultiFractal2D : public NzAbstract2DNoise, public NzCom
         float m_offset;
         float m_weight;
         float m_signal;
-        nzNoises m_noiseType;
+        nzNoise m_noiseType;
 };
 
 #endif // HYBRIDMULTIFRACTAL2D_HPP
