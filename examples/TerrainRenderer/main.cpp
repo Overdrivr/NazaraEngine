@@ -40,7 +40,7 @@ int main()
 
     NzScene scene;
 
-    /*NzTexture* texture = new NzTexture;
+    NzTexture* texture = new NzTexture;
 	if (texture->LoadCubemapFromFile("resources/skybox-space.png"))
 	{
 		// Si la création du cubemap a fonctionné
@@ -63,26 +63,28 @@ int main()
 	{
 		delete texture; // Le chargement a échoué, nous libérons la texture
 		std::cout << "Failed to load skybox" << std::endl;
-	}*/
+	}
 
     /// On crée un chunk de terrain manuellement
     NzTerrainChunk chunk;
     NzTerrainNodeID id;//L'identifiant unique du maillage uploadé, on s'en passe ici
-    NzBoundingVolumef box(10.f,10.f,10.f,100.f,100.f,100.f);//La bounding box du maillage, on s'en passe ici
+    NzBoundingVolumef box(0.f,0.f,0.f,1000.f,1000.f,1000.f);//La bounding box du maillage, on s'en passe ici
 
     std::array<float,150> data;
-
-    for(int x(0) ; x < 5 ; ++x)
-        for(int y(0) ; y < 5 ; ++y)
+    srand(1234567891);
+    int index = 0;
+    for(int y(0) ; y < 5 ; ++y)
+        for(int x(0) ; x < 5 ; ++x)
         {
+            index = (x + 5 * y)*6;
             //On génère une grille
-            data.at(((x + 5 * y))*6) = x * 1000.f;
-            data.at(((x + 5 * y))*6 + 1) = 0.f;
-            data.at(((x + 5 * y))*6 + 2) = y * 1000.f;
+            data.at(index) = x * 1000.f;
+            data.at(index + 1) = (rand() % 10 - 5) * 100.f;
+            data.at(index + 2) = y * 1000.f;
             //Normales vers le haut
-            data.at(((x + 5 * y))*6 + 3) = 0.f;
-            data.at(((x + 5 * y))*6 + 4) = 1.f;
-            data.at(((x + 5 * y))*6 + 5) = 0.f;
+            data.at(index + 3) = 0.f;
+            data.at(index + 4) = 1.f;
+            data.at(index + 5) = 0.f;
         }
 
     chunk.AddMesh(data,box,id);
@@ -119,14 +121,16 @@ int main()
     bool drawWireframe = false;
     bool terrainUpdate = true;
 
+    NzDebugDrawer::SetPointSize(30.f);
+
     //std::cout<<NzDebugDrawer::GetLineWidth()<<std::endl;
     //std::cout<<NzDebugDrawer::GetPointSize()<<std::endl;
     //std::cout<<NzDebugDrawer::GetPrimaryColor()<<std::endl;
     //NzDebugDrawer::EnableDepthBuffer(true);
 
-    //NzRenderStates renderStates;
-    //renderStates.parameters[nzRendererParameter_DepthBuffer] = true;
-    //renderStates.parameters[nzRendererParameter_DepthWrite] = true;
+    NzRenderStates renderStates;
+    renderStates.parameters[nzRendererParameter_DepthBuffer] = true;
+    renderStates.parameters[nzRendererParameter_DepthWrite] = true;
 
     //std::cout<<"Starting main loop"<<std::endl;
 
@@ -237,18 +241,18 @@ int main()
 		scene.Cull();
 		scene.UpdateVisible();
 		scene.Draw();
+
+		NzRenderer::SetMatrix(nzMatrixType_World, NzMatrix4f::Identity());
+		//NzBoundingVolumef box(0.f,0.f,0.f,1000.f,1000.f,1000.f);
+		box.Update(NzMatrix4f::Identity());
 		NzDebugDrawer::Draw(box);
 
 		// Dessin du chunk
-		//NzRenderer::SetRenderStates(renderStates);
-		//NzRenderer::SetShader(&(NzTerrainRenderer::GetShader()));
-
-
-		/*
-
+		NzRenderer::SetRenderStates(renderStates);
+		NzRenderer::SetShaderProgram(&(NzTerrainRenderer::GetShader()));
         NzRenderer::SetFaceFilling(nzFaceFilling_Line);
         NzRenderer::SetIndexBuffer(&(NzTerrainRenderer::GetIndexBuffer()));
-        NzTerrainRenderer::DrawTerrainChunk(chunk);*/
+        NzTerrainRenderer::DrawTerrainChunk(chunk);
 
 		// Nous mettons à jour l'écran
 		window.Display();

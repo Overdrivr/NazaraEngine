@@ -10,6 +10,7 @@
 #include <Nazara/Renderer/ShaderProgram.hpp>
 #include <Nazara/TerrainRenderer/Config.hpp>
 #include <iostream>
+#include <Nazara/Utility/BufferMapper.hpp>
 #include <Nazara/TerrainRenderer/Debug.hpp>
 
 namespace
@@ -40,7 +41,7 @@ void NzTerrainRenderer::DrawTerrainChunk(const NzTerrainChunk& chunk)
                 //(*it).x -> firstIndex;
                 //(*it).y -> vertexCount;
             //Pour dessiner 1 patch (25 vertex) il nous faut 96 index
-            NzRenderer::DrawIndexedPrimitives(nzPrimitiveMode_TriangleList, (*itBatches).Start()*96, (*itBatches).Count()*96);
+            NzRenderer::DrawIndexedPrimitives(nzPrimitiveMode_LineStrip, (*itBatches).Start()*96, (*itBatches).Count()*96);
         }
         ++i;
     }
@@ -98,13 +99,13 @@ bool NzTerrainRenderer::Initialize()
             indexes[i*24+j] = rowIndex[j] + i*5;
         }
 
-    std::vector<unsigned int> allIndexes;
+    std::vector<nzUInt16> allIndexes;
     allIndexes.reserve(VERTEX_BUFFER_SLOT_AMOUNT * 96);
 
     for(int i(0) ; i < VERTEX_BUFFER_SLOT_AMOUNT ; ++i)
         for(int j(0) ; j < 96 ; ++j)
         {
-            allIndexes.push_back(indexes[j] + 25 * i);
+            allIndexes.push_back(static_cast<nzUInt16>(indexes[j] + 25 * i));
         }
 
 	m_indexBuffer = new NzIndexBuffer(false, VERTEX_BUFFER_SLOT_AMOUNT * 96, nzBufferStorage_Hardware);
@@ -115,6 +116,18 @@ bool NzTerrainRenderer::Initialize()
 		delete m_indexBuffer;
 		return false;
 	}
+
+
+    NzBufferMapper<NzIndexBuffer> mapper(m_indexBuffer, nzBufferAccess_ReadOnly);
+    const nzUInt16* indices = reinterpret_cast<const nzUInt16*>(mapper.GetPointer());
+
+        for(int i(0) ; i < 96 ; ++i)
+        {
+            std::cout<<i<<" | "<<indices[i]<<std::endl;
+
+            if (indices[i] >= 150)
+                std::cout << "Erreur" << std::endl;
+        }
 
 	/// Le shader par défaut du terrain
 	const char* vertexSource =
@@ -180,7 +193,7 @@ bool NzTerrainRenderer::Initialize()
 
     m_shader = new NzShaderProgram(nzShaderLanguage_GLSL);
 
-    if (!m_shader->LoadShaderFromFile(nzShaderType_Fragment, fragmentSource))
+    if (!m_shader->LoadShader(nzShaderType_Fragment, fragmentSource))
     {
         NazaraError("Failed to initialize terrain renderer module : Failed to load fragment shader");
         delete m_indexBuffer;
@@ -188,7 +201,7 @@ bool NzTerrainRenderer::Initialize()
         return false;
     }
 
-    if (!m_shader->LoadShaderFromFile(nzShaderType_Vertex, vertexSource))
+    if (!m_shader->LoadShader(nzShaderType_Vertex, vertexSource))
     {
         NazaraError("Failed to initialize terrain renderer module : Failed to load vertex shader");
         delete m_indexBuffer;
