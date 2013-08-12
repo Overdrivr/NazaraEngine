@@ -39,7 +39,7 @@ class NAZARA_API NzDynamicTerrain : public NzTerrainBase
         NzHeightSource2D* m_heightSource;
         NzTexture m_terrainTexture;
 
-        NzShader m_shader;
+        NzShaderProgram m_shader;
 
         // Les quadtrees gèrent la construction/mise à jour du maillage de manière optimisé
         // Chaque quadtree représente une sous-région fixe du terrain

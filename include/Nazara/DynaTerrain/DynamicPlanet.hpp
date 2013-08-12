@@ -35,7 +35,7 @@ class NAZARA_API NzDynamicPlanet : public NzTerrainBase
         NzHeightSource3D* m_heightSource;
         NzTexture m_terrainTexture;
 
-        NzShader m_shader;
+        NzShaderProgram m_shader;
         std::vector<NzTerrainQuadTree*> quadtrees;
         //NzTerrainQuadTree* quadtree2;
 };

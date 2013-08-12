@@ -34,7 +34,7 @@ class NAZARA_API NzStaticTerrain : public NzTerrainBase
         NzHeightSource2D* m_heightSource;
         NzTexture m_terrainTexture;
 
-        NzShader m_shader;
+        NzShaderProgram m_shader;
         NzVector2f m_size;
         unsigned int resolution;
 };

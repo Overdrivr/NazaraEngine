@@ -8,7 +8,7 @@
 #define NAZARA_TERRAINBASE_HPP
 
 #include <Nazara/Prerequesites.hpp>
-#include <Nazara/Renderer/Shader.hpp>
+#include <Nazara/Renderer/ShaderProgram.hpp>
 #include <Nazara/DynaTerrain/Configuration/TerrainConfiguration.hpp>
 #include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
 #include <Nazara/Utility/IndexBuffer.hpp>
