@@ -5,8 +5,11 @@
 #include <Nazara/TerrainRenderer/TerrainRenderer.hpp>
 #include <Nazara/TerrainRenderer/TerrainChunk.hpp>
 #include <Nazara/Math/Matrix4.hpp>
+#include <Nazara/Renderer/OpenGL.hpp>
 #include <iostream>
 #include <sstream>
+
+
 
 using namespace std;
 
@@ -27,17 +30,23 @@ int main()
 		std::getchar();
 		return EXIT_FAILURE;
 	}
-/*
-    NzInitializer<NzDebugDrawer> nzDebugRender;
-	if (!nzDebugRender)
-	{
-		std::cout << "Failed to initialize Debug Renderer, see NazaraLog.log for further informations" << std::endl;
-		std::getchar();
-		return EXIT_FAILURE;
-	}*/
 
 	NzDebugDrawer::Initialize();
 
+    NzInitializer<NzOpenGL> openGL;
+	if (openGL)
+	{
+    unsigned int openglVersion = NzOpenGL::GetVersion();
+    std::cout << "Identification: " << NzOpenGL::GetRendererName() << std::endl;
+    std::cout << "Concepteur: " << NzOpenGL::GetVendorName() << std::endl;
+    std::cout << "Version d'OpenGL: " << openglVersion / 100 << '.' << openglVersion % 100 << std::endl;
+	}
+	else
+	{
+	    NazaraError("Problème à l'initialisation d'OpenGL, impossible de récupérer les informations.");
+	    std::getchar();
+	    return EXIT_FAILURE;
+	}
     NzScene scene;
 
     /*NzTexture* texture = new NzTexture;
@@ -88,15 +97,21 @@ int main()
         }
 
     chunk.AddMesh(data,box,id);
-   /* NzTerrainChunk chunk2;
-    chunk2.AddMesh(data,box,id);
+
+    int matrixLocation = -1;
+    matrixLocation = NzTerrainRenderer::GetShader()->GetUniformLocation("WorldViewProjMatrix");
+
+    //std::cout<<NzTerrainRenderer::GetShader()->GetLog()<<std::endl;
+    //std::cout<<NzTerrainRenderer::GetShader()->GetSourceCode(nzShaderType_Vertex)<<std::endl;
+    //std::cout<<NzTerrainRenderer::GetShader()->GetSourceCode(nzShaderType_Fragment)<<std::endl;
+    //std::cout<<"IsValid ? "<<NzTerrainRenderer::GetShader()->IsValid()<<std::endl;
 
     for(int y(0) ; y < 5 ; ++y)
         for(int x(0) ; x < 5 ; ++x)
         {
             index = (x + 5 * y)*6;
             //On génère une grille
-            data.at(index) = x * 1000.f;
+            data.at(index) = x * 1000.f + 6000.f;
             data.at(index + 1) = (rand() % 10 - 5) * 100.f;
             data.at(index + 2) = y * 1000.f;
             //Normales vers le haut
@@ -104,50 +119,57 @@ int main()
             data.at(index + 4) = 1.f;
             data.at(index + 5) = 0.f;
         }
+    //chunk.AddMesh(data,box,id);
+    NzTerrainChunk chunk2;
+    chunk2.AddMesh(data,box,id);
+    /*
     NzVertexBuffer buf(NzVertexDeclaration::Get(nzVertexLayout_XYZ_Normal),25,nzBufferStorage_Hardware,nzBufferUsage_Static);
     buf.Fill(data.data(),0,25);*/
 
     ////////////////////////////
-    nzUInt16 rowIndex[16];
-    for(unsigned int i(0) ; i < 4 ; ++i)
-    {
-        rowIndex[i*4] = i;
-        rowIndex[i*4+1] = i + 1;
-        rowIndex[i*4+2] = i + 6;
-        rowIndex[i*4+3] = i + 5;
-    }
+   /* nzUInt16 rowIndex[6];
+
+    rowIndex[0] = 0;
+    rowIndex[1] = 1;
+    rowIndex[2] = 2;
+    rowIndex[3] = 3;
+
     NzIndexBuffer indexBuf(false,16,nzBufferStorage_Hardware);
     indexBuf.Fill(rowIndex,0,16);
 
     NzBufferMapper<NzIndexBuffer> mapper(indexBuf, nzBufferAccess_ReadOnly);
-    const nzUInt16* indices = reinterpret_cast<const nzUInt16*>(mapper.GetPointer());
+    const nzUInt16* indices = reinterpret_cast<const nzUInt16*>(mapper.GetPointer());*/
 
     /*for(int i(0) ; i < 16 ; ++i)
     {
         std::cout<<i<<" : "<<indices[i]<<std::endl;
     }*/
     /////////////////////////////////
-    float vertices[60];
-    for(int y(0) ; y < 2; ++y)
-        for(int x(0) ; x < 5 ; ++x)
-        {
-            int index = (x + 5 * y) * 6;
-            //On génère une grille
-            vertices[index]     = static_cast<float>(x * 1000.f);
-            vertices[index + 1] = static_cast<float>((rand() % 10) * 10.f);
-            vertices[index + 2] = static_cast<float>(y * 1000.f);
+    /*float vertices[12];
 
-            vertices[index + 3] = 0.f;
-            vertices[index + 4] = 1.f;
-            vertices[index + 5] = 0.f;
+    //On génère un plan
+    vertices[0] = 0.f;
+    vertices[1] = 0.f;
+    vertices[2] = 0.f;
 
-        }
-    NzVertexBuffer vertexBuf(NzVertexDeclaration::Get(nzVertexLayout_XYZ_Normal),10,nzBufferStorage_Hardware,nzBufferUsage_Static);
-   // std::cout<<"stride : "<<vertexBuf.IsValid()<<std::endl;
-    vertexBuf.Fill(vertices,0,10);
+    vertices[3] = 10.f;
+    vertices[4] = 0.f;
+    vertices[5] = 0.f;
 
-    NzBufferMapper<NzVertexBuffer> mapper2(vertexBuf, nzBufferAccess_ReadOnly);
-    const float* values = reinterpret_cast<const float*>(mapper2.GetPointer());
+    vertices[6] = 10.f;
+    vertices[7] = 0.f;
+    vertices[8] = 10.f;
+
+    vertices[9] = 0.f;
+    vertices[10] = 0.f;
+    vertices[11] = 10.f;
+
+    NzVertexBuffer vertexBuf(NzVertexDeclaration::Get(nzVertexLayout_XYZ),4,nzBufferStorage_Hardware,nzBufferUsage_Static);
+    if(!vertexBuf.Fill(vertices,0,4))
+        NazaraError("main.cpp : Could not fill vertex buffer");*/
+
+    //NzBufferMapper<NzVertexBuffer> mapper2(vertexBuf, nzBufferAccess_ReadOnly);
+    //const float* values = reinterpret_cast<const float*>(mapper2.GetPointer());
 
     /*for(int i(0) ; i < 10 ; ++i)
     {
@@ -199,6 +221,7 @@ int main()
     NzRenderStates renderStates;
     renderStates.parameters[nzRendererParameter_DepthBuffer] = true;
     renderStates.parameters[nzRendererParameter_DepthWrite] = true;
+    renderStates.parameters[nzRendererParameter_ColorWrite] = true;
 
     //std::cout<<"Starting main loop"<<std::endl;
 
@@ -316,24 +339,20 @@ int main()
 		NzDebugDrawer::Draw(box);
 
 		// Dessin du chunk
-		//NzRenderer::SetRenderStates(renderStates);
-		//NzRenderer::SetShaderProgram(&(NzTerrainRenderer::GetShader()));
+		NzRenderer::SetRenderStates(renderStates);
+		NzRenderer::SetShaderProgram(NzTerrainRenderer::GetShader());
 		NzRenderer::SetFaceFilling(nzFaceFilling_Line);
-        NzRenderer::SetIndexBuffer(&(NzTerrainRenderer::GetIndexBuffer()));
+        NzRenderer::SetIndexBuffer(NzTerrainRenderer::GetIndexBuffer());
+        NzRenderer::SetIndexBuffer(NzTerrainRenderer::GetIndexBuffer());
+        NzTerrainRenderer::GetShader()->SendMatrix(matrixLocation,NzMatrix4f::Identity());
+        std::cout<<"Fucka"<<std::endl;
         NzTerrainRenderer::DrawTerrainChunk(chunk);
-        //NzTerrainRenderer::DrawTerrainChunk(chunk2);
-
-        //NzRenderer::SetVertexBuffer(&buf);
-
-        //NzRenderer::SetIndexBuffer(&(NzTerrainRenderer::GetIndexBuffer()));
-        //NzRenderer::DrawIndexedPrimitives(nzPrimitiveMode_TriangleStrip,0,64);
-
-
+        std::cout<<"Fuckb"<<std::endl;
+        //NzTerrainRenderer::DrawTerrainChunk(chunk);
         //NzRenderer::SetFaceFilling(nzFaceFilling_Line);
-       // NzRenderer::SetVertexBuffer(&vertexBuf);
-        //NzRenderer::SetIndexBuffer(&indexBuf);
-        //NzRenderer::DrawPrimitives(nzPrimitiveMode_PointList,0,10);
-        //NzRenderer::DrawIndexedPrimitives(nzPrimitiveMode_Pointist,0,16);
+        //NzRenderer::SetIndexBuffer(&(NzTerrainRenderer::GetIndexBuffer()));
+        NzTerrainRenderer::DrawTerrainChunk(chunk2);
+
 
 		// Nous mettons à jour l'écran
 		window.Display();

@@ -25,7 +25,7 @@ void NzTerrainRenderer::DrawTerrainChunk(const NzTerrainChunk& chunk)
     // Pour itérer sur les vertex buffers
     auto itBuffers = chunk.m_vertexBuffers.begin();
     unsigned int i = 0;
-    nzUInt16 index;
+    nzUInt16 count;
     nzUInt16 offset;
 
     for( ; itBuffers != chunk.m_vertexBuffers.end() ; ++itBuffers)
@@ -34,7 +34,7 @@ void NzTerrainRenderer::DrawTerrainChunk(const NzTerrainChunk& chunk)
         auto itBatches = chunk.m_vertexBuffersMap.at(i).GetFilledIntervals().cbegin();
 
         // On envoie le vertexBuffer entier au renderer Nazara
-        NzRenderer::SetVertexBuffer(&(*itBuffers));
+        NzRenderer::SetVertexBuffer(&*itBuffers);
 
         // On itère sur l'ensemble des lots d'un même buffer
         for(; itBatches != chunk.m_vertexBuffersMap.at(i).GetFilledIntervals().cend() ; ++itBatches)
@@ -43,22 +43,23 @@ void NzTerrainRenderer::DrawTerrainChunk(const NzTerrainChunk& chunk)
                 //(*it).x -> firstIndex;
                 //(*it).y -> vertexCount;
             //Pour dessiner 1 patch (25 vertex) il nous faut 96 index
-            offset = (*itBatches).Start()*96;
-            index = (*itBatches).Count()*96;
-            NzRenderer::DrawIndexedPrimitives(nzPrimitiveMode_TriangleList,offset,index);
+            offset = itBatches->Start() * 96;
+            count = itBatches->Count() * 96;
+
+            NzRenderer::DrawIndexedPrimitives(nzPrimitiveMode_TriangleList,offset,count);
         }
         ++i;
     }
 }
 
-const NzIndexBuffer& NzTerrainRenderer::GetIndexBuffer()
+const NzIndexBuffer* NzTerrainRenderer::GetIndexBuffer()
 {
-    return *m_indexBuffer;
+    return m_indexBuffer;
 }
 
-const NzShaderProgram& NzTerrainRenderer::GetShader()
+const NzShaderProgram* NzTerrainRenderer::GetShader()
 {
-    return *m_shader;
+    return m_shader;
 }
 
 bool NzTerrainRenderer::Initialize()
@@ -121,18 +122,6 @@ bool NzTerrainRenderer::Initialize()
 		return false;
 	}
 
-
-    NzBufferMapper<NzIndexBuffer> mapper(m_indexBuffer, nzBufferAccess_ReadOnly);
-    const nzUInt16* indices = reinterpret_cast<const nzUInt16*>(mapper.GetPointer());
-
-        for(int i(0) ; i < 64 ; ++i)
-        {
-            std::cout<<i<<" | "<<indices[i]<<std::endl;
-
-            if (indices[i] >= 25)
-                std::cout << "Erreur" << std::endl;
-        }
-
 	/// Le shader par défaut du terrain
 	const char* vertexSource =
     "#version 140\n"
@@ -151,48 +140,13 @@ bool NzTerrainRenderer::Initialize()
 
     const char* fragmentSource =
     "#version 140\n"
-    "/*uniform sampler2D terrainTexture;*/\n"
     "out vec4 out_Color;\n"
     "in vec3 normal;\n"
     "in vec3 position;\n"
-    "vec2 uvTileConversion(float slope, float altitude, vec2 uv);\n"
+
     "void main()\n"
     "{\n"
-    "/*vec3 upVector = vec3(0.0,1.0,0.0);\n"
-    "float slope = dot(normal,upVector);\n"
-    "float altitude = position.y;\n"
-    "float tex_scale = 512.0;\n"
-    "vec3 uvw = position/tex_scale;\n"
-
-    "vec3 weights = abs(normal);\n"
-    "weights = max((weights - 0.2) * 5 ,0);\n"
-    "weights /= vec3(weights.x + weights.y + weights.z);\n"
-
-    "vec2 coord1 = uvw.zy;\n"
-    "vec2 coord2 = uvw.xz;\n"
-    "vec2 coord3 = uvw.yx;\n"
-
-    "vec4 col1 = texture2D(terrainTexture,coord1);\n"
-    "vec4 col2 = texture2D(terrainTexture,coord2);\n"
-    "vec4 col3 = texture2D(terrainTexture,coord3);\n"
-
-    "out_Color = col1 * weights.xxxx + col2 * weights.yyyy + col3 * weights.zzzz;*/\n"
     "out_Color = vec4(1.0,0.0,1.0,0.0);\n"
-    "}\n"
-    "vec2 uvTileConversion(float slope, float altitude, vec2 uv)\n"
-    "{\n"
-    "vec2 tile = vec2(0.0,3.0);\n"
-    "if(altitude > 600.0)\n"
-    "    tile = vec2(3.0,3.0);\n"
-    "else if(altitude < 75.0)\n"
-    "    tile = vec2(3.0,2.0);\n"
-    "else if(slope > 0.5)\n"
-    "    tile = vec2(2.0,3.0);\n"
-
-    "vec2 newUV;\n"
-    "newUV.x = uv.x*0.25 + tile.x*0.25;\n"
-    "newUV.y = uv.y*0.25 + tile.y*0.25;\n"
-    "return newUV;\n"
     "}\n";
 
     m_shader = new NzShaderProgram(nzShaderLanguage_GLSL);
