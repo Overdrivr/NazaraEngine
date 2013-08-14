@@ -2,8 +2,6 @@ kind "ConsoleApp"
 
 files {"main.cpp"}
 
-defines "NAZARA_RENDERER_OPENGL"
-
 if (_OPTIONS["united"]) then
 	configuration "DebugStatic"
 		links "NazaraEngine-s-d"
