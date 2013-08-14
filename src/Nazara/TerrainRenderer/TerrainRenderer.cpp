@@ -15,9 +15,9 @@
 
 namespace
 {
-    NzIndexBuffer* m_indexBuffer;
+    static NzIndexBuffer m_indexBuffer;
     //Même shader pour tous les terrains pour l'instant
-    NzShaderProgram* m_shader;
+    static NzShaderProgram* m_shader;
 }
 
 void NzTerrainRenderer::DrawTerrainChunk(const NzTerrainChunk& chunk)
@@ -25,8 +25,8 @@ void NzTerrainRenderer::DrawTerrainChunk(const NzTerrainChunk& chunk)
     // Pour itérer sur les vertex buffers
     auto itBuffers = chunk.m_vertexBuffers.begin();
     unsigned int i = 0;
-    nzUInt16 count;
-    nzUInt16 offset;
+    unsigned int count;
+    unsigned int offset;
 
     for( ; itBuffers != chunk.m_vertexBuffers.end() ; ++itBuffers)
     {
@@ -54,7 +54,7 @@ void NzTerrainRenderer::DrawTerrainChunk(const NzTerrainChunk& chunk)
 
 const NzIndexBuffer* NzTerrainRenderer::GetIndexBuffer()
 {
-    return m_indexBuffer;
+    return &m_indexBuffer;
 }
 
 const NzShaderProgram* NzTerrainRenderer::GetShader()
@@ -113,12 +113,22 @@ bool NzTerrainRenderer::Initialize()
             allIndexes.push_back(static_cast<nzUInt16>(indexes[j] + 25 * i));
         }
 
-	m_indexBuffer = new NzIndexBuffer(false, VERTEX_BUFFER_SLOT_AMOUNT * 96, nzBufferStorage_Hardware);
+	try
+    {
+        m_indexBuffer.Reset(false, VERTEX_BUFFER_SLOT_AMOUNT * 96, nzBufferStorage_Hardware);
+    }
+    catch (const std::exception& e)
+    {
+        NazaraError("Failed to create buffer: " + NzString(e.what()));
 
-	if (!m_indexBuffer->Fill(allIndexes.data(), 0, VERTEX_BUFFER_SLOT_AMOUNT * 96))
+        Uninitialize();
+        return false;
+    }
+
+	if (!m_indexBuffer.Fill(allIndexes.data(), 0, VERTEX_BUFFER_SLOT_AMOUNT * 96))
 	{
 		NazaraError("Failed to initialize terrain renderer module : Failed to create/fill index buffer");
-		delete m_indexBuffer;
+		m_indexBuffer.Reset();
 		return false;
 	}
 
@@ -154,7 +164,7 @@ bool NzTerrainRenderer::Initialize()
     if (!m_shader->LoadShader(nzShaderType_Fragment, fragmentSource))
     {
         NazaraError("Failed to initialize terrain renderer module : Failed to load fragment shader");
-        delete m_indexBuffer;
+        m_indexBuffer.Reset();
         delete m_shader;
         return false;
     }
@@ -162,7 +172,7 @@ bool NzTerrainRenderer::Initialize()
     if (!m_shader->LoadShader(nzShaderType_Vertex, vertexSource))
     {
         NazaraError("Failed to initialize terrain renderer module : Failed to load vertex shader");
-        delete m_indexBuffer;
+        m_indexBuffer.Reset();
         delete m_shader;
         return false;
     }
@@ -170,7 +180,7 @@ bool NzTerrainRenderer::Initialize()
     if (!m_shader->Compile())
     {
         NazaraError("Failed to initialize terrain renderer module : Failed to compile shader");
-        delete m_indexBuffer;
+        m_indexBuffer.Reset();
         delete m_shader;
         return false;
     }
@@ -199,7 +209,7 @@ void NzTerrainRenderer::Uninitialize()
 	// Libération du module
 	s_moduleReferenceCounter = 0;
 
-    delete m_indexBuffer;
+	m_indexBuffer.Reset();
     delete m_shader;
 
 	NazaraNotice("Uninitialized: TerrainRenderer module");
