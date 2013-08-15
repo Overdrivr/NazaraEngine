@@ -29,14 +29,12 @@ int main()
 		return EXIT_FAILURE;
 	}
 
-	NzDebugDrawer::Initialize();
-
     NzScene scene;
 
     /// On crée deux chunks de terrain manuellement
     NzTerrainChunk chunk;
     NzTerrainNodeID id(0,0,0);//L'identifiant unique du maillage uploadé, on s'en passe ici
-    NzBoundingVolumef box(0.f,0.f,0.f,800.f,800.f,1200.f);//La bounding box du maillage, on s'en passe ici
+    NzBoundingVolumef box(0.f,0.f,0.f,1000.f,1000.f,1000.f);//La bounding box du maillage, on s'en passe ici
 
     unsigned int index;
     std::array<float,150> data;
@@ -46,7 +44,7 @@ int main()
             index = (x + 5 * y)*6;
             //On génère une grille
             data.at(index) = x * 1000.f;
-            data.at(index + 1) = -1000.f;//(rand() % 10 - 5) * 100.f;
+            data.at(index + 1) = (rand() % 10 - 5) * 100.f;
             data.at(index + 2) = y * 1000.f;
             //Normales vers le haut
             data.at(index + 3) = 0.f;
@@ -64,7 +62,7 @@ int main()
             index = (x + 5 * y)*6;
             //On génère une grille
             data.at(index) = x * 1000.f + 5000.f;
-            data.at(index + 1) = 0.f;
+            data.at(index + 1) = (rand() % 10 - 5) * 100.f;
             data.at(index + 2) = y * 1000.f;
             //Normales vers le haut
             data.at(index + 3) = 0.f;
@@ -82,8 +80,8 @@ int main()
         {
             index = (x + 5 * y)*6;
             //On génère une grille
-            data.at(index) = x * 1000.f + 5000.f;
-            data.at(index + 1) = 1000.f;
+            data.at(index) = x * 1000.f + 10000.f;
+            data.at(index + 1) = (rand() % 10 - 5) * 100.f;
             data.at(index + 2) = y * 1000.f;
             //Normales vers le haut
             data.at(index + 3) = 0.f;
@@ -240,10 +238,8 @@ int main()
 		scene.UpdateVisible();
 		scene.Draw();
 
-		NzRenderer::SetMatrix(nzMatrixType_World, NzMatrix4f::Identity());
-
-
 		// Dessin des chunks
+		NzRenderer::SetMatrix(nzMatrixType_World, NzMatrix4f::Identity());
 		NzRenderer::SetRenderStates(renderStates);
 		NzRenderer::SetFaceFilling(nzFaceFilling_Line);
 		NzRenderer::SetShaderProgram(NzTerrainRenderer::GetShader());
@@ -251,10 +247,6 @@ int main()
         NzTerrainRenderer::DrawTerrainChunk(chunk);
         NzTerrainRenderer::DrawTerrainChunk(chunk2);
         NzTerrainRenderer::DrawTerrainChunk(chunk3);
-
-        //NzBoundingVolumef box2(-1000.f,0.f,-1000.f,800.f,1000.f,1000.f);
-		//box2.Update(NzMatrix4f::Identity());
-		//NzDebugDrawer::Draw(box2);
 
 		// Nous mettons à jour l'écran
 		window.Display();
@@ -269,8 +261,6 @@ int main()
 			secondClock.Restart();
 		}
 	}
-
-	NzDebugDrawer::Uninitialize();
 
     return 0;
 }
