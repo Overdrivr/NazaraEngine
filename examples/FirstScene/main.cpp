@@ -227,36 +227,6 @@ int main()
 	bool smoothMovement = true;
 	NzVector3f targetPos = camera.GetPosition();
 
-    std::array<float,150> data;
-    int index = 0;
-    for(int y(0) ; y < 5 ; ++y)
-        for(int x(0) ; x < 5 ; ++x)
-        {
-            index = (x + 5 * y)*6;
-            //On génère une grille
-            data.at(index) = x * 1000.f;
-            data.at(index + 1) = 0.f;
-            data.at(index + 2) = y * 1000.f;
-            //Normales vers le haut
-            data.at(index + 3) = 0.f;
-            data.at(index + 4) = 1.f;
-            data.at(index + 5) = 0.f;
-        }
-
-    std::array<nzUInt16,96> indexdata;
-    for(int i(0) ; i < 96 ; ++i)
-        indexdata.at(i) = 0;
-
-    NzVertexBuffer buf(NzVertexDeclaration::Get(nzVertexLayout_XYZ_Normal),25,nzBufferStorage_Hardware,nzBufferUsage_Static);
-    buf.Fill(data.data(),0,25);
-
-    NzVertexBuffer buf2(NzVertexDeclaration::Get(nzVertexLayout_XYZ_Normal),25,nzBufferStorage_Hardware,nzBufferUsage_Static);
-    buf2.Fill(data.data(),0,25);
-
-    NzIndexBuffer indexBuf(false, 96, nzBufferStorage_Hardware);
-    indexBuf.Fill(indexdata.data(), 0, 96);
-
-
 	// Début de la boucle de rendu du programme
 	while (window.IsOpen())
 	{
@@ -376,14 +346,6 @@ int main()
 
 		// Pour terminer, il y a l'affichage en lui-même, de façon organisée et optimisée (Batching)
 		scene.Draw();
-
-		NzRenderer::SetIndexBuffer(&indexBuf);
-        NzRenderer::SetVertexBuffer(&buf);
-        NzRenderer::DrawIndexedPrimitives(nzPrimitiveMode_TriangleList,0,96);
-
-        NzRenderer::SetIndexBuffer(&indexBuf);
-        NzRenderer::SetVertexBuffer(&buf2);
-        NzRenderer::DrawIndexedPrimitives(nzPrimitiveMode_TriangleList,0,96);
 
 		// Après avoir dessiné sur la fenêtre, il faut s'assurer qu'elle affiche cela
 		// Cet appel ne fait rien d'autre qu'échanger les buffers de rendu (Double Buffering)
