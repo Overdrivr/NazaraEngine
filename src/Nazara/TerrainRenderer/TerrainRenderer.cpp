@@ -46,7 +46,7 @@ void NzTerrainRenderer::DrawTerrainChunk(const NzTerrainChunk& chunk)
             offset = itBatches->Start() * 96;
             count = itBatches->Count() * 96;
 
-            NzRenderer::DrawPrimitives(nzPrimitiveMode_LineStrip,offset,count);
+            NzRenderer::DrawIndexedPrimitives(nzPrimitiveMode_LineStrip,offset,count);
         }
         ++i;
     }
