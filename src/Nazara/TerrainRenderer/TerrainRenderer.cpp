@@ -34,7 +34,7 @@ void NzTerrainRenderer::DrawTerrainChunk(const NzTerrainChunk& chunk)
         auto itBatches = chunk.m_vertexBuffersMap.at(i).GetFilledIntervals().cbegin();
 
         // On envoie le vertexBuffer entier au renderer Nazara
-        NzRenderer::SetVertexBuffer(&*itBuffers);
+        NzRenderer::SetVertexBuffer(&(*itBuffers));
 
         // On itère sur l'ensemble des lots d'un même buffer
         for(; itBatches != chunk.m_vertexBuffersMap.at(i).GetFilledIntervals().cend() ; ++itBatches)
@@ -46,7 +46,7 @@ void NzTerrainRenderer::DrawTerrainChunk(const NzTerrainChunk& chunk)
             offset = itBatches->Start() * 96;
             count = itBatches->Count() * 96;
 
-            NzRenderer::DrawIndexedPrimitives(nzPrimitiveMode_TriangleList,offset,count);
+            NzRenderer::DrawPrimitives(nzPrimitiveMode_LineStrip,offset,count);
         }
         ++i;
     }
@@ -208,13 +208,13 @@ void NzTerrainRenderer::Uninitialize()
 
 	// Libération du module
 	s_moduleReferenceCounter = 0;
-
 	m_indexBuffer.Reset();
     delete m_shader;
 
 	NazaraNotice("Uninitialized: TerrainRenderer module");
 
 	// Libération des dépendances
+	NzRenderer::Uninitialize();
 	NzCore::Uninitialize();
 }
 
