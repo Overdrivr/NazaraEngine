@@ -28,7 +28,8 @@ template <typename T> class NzIntervalBuffer
 
 
         bool FillFreeSlot(unsigned int index, const T& value);
-        bool FreeFilledSlot(unsigned int index);
+        //FIXME : ELIMINER LE BESOIN DE VALUE
+        bool FreeFilledSlot(unsigned int index, const T& value);
 
         int GetFreeSlot() const;
         unsigned int GetFilledSlotsAmount() const;

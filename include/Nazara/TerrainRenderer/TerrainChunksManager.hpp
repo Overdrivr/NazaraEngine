@@ -65,6 +65,8 @@ class NAZARA_API NzTerrainChunksManager
 
         NzBoundingVolumef m_aabb;
 
+        NzRenderStates m_renderStates;
+
         //unsigned int m_bufferSize;
         //unsigned int m_patchSize;
         //unsigned int m_patchAmount;
