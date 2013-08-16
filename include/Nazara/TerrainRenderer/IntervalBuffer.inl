@@ -9,8 +9,8 @@ NzIntervalBuffer<T>::NzIntervalBuffer(unsigned int bufferSize)
     m_occupiedSlotsAmount = 0;
     //Il y a m_bufferSize cases de libres à partir de l'index 0
     m_freeSlotBatches.push_front(NzBatch(0,bufferSize));
-    typename std::vector<bool>::iterator it = m_occupationMap.end();
-    m_occupationMap.insert(it,bufferSize,false);
+
+    m_occupationMap.assign(bufferSize,false);
 }
 /*
 template <typename T>
@@ -45,36 +45,44 @@ bool NzIntervalBuffer<T>::FillFreeSlot(unsigned int index, const T& value)
     if(IsFilled(index))
         return false;
 
+    //On vérifie que la clé ne soit pas déjà utilisée
+    if(m_slots.find(value) != m_slots.end())
+        return false;
+
     //On ajoute la valeur dans le buffer à l'emplacement libre
     m_slots[value] = index;
 
     if(!AtomicKeyRemoval(m_freeSlotBatches,index))
-        return -1;
+        return false;
 
     //L'insertion ne peut normalement pas échouer car l'index est valide
     AtomicKeyInsertion(m_filledSlotBatches,index);
     m_occupationMap.at(index) = true;
     m_occupiedSlotsAmount++;
 
-    return index;
+    return true;
 }
 
 template <typename T>
-bool NzIntervalBuffer<T>::FreeFilledSlot(unsigned int index)
+bool NzIntervalBuffer<T>::FreeFilledSlot(unsigned int index, const T& value)
 {
     // On vérifie que l'emplacement à supprimer soit bien plein
     if(!IsFilled(index))
         return false;
 
+    //On supprime la valeur dans le buffer
+    //FIXME : vérifier que ça a bien été fait, que faire dans le cas contraire ?
+    m_slots.erase(value);
+
     if(!AtomicKeyRemoval(m_filledSlotBatches,index))
-        return -1;
+        return false;
 
     //L'insertion ne peut pas échouer
     AtomicKeyInsertion(m_freeSlotBatches,index);
     m_occupationMap.at(index) = false;
     m_occupiedSlotsAmount--;
 
-    return index;
+    return true;
 }
 
 template <typename T>
