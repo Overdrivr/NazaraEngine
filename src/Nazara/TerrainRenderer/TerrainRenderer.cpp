@@ -22,7 +22,6 @@ namespace
 
 void NzTerrainRenderer::DrawTerrainChunk(const NzTerrainChunk& chunk)
 {
-    // Pour itérer sur les vertex buffers
     auto itBuffers = chunk.m_vertexBuffers.begin();
     unsigned int i = 0;
     unsigned int count;
@@ -42,8 +41,8 @@ void NzTerrainRenderer::DrawTerrainChunk(const NzTerrainChunk& chunk)
             // On fait le rendu
                 //(*it).x -> firstIndex;
                 //(*it).y -> vertexCount;
-            //Pour dessiner 1 patch (25 vertex) il nous faut 96 index
-            offset = itBatches->Start() * 96;
+            //Pour dessiner 1 patch (25 vertex) il nous faut 48 index (pas 96 ??)
+            offset = itBatches->Start() * 48;
             count = itBatches->Count() * 96;
 
             NzRenderer::DrawIndexedPrimitives(nzPrimitiveMode_TriangleList,offset,count);
@@ -65,14 +64,7 @@ const NzShaderProgram* NzTerrainRenderer::GetShader()
 bool NzTerrainRenderer::Initialize()
 {
 	if (s_moduleReferenceCounter++ != 0)
-		return true; // Déjà initialisé
-
-	// Initialisation des dépendances
-	if (!NzCore::Initialize())
-	{
-		NazaraError("Failed to initialize core module");
-		return false;
-	}
+		return true;
 
 	// Initialisation des dépendances
 	if (!NzRenderer::Initialize())
@@ -215,7 +207,6 @@ void NzTerrainRenderer::Uninitialize()
 
 	// Libération des dépendances
 	NzRenderer::Uninitialize();
-	NzCore::Uninitialize();
 }
 
 unsigned int NzTerrainRenderer::s_moduleReferenceCounter = 0;
