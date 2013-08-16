@@ -10,7 +10,7 @@
 enum nzNoise
 {
     nzNoise_perlin,
-    nzNoise_simple,
+    nzNoise_simplex,
     nzNoise_cell
 };
 
