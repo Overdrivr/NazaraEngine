@@ -20,7 +20,6 @@
 
 /// BASE CLASS OF THE TERRAIN/PLANET
 
-//TODO : Créer une seule fois l'index buffer pour tous les terrains
 //TODO : modifier shader du terrain pour qu'il fonctionne avec n'importe quelle direction (slope, altitude)
 //FIX ME : Nommage des méthodes innaproprié, renforcer la sécurité
 
@@ -35,9 +34,7 @@ class NAZARA_API NzTerrainBase : public NzDrawable, public NzSceneNode
 
 		virtual void Draw() const = 0;
 
-        //virtual void Initialize(const NzDynaTerrainConfigurationBase& configuration);
-
-        virtual void Update(const NzVector3f& cameraPosition);
+        virtual void Update(const NzVector3f& cameraPosition) = 0;
 
     protected:
         virtual void AddToRenderQueue(NzForwardRenderQueue& renderQueue) const;

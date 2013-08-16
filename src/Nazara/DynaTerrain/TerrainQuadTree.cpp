@@ -24,6 +24,7 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainConfiguration& configuration
     m_heightSource2D = heightSource;
     m_terrainConfiguration = configuration;
     m_halfTerrainSize = m_terrainConfiguration.terrainSize / 2.f;
+    m_chunksManager = new NzTerrainChunksManager(5,m_halfTerrainSize);
     m_commonConfiguration = static_cast<NzDynaTerrainConfigurationBase>(configuration);
 
     m_isInitialized = false;
@@ -75,6 +76,7 @@ void NzTerrainQuadTree::Construct()
 
 NzTerrainQuadTree::~NzTerrainQuadTree()
 {
+    delete m_chunksManager;
     m_isInitialized = false;
 }
 

@@ -12,7 +12,6 @@
 #include <Nazara/DynaTerrain/Configuration/TerrainConfiguration.hpp>
 #include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
 #include <Nazara/DynaTerrain/TerrainBase.hpp>
-#include <Nazara/TerrainRenderer/TerrainChunk.hpp>
 #include <vector>
 
 //TODO : Ramener les textures dans NzDynaTerrainMainCLass, ce n'est pas à la classe de config de s'en occuper
@@ -29,7 +28,7 @@ class NAZARA_API NzDynamicTerrain : public NzTerrainBase
 
         virtual void Draw() const;
 
-        void Update(const NzVector3f& cameraPosition);
+        virtual void Update(const NzVector3f& cameraPosition);
 
 
     private:
@@ -46,10 +45,6 @@ class NAZARA_API NzDynamicTerrain : public NzTerrainBase
         //std::array<4,std::array<4,NzTerrainQuadTree*>> quadtree;
         NzTerrainQuadTree* quadtree;
 
-        // Le maillage généré, consistant en un ensemble de chunks (plusieurs chunks par quadtree)
-        // Un chunk correspond à une sous-région d'un quadtree
-        // Les chunks sont ensuite transmis au TerrainRenderer pour y être dessinés de manière optimisée
-        std::vector<NzTerrainChunk> m_chunks;
 };
 
 #endif // NAZARA_DYNAMICTERRAIN_HPP

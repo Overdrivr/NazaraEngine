@@ -6,6 +6,7 @@
 #include <Nazara/DynaTerrain/Config.hpp>
 #include <Nazara/DynaTerrain/DynamicTerrain.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
+#include <Nazara/TerrainRenderer/TerrainChunksManager.hpp>
 #include <iostream>
 #include <Nazara/DynaTerrain/Debug.hpp>
 
@@ -38,19 +39,12 @@ void NzDynamicTerrain::Draw() const
 
     NzRenderer::SetMatrix(nzMatrixType_World,m_transformMatrix);
 
-    //TODO !!
-    //quadtree.m_chunksManager->Render();
-
-    //quadtree2->Render();
-    //quadtree3->Render();
+    //TODO : PRENDRE EN COMPTE CETTE MATRICE, CAR POUR L'INSTANT CHAQUE CHUNKSMANAGER CLEAR LA MATRICE AVANT DESSIN
+    quadtree->m_chunksManager->DrawChunks();
 }
 
 void NzDynamicTerrain::Initialize()
 {
-    //NzDynaTerrainMainClassBase::Initialize(static_cast<NzDynaTerrainConfigurationBase>(m_configuration));
-
-    //FIXME : Construire l'index buffer, en coordination avec le dispatcher
-    //NzDynaTerrainMainClassBase::CreateIndexBuffer(256);
 
     //m_configuration.x_offset = 0;
     //m_configuration.y_offset = 0;

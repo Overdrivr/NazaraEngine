@@ -4,7 +4,7 @@
 #include <Nazara/Noise/FBM2D.hpp>
 #include <Nazara/Noise/HybridMultiFractal2D.hpp>
 #include <Nazara/Noise/Simplex2D.hpp>
-#include <Nazara/DynaTerrain/HeightSource2D.hpp>
+#include <Nazara/DynaTerrain/HeightSource/HeightSource2D.hpp>
 
 class MyHeightSource2D : public NzHeightSource2D
 {

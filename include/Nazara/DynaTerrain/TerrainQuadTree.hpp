@@ -13,6 +13,7 @@
 #include <Nazara/DynaTerrain/TerrainNode.hpp>
 #include <Nazara/DynaTerrain/ObjectPool.hpp>
 #include <Nazara/TerrainRenderer/TerrainNodeID.hpp>
+#include <Nazara/TerrainRenderer/TerrainChunksManager.hpp>
 #include <Nazara/DynaTerrain/Configuration/TerrainConfiguration.hpp>
 #include <Nazara/DynaTerrain/Configuration/PlanetConfiguration.hpp>
 #include <Nazara/DynaTerrain/HeightSource/HeightSource2D.hpp>
@@ -59,7 +60,7 @@ class NAZARA_API NzTerrainQuadTree
         void Update(const NzVector3f& cameraPosition);
 
     protected:
-
+        NzTerrainChunksManager* m_chunksManager;
         nzQuadTreeType m_type;
         NzTerrainNode* m_root;
         nzTerrainNodeData m_data;// A intégrer dans le node ?
