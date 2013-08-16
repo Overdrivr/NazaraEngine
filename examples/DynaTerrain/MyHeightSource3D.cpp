@@ -4,8 +4,8 @@
 MyHeightSource3D::MyHeightSource3D()
 {
     m_source = new NzSimplex3D(15954);
-    m_source2 = new NzFBM3D(SIMPLEX,15954);
-    m_source3 = new NzHybridMultiFractal3D(SIMPLEX,15955);
+    m_source2 = new NzFBM3D(nzNoise_simplex,15954);
+    m_source3 = new NzHybridMultiFractal3D(nzNoise_simplex,15955);
     m_source3->SetOctavesNumber(7);
     m_source3->SetLacunarity(2.7);
     m_source3->SetHurstParameter(0.28);
