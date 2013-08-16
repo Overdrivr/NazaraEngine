@@ -143,6 +143,16 @@ bool NzTerrainChunk::CreateBuffer()
 	//TODO : Vérifier la bonne construction du buffer
     m_vertexBuffers.emplace_back(NzVertexBuffer(NzVertexDeclaration::Get(nzVertexLayout_XYZ_Normal),VERTEX_BUFFER_SLOT_AMOUNT*25,nzBufferStorage_Hardware,nzBufferUsage_Static));
 
+    #if NAZARA_TERRAINRENDERER_SAFE
+    if(!m_vertexBuffers.back().IsValid())
+    {
+        m_vertexBuffers.back().Reset();
+        m_vertexBuffers.pop_back();
+        NazaraError("Could not create a valid VertexBuffer");
+        return false;
+    }
+    #endif
+
     m_vertexBuffersMap.emplace_back(NzIntervalBuffer<NzTerrainNodeID>(VERTEX_BUFFER_SLOT_AMOUNT));
 
     m_freeSlotsAmount += VERTEX_BUFFER_SLOT_AMOUNT;
