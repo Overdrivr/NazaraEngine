@@ -93,7 +93,7 @@ int NzIntervalBuffer<T>::GetFreeSlot() const
         return -1;
 
     //On récupère le premier emplacement libre avec m_freeSlotBatches
-    unsigned int index = m_freeSlotBatches.front().Start();
+    return m_freeSlotBatches.front().Start();
 }
 
 template <typename T>
