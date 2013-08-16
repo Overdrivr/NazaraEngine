@@ -14,7 +14,6 @@
 
 namespace
 {
-
     //unsigned int maxSlopePrecision;
     unsigned int m_maximalPrecision = 6;
     unsigned int m_radiusAmount = 3;
@@ -76,12 +75,6 @@ bool NzDynaTerrain::Initialize()
 		return true; // Déjà initialisé
 
 	// Initialisation des dépendances
-	if (!NzCore::Initialize())
-	{
-		NazaraError("Failed to initialize core module");
-		return false;
-	}
-
 	if (!NzTerrainRenderer::Initialize())
 	{
 		NazaraError("Failed to initialize terrain renderer module");
@@ -141,7 +134,7 @@ void NzDynaTerrain::Uninitialize()
 	NazaraNotice("Uninitialized: DynaTerrain module");
 
 	// Libération des dépendances
-	NzCore::Uninitialize();
+	NzTerrainRenderer::Uninitialize();
 }
 
 void NzDynaTerrain::ComputeRadii()
