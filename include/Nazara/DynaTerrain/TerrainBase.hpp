@@ -29,7 +29,7 @@ class NAZARA_API NzTerrainBase : public NzDrawable, public NzSceneNode
         NzTerrainBase();
         ~NzTerrainBase() = default;
 
-        virtual const NzBoundingVolumef& GetBoundingBox() const;
+        virtual const NzBoundingVolumef& GetBoundingVolume() const;
 		virtual nzSceneNodeType GetSceneNodeType() const;
 
 		virtual void Draw() const = 0;
@@ -37,7 +37,8 @@ class NAZARA_API NzTerrainBase : public NzDrawable, public NzSceneNode
         virtual void Update(const NzVector3f& cameraPosition) = 0;
 
     protected:
-        virtual void AddToRenderQueue(NzForwardRenderQueue& renderQueue) const;
+        virtual void AddToRenderQueue(NzAbstractRenderQueue* renderQueue) const;
+        virtual bool VisibilityTest(const NzCamera* camera);
 
         NzBoundingVolumef m_aabb;
     private:

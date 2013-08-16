@@ -16,12 +16,7 @@ NzTerrainBase::NzTerrainBase()
 
 }
 
-void NzTerrainBase::AddToRenderQueue(NzForwardRenderQueue& renderQueue) const
-{
-    renderQueue.AddDrawable(this);
-}
-
-const NzBoundingVolumef& NzTerrainBase::GetBoundingBox() const
+const NzBoundingVolumef& NzTerrainBase::GetBoundingVolume() const
 {
     return m_aabb;
 }
@@ -29,6 +24,16 @@ const NzBoundingVolumef& NzTerrainBase::GetBoundingBox() const
 nzSceneNodeType NzTerrainBase::GetSceneNodeType() const
 {
     return nzSceneNodeType_User;
+}
+
+void NzTerrainBase::AddToRenderQueue(NzAbstractRenderQueue* renderQueue) const
+{
+    renderQueue->AddDrawable(this);
+}
+
+bool NzTerrainBase::VisibilityTest(const NzCamera* camera)
+{
+
 }
 
 //void NzTerrainBase::Initialize(const NzDynaTerrainConfigurationBase& configuration)
