@@ -24,14 +24,13 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainConfiguration& configuration
     m_heightSource2D = heightSource;
     m_terrainConfiguration = configuration;
     m_halfTerrainSize = m_terrainConfiguration.terrainSize / 2.f;
-    m_chunksManager = new NzTerrainChunksManager(5,m_halfTerrainSize);
+    m_chunksManager = new NzTerrainChunksManager(m_terrainConfiguration.terrainSize,5);
     m_commonConfiguration = static_cast<NzDynaTerrainConfigurationBase>(configuration);
 
     m_isInitialized = false;
-
     m_rotationMatrix.MakeRotation(NzQuaternionf(m_terrainConfiguration.terrainOrientation));
-
     Construct();
+
 }
 
 NzTerrainQuadTree::NzTerrainQuadTree(const NzPlanetConfiguration& configuration, NzHeightSource3D* heightSource, const NzEulerAnglesf& quadtreeOrientation)
@@ -42,7 +41,8 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzPlanetConfiguration& configuration,
     m_planetConfiguration = configuration;
     //m_halfTerrainSize = m_planetConfiguration.terrainSize / 2.f;
     m_commonConfiguration = static_cast<NzDynaTerrainConfigurationBase>(configuration);
-
+    // TODO ! SINON SEGFAULT !
+    m_chunksManager = new NzTerrainChunksManager(5,m_halfTerrainSize);
     m_rotationMatrix.MakeRotation(NzQuaternionf(quadtreeOrientation));
 
     m_isInitialized = false;
@@ -55,23 +55,18 @@ void NzTerrainQuadTree::Construct()
     //m_dispatcher.Initialize(m_commonConfiguration.minPrecision);
 
     m_data.quadtree = this;
-    //m_data.dispatcher = &m_dispatcher;
-
+    m_data.chunksManager = m_chunksManager;
     m_root = NzDynaTerrain::GetTerrainNode();
     m_root->Initialize(&m_data,nullptr);
-
     m_leaves.push_back(m_root);//Utile ?
     m_nodesMap[NzTerrainNodeID(0,0,0)] = m_root;
-
     m_subdivisionsAmount = 0;
-
     m_neighbours[0] = nullptr;
     m_neighbours[1] = nullptr;
     m_neighbours[2] = nullptr;
     m_neighbours[3] = nullptr;
 
     m_maxOperationsPerFrame = 0;
-
 }
 
 NzTerrainQuadTree::~NzTerrainQuadTree()
