@@ -23,17 +23,17 @@ bool NzTerrainChunksManager::AddMesh(const std::array<float,150>& vertexData, co
 {
     //FIXME : Utiliser le NzTerrainNodeID au lieu de la bounding box ?
     //FIXME : Calculer la bounding box ici ?
-    //FIXME : STOCKER CES MAILLAGES DANS UN CHUNK POUBELLE ?
-    // On trouve le chunk devant accueillir le mesh
-    if(meshBoundingBox.aabb.x < 0.f || meshBoundingBox.aabb.x > m_edgeLenght ||
-       meshBoundingBox.aabb.z < 0.f || meshBoundingBox.aabb.z > m_edgeLenght)
-    {
-        NazaraError("NzTerrainChunksManager::AddMesh : Mesh location outside supported area ");
-        return false;
-    }
 
+    // On trouve le chunk devant accueillir le mesh
     unsigned int x = static_cast<int>(meshBoundingBox.aabb.x / m_gridStep);
     unsigned int y = static_cast<int>(meshBoundingBox.aabb.z / m_gridStep);
+
+    //FIXME : STOCKER CES MAILLAGES DANS UN CHUNK POUBELLE ?
+    if(x < 0.f || x > m_depth || y < 0.f || y > m_depth)
+    {
+        NazaraError("NzTerrainChunksManager::AddMesh : Mesh location outside supported area");
+        return false;
+    }
 
     m_chunks.at(x + m_depth * y).AddMesh(vertexData,meshBoundingBox,meshIdentifiant);
     return true;
