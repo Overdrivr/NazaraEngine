@@ -148,7 +148,7 @@ bool NzTerrainRenderer::Initialize()
 
     "void main()\n"
     "{\n"
-    "out_Color = vec4(1.0,0.0,1.0,0.0);\n"
+    "out_Color = vec4(0.2,0.6,0.8,0.0);\n"
     "}\n";
 
     m_shader = new NzShaderProgram(nzShaderLanguage_GLSL);
