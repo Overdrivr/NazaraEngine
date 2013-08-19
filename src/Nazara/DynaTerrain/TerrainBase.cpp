@@ -6,6 +6,7 @@
 #include <Nazara/DynaTerrain/Config.hpp>
 #include <Nazara/DynaTerrain/TerrainBase.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
+#include <Nazara/Graphics/Camera.hpp>
 #include <iostream>
 #include <Nazara/DynaTerrain/Debug.hpp>
 
@@ -33,7 +34,9 @@ void NzTerrainBase::AddToRenderQueue(NzAbstractRenderQueue* renderQueue) const
 
 bool NzTerrainBase::VisibilityTest(const NzCamera* camera)
 {
+    m_aabb.Update(NzMatrix4f::Identity());
 
+    return camera->GetFrustum().Intersect(m_aabb) != nzIntersectionSide_Outside;
 }
 
 //void NzTerrainBase::Initialize(const NzDynaTerrainConfigurationBase& configuration)
