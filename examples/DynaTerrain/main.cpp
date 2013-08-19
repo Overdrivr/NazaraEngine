@@ -2,9 +2,10 @@
 #include <Nazara/Core/Clock.hpp>
 #include <Nazara/Renderer.hpp>
 #include <Nazara/Utility.hpp>
+#include <Nazara/DynaTerrain/DynaTerrain.hpp>
 #include <Nazara/DynaTerrain/DynamicTerrain.hpp>
 #include <Nazara/DynaTerrain/DynamicPlanet.hpp>
-#include <Nazara/DynaTerrain/TerrainConfiguration.hpp>
+#include <Nazara/DynaTerrain/Configuration/TerrainConfiguration.hpp>
 #include "MyHeightSource2D.hpp"
 #include "MyHeightSource3D.hpp"
 #include <iostream>
@@ -22,30 +23,23 @@ int main()
 		return EXIT_FAILURE;
 	}
 
+	NzInitializer<NzDynaTerrain> dt;
+	if(!dt)
+	{
+	    std::cout << "Failed to initialize Nazara, see NazaraLog.log for further informations" << std::endl;
+	    std::getchar();
+	    return EXIT_FAILURE;
+	}
+
 	NzScene scene;
 
-    ///-----------Initialisation du terrain---------------
+    /// Initialisation du terrain
     // On instancie notre source de hauteur personnalisée, définissant la hauteur du terrain en tout point
-    MyHeightSource2D source2;
-    // On créé la configuration du terrain
-    NzTerrainConfiguration myTerrainConfig;
-    //Les paramètres de base
-    myTerrainConfig.groundTextures = "resources/dt_tiles.jpg";
-    //Les paramètres liés à la précision autour de la caméra
-    //myTerrainConfig.minPrecision = 2;//La précision minimale du terrain
-    //myTerrainConfig.higherCameraPrecision = 5;//La précision maximale engendrée par la caméra
-    //myTerrainConfig.cameraRadiusAmount = 3;//Le nombre max de rayons de précision autour de la caméra (= 9-2)
-    //myTerrainConfig.higherCameraPrecisionRadius = 500.f;//Le rayon du cercle le plus précis (à garder très petit si la précision est importante)
-    //myTerrainConfig.radiusSizeIncrement = 2.5f;//L'incrément en taille entre deux rayons consécutifs
-
-    //Si la configuration n'est pas bonne, elle sera réparée au plus proche automatiquement
-    if(!myTerrainConfig.IsValid())
-        std::cout<<"Terrain configuration not valid, autofix will be used."<<std::endl;
-
-    NzDynamicTerrain terrain(myTerrainConfig,&source2);
+    MyHeightSource2D source;
+    NzDynamicTerrain terrain(&source);
     terrain.Initialize();
 
-    terrain.SetParent(scene);
+    //terrain.SetParent(scene);
     NzVector3f terrainPos(100.f,100.f,100.f);
     terrain.SetPosition(terrainPos);
 /*
@@ -73,7 +67,7 @@ int main()
     NzVector3f planetPos(8000.f,9000.f,8000.f);
     planet.SetPosition(planetPos);*/
 
-    cout<<"Terrain & Planet initialized successfully."<<endl;
+    cout<<"Terrain initialized successfully."<<endl;
 
     ///Code classique pour ouvrir une fenêtre avec Nazara
     NzString windowTitle("DynaTerrain example");
@@ -99,8 +93,8 @@ int main()
 	camera.SetParent(scene);
 
     /// Lampe
-	NzLight spotLight(nzLightType_Spot);
-	spotLight.SetParent(camera);
+	//NzLight spotLight(nzLightType_Spot);
+	//spotLight.SetParent(camera);
 
     ///Gestion du temps
     NzClock secondClock, updateClock; // Des horloges pour gérer le temps
@@ -109,7 +103,7 @@ int main()
 	float sensitivity = 0.2f;
 
 	///Skybox
-
+/*
 	NzTexture* texture = new NzTexture;
 	if (texture->LoadCubemapFromFile("resources/skyboxsun5deg2.png"))
 	{
@@ -123,7 +117,7 @@ int main()
 		delete texture;
 		std::cout << "Failed to load skybox." << std::endl;
 	}
-
+*/
 	// Quelques variables
 	bool camMode = true;
     bool drawWireframe = false;
@@ -184,13 +178,13 @@ int main()
 							if (drawWireframe)
 							{
 								drawWireframe = false;
-								terrain.SetFaceFilling(nzFaceFilling_Fill);//FIX ME
+								//terrain.SetFaceFilling(nzFaceFilling_Fill);//FIX ME
 								//planet.SetFaceFilling(nzFaceFilling_Fill);
 							}
 							else
 							{
 								drawWireframe = true;
-								terrain.SetFaceFilling(nzFaceFilling_Line);//FIX ME
+								//terrain.SetFaceFilling(nzFaceFilling_Line);//FIX ME
 								//planet.SetFaceFilling(nzFaceFilling_Line);
 							}
 							break;
@@ -260,17 +254,14 @@ int main()
 		scene.Cull();
 		scene.UpdateVisible();
 
-		///------------------
         //On met à jour le terrain
         if(terrainUpdate)
         {
-            //planet.Update(camera.GetPosition());
             terrain.Update(camera.GetPosition());
         }
-        ///-----------------
 
-        scene.Draw();///Le terrain est dessiné ici !
-		// Nous mettons à jour l'écran
+        scene.Draw();
+        terrain.Draw();
 		window.Display();
 
 		fps++;
