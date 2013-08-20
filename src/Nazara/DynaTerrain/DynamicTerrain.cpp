@@ -43,6 +43,13 @@ void NzDynamicTerrain::Draw() const
     quadtree->m_chunksManager->DrawChunks();
 }
 
+const NzBoundingVolumef& NzDynamicTerrain::GetBoundingVolume() const
+{
+    //FIXME : Avec plusieurs quadtrees, le terrain doit avoir une aabb qui lui est propre
+    //et qui doit être mise à jour à chaque fois que l'on cherche à s'en servir
+    return quadtree->m_chunksManager->GetGlobalBoundingVolume();
+}
+
 void NzDynamicTerrain::Initialize()
 {
 

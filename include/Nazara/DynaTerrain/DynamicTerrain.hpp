@@ -24,6 +24,8 @@ class NAZARA_API NzDynamicTerrain : public NzTerrainBase
         NzDynamicTerrain(NzHeightSource2D* heightSource);
         ~NzDynamicTerrain();
 
+        const NzBoundingVolumef& GetBoundingVolume() const;
+
         void Initialize();
 
         virtual void Draw() const;
