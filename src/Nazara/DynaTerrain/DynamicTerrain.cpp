@@ -8,6 +8,7 @@
 #include <Nazara/Renderer/Renderer.hpp>
 #include <Nazara/TerrainRenderer/TerrainChunksManager.hpp>
 #include <iostream>
+#include <Nazara/Graphics/Camera.hpp>
 #include <Nazara/DynaTerrain/Debug.hpp>
 
 using namespace std;
@@ -75,12 +76,10 @@ void NzDynamicTerrain::Initialize()
     quadtree3->ConnectNeighbor(quadtree2,BOTTOM,RIGHT);*/
 }
 
-void NzDynamicTerrain::Update(const NzVector3f& cameraPosition)
+void NzDynamicTerrain::Update()
 {
-    //On transforme la position de la caméra du repère global dans le repère local
-    NzVector3f localCamPos = cameraPosition - this->GetPosition();
-
-    quadtree->Update(localCamPos);
+    //On récupère la position de la caméra dans le repère local, et on maj le(s) quadtrees
+    quadtree->Update(GetScene()->GetActiveCamera()->GetPosition(nzCoordSys_Global));
     //quadtree2->Update(localCamPos);
     //quadtree3->Update(localCamPos);
 }
