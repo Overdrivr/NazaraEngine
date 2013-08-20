@@ -17,11 +17,6 @@ NzTerrainBase::NzTerrainBase()
 
 }
 
-const NzBoundingVolumef& NzTerrainBase::GetBoundingVolume() const
-{
-    return m_aabb;
-}
-
 nzSceneNodeType NzTerrainBase::GetSceneNodeType() const
 {
     return nzSceneNodeType_User;
@@ -34,9 +29,10 @@ void NzTerrainBase::AddToRenderQueue(NzAbstractRenderQueue* renderQueue) const
 
 bool NzTerrainBase::VisibilityTest(const NzCamera* camera)
 {
-    m_aabb.Update(NzMatrix4f::Identity());
+    // A bouger dans GetBoundingVolume si cette ligne est nécessaire
+    //GetBoundingVolume().Update(NzMatrix4f::Identity());
 
-    return camera->GetFrustum().Intersect(m_aabb) != nzIntersectionSide_Outside;
+    return camera->GetFrustum().Intersect(GetBoundingVolume()) != nzIntersectionSide_Outside;
 }
 
 //void NzTerrainBase::Initialize(const NzDynaTerrainConfigurationBase& configuration)
