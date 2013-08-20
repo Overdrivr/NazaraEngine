@@ -15,10 +15,10 @@
 namespace
 {
     //unsigned int maxSlopePrecision;
-    unsigned int m_maximalPrecision = 6;
-    unsigned int m_radiusAmount = 3;
-    float m_smallerRadius = 50.f;
-    float m_radiusSizeIncrement = 2.f;
+    unsigned int m_maximalPrecision = 10;
+    unsigned int m_radiusAmount = 7;
+    float m_smallerRadius = 10.f;
+    float m_radiusSizeIncrement = 2.5f;
 
     std::map<float,unsigned int> m_precisionRadii;
 
