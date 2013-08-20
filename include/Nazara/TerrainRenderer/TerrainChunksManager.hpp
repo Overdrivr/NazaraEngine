@@ -34,7 +34,7 @@ class NAZARA_API NzTerrainChunksManager
 
         void DrawChunks() const;
 
-		const NzBoundingVolumef& GetGlobalBoundingBox() const;
+		const NzBoundingVolumef& GetGlobalBoundingVolume() const;
 
 		NzTerrainChunk* LocateChunk(NzVector2f location);
 

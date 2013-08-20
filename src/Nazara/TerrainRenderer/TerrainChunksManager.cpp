@@ -53,7 +53,7 @@ void NzTerrainChunksManager::DrawChunks() const
     }
 }
 
-const NzBoundingVolumef& NzTerrainChunksManager::GetGlobalBoundingBox() const
+const NzBoundingVolumef& NzTerrainChunksManager::GetGlobalBoundingVolume() const
 {
     return m_aabb;
 }
