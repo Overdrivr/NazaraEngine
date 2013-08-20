@@ -23,7 +23,7 @@
 //TODO : modifier shader du terrain pour qu'il fonctionne avec n'importe quelle direction (slope, altitude)
 //FIX ME : Nommage des méthodes innaproprié, renforcer la sécurité
 
-class NAZARA_API NzTerrainBase : public NzDrawable, public NzSceneNode
+class NAZARA_API NzTerrainBase : public NzDrawable, public NzSceneNode, public NzUpdatable
 {
     public:
         NzTerrainBase();
@@ -34,14 +34,12 @@ class NAZARA_API NzTerrainBase : public NzDrawable, public NzSceneNode
 
 		virtual void Draw() const = 0;
 
-        virtual void Update(const NzVector3f& cameraPosition) = 0;
-
     protected:
         virtual void AddToRenderQueue(NzAbstractRenderQueue* renderQueue) const;
         virtual bool VisibilityTest(const NzCamera* camera);
 
+        NzBoundingVolumef m_aabb;
     private:
-
         //TODO : A BOUGER
         //NzTexture m_terrainTexture;
         //NzTextureSampler m_sampler;
