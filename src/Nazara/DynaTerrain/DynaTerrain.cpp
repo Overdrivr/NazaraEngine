@@ -53,7 +53,7 @@ int NzDynaTerrain::GetPrecisionLevelFromDistance(float distance)
         return it->second;
 
     #if NAZARA_DYNATERRAIN_SAFE
-    NazaraError("Could nod identify correct radius for distance = " + NzString::Number(distance));
+    NazaraError("Could not identify correct radius for distance " + NzString::Number(distance));
     #endif
     return m_minimalPrecision;
 }
@@ -144,6 +144,7 @@ void NzDynaTerrain::Uninitialize()
 void NzDynaTerrain::ComputeRadii()
 {
     float radius = m_smallerRadius;
+    m_precisionRadii.clear();
 
     for(unsigned int i(0) ; i < m_radiusAmount ; ++i)
     {
