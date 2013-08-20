@@ -14,7 +14,7 @@
 
 namespace
 {
-    //unsigned int maxSlopePrecision;
+    unsigned int m_minimalPrecision = 3;
     unsigned int m_maximalPrecision = 10;
     unsigned int m_radiusAmount = 7;
     float m_smallerRadius = 10.f;
@@ -27,9 +27,10 @@ namespace
     NzObjectPool<NzTerrainVertex> m_verticesPool;
 }
 
-void NzDynaTerrain::ConfigurePrecisionSettings(unsigned int maximalPrecision, unsigned int radiusAmount,
+void NzDynaTerrain::ConfigurePrecisionSettings(unsigned int minimalPrecision, unsigned int maximalPrecision, unsigned int radiusAmount,
                                                float smallerRadius, float radiusSizeIncrement)
 {
+    m_minimalPrecision = minimalPrecision;
     m_maximalPrecision = maximalPrecision;
     m_radiusAmount = radiusAmount;
     m_smallerRadius = smallerRadius;
@@ -41,7 +42,7 @@ void NzDynaTerrain::ConfigurePrecisionSettings(unsigned int maximalPrecision, un
 int NzDynaTerrain::GetPrecisionLevelFromDistance(float distance)
 {
     if(distance > m_precisionRadii.rbegin()->first)
-        return -1;
+        return m_minimalPrecision;
 
     if(distance < m_precisionRadii.begin()->first)
         return m_maximalPrecision;
@@ -51,7 +52,10 @@ int NzDynaTerrain::GetPrecisionLevelFromDistance(float distance)
     if(it != m_precisionRadii.end())
         return it->second;
 
-    return -2;
+    #if NAZARA_DYNATERRAIN_SAFE
+    NazaraError("Could nod identify correct radius for distance = " + NzString::Number(distance));
+    #endif
+    return m_minimalPrecision;
 }
 
 NzTerrainNode* NzDynaTerrain::GetTerrainNode()
@@ -146,7 +150,6 @@ void NzDynaTerrain::ComputeRadii()
         // Attention, on utilise la longueur du radius commé clé et non pas comme valeur
         // Ca permet de déterminer immédiatement à quel rayon appartient un point
         m_precisionRadii[radius] = m_maximalPrecision - i;
-
         radius *= m_radiusSizeIncrement;
     }
 }

@@ -19,7 +19,8 @@ class NAZARA_API NzDynaTerrain
 		NzDynaTerrain() = delete;
 		~NzDynaTerrain() = delete;
 
-        static void ConfigurePrecisionSettings(unsigned int maximalPrecision,
+        static void ConfigurePrecisionSettings(unsigned int minimalPrecision,
+                                               unsigned int maximalPrecision,
                                                unsigned int radiusAmount,
                                                float smallerRadius,
                                                float radiusSizeIncrement);
