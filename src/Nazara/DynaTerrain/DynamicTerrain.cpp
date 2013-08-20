@@ -59,6 +59,8 @@ void NzDynamicTerrain::Initialize()
     quadtree = new NzTerrainQuadTree(m_configuration,m_heightSource);
     quadtree->Initialize();
 
+    GetScene()->RegisterForUpdate(this);
+
     /*NzTerrainConfiguration second = m_configuration;
 
     second.x_offset = 0;
