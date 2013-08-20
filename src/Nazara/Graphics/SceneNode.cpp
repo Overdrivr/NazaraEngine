@@ -93,10 +93,6 @@ void NzSceneNode::Unregister()
 {
 }
 
-void NzSceneNode::Update()
-{
-}
-
 void NzSceneNode::UpdateVisibility(const NzCamera* camera)
 {
 	bool wasVisible = m_visible;

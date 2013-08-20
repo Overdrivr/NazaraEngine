@@ -39,7 +39,6 @@ class NAZARA_API NzSceneNode : public NzNode
 		virtual void Register();
 		void SetScene(NzScene* scene);
 		virtual void Unregister();
-		virtual void Update();
 		virtual bool VisibilityTest(const NzCamera* camera) = 0;
 
 		NzScene* m_scene;
