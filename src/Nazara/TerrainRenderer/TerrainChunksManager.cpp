@@ -12,6 +12,9 @@ NzTerrainChunksManager::NzTerrainChunksManager(float edgelenght, unsigned int de
     m_edgeLenght = edgelenght;
     m_depth = depth;
     m_gridStep = m_edgeLenght / m_depth;//std::pow(m_depth,2); ??
+    m_aabb.aabb.x = edgelenght;
+    m_aabb.aabb.z = edgelenght;
+    m_aabb.aabb.z = 0.1f;
 
     for(unsigned int i(0) ; i < m_depth * m_depth ; ++i)
         m_chunks.emplace_back();
