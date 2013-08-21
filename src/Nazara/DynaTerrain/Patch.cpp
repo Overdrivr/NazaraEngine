@@ -253,7 +253,7 @@ void NzPatch::Invalidate()
     m_isInitialized = false;
 }
 
-void NzPatch::SetConfiguration(nzDirection neighborLocation, unsigned int levelDifference, bool autoUpdate)
+void NzPatch::SetConfiguration(nzNeighbourDirection toNeighbor, unsigned int levelDifference, bool autoUpdate)
 {
     if(!m_isInitialized)
     {
@@ -269,30 +269,30 @@ void NzPatch::SetConfiguration(nzDirection neighborLocation, unsigned int levelD
 
     unsigned short int newConfiguration = m_configuration;
 
-    switch(neighborLocation)
+    switch(toNeighbor)
     {
-        case LEFT :
+        case nzNeighbourDirection_left :
             if(levelDifference == 1)
                 newConfiguration = newConfiguration | 0x1;
             else
                 newConfiguration = newConfiguration & 0xE;
         break;
 
-        case TOP :
+        case nzNeighbourDirection_top :
             if(levelDifference)
                 newConfiguration = newConfiguration | 0x2;
             else
                 newConfiguration = newConfiguration & 0xD;
         break;
 
-        case RIGHT :
+        case nzNeighbourDirection_right :
             if(levelDifference == 1)
                 newConfiguration = newConfiguration | 0x4;
             else
                 newConfiguration = newConfiguration & 0xB;
         break;
 
-        case BOTTOM :
+        case nzNeighbourDirection_bottom :
             if(levelDifference)
                 newConfiguration = newConfiguration | 0x8;
             else

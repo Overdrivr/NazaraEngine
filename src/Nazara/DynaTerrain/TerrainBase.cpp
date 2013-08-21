@@ -29,9 +29,8 @@ void NzTerrainBase::AddToRenderQueue(NzAbstractRenderQueue* renderQueue) const
 
 bool NzTerrainBase::VisibilityTest(const NzCamera* camera)
 {
-    // A bouger dans GetBoundingVolume si cette ligne est nécessaire
-    //GetBoundingVolume().Update(NzMatrix4f::Identity());
-
+    return true;
+    //TODO !
     return camera->GetFrustum().Intersect(GetBoundingVolume()) != nzIntersectionSide_Outside;
 }
 

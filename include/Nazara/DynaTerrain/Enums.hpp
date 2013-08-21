@@ -7,20 +7,20 @@
 #ifndef NAZARA_ENUMS_DYNATERRAIN_HPP
 #define NAZARA_ENUMS_DYNATERRAIN_HPP
 
-enum nzLocation
+enum nzNodeLocation
 {
-    TOPLEFT,
-    TOPRIGHT,
-    BOTTOMLEFT,
-    BOTTOMRIGHT
+    nzNodeLocation_topleft,
+    nzNodeLocation_topright,
+    nzNodeLocation_bottomleft,
+    nzNodeLocation_bottomright
 };
 
-enum nzDirection
+enum nzNeighbourDirection
 {
-    TOP = 0,
-    BOTTOM = 1,
-    LEFT = 2,
-    RIGHT = 3
+    nzNeighbourDirection_top = 0,
+    nzNeighbourDirection_bottom = 1,
+    nzNeighbourDirection_left = 2,
+    nzNeighbourDirection_right = 3
 };
 
 enum nzConnectionType
@@ -33,8 +33,8 @@ enum nzConnectionType
 
 enum nzQuadTreeType
 {
-    TERRAIN,
-    PLANET
+    nzQuadTreeType_terrain,
+    nzQuadTreeType_planet
 };
 
 class NzTerrainChunksManager;

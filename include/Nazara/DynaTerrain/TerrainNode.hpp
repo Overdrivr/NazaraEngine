@@ -37,7 +37,7 @@ class NAZARA_API NzTerrainNode
 
         // Getters
         const NzBoundingVolumef& GetAABB() const;
-        NzTerrainNode* GetChild(nzLocation location);
+        NzTerrainNode* GetChild(nzNodeLocation location);
         NzTerrainNode* GetChild(unsigned int i);
         unsigned int GetLevel() const;
         static int GetNodeAmount();
@@ -45,11 +45,11 @@ class NAZARA_API NzTerrainNode
         NzTerrainNode* GetParent();
 
         // Interaction avec les nodes voisins
-        NzTerrainNode* GetDirectNeighbor(nzDirection direction);
+        NzTerrainNode* GetDirectNeighbor(nzNeighbourDirection direction);
 
         // Actions principales
         void Update(const NzVector3f& cameraPosition);
-        void Initialize(nzTerrainNodeData *data, NzTerrainNode* parent, nzLocation loc = TOPLEFT);
+        void Initialize(nzTerrainNodeData *data, NzTerrainNode* parent, nzNodeLocation location = nzNodeLocation_topleft);
         void Invalidate();
         bool Refine();
         bool Subdivide(bool isNotReversible = false);
@@ -61,10 +61,10 @@ class NAZARA_API NzTerrainNode
 
 
     private:
-        void Initialize(nzTerrainNodeData *data, NzTerrainNode* parent, const NzPatch& parentPatch, nzLocation loc = TOPLEFT);
-        void InitializeData(nzTerrainNodeData *data, NzTerrainNode* parent, nzLocation loc = TOPLEFT);
+        void Initialize(nzTerrainNodeData *data, NzTerrainNode* parent, const NzPatch& parentPatch, nzNodeLocation location = nzNodeLocation_topleft);
+        void InitializeData(nzTerrainNodeData *data, NzTerrainNode* parent, nzNodeLocation location = nzNodeLocation_topleft);
 
-        void HandleNeighborSubdivision(nzDirection direction, bool isNotReversible = false);
+        void HandleNeighborSubdivision(nzNeighbourDirection direction, bool isNotReversible = false);
 
 
         nzTerrainNodeData* m_data;
@@ -80,7 +80,7 @@ class NAZARA_API NzTerrainNode
         NzBoundingVolumef m_aabb;
         NzPatch* m_patch;
         //L'emplacement du node par rapport au parent
-        nzLocation m_location;
+        nzNodeLocation m_location;
 
         static int nbNodes;
 

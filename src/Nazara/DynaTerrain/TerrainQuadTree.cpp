@@ -19,7 +19,7 @@ using namespace std;
 
 NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainConfiguration& configuration, NzHeightSource2D* heightSource)
 {
-    m_type = TERRAIN;
+    m_type = nzQuadTreeType_terrain;
 
     m_heightSource2D = heightSource;
     m_terrainConfiguration = configuration;
@@ -35,7 +35,7 @@ NzTerrainQuadTree::NzTerrainQuadTree(const NzTerrainConfiguration& configuration
 
 NzTerrainQuadTree::NzTerrainQuadTree(const NzPlanetConfiguration& configuration, NzHeightSource3D* heightSource, const NzEulerAnglesf& quadtreeOrientation)
 {
-    m_type = PLANET;
+    m_type = nzQuadTreeType_planet;
 
     m_heightSource3D = heightSource;
     m_planetConfiguration = configuration;
@@ -75,7 +75,7 @@ NzTerrainQuadTree::~NzTerrainQuadTree()
     m_isInitialized = false;
 }
 
-void NzTerrainQuadTree::ConnectNeighbor(NzTerrainQuadTree* neighbour, nzDirection callerDirection, nzDirection calleeDirection)
+void NzTerrainQuadTree::ConnectNeighbor(NzTerrainQuadTree* neighbour, nzNeighbourDirection callerDirection, nzNeighbourDirection calleeDirection)
 {
     m_neighbours[callerDirection] = neighbour;
     neighbour->m_neighbours[calleeDirection] = this;
@@ -100,29 +100,25 @@ void NzTerrainQuadTree::ConnectNeighbor(NzTerrainQuadTree* neighbour, nzDirectio
     neighbour->m_connectionDirectionLookup[this] = calleeDirection;
 }
 
-void NzTerrainQuadTree::DisconnectNeighbor(NzTerrainQuadTree* neighbour, nzDirection direction)
+void NzTerrainQuadTree::DisconnectNeighbor(NzTerrainQuadTree* neighbour, nzNeighbourDirection direction)
 {
-    nzDirection invDirection = direction;
+    nzNeighbourDirection invDirection = direction;
     switch(direction)
     {
-        case TOP :
-            invDirection = BOTTOM;
+        case nzNeighbourDirection_top :
+            invDirection = nzNeighbourDirection_bottom;
         break;
 
-        case RIGHT :
-            invDirection = LEFT;
+        case nzNeighbourDirection_right :
+            invDirection = nzNeighbourDirection_left;
         break;
 
-        case BOTTOM :
-            invDirection = TOP;
+        case nzNeighbourDirection_bottom :
+            invDirection = nzNeighbourDirection_top;
         break;
 
-        case LEFT :
-            invDirection = RIGHT;
-        break;
-
-        default:
-            invDirection = BOTTOM;
+        case nzNeighbourDirection_left :
+            invDirection = nzNeighbourDirection_right;
         break;
     }
 
@@ -142,26 +138,26 @@ void NzTerrainQuadTree::Initialize()
 NzTerrainQuadTree* NzTerrainQuadTree::GetContainingQuadTree(const NzTerrainNodeID& nodeID)
 {
     if(nodeID.locx < 0)
-        return m_neighbours[LEFT];
+        return m_neighbours[nzNeighbourDirection_left];
 
     if(nodeID.locy < 0)
-        return m_neighbours[TOP];
+        return m_neighbours[nzNeighbourDirection_top];
 
     if(nodeID.locx > (std::pow(2,nodeID.depth)-1))
-        return m_neighbours[RIGHT];
+        return m_neighbours[nzNeighbourDirection_right];
 
     if(nodeID.locy > (std::pow(2,nodeID.depth)-1))
-        return m_neighbours[BOTTOM];
+        return m_neighbours[nzNeighbourDirection_bottom];
 
     return nullptr;
 }
 
-NzTerrainQuadTree* NzTerrainQuadTree::GetNeighbourQuadTree(nzDirection direction)
+NzTerrainQuadTree* NzTerrainQuadTree::GetNeighbourQuadTree(nzNeighbourDirection direction)
 {
     return m_neighbours[direction];
 }
 
-nzDirection NzTerrainQuadTree::GetNeighbourDirection(NzTerrainQuadTree* neighbour)
+nzNeighbourDirection NzTerrainQuadTree::GetNeighbourDirection(NzTerrainQuadTree* neighbour)
 {
     return m_connectionDirectionLookup[neighbour];
 }
@@ -245,14 +241,14 @@ NzVector3f NzTerrainQuadTree::GetVertexPosition(const NzTerrainNodeID& nodeID, i
 
     switch(m_type)
     {
-        case TERRAIN:
+        case nzQuadTreeType_terrain:
             position.x = m_terrainConfiguration.terrainSize * (m_commonConfiguration.x_offset + (x * 0.25f + nodeID.locx) * power);
             position.z = m_terrainConfiguration.terrainSize * (m_commonConfiguration.y_offset + (y * 0.25f + nodeID.locy) * power);
             position.y = m_heightSource2D->GetHeight(position.x,position.z) * m_commonConfiguration.maxHeight;
             return m_rotationMatrix.Transform(position);
         break;
 
-        case PLANET:
+        case nzQuadTreeType_planet:
         default:
 
             //Les coordonnées d'un plan

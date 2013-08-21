@@ -92,7 +92,7 @@ const NzBoundingVolumef& NzTerrainNode::GetAABB() const
     return m_aabb;
 }
 
-NzTerrainNode* NzTerrainNode::GetChild(nzLocation location)
+NzTerrainNode* NzTerrainNode::GetChild(nzNodeLocation location)
 {
     return m_children[location];
 }
@@ -105,7 +105,7 @@ NzTerrainNode* NzTerrainNode::GetChild(unsigned int i)
         return nullptr;
 }
 
-NzTerrainNode* NzTerrainNode::GetDirectNeighbor(nzDirection direction)
+NzTerrainNode* NzTerrainNode::GetDirectNeighbor(nzNeighbourDirection direction)
 {
     #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
@@ -120,19 +120,19 @@ NzTerrainNode* NzTerrainNode::GetDirectNeighbor(nzDirection direction)
 
     switch(direction)
     {
-        case TOP :
+        case nzNeighbourDirection_top :
             tempID.locy -= 1;
         break;
 
-        case RIGHT :
+        case nzNeighbourDirection_right :
             tempID.locx += 1;
         break;
 
-        case BOTTOM :
+        case nzNeighbourDirection_bottom :
             tempID.locy += 1;
         break;
 
-        case LEFT :
+        case nzNeighbourDirection_left :
             tempID.locx -= 1;
         break;
     }
@@ -155,6 +155,7 @@ NzTerrainNode* NzTerrainNode::GetDirectNeighbor(nzDirection direction)
             // - orthogonale : Top <-> Left
             // - inverse : Top <-> Top
         nzConnectionType type = m_data->quadtree->GetConnectionType(tempQuad);
+        //TODO : Add default
         switch(type)
         {
             case nzConnectionType_orthogonal :
@@ -235,9 +236,9 @@ bool NzTerrainNode::IsValid() const
     return m_isInitialized;
 }
 
-void NzTerrainNode::Initialize(nzTerrainNodeData *data, NzTerrainNode* parent, nzLocation loc)
+void NzTerrainNode::Initialize(nzTerrainNodeData *data, NzTerrainNode* parent, nzNodeLocation location)
 {
-    InitializeData(data,parent,loc);
+    InitializeData(data,parent,location);
     CreatePatch();
 }
 
@@ -288,10 +289,10 @@ bool NzTerrainNode::Subdivide(bool isNotReversible)
         return false;
     }
 
-    if(m_children[TOPLEFT] != nullptr ||
-       m_children[TOPRIGHT] != nullptr ||
-       m_children[BOTTOMLEFT] != nullptr ||
-       m_children[BOTTOMRIGHT] != nullptr)
+    if(m_children[nzNodeLocation_topleft] != nullptr ||
+       m_children[nzNodeLocation_topright] != nullptr ||
+       m_children[nzNodeLocation_bottomleft] != nullptr ||
+       m_children[nzNodeLocation_bottomright] != nullptr)
     {
        std::cout<<"NzTerrainNode::Subdivide : Trying to overwrite existing children."<<std::endl;
        return false;
@@ -307,40 +308,40 @@ bool NzTerrainNode::Subdivide(bool isNotReversible)
     m_patch->UnUploadMesh();
 
     //On récupère des pointeurs valides pour les nodes
-    m_children[TOPLEFT] = NzDynaTerrain::GetTerrainNode();
-    m_children[TOPRIGHT] = NzDynaTerrain::GetTerrainNode();
-    m_children[BOTTOMLEFT] = NzDynaTerrain::GetTerrainNode();
-    m_children[BOTTOMRIGHT] = NzDynaTerrain::GetTerrainNode();
+    m_children[nzNodeLocation_topleft] = NzDynaTerrain::GetTerrainNode();
+    m_children[nzNodeLocation_topright] = NzDynaTerrain::GetTerrainNode();
+    m_children[nzNodeLocation_bottomleft] = NzDynaTerrain::GetTerrainNode();
+    m_children[nzNodeLocation_bottomright] = NzDynaTerrain::GetTerrainNode();
 
-    m_children[TOPLEFT]->Initialize(m_data,this,*m_patch,TOPLEFT);
-    m_children[TOPRIGHT]->Initialize(m_data,this,*m_patch,TOPRIGHT);
-    m_children[BOTTOMLEFT]->Initialize(m_data,this,*m_patch,BOTTOMLEFT);
-    m_children[BOTTOMRIGHT]->Initialize(m_data,this,*m_patch,BOTTOMRIGHT);
+    m_children[nzNodeLocation_topleft]->Initialize(m_data,this,*m_patch,nzNodeLocation_topleft);
+    m_children[nzNodeLocation_topright]->Initialize(m_data,this,*m_patch,nzNodeLocation_topright);
+    m_children[nzNodeLocation_bottomleft]->Initialize(m_data,this,*m_patch,nzNodeLocation_bottomleft);
+    m_children[nzNodeLocation_bottomright]->Initialize(m_data,this,*m_patch,nzNodeLocation_bottomright);
 
     //C'est une subdivision, le node est forcément une leaf
-    m_children[TOPLEFT]->m_isLeaf = true;
-    m_children[TOPRIGHT]->m_isLeaf = true;
-    m_children[BOTTOMLEFT]->m_isLeaf = true;
-    m_children[BOTTOMRIGHT]->m_isLeaf = true;
+    m_children[nzNodeLocation_topleft]->m_isLeaf = true;
+    m_children[nzNodeLocation_topright]->m_isLeaf = true;
+    m_children[nzNodeLocation_bottomleft]->m_isLeaf = true;
+    m_children[nzNodeLocation_bottomright]->m_isLeaf = true;
 
     //Et on l'enregistre auprès du quadtree
-    m_data->quadtree->RegisterLeaf(m_children[TOPLEFT]);
-    m_data->quadtree->RegisterLeaf(m_children[TOPRIGHT]);
-    m_data->quadtree->RegisterLeaf(m_children[BOTTOMLEFT]);
-    m_data->quadtree->RegisterLeaf(m_children[BOTTOMRIGHT]);
+    m_data->quadtree->RegisterLeaf(m_children[nzNodeLocation_topleft]);
+    m_data->quadtree->RegisterLeaf(m_children[nzNodeLocation_topright]);
+    m_data->quadtree->RegisterLeaf(m_children[nzNodeLocation_bottomleft]);
+    m_data->quadtree->RegisterLeaf(m_children[nzNodeLocation_bottomright]);
 
     //On vérifie que les nodes voisins n'aient pas plus d'1 niveau d'écart de profondeur
-    m_children[TOPLEFT]->HandleNeighborSubdivision(LEFT,isNotReversible);
-    m_children[TOPLEFT]->HandleNeighborSubdivision(TOP,isNotReversible);
+    m_children[nzNodeLocation_topleft]->HandleNeighborSubdivision(nzNeighbourDirection_left,isNotReversible);
+    m_children[nzNodeLocation_topleft]->HandleNeighborSubdivision(nzNeighbourDirection_top,isNotReversible);
 
-    m_children[TOPRIGHT]->HandleNeighborSubdivision(RIGHT,isNotReversible);
-    m_children[TOPRIGHT]->HandleNeighborSubdivision(TOP,isNotReversible);
+    m_children[nzNodeLocation_topright]->HandleNeighborSubdivision(nzNeighbourDirection_right,isNotReversible);
+    m_children[nzNodeLocation_topright]->HandleNeighborSubdivision(nzNeighbourDirection_top,isNotReversible);
 
-    m_children[BOTTOMLEFT]->HandleNeighborSubdivision(LEFT,isNotReversible);
-    m_children[BOTTOMLEFT]->HandleNeighborSubdivision(BOTTOM,isNotReversible);
+    m_children[nzNodeLocation_bottomleft]->HandleNeighborSubdivision(nzNeighbourDirection_left,isNotReversible);
+    m_children[nzNodeLocation_bottomleft]->HandleNeighborSubdivision(nzNeighbourDirection_bottom,isNotReversible);
 
-    m_children[BOTTOMRIGHT]->HandleNeighborSubdivision(RIGHT,isNotReversible);
-    m_children[BOTTOMRIGHT]->HandleNeighborSubdivision(BOTTOM,isNotReversible);
+    m_children[nzNodeLocation_bottomright]->HandleNeighborSubdivision(nzNeighbourDirection_right,isNotReversible);
+    m_children[nzNodeLocation_bottomright]->HandleNeighborSubdivision(nzNeighbourDirection_bottom,isNotReversible);
 
     return true;
 }
@@ -369,41 +370,48 @@ bool NzTerrainNode::Refine()
             return false;
     }
 
-    nzDirection first, second;
+    nzNeighbourDirection first, second;
     NzTerrainNode* temp = nullptr;
 
-    nzDirection dirDirection[4] = {TOP,BOTTOM,LEFT,RIGHT};
-    nzDirection invDirection[4] = {BOTTOM,TOP,RIGHT,LEFT};
+    nzNeighbourDirection dirDirection[4] = {nzNeighbourDirection_top,
+                                            nzNeighbourDirection_bottom,
+                                            nzNeighbourDirection_left,
+                                            nzNeighbourDirection_right};
+
+    nzNeighbourDirection invDirection[4] = {nzNeighbourDirection_bottom,
+                                            nzNeighbourDirection_top,
+                                            nzNeighbourDirection_right,
+                                            nzNeighbourDirection_left};
 
     //Contains location of neighbor's children in contact with (*this)
-    nzLocation locLUT[4][2] =  {{BOTTOMLEFT,BOTTOMRIGHT},//TOP Neighbour
-                                {TOPLEFT   ,TOPRIGHT},//BOTTOM Neighbour
-                                {TOPRIGHT  ,BOTTOMRIGHT},//LEFT Neighbour
-                                {TOPLEFT   ,BOTTOMLEFT}};//RIGHT Neighbour
+    nzNodeLocation locLUT[4][2] =  {{nzNodeLocation_bottomleft,nzNodeLocation_bottomright},//TOP Neighbour
+                                    {nzNodeLocation_topleft   ,nzNodeLocation_topright},//BOTTOM Neighbour
+                                    {nzNodeLocation_topright  ,nzNodeLocation_bottomright},//LEFT Neighbour
+                                    {nzNodeLocation_topleft   ,nzNodeLocation_bottomleft}};//RIGHT Neighbour
 
     //Impossible de refiner si les voisins ne sont pas d'accord
     for(int i(0) ; i < 4 ; ++i)
     {
         switch(m_children[i]->m_location)
         {
-            case TOPLEFT:
-                first = TOP;
-                second = LEFT;
+            case nzNodeLocation_topleft:
+                first = nzNeighbourDirection_top;
+                second = nzNeighbourDirection_left;
             break;
 
-            case TOPRIGHT:
-                first = TOP;
-                second = RIGHT;
+            case nzNodeLocation_topright:
+                first = nzNeighbourDirection_top;
+                second = nzNeighbourDirection_right;
             break;
 
-            case BOTTOMLEFT:
-                first = BOTTOM;
-                second = LEFT;
+            case nzNodeLocation_bottomleft:
+                first = nzNeighbourDirection_bottom;
+                second = nzNeighbourDirection_left;
             break;
 
-            case BOTTOMRIGHT:
-                first = BOTTOM;
-                second = RIGHT;
+            case nzNodeLocation_bottomright:
+                first = nzNeighbourDirection_bottom;
+                second = nzNeighbourDirection_right;
             break;
 
         }
@@ -440,13 +448,13 @@ bool NzTerrainNode::Refine()
     m_data->quadtree->RegisterLeaf(this);
     //CreatePatch();
     m_patch->UploadMesh();
-    nzDirection direct;
+    nzNeighbourDirection direct;
 
     for(int i(0) ; i < 4 ; ++i)
     {
         //On signale aux voisins le refinement
         temp = this->GetDirectNeighbor(dirDirection[i]);
-        direct = static_cast<nzDirection>(i);//TOP, BOTTOM, LEFT, RIGHT
+        direct = static_cast<nzNeighbourDirection>(i);//TOP, BOTTOM, LEFT, RIGHT
 
         if(temp != nullptr)
         {
@@ -459,20 +467,20 @@ bool NzTerrainNode::Refine()
                 //TODO : METTRE DANS UNE FONCTION, CAR UTILISE PLEIN DE FOIS
                 switch(direct)
                 {
-                    case TOP :
-                        direct = BOTTOM;
+                    case nzNeighbourDirection_top :
+                        direct = nzNeighbourDirection_bottom;
                     break;
 
-                    case RIGHT :
-                        direct = LEFT;
+                    case nzNeighbourDirection_right :
+                        direct = nzNeighbourDirection_left;
                     break;
 
-                    case BOTTOM :
-                        direct = TOP;
+                    case nzNeighbourDirection_bottom :
+                        direct = nzNeighbourDirection_top;
                     break;
 
-                    case LEFT :
-                        direct = RIGHT;
+                    case nzNeighbourDirection_left :
+                        direct = nzNeighbourDirection_right;
                     break;
                 }
             }
@@ -480,7 +488,7 @@ bool NzTerrainNode::Refine()
             if(temp->m_isLeaf)
             {
                 //This et son voisin auront le même niveau, on supprime l'interface ?
-                //temp->m_patch->SetConfiguration(invDirection[i],0);
+                temp->m_patch->SetConfiguration(invDirection[i],0);
             }
             else
             {
@@ -530,7 +538,7 @@ bool NzTerrainNode::HierarchicalRefine()
 
 }
 
-void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction, bool isNotReversible)
+void NzTerrainNode::HandleNeighborSubdivision(nzNeighbourDirection direction, bool isNotReversible)
 {
     #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
@@ -542,28 +550,28 @@ void NzTerrainNode::HandleNeighborSubdivision(nzDirection direction, bool isNotR
 
     NzTerrainNodeID tempID = m_nodeID;
     int counter = 0;
-    nzDirection invDirection = direction;
+    nzNeighbourDirection invDirection = direction;
 
     switch(direction)
     {
-        case TOP :
+        case nzNeighbourDirection_top :
             tempID.locy -= 1;
-            invDirection = BOTTOM;
+            invDirection = nzNeighbourDirection_bottom;
         break;
 
-        case RIGHT :
+        case nzNeighbourDirection_right :
             tempID.locx += 1;
-            invDirection = LEFT;
+            invDirection = nzNeighbourDirection_left;
         break;
 
-        case BOTTOM :
+        case nzNeighbourDirection_bottom :
             tempID.locy += 1;
-            invDirection = TOP;
+            invDirection = nzNeighbourDirection_top;
         break;
 
-        case LEFT :
+        case nzNeighbourDirection_left :
             tempID.locx -= 1;
-            invDirection = RIGHT;
+            invDirection = nzNeighbourDirection_right;
         break;
 
         default:
@@ -700,20 +708,20 @@ void NzTerrainNode::Update(const NzVector3f& cameraPosition)
     }
 }
 
-void NzTerrainNode::Initialize(nzTerrainNodeData *data, NzTerrainNode* parent, const NzPatch& parentPatch, nzLocation loc)
+void NzTerrainNode::Initialize(nzTerrainNodeData *data, NzTerrainNode* parent, const NzPatch& parentPatch, nzNodeLocation location)
 {
-    InitializeData(data,parent,loc);
+    InitializeData(data,parent,location);
     m_patch = NzDynaTerrain::GetTerrainPatch();
     m_patch->InitializeFromParent(m_nodeID,m_data,parentPatch);
     m_aabb = m_patch->GetAABB();
     m_patch->UploadMesh();
 }
 
-void NzTerrainNode::InitializeData(nzTerrainNodeData *data, NzTerrainNode* parent, nzLocation loc)
+void NzTerrainNode::InitializeData(nzTerrainNodeData *data, NzTerrainNode* parent, nzNodeLocation location)
 {
     m_isInitialized = true;
     m_data = data;
-    m_location = loc;
+    m_location = location;
     m_isLeaf = false;
 
     m_doNotRefine = false;
@@ -737,17 +745,21 @@ void NzTerrainNode::InitializeData(nzTerrainNodeData *data, NzTerrainNode* paren
         int offx = 0, offy = 0;
         switch(m_location)
         {
-            case TOPRIGHT:
+            case nzNodeLocation_topright:
                 offx = 1;
             break;
 
-            case BOTTOMLEFT:
+            case nzNodeLocation_bottomleft:
                 offy = 1;
             break;
 
-            case BOTTOMRIGHT:
+            case nzNodeLocation_bottomright:
                 offx = 1;
                 offy = 1;
+            break;
+
+            case nzNodeLocation_topleft:
+            default:
             break;
         }
         m_nodeID.locx = parent->m_nodeID.locx * 2 + offx;

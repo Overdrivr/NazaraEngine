@@ -38,11 +38,11 @@ class NAZARA_API NzTerrainQuadTree
         ~NzTerrainQuadTree();
 
         // Interaction avec les quadtrees voisins
-        void ConnectNeighbor(NzTerrainQuadTree* neighbour, nzDirection callerDirection, nzDirection calleeDirection);
-        void DisconnectNeighbor(NzTerrainQuadTree* neighbour, nzDirection direction);//DO NOT USE : Modifs todo
+        void ConnectNeighbor(NzTerrainQuadTree* neighbour, nzNeighbourDirection toCaller, nzNeighbourDirection toCallee);
+        void DisconnectNeighbor(NzTerrainQuadTree* neighbour, nzNeighbourDirection direction);//DO NOT USE : Modifs todo
         NzTerrainQuadTree* GetContainingQuadTree(const NzTerrainNodeID& nodeID);//DO NOT USE : Outdated
-        NzTerrainQuadTree* GetNeighbourQuadTree(nzDirection direction);
-        nzDirection GetNeighbourDirection(NzTerrainQuadTree* neighbour);
+        NzTerrainQuadTree* GetNeighbourQuadTree(nzNeighbourDirection direction);
+        nzNeighbourDirection GetNeighbourDirection(NzTerrainQuadTree* neighbour);
         nzConnectionType GetConnectionType(NzTerrainQuadTree* neighbour);
 
         // Interaction avec les nodes
@@ -96,7 +96,7 @@ class NAZARA_API NzTerrainQuadTree
         // Les voisins du quadtree
         NzTerrainQuadTree* m_neighbours[4];
         std::map<NzTerrainQuadTree*,nzConnectionType> m_connectionType;
-        std::map<NzTerrainQuadTree*,nzDirection> m_connectionDirectionLookup;
+        std::map<NzTerrainQuadTree*,nzNeighbourDirection> m_connectionDirectionLookup;
 
         NzMatrix4f m_rotationMatrix;
 
