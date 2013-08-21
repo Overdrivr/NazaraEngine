@@ -7,6 +7,7 @@
 #include <Nazara/DynaTerrain/TerrainNode.hpp>
 #include <Nazara/DynaTerrain/TerrainQuadTree.hpp>
 #include <Nazara/DynaTerrain/DynaTerrain.hpp>
+#include <Nazara/DynaTerrain/Functions.hpp>
 #include <stack>
 #include <iostream>
 #include <Nazara/DynaTerrain/Debug.hpp>
@@ -392,29 +393,9 @@ bool NzTerrainNode::Refine()
     //Impossible de refiner si les voisins ne sont pas d'accord
     for(int i(0) ; i < 4 ; ++i)
     {
-        switch(m_children[i]->m_location)
-        {
-            case nzNodeLocation_topleft:
-                first = nzNeighbourDirection_top;
-                second = nzNeighbourDirection_left;
-            break;
+        //On récupère les directions à tester en fonction de la position du node fils
+        Split(m_children[i]->m_location,first,second);
 
-            case nzNodeLocation_topright:
-                first = nzNeighbourDirection_top;
-                second = nzNeighbourDirection_right;
-            break;
-
-            case nzNodeLocation_bottomleft:
-                first = nzNeighbourDirection_bottom;
-                second = nzNeighbourDirection_left;
-            break;
-
-            case nzNodeLocation_bottomright:
-                first = nzNeighbourDirection_bottom;
-                second = nzNeighbourDirection_right;
-            break;
-
-        }
         temp = m_children[i]->GetDirectNeighbor(first);
         //Si il y a un node voisin de niveau égal
         if(temp != nullptr)
@@ -464,25 +445,7 @@ bool NzTerrainNode::Refine()
             {
                 invDirection[i] = temp->m_data->quadtree->GetNeighbourDirection(m_data->quadtree);
                 direct = invDirection[i];
-                //TODO : METTRE DANS UNE FONCTION, CAR UTILISE PLEIN DE FOIS
-                switch(direct)
-                {
-                    case nzNeighbourDirection_top :
-                        direct = nzNeighbourDirection_bottom;
-                    break;
-
-                    case nzNeighbourDirection_right :
-                        direct = nzNeighbourDirection_left;
-                    break;
-
-                    case nzNeighbourDirection_bottom :
-                        direct = nzNeighbourDirection_top;
-                    break;
-
-                    case nzNeighbourDirection_left :
-                        direct = nzNeighbourDirection_right;
-                    break;
-                }
+                direct = Reverse(direct);
             }
 
             if(temp->m_isLeaf)
