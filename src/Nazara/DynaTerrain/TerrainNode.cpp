@@ -31,7 +31,7 @@ void NzTerrainNode::CleanTree(unsigned int minDepth)
     #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
     {
-        std::cout<<"NzTerrainNode::CleanTree : Calling uninitialized node"<<std::endl;
+        NazaraError("Calling uninitialized node");
         return;
     }
     #endif
@@ -70,7 +70,7 @@ void NzTerrainNode::CreatePatch()
     #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
     {
-        std::cout<<"NzTerrainNode::CreatePatch : Calling uninitialized node"<<std::endl;
+        NazaraError("Calling uninitialized node");
         return;
     }
     #endif
@@ -111,7 +111,7 @@ NzTerrainNode* NzTerrainNode::GetDirectNeighbor(nzNeighbourDirection direction)
     #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
     {
-        std::cout<<"NzTerrainNode::GetNeighbor : Calling uninitialized node"<<std::endl;
+        NazaraError("Calling uninitialized node");
         return nullptr;
     }
     #endif
@@ -146,6 +146,7 @@ NzTerrainNode* NzTerrainNode::GetDirectNeighbor(nzNeighbourDirection direction)
     }
     else
     {
+        NazaraError("Should not go there");
         NzTerrainQuadTree* tempQuad = m_data->quadtree->GetNeighbourQuadTree(direction);
 
         if(tempQuad == nullptr)
@@ -197,7 +198,7 @@ void NzTerrainNode::HierarchicalSubdivide(unsigned int maxDepth, bool isNotRever
     #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
     {
-        std::cout<<"NzTerrainNode::HierarchicalSubdivide : Calling uninitialized node"<<std::endl;
+        NazaraError("Calling uninitialized node");
         return;
     }
     #endif
@@ -254,7 +255,7 @@ void NzTerrainNode::HierarchicalSlopeBasedSubdivide(unsigned int maxDepth)
     #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
     {
-        std::cout<<"NzTerrainNode::HierarchicalSlopeBasedSubdivide : Calling uninitialized node"<<std::endl;
+        NazaraError("Calling uninitialized node");
         return;
     }
     #endif
@@ -286,7 +287,7 @@ bool NzTerrainNode::Subdivide(bool isNotReversible)
     #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
     {
-        std::cout<<"NzTerrainNode::Subdivide : Calling uninitialized node."<<std::endl;
+        NazaraError("Calling uninitialized node.");
         return false;
     }
 
@@ -295,7 +296,7 @@ bool NzTerrainNode::Subdivide(bool isNotReversible)
        m_children[nzNodeLocation_bottomleft] != nullptr ||
        m_children[nzNodeLocation_bottomright] != nullptr)
     {
-       std::cout<<"NzTerrainNode::Subdivide : Trying to overwrite existing children."<<std::endl;
+       NazaraError("Trying to overwrite existing children.");
        return false;
     }
     #endif
@@ -352,7 +353,7 @@ bool NzTerrainNode::Refine()
     #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
     {
-        std::cout<<"NzTerrainNode::HierarchicalRefine : Calling uninitialized node"<<std::endl;
+        NazaraError("Calling uninitialized node");
         return false;
     }
     #endif
@@ -479,7 +480,7 @@ bool NzTerrainNode::HierarchicalRefine()
     #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
     {
-        std::cout<<"NzTerrainNode::HierarchicalRefine : Calling uninitialized node."<<std::endl;
+        NazaraError("Calling uninitialized node");
         return false;
     }
     #endif
@@ -506,7 +507,7 @@ void NzTerrainNode::HandleNeighborSubdivision(nzNeighbourDirection direction, bo
     #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
     {
-        std::cout<<"NzTerrainNode::HandleNeighborSubdivision : Calling uninitialized node"<<std::endl;
+        NazaraError("Calling uninitialized node");
         return;
     }
     #endif
@@ -607,7 +608,7 @@ void NzTerrainNode::HandleNeighborSubdivision(nzNeighbourDirection direction, bo
             }
             else
             {
-                std::cout<<"EXCEPTION : NzTerrainNode::HandleNeighborSubdivision ENTREE EN BOUCLE INFINIE"<<std::endl;
+                NazaraError("Impossible de remonter jusqu'à un node valide");
                 return;
             }
         }
@@ -632,7 +633,7 @@ void NzTerrainNode::Update(const NzVector3f& cameraPosition)
     #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)
     {
-        std::cout<<"NzTerrainNode::Update : Calling uninitialized node."<<std::endl;
+        NazaraError("Calling uninitialized node");
         return;
     }
     #endif
