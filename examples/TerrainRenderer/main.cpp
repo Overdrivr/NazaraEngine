@@ -3,7 +3,7 @@
 #include <Nazara/Renderer.hpp>
 #include <Nazara/Utility.hpp>
 #include <Nazara/TerrainRenderer/TerrainRenderer.hpp>
-#include <Nazara/TerrainRenderer/TerrainChunk.hpp>
+#include <Nazara/TerrainRenderer/TerrainChunksManager.hpp>
 #include <Nazara/Math/Matrix4.hpp>
 #include <Nazara/Renderer/OpenGL.hpp>
 #include <iostream>
@@ -29,12 +29,24 @@ int main()
 		return EXIT_FAILURE;
 	}
 
+	NzDebugDrawer::Initialize();
+
     NzScene scene;
 
-    /// On crée deux chunks de terrain manuellement
-    NzTerrainChunk chunk;
-    NzTerrainNodeID id(0,0,0);//L'identifiant unique du maillage uploadé, on s'en passe ici
-    NzBoundingVolumef box(0.f,0.f,0.f,1000.f,1000.f,1000.f);//La bounding box du maillage, on s'en passe ici
+    ///Un manager de chunks pour un carré de 500 m de côté et un total de 5*5 = 25 chunks
+    NzTerrainChunksManager chunksManager(500.f,5);
+
+    //NzTerrainChunk c1,c2,c3;
+
+    NzBoundingVolumef box(0.f,0.f,0.f,100.f,50.f,100.f);
+    box.Update(NzMatrix4f::Identity());
+    NzBoundingVolumef box2(0.f,0.f,0.f,100.f,50.f,100.f);
+    box2.Update(NzMatrix4f::Identity());
+
+    NzTerrainNodeID id(1,0,0);
+    NzTerrainNodeID id2(1,1,0);
+    NzTerrainNodeID id3(1,1,1);
+    NzTerrainNodeID id4(1,0,1);
 
     unsigned int index;
     std::array<float,150> data;
@@ -43,53 +55,85 @@ int main()
         {
             index = (x + 5 * y)*6;
             //On génère une grille
-            data.at(index) = x * 1000.f;
-            data.at(index + 1) = (rand() % 10 - 5) * 100.f;
-            data.at(index + 2) = y * 1000.f;
+            data.at(index) = x * 25.f;
+            data.at(index + 1) = 0.f;
+            data.at(index + 2) = y * 25.f;
             //Normales vers le haut
             data.at(index + 3) = 0.f;
             data.at(index + 4) = 1.f;
             data.at(index + 5) = 0.f;
         }
-    chunk.AddMesh(data,box,id);
 
-    NzTerrainChunk chunk2;
-    NzTerrainNodeID id2(1,1,0);
+    if(!chunksManager.AddMesh(data,box,id))
+            std::cout<<"Impossible d'ajouter le mesh 1"<<std::endl;
+
+    //if(!c1.AddMesh(data,box,id))
+      //  std::cout<<"Impossible d'ajouter le mesh 1"<<std::endl;
 
     for(int y(0) ; y < 5 ; ++y)
         for(int x(0) ; x < 5 ; ++x)
         {
             index = (x + 5 * y)*6;
             //On génère une grille
-            data.at(index) = x * 1000.f + 5000.f;
-            data.at(index + 1) = (rand() % 10 - 5) * 100.f;
-            data.at(index + 2) = y * 1000.f;
+            data.at(index) = x * 25.f + 150.f;
+            data.at(index + 1) = 0.f;
+            data.at(index + 2) = y * 25.f;
             //Normales vers le haut
             data.at(index + 3) = 0.f;
             data.at(index + 4) = 1.f;
             data.at(index + 5) = 0.f;
         }
-
-    chunk2.AddMesh(data,box,id2);
-
-    NzTerrainChunk chunk3;
-    NzTerrainNodeID id3(1,0,1);
+    if(!chunksManager.AddMesh(data,box,id2))
+            std::cout<<"Impossible d'ajouter le mesh 1"<<std::endl;
+    //if(!c1.AddMesh(data,box,id2))
+      //  std::cout<<"Impossible d'ajouter le mesh 2"<<std::endl;
 
     for(int y(0) ; y < 5 ; ++y)
         for(int x(0) ; x < 5 ; ++x)
         {
             index = (x + 5 * y)*6;
             //On génère une grille
-            data.at(index) = x * 1000.f + 10000.f;
-            data.at(index + 1) = (rand() % 10 - 5) * 100.f;
-            data.at(index + 2) = y * 1000.f;
+            data.at(index) = x * 25.f + 300.f;
+            data.at(index + 1) = (rand() % 5) * 10.f;
+            data.at(index + 2) = y * 25.f;
             //Normales vers le haut
             data.at(index + 3) = 0.f;
             data.at(index + 4) = 1.f;
             data.at(index + 5) = 0.f;
         }
+    if(!chunksManager.AddMesh(data,box,id3))
+            std::cout<<"Impossible d'ajouter le mesh 1"<<std::endl;
+    //if(!c1.AddMesh(data,box,id3))
+      //  std::cout<<"Impossible d'ajouter le mesh 2"<<std::endl;
 
-    chunk3.AddMesh(data,box,id3);
+    for(int y(0) ; y < 5 ; ++y)
+        for(int x(0) ; x < 5 ; ++x)
+        {
+            index = (x + 5 * y)*6;
+            //On génère une grille
+            data.at(index) = x * 25.f + 450.f;
+            data.at(index + 1) = 0.f;
+            data.at(index + 2) = y * 25.f;
+            //Normales vers le haut
+            data.at(index + 3) = 0.f;
+            data.at(index + 4) = 1.f;
+            data.at(index + 5) = 0.f;
+        }
+    if(!chunksManager.AddMesh(data,box,id4))
+            std::cout<<"Impossible d'ajouter le mesh 1"<<std::endl;
+
+    //if(!c1.AddMesh(data,box,id4))
+    //    std::cout<<"Impossible d'ajouter le mesh 3"<<std::endl;
+
+    //if(!chunksManager.RemoveMesh(box,id))
+    //    std::cout<<"Impossible de supprimer le mesh 3"<<std::endl;
+
+    //if(!c1.RemoveMesh(id2))
+    //    std::cout<<"Impossible de supprimer le mesh3"<<std::endl;
+
+    //if(!c1.RemoveMesh(id3))
+     //   std::cout<<"Impossible de supprimer le mesh 2"<<std::endl;
+
 
     ////////////////////////////
 
@@ -103,14 +147,14 @@ int main()
 	/// Caméra
 	//NzVector3f camPos(-2000.f, 1800.f, 2000.f);
 	//NzVector3f camPos(7241.f, 12618.f, 3130.f);
-	NzVector3f camPos(-1000.f, 2300.f, 340.f);
+	NzVector3f camPos(-100.f, 230.f, 34.f);
 	NzEulerAnglesf camRot(-30.f, -90.f, 0.f);
 	NzCamera camera;
 	camera.SetPosition(camPos);
 	camera.SetRotation(camRot);
 	camera.SetFOV(70.f);
-	camera.SetZFar(100000.f);
-	camera.SetZNear(10.f);
+	camera.SetZFar(10000.f);
+	camera.SetZNear(0.5f);
 	camera.SetParent(scene);
 	camera.SetTarget(window);
 
@@ -127,8 +171,68 @@ int main()
 
     NzRenderStates renderStates;
     renderStates.parameters[nzRendererParameter_DepthBuffer] = true;
-    //renderStates.parameters[nzRendererParameter_DepthWrite] = true;
-    //renderStates.parameters[nzRendererParameter_ColorWrite] = true;
+
+    NzClock deformationClock;
+
+
+
+
+
+	///L'index buffer
+   /* unsigned int rowIndex[24];
+
+    for(int i(0) ; i < 4 ; ++i)
+    {
+        rowIndex[i*6] = i;
+        rowIndex[i*6+1] = i + 1;
+        rowIndex[i*6+2] = i + 6;
+        rowIndex[i*6+3] = i;
+        rowIndex[i*6+4] = i + 5;
+        rowIndex[i*6+5] = i + 6;
+    }
+
+    std::array<nzUInt16,96> indexdata;
+
+    NzIndexBuffer indexBuf(false, 384, nzBufferStorage_Hardware);
+    for(unsigned int k(0) ; k < 4 ; ++k)
+    {
+        for(unsigned int i(0) ; i < 4 ; ++i)
+            for(unsigned int j(0) ; j < 24 ; ++j)
+            {
+                indexdata[i*24+j] = static_cast<nzUInt16>(rowIndex[j] + i*5 + 25 *k);
+            }
+        indexBuf.Fill(indexdata.data(), k*96, 96);
+    }
+
+	/// Le vertex buffer
+	//std::array<float,150> data;
+    //int index = 0;
+
+    NzVertexBuffer buf(NzVertexDeclaration::Get(nzVertexLayout_XYZ_Normal),100,nzBufferStorage_Hardware,nzBufferUsage_Static);
+
+    for(int k(0) ; k < 4 ; ++k)
+    {
+        for(int y(0) ; y < 5 ; ++y)
+            for(int x(0) ; x < 5 ; ++x)
+            {
+                index = (x + 5 * y)*6;
+                //On génère une grille
+                data.at(index) = x * 100.f + 500.f * k;
+                data.at(index + 1) = 0.f;
+                data.at(index + 2) = y * 100.f;
+                //Normales vers le haut
+                data.at(index + 3) = 0.f;
+                data.at(index + 4) = 1.f;
+                data.at(index + 5) = 0.f;
+            }
+        buf.Fill(data.data(),k*25,25);
+    }*/
+
+
+
+
+
+
 
 	while (window.IsOpen())
 	{
@@ -200,7 +304,7 @@ int main()
 			static const NzVector3f left(NzVector3f::Left());
 			static const NzVector3f up(NzVector3f::Up());
 
-            float speed2 = (NzKeyboard::IsKeyPressed(NzKeyboard::Key::LShift)) ? camSpeed*40: camSpeed;
+            float speed2 = (NzKeyboard::IsKeyPressed(NzKeyboard::Key::LShift)) ? camSpeed*5: camSpeed;
             NzVector3f speed(speed2,speed2,speed2);
 
             if (NzKeyboard::IsKeyPressed(NzKeyboard::Z))
@@ -238,15 +342,45 @@ int main()
 		scene.UpdateVisible();
 		scene.Draw();
 
+		//NzRenderer::SetMatrix(nzMatrixType_World, NzMatrix4f::Identity());
+		//NzBoxf bbox(-10.f,10.f,10.f,100.f,100.f,100.f);
+		//NzDebugDrawer::Draw(bbox);
+
+      /*  NzRenderer::SetRenderStates(renderStates);
+        NzRenderer::SetFaceFilling(nzFaceFilling_Line);
+        NzRenderer::SetShaderProgram(NzTerrainRenderer::GetShader());
+		NzRenderer::SetVertexBuffer(&buf);
+		NzRenderer::SetIndexBuffer(&indexBuf);
+        NzRenderer::DrawIndexedPrimitives(nzPrimitiveMode_TriangleList,48,288);*/
+
 		// Dessin des chunks
 		NzRenderer::SetMatrix(nzMatrixType_World, NzMatrix4f::Identity());
-		NzRenderer::SetRenderStates(renderStates);
+
 		NzRenderer::SetFaceFilling(nzFaceFilling_Line);
 		NzRenderer::SetShaderProgram(NzTerrainRenderer::GetShader());
         NzRenderer::SetIndexBuffer(NzTerrainRenderer::GetIndexBuffer());
-        NzTerrainRenderer::DrawTerrainChunk(chunk);
-        NzTerrainRenderer::DrawTerrainChunk(chunk2);
-        NzTerrainRenderer::DrawTerrainChunk(chunk3);
+//        NzTerrainRenderer::DrawTerrainChunk(c1);
+        //NzTerrainRenderer::DrawTerrainChunk(c2);
+        //NzTerrainRenderer::DrawTerrainChunk(chunk3);
+
+        chunksManager.DrawChunks();
+
+        //On teste la maj du chunk
+        for(int y(0) ; y < 5 ; ++y)
+            for(int x(0) ; x < 5 ; ++x)
+            {
+                index = (x + 5 * y)*6;
+                //On génère une grille
+                data.at(index) = x * 25.f;
+                data.at(index + 1) = sin(x * deformationClock.GetMilliseconds() / 1000.f) * 25.f + 25.f;
+                data.at(index + 2) = y * 25.f;
+                //Normales vers le haut
+                data.at(index + 3) = 0.f;
+                data.at(index + 4) = 1.f;
+                data.at(index + 5) = 0.f;
+            }
+
+       chunksManager.UpdateMesh(data,box,id);
 
 		// Nous mettons à jour l'écran
 		window.Display();
@@ -260,7 +394,17 @@ int main()
 			fps = 0;
 			secondClock.Restart();
 		}
+
 	}
+/*
+	NzBufferMapper<NzVertexBuffer> mapper(buf,nzBufferAccess_ReadOnly);
+	const float* vertices = reinterpret_cast<const float*>(mapper.GetPointer());
+
+	for(int i(0) ; i < 75 ; ++i)
+        std::cout<<vertices[i*6]<<" ; "<<vertices[i*6+1]<<" ; "<<vertices[i*6+2]<<" | "
+                 <<vertices[i*6+3]<<" ; "<<vertices[i*6+4]<<" ; "<<vertices[i*6+5]<<std::endl;*/
+
+	NzDebugDrawer::Uninitialize();
 
     return 0;
 }

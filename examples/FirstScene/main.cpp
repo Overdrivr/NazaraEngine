@@ -347,7 +347,7 @@ int main()
 		// Pour terminer, il y a l'affichage en lui-même, de façon organisée et optimisée (Batching)
 		scene.Draw();
 
-		// Après avoir dessiné sur la fenêtre, il faut s'assurer qu'elle affiche cela
+        // Après avoir dessiné sur la fenêtre, il faut s'assurer qu'elle affiche cela
 		// Cet appel ne fait rien d'autre qu'échanger les buffers de rendu (Double Buffering)
 		window.Display();
 
