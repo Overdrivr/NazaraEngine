@@ -91,7 +91,7 @@ namespace
 	unsigned int s_maxVertexAttribs;
 }
 
-void NzRenderer::Clear(unsigned long flags)
+void NzRenderer::Clear(nzUInt32 flags)
 {
 	#ifdef NAZARA_DEBUG
 	if (NzContext::GetCurrent() == nullptr)
@@ -103,6 +103,9 @@ void NzRenderer::Clear(unsigned long flags)
 
 	if (flags)
 	{
+		// Les états du rendu sont suceptibles d'influencer glClear
+		NzOpenGL::ApplyStates(s_states);
+
 		GLenum mask = 0;
 
 		if (flags & nzRendererClear_Color)
@@ -113,9 +116,6 @@ void NzRenderer::Clear(unsigned long flags)
 
 		if (flags & nzRendererClear_Stencil)
 			mask |= GL_STENCIL_BUFFER_BIT;
-
-		// Les états du rendu sont suceptibles d'influencer glClear
-		NzOpenGL::ApplyStates(s_states);
 
 		glClear(mask);
 	}
@@ -628,7 +628,7 @@ bool NzRenderer::Initialize()
 	{
 		try
 		{
-			s_instanceBuffer.Reset(NzVertexDeclaration::Get(nzVertexLayout_Matrix4), NAZARA_RENDERER_INSTANCE_BUFFER_SIZE/sizeof(NzMatrix4f), nzBufferStorage_Hardware, nzBufferUsage_Dynamic);
+			s_instanceBuffer.Reset(nullptr, NAZARA_RENDERER_INSTANCE_BUFFER_SIZE, nzBufferStorage_Hardware, nzBufferUsage_Dynamic);
 		}
 		catch (const std::exception& e)
 		{
@@ -1124,7 +1124,8 @@ void NzRenderer::SetViewport(const NzRectui& viewport)
 	unsigned int width = s_target->GetWidth();
 	if (viewport.x+viewport.width > width || viewport.y+viewport.height > height)
 	{
-		NazaraError("Rectangle dimensions are out of bounds");
+		NazaraError("Rectangle dimensions are out of bounds (" + NzString::Number(viewport.x+viewport.width) + ", " + NzString::Number(viewport.y+viewport.height) + " > "
+		                                                       + NzString::Number(width) + ", " + NzString::Number(height) + ")");
 		return;
 	}
 	#endif
@@ -1257,7 +1258,7 @@ bool NzRenderer::EnsureStateUpdate()
 
 					if (!unit.textureUpdated)
 					{
-						NzOpenGL::SetTextureUnit(i);
+						NzOpenGL::BindTextureUnit(i);
 						unit.texture->Bind();
 
 						unit.textureUpdated = true;
@@ -1276,7 +1277,7 @@ bool NzRenderer::EnsureStateUpdate()
 				{
 					TextureUnit& unit = s_textureUnits[i];
 
-					NzOpenGL::SetTextureUnit(i);
+					NzOpenGL::BindTextureUnit(i);
 
 					unit.texture->Bind();
 					unit.textureUpdated = true;
@@ -1360,7 +1361,7 @@ bool NzRenderer::EnsureStateUpdate()
 				unsigned int stride;
 
 				NzHardwareBuffer* vertexBufferImpl = static_cast<NzHardwareBuffer*>(s_vertexBuffer->GetBuffer()->GetImpl());
-				vertexBufferImpl->Bind();
+				glBindBuffer(NzOpenGL::BufferTarget[nzBufferType_Vertex], vertexBufferImpl->GetOpenGLID());
 
 				bufferOffset = s_vertexBuffer->GetStartOffset();
 				vertexDeclaration = s_vertexBuffer->GetVertexDeclaration();
@@ -1389,7 +1390,7 @@ bool NzRenderer::EnsureStateUpdate()
 				if (s_instancing)
 				{
 					NzHardwareBuffer* instanceBufferImpl = static_cast<NzHardwareBuffer*>(s_instanceBuffer.GetBuffer()->GetImpl());
-					instanceBufferImpl->Bind();
+					glBindBuffer(NzOpenGL::BufferTarget[nzBufferType_Vertex], instanceBufferImpl->GetOpenGLID());
 
 					bufferOffset = s_instanceBuffer.GetStartOffset();
 					vertexDeclaration = s_instanceBuffer.GetVertexDeclaration();
@@ -1426,10 +1427,10 @@ bool NzRenderer::EnsureStateUpdate()
 				if (s_indexBuffer)
 				{
 					NzHardwareBuffer* indexBufferImpl = static_cast<NzHardwareBuffer*>(s_indexBuffer->GetBuffer()->GetImpl());
-					indexBufferImpl->Bind();
+					glBindBuffer(NzOpenGL::BufferTarget[nzBufferType_Index], indexBufferImpl->GetOpenGLID());
 				}
 				else
-					NzOpenGL::BindBuffer(nzBufferType_Index, 0);
+					glBindBuffer(NzOpenGL::BufferTarget[nzBufferType_Index], 0);
 			}
 
 			if (s_useVertexArrayObjects)
@@ -1441,6 +1442,10 @@ bool NzRenderer::EnsureStateUpdate()
 				// En cas de non-support des VAOs, les attributs doivent être respécifiés à chaque frame
 				s_updateFlags &= ~Update_VAO;
 			}
+
+			// On invalide les bindings des buffers (pour éviter des bugs)
+			NzOpenGL::SetBuffer(nzBufferType_Index, 0);
+			NzOpenGL::SetBuffer(nzBufferType_Vertex, 0);
 		}
 
 		#ifdef NAZARA_DEBUG

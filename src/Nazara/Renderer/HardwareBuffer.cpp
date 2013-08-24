@@ -76,9 +76,7 @@ void NzHardwareBuffer::Bind()
 	}
 	#endif
 
-	//FIXME : BUG ON SOME HARDWARE
-	//NzOpenGL::BindBuffer(m_type, m_buffer);
-	glBindBuffer(NzOpenGL::BufferTarget[m_type], m_buffer);
+	NzOpenGL::BindBuffer(m_type, m_buffer);
 }
 
 bool NzHardwareBuffer::Create(unsigned int size, nzBufferUsage usage)
@@ -179,4 +177,14 @@ bool NzHardwareBuffer::Unmap()
 	}
 
 	return true;
+}
+
+void NzHardwareBuffer::Bind() const
+{
+	NzOpenGL::BindBuffer(m_type, m_buffer);
+}
+
+unsigned int NzHardwareBuffer::GetOpenGLID() const
+{
+	return m_buffer;
 }
