@@ -18,6 +18,8 @@
 class NzTerrainQuadTree;
 class NzHeightSource;
 
+//TODO : Un node subdivisé devrait renvoyer son pointer vers le patch pour réduire l'utilisation des ressources
+
 class NAZARA_API NzTerrainNode
 {
     public:
