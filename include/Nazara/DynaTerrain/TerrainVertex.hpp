@@ -17,9 +17,10 @@ class NAZARA_API NzTerrainVertex
 {
     public:
         NzTerrainVertex();
-        NzTerrainVertex(const NzTerrainVertex& vertex) = default;
-        ~NzTerrainVertex();
+        ~NzTerrainVertex() = default;
 
+        void SetPosition(const NzTerrainVertex& vertex);
+        void SetPosition(const NzVector3f& position);
         const NzVector3f& GetPosition() const;
 
         void ComputePosition(NzTerrainQuadTree* quadtree, const NzTerrainNodeID& ID, const NzVector2i& offset);

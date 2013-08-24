@@ -14,16 +14,6 @@ NzTerrainVertex::NzTerrainVertex()
     m_isPositionInitialized = false;
 }
 
-NzTerrainVertex::~NzTerrainVertex()
-{
-
-}
-
-const NzVector3f& NzTerrainVertex::GetPosition() const
-{
-    return m_position;
-}
-
 void NzTerrainVertex::ComputePosition(NzTerrainQuadTree* quadtree, const NzTerrainNodeID& ID, const NzVector2i& offset)
 {
     if(!m_isPositionInitialized)
@@ -31,6 +21,11 @@ void NzTerrainVertex::ComputePosition(NzTerrainQuadTree* quadtree, const NzTerra
         m_position = quadtree->GetVertexPosition(ID,offset.x,offset.y);
         m_isPositionInitialized = true;
     }
+}
+
+const NzVector3f& NzTerrainVertex::GetPosition() const
+{
+    return m_position;
 }
 
 void NzTerrainVertex::Invalidate()
@@ -41,4 +36,16 @@ void NzTerrainVertex::Invalidate()
 bool NzTerrainVertex::IsInitialized() const
 {
     return m_isPositionInitialized;
+}
+
+void NzTerrainVertex::SetPosition(const NzTerrainVertex& vertex)
+{
+    m_position = vertex.m_position;
+    m_isPositionInitialized = true;
+}
+
+void NzTerrainVertex::SetPosition(const NzVector3f& position)
+{
+    m_position = position;
+    m_isPositionInitialized = true;
 }
