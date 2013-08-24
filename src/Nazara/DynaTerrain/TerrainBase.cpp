@@ -17,21 +17,26 @@ NzTerrainBase::NzTerrainBase()
 
 }
 
-nzSceneNodeType NzTerrainBase::GetSceneNodeType() const
-{
-    return nzSceneNodeType_User;
-}
-
 void NzTerrainBase::AddToRenderQueue(NzAbstractRenderQueue* renderQueue) const
 {
     renderQueue->AddDrawable(this);
 }
 
-bool NzTerrainBase::VisibilityTest(const NzCamera* camera)
+nzSceneNodeType NzTerrainBase::GetSceneNodeType() const
+{
+    return nzSceneNodeType_User;
+}
+
+bool NzTerrainBase::FrustumCull(const NzFrustumf& frustum)
 {
     return true;
     //TODO !
-    return camera->GetFrustum().Intersect(GetBoundingVolume()) != nzIntersectionSide_Outside;
+    return frustum.Intersect(GetBoundingVolume()) != nzIntersectionSide_Outside;
+}
+
+bool NzTerrainBase::IsDrawable() const
+{
+    return true;
 }
 
 //void NzTerrainBase::Initialize(const NzDynaTerrainConfigurationBase& configuration)

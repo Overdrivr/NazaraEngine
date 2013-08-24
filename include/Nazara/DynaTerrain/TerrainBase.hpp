@@ -29,14 +29,16 @@ class NAZARA_API NzTerrainBase : public NzDrawable, public NzSceneNode, public N
         NzTerrainBase();
         ~NzTerrainBase() = default;
 
+        virtual void Draw() const = 0;
+
         virtual const NzBoundingVolumef& GetBoundingVolume() const = 0;
 		virtual nzSceneNodeType GetSceneNodeType() const;
 
-		virtual void Draw() const = 0;
+        virtual bool IsDrawable() const;
 
     protected:
         virtual void AddToRenderQueue(NzAbstractRenderQueue* renderQueue) const;
-        virtual bool VisibilityTest(const NzCamera* camera);
+        virtual bool FrustumCull(const NzFrustumf& frustum);
 
         NzBoundingVolumef m_aabb;
     private:
