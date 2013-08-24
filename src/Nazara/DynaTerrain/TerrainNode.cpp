@@ -364,14 +364,12 @@ bool NzTerrainNode::Refine()
         return false;
 
     //Impossible de refiner autre chose qu'un parent d'une feuille
-    for(int i(0) ; i < 4 ; ++i)
-    {
-        if(!m_children[i]->m_isLeaf)
-            return false;
+    if(!m_children[0]->m_isLeaf || !m_children[1]->m_isLeaf || !m_children[2]->m_isLeaf || !m_children[3]->m_isLeaf)
+        return false;
 
-        if(m_children[i]->m_doNotRefine)
+    if(m_children[0]->m_doNotRefine || m_children[1]->m_doNotRefine ||
+       m_children[2]->m_doNotRefine || m_children[3]->m_doNotRefine)
             return false;
-    }
 
     nzNeighbourDirection first, second;
     NzTerrainNode* temp = nullptr;
@@ -431,6 +429,7 @@ bool NzTerrainNode::Refine()
     m_isLeaf = true;
     m_data->quadtree->RegisterLeaf(this);
     nzNeighbourDirection direct;
+    m_patch->Reset();
 
     for(int i(0) ; i < 4 ; ++i)
     {
