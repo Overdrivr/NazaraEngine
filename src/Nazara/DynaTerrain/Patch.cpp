@@ -108,6 +108,42 @@ void NzPatch::ComputeSlope()
         m_slope = std::pow(m_slope,inv_sensitivity);
 }
 
+void NzPatch::CorrectNormalsAtInterface()
+{
+    // Normalement, les seuls points dont les normales à corriger
+    // lors d'une interface d'adaptation
+    // sont (1,1) (1,3) (3,1) (3,3)
+
+    // La seule chose à déterminer est si le point est concerné par deux interfaces
+    // (haut et gauche par exemple) à la fois, ou une seule
+
+    //Ensuite, il s'agit juste de calculer les normales avec des points en plus
+
+    //l'état des interfaces, true si en adaptation
+    bool top = false, right = false, bottom = false, left = false;
+    // true si concerné par une interface en adaptation
+    bool p11 = false, p13 = false, p31 = false, p33 = false;
+    // true si concerné par 2 interfaces, false si seulement 1
+    bool i11 = false, i13 = false, i31 = false, i33 = false;
+
+    left   = (m_configuration & 0x1) == 0x1;
+    top    = (m_configuration & 0x2) == 0x2;
+    right  = (m_configuration & 0x4) == 0x4;
+    bottom = (m_configuration & 0x8) == 0x8;
+
+    p11 = top || left;
+    p13 = bottom || left;
+    p31 = top || right;
+    p33 = bottom || right;
+
+    i11 = top && left;
+    i13 = bottom && left;
+    i31 = top && right;
+    i33 = bottom && right;
+
+    // Avec ces infos on corrige les normales de ce(s) point(s)
+}
+
 NzBoundingVolumef& NzPatch::GetAABB()
 {
     return m_aabb;

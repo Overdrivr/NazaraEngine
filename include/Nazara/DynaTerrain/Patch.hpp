@@ -45,6 +45,7 @@ class NAZARA_API NzPatch
         void ComputeNormals();
         void ComputeSlope();
         void ComputeHeights();
+        void CorrectNormalsAtInterface();
 
         nzTerrainNodeData* m_data;
         NzTerrainNodeID m_id;
