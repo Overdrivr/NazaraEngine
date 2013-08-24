@@ -99,7 +99,7 @@ int main()
 	camera.SetZFar(100000.f);
 	camera.SetZNear(10.f);
 	camera.SetTarget(window);
-	camera.SetParent(scene);
+	scene.SetViewer(camera);
 
     /// Lampe
 	//NzLight spotLight(nzLightType_Spot);
@@ -258,7 +258,6 @@ int main()
 			updateClock.Restart();
 		}
 
-        camera.Activate();
 		scene.Update();
 		scene.Cull();
 		scene.UpdateVisible();
