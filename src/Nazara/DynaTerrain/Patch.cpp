@@ -125,8 +125,66 @@ float NzPatch::GetGlobalSlope() const
 
 void NzPatch::Initialize(NzTerrainNodeID nodeID, nzTerrainNodeData* data)
 {
+    Reset();
+
     m_id = nodeID;
     m_data = data;
+
+    ComputeHeights();
+    ComputeNormals();
+    ComputeSlope();
+}
+
+void NzPatch::InitializeFromParent(NzTerrainNodeID nodeID, nzTerrainNodeData* data, const NzPatch& parentPatch)
+{
+    Reset();
+
+    m_id = nodeID;
+    m_data = data;
+
+    int offx = 2 * (m_id.locx - std::floor(m_id.locx / 2.f) * 2);
+    int offy = 2 * (m_id.locy - std::floor(m_id.locy / 2.f) * 2);
+
+    m_vertices[1][1].SetPosition(parentPatch.m_vertices[1 + offx][1 + offy]);
+    m_vertices[3][1].SetPosition(parentPatch.m_vertices[2 + offx][1 + offy]);
+    m_vertices[5][1].SetPosition(parentPatch.m_vertices[3 + offx][1 + offy]);
+
+    m_vertices[1][3].SetPosition(parentPatch.m_vertices[1 + offx][2 + offy]);
+    m_vertices[3][3].SetPosition(parentPatch.m_vertices[2 + offx][2 + offy]);
+    m_vertices[5][3].SetPosition(parentPatch.m_vertices[3 + offx][2 + offy]);
+
+    m_vertices[1][5].SetPosition(parentPatch.m_vertices[1 + offx][3 + offy]);
+    m_vertices[3][5].SetPosition(parentPatch.m_vertices[2 + offx][3 + offy]);
+    m_vertices[5][5].SetPosition(parentPatch.m_vertices[3 + offx][3 + offy]);
+
+    ComputeHeights();
+    ComputeNormals();
+    ComputeSlope();
+}
+
+void NzPatch::Reset()
+{
+    m_isUploaded = false;
+    m_isInitialized = true;
+    m_fromScratch = true;
+
+    m_configuration = 0;
+
+    for(int i(0) ; i < 7 ; ++i)
+    {
+        m_vertices[0][i].Invalidate();
+        m_vertices[1][i].Invalidate();
+        m_vertices[2][i].Invalidate();
+        m_vertices[3][i].Invalidate();
+        m_vertices[4][i].Invalidate();
+        m_vertices[5][i].Invalidate();
+        m_vertices[6][i].Invalidate();
+    }
+}
+
+void NzPatch::Invalidate()
+{
+    UnUploadMesh();
 
     m_isUploaded = false;
     m_isInitialized = true;
@@ -144,113 +202,6 @@ void NzPatch::Initialize(NzTerrainNodeID nodeID, nzTerrainNodeData* data)
         m_vertices[5][i].Invalidate();
         m_vertices[6][i].Invalidate();
     }
-
-    ComputeHeights();
-    ComputeNormals();
-    ComputeSlope();
-}
-
-void NzPatch::InitializeFromParent(NzTerrainNodeID nodeID, nzTerrainNodeData* data, const NzPatch& parentPatch)
-{
-    m_id = nodeID;
-    m_data = data;
-    m_isUploaded = false;
-    m_isInitialized = true;
-    m_fromScratch = false;
-    m_configuration = 0;
-
-    int offx = 2 * (m_id.locx - std::floor(m_id.locx / 2.f) * 2);
-    int offy = 2 * (m_id.locy - std::floor(m_id.locy / 2.f) * 2);
-
-    for(int i(0) ; i < 7 ; ++i)
-        m_vertices[i][0].Invalidate();
-
-    m_vertices[0][1].Invalidate();
-    m_vertices[1][1] = parentPatch.m_vertices[1 + offx][1 + offy];
-    m_vertices[2][1].Invalidate();
-    m_vertices[3][1] = parentPatch.m_vertices[2 + offx][1 + offy];
-    m_vertices[4][1].Invalidate();
-    m_vertices[5][1] = parentPatch.m_vertices[3 + offx][1 + offy];
-    m_vertices[6][1].Invalidate();
-
-    for(int i(0) ; i < 7 ; ++i)
-       m_vertices[i][2].Invalidate();
-
-    m_vertices[0][3].Invalidate();
-    m_vertices[1][3] = parentPatch.m_vertices[1 + offx][2 + offy];
-    m_vertices[2][3].Invalidate();
-    m_vertices[3][3] = parentPatch.m_vertices[2 + offx][2 + offy];
-    m_vertices[4][3].Invalidate();
-    m_vertices[5][3] = parentPatch.m_vertices[3 + offx][2 + offy];
-    m_vertices[6][3].Invalidate();
-
-    for(int i(0) ; i < 7 ; ++i)
-        m_vertices[i][4].Invalidate();
-
-    m_vertices[0][5].Invalidate();
-    m_vertices[1][5] = parentPatch.m_vertices[1 + offx][3 + offy];
-    m_vertices[2][5].Invalidate();
-    m_vertices[3][5] = parentPatch.m_vertices[2 + offx][3 + offy];
-    m_vertices[4][5].Invalidate();
-    m_vertices[5][5] = parentPatch.m_vertices[3 + offx][3 + offy];
-    m_vertices[6][5].Invalidate();
-
-    for(int i(0) ; i < 7 ; ++i)
-        m_vertices[i][6].Invalidate();
-
-    ComputeHeights();
-    ComputeNormals();
-    ComputeSlope();
-}
-
-void NzPatch::Invalidate()
-{
-
-/*
-    if(m_fromScratch)
-    {
-        for(int i(0) ; i < 7 ; ++i)
-        {
-            delete m_vertices[0][i];
-            delete m_vertices[1][i];
-            delete m_vertices[2][i];
-            delete m_vertices[3][i];
-            delete m_vertices[4][i];
-            delete m_vertices[5][i];
-            delete m_vertices[6][i];
-        }
-    }
-    else
-    {
-        for(int i(0) ; i < 7 ; ++i)
-        delete m_vertices[i][0];
-
-        delete m_vertices[0][1];
-        delete m_vertices[2][1];
-        delete m_vertices[4][1];
-        delete m_vertices[6][1];
-
-        for(int i(0) ; i < 7 ; ++i)
-            delete m_vertices[i][2];
-
-        delete m_vertices[0][3];
-        delete m_vertices[2][3];
-        delete m_vertices[4][3];
-        delete m_vertices[6][3];
-
-        for(int i(0) ; i < 7 ; ++i)
-            delete m_vertices[i][4];
-
-        delete m_vertices[0][5];
-        delete m_vertices[2][5];
-        delete m_vertices[4][5];
-        delete m_vertices[6][5];
-
-        for(int i(0) ; i < 7 ; ++i)
-            delete m_vertices[i][6];
-    }*/
-
-    m_isInitialized = false;
 }
 
 void NzPatch::SetConfiguration(nzNeighbourDirection toNeighbor, unsigned int levelDifference, bool autoUpdate)

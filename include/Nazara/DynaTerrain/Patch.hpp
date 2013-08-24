@@ -17,6 +17,8 @@
 #include <Nazara/DynaTerrain/TerrainVertex.hpp>
 
 //TODO : Renommer m_aabb en boundingVolume
+//TODO : Le unupload mesh devrait se faire dans Reset ?
+//TODO : UN BON NETTOYATE !
 
 class NAZARA_API NzPatch
 {
@@ -31,7 +33,7 @@ class NAZARA_API NzPatch
         void Initialize(NzTerrainNodeID nodeID, nzTerrainNodeData* data);
         void InitializeFromParent(NzTerrainNodeID nodeID, nzTerrainNodeData* data, const NzPatch& parentPatch);
         void Invalidate();
-
+        void Reset();
         void SetConfiguration(nzNeighbourDirection toNeighbor, unsigned int levelDifference, bool autoUpdate = true);
 
         void UploadMesh(bool firstTime = true);
