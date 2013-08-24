@@ -30,6 +30,13 @@ int main()
 	    std::getchar();
 	    return EXIT_FAILURE;
 	}
+    std::cout<<std::endl;
+	NzDynaTerrain::ConfigurePrecisionSettings(2,5,1,200.f,3.5f);
+    std::cout<<std::endl;
+    for(int i(0) ; i < 200 ; ++i)
+    {
+        std::cout<<i * 10.f<<" : "<<NzDynaTerrain::GetPrecisionLevelFromDistance(i*100.f)<<std::endl;
+    }
 
 	NzScene scene;
 
@@ -37,7 +44,9 @@ int main()
     // On instancie notre source de hauteur personnalisée, définissant la hauteur du terrain en tout point
     MyHeightSource2D source;
     NzDynamicTerrain terrain(&source);
+    terrain.SetParent(scene);
     terrain.Initialize();
+
 
     //terrain.SetParent(scene);
     NzVector3f terrainPos(100.f,100.f,100.f);
@@ -80,8 +89,8 @@ int main()
     std::cout<<"Window opened successfully."<<endl;
 
 	/// Caméra
-	NzVector3f camPos(-2000.f, 1800.f, 2000.f);
-	//NzVector3f camPos(7241.f, 12618.f, 3130.f);
+	//NzVector3f camPos(-2000.f, 1800.f, 2000.f);
+	NzVector3f camPos(1380.f, 150.f, 2186.f);
 	NzEulerAnglesf camRot(-30.f, -45.f, 0.f);
 	NzCamera camera;
 	camera.SetPosition(camPos);
@@ -253,15 +262,7 @@ int main()
 		scene.Update();
 		scene.Cull();
 		scene.UpdateVisible();
-
-        //On met à jour le terrain
-        if(terrainUpdate)
-        {
-            terrain.Update(camera.GetPosition());
-        }
-
         scene.Draw();
-        terrain.Draw();
 		window.Display();
 
 		fps++;
