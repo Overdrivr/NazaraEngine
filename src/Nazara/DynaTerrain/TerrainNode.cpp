@@ -348,6 +348,7 @@ bool NzTerrainNode::Subdivide(bool isNotReversible)
     return true;
 }
 
+//METHODE A NETTOYER ET SIMPLIFIER (SUPPRIMER LES BOUCLES, LES TABLEAUX ETC)
 bool NzTerrainNode::Refine()
 {
     #if NAZARA_DYNATERRAIN_SAFE
@@ -398,6 +399,7 @@ bool NzTerrainNode::Refine()
         Split(m_children[i]->m_location,first,second);
 
         temp = m_children[i]->GetDirectNeighbor(first);
+        //TODO : tester la validité du node
         //Si il y a un node voisin de niveau égal
         if(temp != nullptr)
         {
@@ -428,8 +430,6 @@ bool NzTerrainNode::Refine()
     //Ce node devient leaf
     m_isLeaf = true;
     m_data->quadtree->RegisterLeaf(this);
-    //CreatePatch();
-    m_patch->UploadMesh();
     nzNeighbourDirection direct;
 
     for(int i(0) ; i < 4 ; ++i)
@@ -470,6 +470,8 @@ bool NzTerrainNode::Refine()
 
         }
     }
+    //CreatePatch();
+    m_patch->UploadMesh();
 
     return true;
 
