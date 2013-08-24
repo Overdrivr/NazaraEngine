@@ -318,7 +318,9 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
     nzUInt64 maxTime = 10;//ms
     std::map<NzTerrainNodeID,NzTerrainNode*>::iterator it;
     int subdivisionsPerFrame = 0;
-    updateClock.Restart();
+
+    if(updateClock.GetMilliseconds() > 2000)
+        updateClock.Restart();
 
     ///A chaque frame, on recalcule quels noeuds sont dans le périmètre de la caméra
     m_root->Update(cameraPosition);
@@ -349,11 +351,21 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
         if(it == m_refinementQueue.end())
             break;
 
+        #if NAZARA_DYNATERRAIN_SAFE
         if(!(it->second->IsValid()))
-            NazaraWarning("NzTerrainQuadTree::Update : Attempted to refine non valid node");
+        {
+            NazaraError("Tried to refine non valid node : updateList have been cleaned up");
+            m_refinementQueue.erase(it++);
+            continue;
+        }
 
         if(it->second == nullptr)
-            NazaraWarning("NzTerrainQuadTree::Update : Attempted to refine non existing node");
+        {
+            NazaraError("Tried to refine non existing node : updateList have been cleaned up");
+            m_refinementQueue.erase(it++);
+            continue;
+        }
+        #endif
 
         if(it->second->HierarchicalRefine())
         {
