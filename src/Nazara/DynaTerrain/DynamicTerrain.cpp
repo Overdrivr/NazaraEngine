@@ -81,7 +81,8 @@ void NzDynamicTerrain::Initialize()
 void NzDynamicTerrain::Update()
 {
     //On récupère la position de la caméra dans le repère local, et on maj le(s) quadtrees
-    quadtree->Update(GetScene()->GetActiveCamera()->GetPosition(nzCoordSys_Global));
+    //TODO : Calculer la position dans le repère local ? Normalement oui, to check
+    quadtree->Update(GetScene()->GetViewer()->GetEyePosition());
     //quadtree2->Update(localCamPos);
     //quadtree3->Update(localCamPos);
 }
