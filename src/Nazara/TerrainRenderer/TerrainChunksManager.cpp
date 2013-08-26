@@ -46,7 +46,7 @@ void NzTerrainChunksManager::DrawChunks() const
 {
     NzRenderer::SetMatrix(nzMatrixType_World, NzMatrix4f::Identity());
     NzRenderer::SetRenderStates(m_renderStates);
-    NzRenderer::SetFaceFilling(nzFaceFilling_Line);
+    NzRenderer::SetFaceFilling(nzFaceFilling_Fill);
     NzRenderer::SetShaderProgram(NzTerrainRenderer::GetShader());
     NzRenderer::SetIndexBuffer(NzTerrainRenderer::GetIndexBuffer());
 
