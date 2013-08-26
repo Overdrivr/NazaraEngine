@@ -95,7 +95,7 @@ bool NzTerrainNormalsManager::SetNormal(const NzVector2i& location, const NzVect
         for(auto i = it->second.listenners.begin() ; i != it->second.listenners.end() ; ++i)
         {
             if((*i) != setterPatch)
-                (*i)->OnNormalChanged();
+                (*i)->OnNormalChanged(location,normal);
         }
     }
 }
