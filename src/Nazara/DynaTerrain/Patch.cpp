@@ -62,26 +62,43 @@ void NzPatch::ComputeNormals()
     unsigned int i0,j0;
 
     unsigned int hx,hy;
+    NzVector2i normalLocation;
 
     for(unsigned int j(0) ; j < 5 ; ++j)
         for(unsigned int i(0) ; i < 5 ; ++i)
         {
             i0 = i + 1;
             j0 = j + 1;
-            //Compute four vectors
-            v1 = m_vertices[i0+1][j0  ].GetPosition();
-            v2 = m_vertices[i0  ][j0+1].GetPosition();
-            v3 = m_vertices[i0-1][j0  ].GetPosition();
-            v4 = m_vertices[i0+1][j0-1].GetPosition();
 
-            v12 = v1.CrossProduct(v2);
-            v23 = v2.CrossProduct(v3);
-            v34 = v3.CrossProduct(v4);
-            v41 = v4.CrossProduct(v1);
+            normalLocation.x = (m_id.locx * 4 + i) * std::pow(2,NAZARA_DYNATERRAIN_MAXIMUM_TERRAIN_DEPTH - m_id.depth);
+            normalLocation.y = (m_id.locy * 4 + j) * std::pow(2,NAZARA_DYNATERRAIN_MAXIMUM_TERRAIN_DEPTH - m_id.depth);
 
-            sum = v12 + v23 + v34 + v41;
-            sum.Normalize();
+            if(m_data->normalsManager->IsNormalSet(normalLocation))
+            {
+                m_data->normalsManager->GetNormal(normalLocation,sum);
+            }
+            else
+            {
+                //Compute four vectors
+                v1 = m_vertices[i0+1][j0  ].GetPosition();
+                v2 = m_vertices[i0  ][j0+1].GetPosition();
+                v3 = m_vertices[i0-1][j0  ].GetPosition();
+                v4 = m_vertices[i0+1][j0-1].GetPosition();
 
+                v12 = v1.CrossProduct(v2);
+                v23 = v2.CrossProduct(v3);
+                v34 = v3.CrossProduct(v4);
+                v41 = v4.CrossProduct(v1);
+
+                sum = v12 + v23 + v34 + v41;
+                sum.Normalize();
+
+                if(sum.y < 0.f)
+                    sum *= -1.f;
+
+                m_data->normalsManager->SetNormal(normalLocation,sum,this);
+            }
+            m_data->normalsManager->AddNormalListenner(normalLocation,this);
             m_vertexNormals.at(i+5*j) = sum;
         }
 }
@@ -238,6 +255,23 @@ void NzPatch::Invalidate()
         m_vertices[5][i].Invalidate();
         m_vertices[6][i].Invalidate();
     }
+}
+
+void NzPatch::OnNormalChanged(NzVector2i normalLocation, const NzVector3f& newValue)
+{
+    normalLocation.x = normalLocation.x / std::pow(2,NAZARA_DYNATERRAIN_MAXIMUM_TERRAIN_DEPTH - m_id.depth) - m_id.locx;
+    normalLocation.y = normalLocation.y / std::pow(2,NAZARA_DYNATERRAIN_MAXIMUM_TERRAIN_DEPTH - m_id.depth) - m_id.locy;
+
+    #if NAZARA_DYNATERRAIN_SAFE
+    if(normalLocation.x >= 5 || normalLocation.x < 0 ||
+       normalLocation.y >= 5 || normalLocation.y < 0)
+       {
+           NazaraError("Error in computing normal location : [" + NzString::Number(normalLocation.x) + ";" + NzString::Number(normalLocation.y) + "]");
+           return;
+       }
+    #endif
+    m_vertexNormals.at(normalLocation.x + 5 * normalLocation.y) = newValue;
+    UploadMesh(false);
 }
 
 void NzPatch::SetConfiguration(nzNeighbourDirection toNeighbor, unsigned int levelDifference, bool autoUpdate)

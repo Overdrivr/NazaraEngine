@@ -39,6 +39,8 @@ class NAZARA_API NzPatch
         void UploadMesh(bool firstTime = true);
         void UnUploadMesh();
 
+        void OnNormalChanged(NzVector2i normalLocation, const NzVector3f& newValue);
+
     protected:
     private:
 
