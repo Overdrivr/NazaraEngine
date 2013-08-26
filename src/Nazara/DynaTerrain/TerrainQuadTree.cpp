@@ -56,6 +56,7 @@ void NzTerrainQuadTree::Construct()
 
     m_data.quadtree = this;
     m_data.chunksManager = m_chunksManager;
+    m_data.normalsManager = &m_normalsManager;
     m_root = NzDynaTerrain::GetTerrainNode();
     m_root->Initialize(&m_data,nullptr);
     m_leaves.push_back(m_root);//Utile ?
@@ -319,8 +320,8 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
     std::map<NzTerrainNodeID,NzTerrainNode*>::iterator it;
     int subdivisionsPerFrame = 0;
 
-    if(updateClock.GetMilliseconds() > 2000)
-        updateClock.Restart();
+    //if(updateClock.GetMilliseconds() > 200)
+    updateClock.Restart();
 
     ///A chaque frame, on recalcule quels noeuds sont dans le périmètre de la caméra
     m_root->Update(cameraPosition);
@@ -342,7 +343,6 @@ void NzTerrainQuadTree::Update(const NzVector3f& cameraPosition)
         m_maxOperationsPerFrame = subdivisionsPerFrame;
 
     m_subdivisionsAmount += subdivisionsPerFrame;
-
 
      ///On refine les nodes nécessaires
     it = m_refinementQueue.begin();
