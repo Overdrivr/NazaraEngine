@@ -35,4 +35,8 @@
 // Active les tests de sécurité basés sur le code (Conseillé pour le développement)
 #define NAZARA_DYNATERRAIN_SAFE 1
 
+// La profondeur maximale de subdivision du terrain (le node le plus petit est 2^-n fois plus petit que le terrain)
+// TODO : A UTILISER
+#define NAZARA_DYNATERRAIN_MAXIMUM_TERRAIN_DEPTH 20
+
 #endif // NAZARA_CONFIG_MODULENAME_HPP
