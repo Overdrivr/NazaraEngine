@@ -146,7 +146,6 @@ NzTerrainNode* NzTerrainNode::GetDirectNeighbor(nzNeighbourDirection direction)
     }
     else
     {
-        NazaraError("Should not go there");
         NzTerrainQuadTree* tempQuad = m_data->quadtree->GetNeighbourQuadTree(direction);
 
         if(tempQuad == nullptr)
