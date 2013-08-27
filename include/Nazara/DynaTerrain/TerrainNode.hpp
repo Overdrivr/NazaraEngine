@@ -28,7 +28,6 @@ class NAZARA_API NzTerrainNode
         ~NzTerrainNode();
 
         // Actions hiérarchiques
-        void CleanTree(unsigned int minDepth);//RENOMMER ReleaseAllChildren
         bool HierarchicalRefine();
         void HierarchicalSubdivide(unsigned int maxDepth, bool isNotReversible = false);
         void HierarchicalSlopeBasedSubdivide(unsigned int maxDepth);

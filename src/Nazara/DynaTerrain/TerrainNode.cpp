@@ -26,45 +26,6 @@ NzTerrainNode::~NzTerrainNode()
     nbNodes--;
 }
 
-void NzTerrainNode::CleanTree(unsigned int minDepth)
-{
-    #if NAZARA_DYNATERRAIN_SAFE
-    if(!m_isInitialized)
-    {
-        NazaraError("Calling uninitialized node");
-        return;
-    }
-    #endif
-
-    if(m_nodeID.depth >= minDepth)
-    {
-        if(!m_isLeaf)
-        {
-            for(int i(0) ; i < 4 ; ++i)
-            {
-                if(m_children[i]->IsLeaf())
-                    m_data->quadtree->UnRegisterLeaf(m_children[i]);
-                else
-                    m_children[i]->CleanTree(minDepth);
-
-                m_data->quadtree->DeleteNode(m_children[i]);
-                m_children[i] = nullptr;
-            }
-        }
-    }
-    else if(!m_isLeaf)
-    {
-        for(int i(0) ; i < 4 ; ++i)
-            m_children[i]->CleanTree(minDepth);
-    }
-
-    if(m_nodeID.depth == minDepth)
-    {
-        m_isLeaf = true;
-        m_data->quadtree->RegisterLeaf(this);
-    }
-}
-
 void NzTerrainNode::CreatePatch()
 {
     #if NAZARA_DYNATERRAIN_SAFE
