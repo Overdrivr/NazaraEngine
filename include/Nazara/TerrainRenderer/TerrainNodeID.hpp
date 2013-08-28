@@ -17,12 +17,15 @@ class NAZARA_API NzTerrainNodeID
         NzTerrainNodeID(int Depth, int locationx, int locationy);
         ~NzTerrainNodeID() = default;
 
-        bool IsValid() const;
-
-        void InvertXY();
-        void Normalize();//A RENOMMER ?
         void FlipX();
         void FlipY();
+
+        bool IsValid() const;
+        void InvertXY();
+
+        void Normalize();//A RENOMMER ?
+
+        NzTerrainNodeID& operator --();
 
         bool operator<( const NzTerrainNodeID& id ) const;
 
