@@ -474,7 +474,6 @@ void NzTerrainNode::HandleNeighborSubdivision(nzNeighbourDirection direction, bo
     #endif
 
     NzTerrainNodeID tempID = m_nodeID;
-    int counter = 0;
     nzNeighbourDirection invDirection = direction;
 
     switch(direction)
@@ -540,53 +539,69 @@ void NzTerrainNode::HandleNeighborSubdivision(nzNeighbourDirection direction, bo
         invDirection = tempQuad->GetNeighbourDirection(m_data->quadtree);
     }
 
-    //Si le voisin n'existe pas (il n'y a pas de node voisin de même profondeur)
-    if(tempNode == nullptr)
-    {
-        //Un niveau d'écart n'est pas suffisant pour demander une subdivision
-        tempID.depth -= 1;
-        tempID.locx /= 2;
-        tempID.locy /= 2;
-        tempNode = tempQuad->GetNode(tempID);
 
-        if(tempNode == nullptr)
-        {
-            while(tempNode == nullptr && counter < 200)
-            {
-                counter++;
-                tempID.depth -= 1;
-                tempID.locx /= 2;
-                tempID.locy /= 2;
-                tempNode = tempQuad->GetNode(tempID);
-            }
-
-            if(counter < 200)
-            {
-                //On subdivise la cellule jusqu'à atteindre le bon niveau
-                tempNode->HierarchicalSubdivide(m_nodeID.depth-1,isNotReversible);
-                //La subdivision a généré une interface, le node le plus subdivisé (cad this) doit s'adapter
-                m_patch->SetConfiguration(direction,1);
-            }
-            else
-            {
-                NazaraError("Impossible de remonter jusqu'à un node valide");
-                return;
-            }
-        }
-        else
-        {
-            m_patch->SetConfiguration(direction,1);
-        }
-        //else la cellule voisine voisin est suffisamment divisé
-    }
-    else
+    ///Si le voisin existe (il y a un node voisin de même profondeur)
+    if(tempNode != nullptr)
     {
         //La subdivision a supprimé une interface de précision, on l'indique au voisin qu'il n'a plus besoin de s'adapter
+        //TODO : Ce test ne devrait jamais rentrer dans le else, pourtant si, à investiguer
         if(tempNode->m_isLeaf)
         {
             tempNode->m_patch->SetConfiguration(invDirection,0);
         }
+        return;
     }
+
+    //On monte d'un niveau dans l'arbre
+    --tempID;
+    tempNode = tempQuad->GetNode(tempID);
+
+    ///Si il y a un node voisin à 1 niveau plus haut dans l'arbre, la subdivision a engendré une interface
+    if(tempNode != nullptr)
+    {
+
+        m_patch->SetConfiguration(direction,1);
+        return;
+    }
+
+    //On monte d'un niveau dans l'arbre
+    --tempID;
+    tempNode = tempQuad->GetNode(tempID);
+
+    ///Si il y a un node voisin 2 niveaux plus haut dans l'arbre
+        //Il faut subdiviser ce node une fois pour réduire l'écart à 1
+        //et respecter la règle du "1 niveau d'écart max avec les voisins"
+        //Il faut indiquer une interface de précision car écart non nul
+    //L'entrée dans cette portion de code est normale, certes l'écart initial est de 2 > 1,
+    //mais il est immédiatement corrigé
+    if(tempNode != nullptr)
+    {
+        //On subdivise la cellule jusqu'à atteindre le bon niveau
+        tempNode->HierarchicalSubdivide(m_nodeID.depth-1,isNotReversible);
+        //La subdivision a généré une interface, le node le plus subdivisé (cad this) doit s'adapter
+        m_patch->SetConfiguration(direction,1);
+        return;
+    }
+
+    //Si on est ici c'est qu'il y a node voisin à au moins 3 niveaux au dessus
+    //Ce qui brise la règle du "1 niveau d'écart max avec les voisins"
+    #if NAZARA_DYNATERRAIN_SAFE
+    --tempID;
+    tempNode = tempQuad->GetNode(tempID);
+    int counter = 0;
+    while(tempNode == nullptr && counter < 10)
+    {
+        counter++;
+        tempID.depth -= 1;
+        tempID.locx /= 2;
+        tempID.locy /= 2;
+        tempNode = tempQuad->GetNode(tempID);
+    }
+
+    tempNode->HierarchicalSubdivide(m_nodeID.depth-1,isNotReversible);
+    m_patch->SetConfiguration(direction,1);
+    NazaraError("Neighbour node at " + NzString::Number(counter + 3) +  " levels higher than actual node, terrain state might be corrupted");
+    #endif
 }
 
 void NzTerrainNode::Update(const NzVector3f& cameraPosition)
