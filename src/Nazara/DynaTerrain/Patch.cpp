@@ -73,32 +73,23 @@ void NzPatch::ComputeNormals()
             normalLocation.x = (m_id.locx * 4 + i) * std::pow(2,NAZARA_DYNATERRAIN_MAXIMUM_TERRAIN_DEPTH - m_id.depth);
             normalLocation.y = (m_id.locy * 4 + j) * std::pow(2,NAZARA_DYNATERRAIN_MAXIMUM_TERRAIN_DEPTH - m_id.depth);
 
-            if(m_data->normalsManager->IsNormalSet(normalLocation))
-            {
-                m_data->normalsManager->GetNormal(normalLocation,sum);
-            }
-            else
-            {
-                //Compute four vectors
-                v1 = m_vertices[i0+1][j0  ].GetPosition();
-                v2 = m_vertices[i0  ][j0+1].GetPosition();
-                v3 = m_vertices[i0-1][j0  ].GetPosition();
-                v4 = m_vertices[i0+1][j0-1].GetPosition();
+            //Compute four vectors
+            v1 = m_vertices[i0+1][j0  ].GetPosition();
+            v2 = m_vertices[i0  ][j0+1].GetPosition();
+            v3 = m_vertices[i0-1][j0  ].GetPosition();
+            v4 = m_vertices[i0+1][j0-1].GetPosition();
 
-                v12 = v1.CrossProduct(v2);
-                v23 = v2.CrossProduct(v3);
-                v34 = v3.CrossProduct(v4);
-                v41 = v4.CrossProduct(v1);
+            v12 = v1.CrossProduct(v2);
+            v23 = v2.CrossProduct(v3);
+            v34 = v3.CrossProduct(v4);
+            v41 = v4.CrossProduct(v1);
 
-                sum = v12 + v23 + v34 + v41;
-                sum.Normalize();
+            sum = v12 + v23 + v34 + v41;
+            sum.Normalize();
 
-                if(sum.y < 0.f)
-                    sum *= -1.f;
+            if(sum.y < 0.f)
+                sum *= -1.f;
 
-                m_data->normalsManager->SetNormal(normalLocation,sum,this);
-            }
-            m_data->normalsManager->AddNormalListenner(normalLocation,this);
             m_vertexNormals.at(i+5*j) = sum;
         }
 }
@@ -123,42 +114,6 @@ void NzPatch::ComputeSlope()
         m_slope = (maxSlope - minSlope)/(maxSlope + minSlope);
         float inv_sensitivity = 2;
         m_slope = std::pow(m_slope,inv_sensitivity);
-}
-
-void NzPatch::CorrectNormalsAtInterface()
-{
-    // Normalement, les seuls points dont les normales à corriger
-    // lors d'une interface d'adaptation
-    // sont (1,1) (1,3) (3,1) (3,3)
-
-    // La seule chose à déterminer est si le point est concerné par deux interfaces
-    // (haut et gauche par exemple) à la fois, ou une seule
-
-    //Ensuite, il s'agit juste de calculer les normales avec des points en plus
-
-    //l'état des interfaces, true si en adaptation
-    bool top = false, right = false, bottom = false, left = false;
-    // true si concerné par une interface en adaptation
-    bool p11 = false, p13 = false, p31 = false, p33 = false;
-    // true si concerné par 2 interfaces, false si seulement 1
-    bool i11 = false, i13 = false, i31 = false, i33 = false;
-
-    left   = (m_configuration & 0x1) == 0x1;
-    top    = (m_configuration & 0x2) == 0x2;
-    right  = (m_configuration & 0x4) == 0x4;
-    bottom = (m_configuration & 0x8) == 0x8;
-
-    p11 = top || left;
-    p13 = bottom || left;
-    p31 = top || right;
-    p33 = bottom || right;
-
-    i11 = top && left;
-    i13 = bottom && left;
-    i31 = top && right;
-    i33 = bottom && right;
-
-    // Avec ces infos on corrige les normales de ce(s) point(s)
 }
 
 NzBoundingVolumef& NzPatch::GetAABB()
