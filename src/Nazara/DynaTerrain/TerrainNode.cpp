@@ -292,18 +292,27 @@ bool NzTerrainNode::Subdivide(bool isNotReversible)
     m_data->quadtree->RegisterLeaf(m_children[nzNodeLocation_bottomleft]);
     m_data->quadtree->RegisterLeaf(m_children[nzNodeLocation_bottomright]);
 
-    //On vérifie que les nodes voisins n'aient pas plus d'1 niveau d'écart de profondeur
-    m_children[nzNodeLocation_topleft]->HandleNeighborSubdivision(nzNeighbourDirection_left,isNotReversible);
-    m_children[nzNodeLocation_topleft]->HandleNeighborSubdivision(nzNeighbourDirection_top,isNotReversible);
+    //On s'assure que les nodes voisins n'aient pas plus d'1 niveau d'écart de profondeur
+    m_children[nzNodeLocation_topleft]->AssertNeighborRule(nzNeighbourDirection_left,isNotReversible);
+    m_children[nzNodeLocation_topleft]->AssertNeighborRule(nzNeighbourDirection_top,isNotReversible);
 
-    m_children[nzNodeLocation_topright]->HandleNeighborSubdivision(nzNeighbourDirection_right,isNotReversible);
-    m_children[nzNodeLocation_topright]->HandleNeighborSubdivision(nzNeighbourDirection_top,isNotReversible);
+    m_children[nzNodeLocation_topright]->AssertNeighborRule(nzNeighbourDirection_right,isNotReversible);
+    m_children[nzNodeLocation_topright]->AssertNeighborRule(nzNeighbourDirection_top,isNotReversible);
 
-    m_children[nzNodeLocation_bottomleft]->HandleNeighborSubdivision(nzNeighbourDirection_left,isNotReversible);
-    m_children[nzNodeLocation_bottomleft]->HandleNeighborSubdivision(nzNeighbourDirection_bottom,isNotReversible);
+    m_children[nzNodeLocation_bottomleft]->AssertNeighborRule(nzNeighbourDirection_left,isNotReversible);
+    m_children[nzNodeLocation_bottomleft]->AssertNeighborRule(nzNeighbourDirection_bottom,isNotReversible);
 
-    m_children[nzNodeLocation_bottomright]->HandleNeighborSubdivision(nzNeighbourDirection_right,isNotReversible);
-    m_children[nzNodeLocation_bottomright]->HandleNeighborSubdivision(nzNeighbourDirection_bottom,isNotReversible);
+    m_children[nzNodeLocation_bottomright]->AssertNeighborRule(nzNeighbourDirection_right,isNotReversible);
+    m_children[nzNodeLocation_bottomright]->AssertNeighborRule(nzNeighbourDirection_bottom,isNotReversible);
+
+    //Gestion des normales entre les 4 nouveaux nodes
+    m_children[nzNodeLocation_topleft]->m_patch->SetRightNeighboursNormals(*(m_children[nzNodeLocation_topright]->m_patch));
+    m_children[nzNodeLocation_topleft]->m_patch->SetBottomNeighboursNormals(*(m_children[nzNodeLocation_bottomleft]->m_patch));
+    m_children[nzNodeLocation_bottomleft]->m_patch->SetRightNeighboursNormals(*(m_children[nzNodeLocation_bottomright]->m_patch));
+    m_children[nzNodeLocation_topright]->m_patch->SetBottomNeighboursNormals(*(m_children[nzNodeLocation_bottomright]->m_patch));
+
+    //Gestion des normales avec les nodes voisins
+    //TO BE DONE
 
     return true;
 }
@@ -463,7 +472,7 @@ bool NzTerrainNode::HierarchicalRefine()
 
 }
 
-void NzTerrainNode::HandleNeighborSubdivision(nzNeighbourDirection direction, bool isNotReversible)
+void NzTerrainNode::AssertNeighborRule(nzNeighbourDirection direction, bool isNotReversible)
 {
     #if NAZARA_DYNATERRAIN_SAFE
     if(!m_isInitialized)

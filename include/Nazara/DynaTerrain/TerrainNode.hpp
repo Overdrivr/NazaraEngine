@@ -64,8 +64,8 @@ class NAZARA_API NzTerrainNode
     private:
         void Initialize(nzTerrainNodeData *data, NzTerrainNode* parent, const NzPatch& parentPatch, nzNodeLocation location = nzNodeLocation_topleft);
         void InitializeData(nzTerrainNodeData *data, NzTerrainNode* parent, nzNodeLocation location = nzNodeLocation_topleft);
-
-        void HandleNeighborSubdivision(nzNeighbourDirection direction, bool isNotReversible = false);
+        //Garantit un écart de profondeur d'1 niveau maximum avec un voisin
+        void AssertNeighborRule(nzNeighbourDirection direction, bool isNotReversible = false);
 
 
         nzTerrainNodeData* m_data;
