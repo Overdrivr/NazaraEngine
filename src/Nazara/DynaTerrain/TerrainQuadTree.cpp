@@ -56,7 +56,6 @@ void NzTerrainQuadTree::Construct()
 
     m_data.quadtree = this;
     m_data.chunksManager = m_chunksManager;
-    m_data.normalsManager = &m_normalsManager;
     m_root = NzDynaTerrain::GetTerrainNode();
     m_root->Initialize(&m_data,nullptr);
     m_leaves.push_back(m_root);//Utile ?
@@ -226,7 +225,7 @@ unsigned int NzTerrainQuadTree::GetSubdivisionsAmount()
     return temp;
 }
 
-NzVector3f NzTerrainQuadTree::GetVertexPosition(const NzTerrainNodeID& nodeID, int x, int y)
+NzVector3f NzTerrainQuadTree::GetVertexPosition(const NzTerrainNodeID& nodeID, int x, int y, float offsetx, float offsety)
 {
     ///Les terrains sont centrées en 0
     ///Avec le système de node
@@ -243,8 +242,8 @@ NzVector3f NzTerrainQuadTree::GetVertexPosition(const NzTerrainNodeID& nodeID, i
     switch(m_type)
     {
         case nzQuadTreeType_terrain:
-            position.x = m_terrainConfiguration.terrainSize * (m_commonConfiguration.x_offset + (x * 0.25f + nodeID.locx) * power);
-            position.z = m_terrainConfiguration.terrainSize * (m_commonConfiguration.y_offset + (y * 0.25f + nodeID.locy) * power);
+            position.x = m_terrainConfiguration.terrainSize * (m_commonConfiguration.x_offset + (x * 0.25f + nodeID.locx) * power) + offsetx;
+            position.z = m_terrainConfiguration.terrainSize * (m_commonConfiguration.y_offset + (y * 0.25f + nodeID.locy) * power) + offsety;
             position.y = m_heightSource2D->GetHeight(position.x,position.z) * m_commonConfiguration.maxHeight;
             return m_rotationMatrix.Transform(position);
         break;
@@ -253,9 +252,9 @@ NzVector3f NzTerrainQuadTree::GetVertexPosition(const NzTerrainNodeID& nodeID, i
         default:
 
             //Les coordonnées d'un plan
-            position.x = 2.f * (x * 0.25f + nodeID.locx) / std::pow(2,nodeID.depth) - 1.f;
+            position.x = 2.f * (x * 0.25f + nodeID.locx) / std::pow(2,nodeID.depth) - 1.f + offsetx;
             position.y = 1.f;
-            position.z = 2.f * (y * 0.25f + nodeID.locy) / std::pow(2,nodeID.depth) - 1.f;
+            position.z = 2.f * (y * 0.25f + nodeID.locy) / std::pow(2,nodeID.depth) - 1.f + offsety;
 
             //On normalise le vecteur pour obtenir une sphère
             position.Normalize();

@@ -18,7 +18,6 @@
 #include <Nazara/DynaTerrain/Configuration/PlanetConfiguration.hpp>
 #include <Nazara/DynaTerrain/HeightSource/HeightSource2D.hpp>
 #include <Nazara/DynaTerrain/HeightSource/HeightSource3D.hpp>
-#include <Nazara/DynaTerrain/TerrainNormalsManager.hpp>
 #include <Nazara/DynaTerrain/Enums.hpp>
 #include <Nazara/Core/Clock.hpp>
 #include <map>
@@ -52,7 +51,7 @@ class NAZARA_API NzTerrainQuadTree
         NzTerrainNode* GetRootNode();
 
         // Informations
-        virtual NzVector3f GetVertexPosition(const NzTerrainNodeID& nodeID, int x, int y);
+        virtual NzVector3f GetVertexPosition(const NzTerrainNodeID& nodeID, int x, int y, float offsetx = 0.f, float offsety = 0.f);
         float GetMaximumHeight() const;//??
         unsigned int GetSubdivisionsAmount();//??
 
@@ -62,7 +61,6 @@ class NAZARA_API NzTerrainQuadTree
 
     protected:
         NzTerrainChunksManager* m_chunksManager;
-        NzTerrainNormalsManager m_normalsManager;
         nzQuadTreeType m_type;
         NzTerrainNode* m_root;
         nzTerrainNodeData m_data;// A intégrer dans le node ?
