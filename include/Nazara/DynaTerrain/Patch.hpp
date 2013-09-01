@@ -39,7 +39,9 @@ class NAZARA_API NzPatch
         void UploadMesh(bool firstTime = true);
         void UnUploadMesh();
 
-        void OnNormalChanged(NzVector2i normalLocation, const NzVector3f& newValue);
+        //To be done
+        void SetRightNeighboursNormals(const NzPatch& mainNeighbour, const NzPatch& optionnalNeighbour = nullptr);
+        void SetBottomNeighboursNormals(const NzPatch& mainNeighbour, const NzPatch& optionnalNeighbour = nullptr);
 
     protected:
     private:
@@ -47,7 +49,6 @@ class NAZARA_API NzPatch
         void ComputeNormals();
         void ComputeSlope();
         void ComputeHeights();
-        void CorrectNormalsAtInterface();
 
         nzTerrainNodeData* m_data;
         NzTerrainNodeID m_id;
