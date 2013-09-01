@@ -13,6 +13,9 @@
 
 using namespace std;
 
+//TODO : Supprimer les normals listenner lorsque terminé
+//TODO : Gérer les normales si il y a plusieurs quadtree
+
 int main()
 {
 	NzInitializer<NzGraphics> nazara;
@@ -30,13 +33,8 @@ int main()
 	    std::getchar();
 	    return EXIT_FAILURE;
 	}
-    std::cout<<std::endl;
-	NzDynaTerrain::ConfigurePrecisionSettings(2,5,1,200.f,3.5f);
-    std::cout<<std::endl;
-    for(int i(0) ; i < 200 ; ++i)
-    {
-        std::cout<<i * 10.f<<" : "<<NzDynaTerrain::GetPrecisionLevelFromDistance(i*100.f)<<std::endl;
-    }
+
+	NzDynaTerrain::ConfigurePrecisionSettings(1,4,2,300.f,2.2f);
 
 	NzScene scene;
 
