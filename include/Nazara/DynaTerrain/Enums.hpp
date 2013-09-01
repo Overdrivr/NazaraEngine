@@ -39,12 +39,10 @@ enum nzQuadTreeType
 
 class NzTerrainChunksManager;
 class NzTerrainQuadTree;
-class NzTerrainNormalsManager;
 
 struct nzTerrainNodeData
 {
     NzTerrainQuadTree* quadtree;
     NzTerrainChunksManager* chunksManager;
-    NzTerrainNormalsManager* normalsManager;
 };
 #endif // NAZARA_ENUMS_DYNATERRAIN_HPP
