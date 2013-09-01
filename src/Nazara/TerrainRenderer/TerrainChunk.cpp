@@ -141,7 +141,7 @@ bool NzTerrainChunk::CreateBuffer()
 	//On ajoute un buffer
 	//TOCHECK : static ou dynamic ?
 	//TODO : Vérifier la bonne construction du buffer
-    m_vertexBuffers.emplace_back(NzVertexBuffer(NzVertexDeclaration::Get(nzVertexLayout_XYZ_Normal),VERTEX_BUFFER_SLOT_AMOUNT*25,nzBufferStorage_Hardware,nzBufferUsage_Static));
+    m_vertexBuffers.emplace_back(NzVertexBuffer(NzVertexDeclaration::Get(nzVertexLayout_XYZ_Normal),VERTEX_BUFFER_SLOT_AMOUNT*25,nzBufferStorage_Hardware,nzBufferUsage_Dynamic));
 
     #if NAZARA_TERRAINRENDERER_SAFE
     if(!m_vertexBuffers.back().IsValid())
