@@ -306,10 +306,10 @@ bool NzTerrainNode::Subdivide(bool isNotReversible)
     m_children[nzNodeLocation_bottomright]->AssertNeighborRule(nzNeighbourDirection_bottom,isNotReversible);
 
     //Gestion des normales entre les 4 nouveaux nodes
-    m_children[nzNodeLocation_topleft]->m_patch->SetRightNeighboursNormals(*(m_children[nzNodeLocation_topright]->m_patch));
-    m_children[nzNodeLocation_topleft]->m_patch->SetBottomNeighboursNormals(*(m_children[nzNodeLocation_bottomleft]->m_patch));
-    m_children[nzNodeLocation_bottomleft]->m_patch->SetRightNeighboursNormals(*(m_children[nzNodeLocation_bottomright]->m_patch));
-    m_children[nzNodeLocation_topright]->m_patch->SetBottomNeighboursNormals(*(m_children[nzNodeLocation_bottomright]->m_patch));
+    m_children[nzNodeLocation_topleft]->m_patch->SetRightNeighboursNormals(m_children[nzNodeLocation_topright]->m_patch);
+    m_children[nzNodeLocation_topleft]->m_patch->SetBottomNeighboursNormals(m_children[nzNodeLocation_bottomleft]->m_patch);
+    m_children[nzNodeLocation_bottomleft]->m_patch->SetRightNeighboursNormals(m_children[nzNodeLocation_bottomright]->m_patch);
+    m_children[nzNodeLocation_topright]->m_patch->SetBottomNeighboursNormals(m_children[nzNodeLocation_bottomright]->m_patch);
 
     //Gestion des normales avec les nodes voisins
     //TO BE DONE
