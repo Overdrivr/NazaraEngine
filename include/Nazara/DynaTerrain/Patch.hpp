@@ -33,28 +33,28 @@ class NAZARA_API NzPatch
         void Initialize(NzTerrainNodeID nodeID, nzTerrainNodeData* data);
         void InitializeFromParent(NzTerrainNodeID nodeID, nzTerrainNodeData* data, const NzPatch& parentPatch);
         void Invalidate();
+
         void Reset();
+
+        void SetBottomNeighboursNormals(const NzPatch* mainNeighbour, const NzPatch* optionnalNeighbour = nullptr);
         void SetConfiguration(nzNeighbourDirection toNeighbor, unsigned int levelDifference, bool autoUpdate = true);
+        void SetRightNeighboursNormals(const NzPatch* mainNeighbour, const NzPatch* optionnalNeighbour = nullptr);
 
         void UploadMesh(bool firstTime = true);
         void UnUploadMesh();
-
-        //To be done
-        void SetRightNeighboursNormals(const NzPatch& mainNeighbour, const NzPatch& optionnalNeighbour = nullptr);
-        void SetBottomNeighboursNormals(const NzPatch& mainNeighbour, const NzPatch& optionnalNeighbour = nullptr);
 
     protected:
     private:
 
         void ComputeNormals();
-        void ComputeSlope();
+        void ComputeSlope();//A Besoin de normales correctes pour fonctionner, TO FIX
         void ComputeHeights();
 
         nzTerrainNodeData* m_data;
         NzTerrainNodeID m_id;
         NzBoundingVolumef m_aabb;
         unsigned short int m_configuration;
-        std::array<NzVector3f,49> m_vertexPositions;
+        std::array<NzVector3f,36> m_vertexPositions;
         std::array<NzVector3f,25> m_vertexNormals;
         std::array<float,150> m_uploadedData;
         float m_slope;

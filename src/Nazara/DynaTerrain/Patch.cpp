@@ -19,17 +19,18 @@ NzPatch::NzPatch()
 void NzPatch::ComputeHeights()
 {
     int j;
-    for(int j0(-1) ; j0 < 6 ; ++j0)
+    for(int j0(-1) ; j0 < 5 ; ++j0)
     {
         j = j0 + 1;
 
-        m_vertices[0].at(j).ComputePosition(m_data->quadtree, m_id,NzVector2i(-1,j0));
-        m_vertices[1].at(j).ComputePosition(m_data->quadtree, m_id,NzVector2i(0,j0));
-        m_vertices[2].at(j).ComputePosition(m_data->quadtree, m_id,NzVector2i(1,j0));
-        m_vertices[3].at(j).ComputePosition(m_data->quadtree, m_id,NzVector2i(2,j0));
-        m_vertices[4].at(j).ComputePosition(m_data->quadtree, m_id,NzVector2i(3,j0));
-        m_vertices[5].at(j).ComputePosition(m_data->quadtree, m_id,NzVector2i(4,j0));
-        m_vertices[6].at(j).ComputePosition(m_data->quadtree, m_id,NzVector2i(5,j0));
+        if(j != 0)
+            m_vertices[0][j].ComputePosition(m_data->quadtree, m_id,NzVector2i(-1,j0));
+
+        m_vertices[1][j].ComputePosition(m_data->quadtree, m_id,NzVector2i(0,j0));
+        m_vertices[2][j].ComputePosition(m_data->quadtree, m_id,NzVector2i(1,j0));
+        m_vertices[3][j].ComputePosition(m_data->quadtree, m_id,NzVector2i(2,j0));
+        m_vertices[4][j].ComputePosition(m_data->quadtree, m_id,NzVector2i(3,j0));
+        m_vertices[5][j].ComputePosition(m_data->quadtree, m_id,NzVector2i(4,j0));
     }
 
     m_aabb.aabb.x = m_vertices[1][1].GetPosition().x;
@@ -69,6 +70,12 @@ void NzPatch::ComputeNormals()
         {
             i0 = i + 1;
             j0 = j + 1;
+
+            if(i == 4 || j == 4)
+            {
+                m_vertexNormals.at(i+5*j) = NzVector3f(0.f,1.f,0.f);
+                continue;
+            }
 
             normalLocation.x = (m_id.locx * 4 + i) * std::pow(2,NAZARA_DYNATERRAIN_MAXIMUM_TERRAIN_DEPTH - m_id.depth);
             normalLocation.y = (m_id.locy * 4 + j) * std::pow(2,NAZARA_DYNATERRAIN_MAXIMUM_TERRAIN_DEPTH - m_id.depth);
@@ -212,21 +219,9 @@ void NzPatch::Invalidate()
     }
 }
 
-void NzPatch::OnNormalChanged(NzVector2i normalLocation, const NzVector3f& newValue)
+void NzPatch::SetBottomNeighboursNormals(const NzPatch* mainNeighbour, const NzPatch* optionnalNeighbour)
 {
-    normalLocation.x = normalLocation.x / std::pow(2,NAZARA_DYNATERRAIN_MAXIMUM_TERRAIN_DEPTH - m_id.depth) - m_id.locx;
-    normalLocation.y = normalLocation.y / std::pow(2,NAZARA_DYNATERRAIN_MAXIMUM_TERRAIN_DEPTH - m_id.depth) - m_id.locy;
 
-    #if NAZARA_DYNATERRAIN_SAFE
-    if(normalLocation.x >= 5 || normalLocation.x < 0 ||
-       normalLocation.y >= 5 || normalLocation.y < 0)
-       {
-           NazaraError("Error in computing normal location : [" + NzString::Number(normalLocation.x) + ";" + NzString::Number(normalLocation.y) + "]");
-           return;
-       }
-    #endif
-    m_vertexNormals.at(normalLocation.x + 5 * normalLocation.y) = newValue;
-    UploadMesh(false);
 }
 
 void NzPatch::SetConfiguration(nzNeighbourDirection toNeighbor, unsigned int levelDifference, bool autoUpdate)
@@ -281,6 +276,11 @@ void NzPatch::SetConfiguration(nzNeighbourDirection toNeighbor, unsigned int lev
         m_configuration = newConfiguration;
         UploadMesh(false);
     }
+}
+
+void NzPatch::SetRightNeighboursNormals(const NzPatch* mainNeighbour, const NzPatch* optionnalNeighbour)
+{
+
 }
 
 void NzPatch::UploadMesh(bool firstTime)
