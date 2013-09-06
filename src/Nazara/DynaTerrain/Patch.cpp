@@ -278,23 +278,50 @@ void NzPatch::SetConfiguration(nzNeighbourDirection toNeighbor, unsigned int lev
     }
 }
 
-void NzPatch::SetRightNeighboursNormals(const NzPatch* mainNeighbour, const NzPatch* optionnalNeighbour)
+void NzPatch::SetNormalsFromNeighbours(nzNeighbourDirection direction, const NzPatch* mainNeighbour, const NzPatch* optionnalNeighbour)
 {
     if(optionnalNeighbour == nullptr)
     {
         if(m_id.depth == mainNeighbour->m_id.depth)
         {
-            m_vertexNormals[4] = mainNeighbour->m_vertexNormals[0];
-            m_vertexNormals[9] = mainNeighbour->m_vertexNormals[5];
-            m_vertexNormals[14] = mainNeighbour->m_vertexNormals[10];
-            m_vertexNormals[19] = mainNeighbour->m_vertexNormals[15];
-            m_vertexNormals[24] = mainNeighbour->m_vertexNormals[20];
+            if(direction == nzNeighbourDirection_right)
+            {
+                m_vertexNormals[4] = mainNeighbour->m_vertexNormals[0];
+                m_vertexNormals[9] = mainNeighbour->m_vertexNormals[5];
+                m_vertexNormals[14] = mainNeighbour->m_vertexNormals[10];
+                m_vertexNormals[19] = mainNeighbour->m_vertexNormals[15];
+                m_vertexNormals[24] = mainNeighbour->m_vertexNormals[20];
+            }
+            else if(direction == nzNeighbourDirection_bottom)
+            {
+                //TODO
+            }
+            #if NAZARA_DYNATERRAIN_SAFE
+            else
+            {
+                NazaraWarning("Only right and bottom directions supported");
+            }
+            #endif
         }
         else if(m_id.depth > mainNeighbour->m_id.depth)
         {
-            m_vertexNormals[4] = mainNeighbour->m_vertexNormals[0];
-            m_vertexNormals[14] = mainNeighbour->m_vertexNormals[5];
-            m_vertexNormals[24] = mainNeighbour->m_vertexNormals[10];
+            if(direction == nzNeighbourDirection_right)
+            {
+                m_vertexNormals[4] = mainNeighbour->m_vertexNormals[0];
+                m_vertexNormals[14] = mainNeighbour->m_vertexNormals[5];
+                m_vertexNormals[24] = mainNeighbour->m_vertexNormals[10];
+            }
+            else if(direction == nzNeighbourDirection_bottom)
+            {
+                //TODO
+            }
+            #if NAZARA_DYNATERRAIN_SAFE
+            else
+            {
+                NazaraWarning("Only right and bottom directions supported");
+            }
+            #endif
+
         }
         #if NAZARA_DYNATERRAIN_SAFE
         else
@@ -308,10 +335,23 @@ void NzPatch::SetRightNeighboursNormals(const NzPatch* mainNeighbour, const NzPa
     {
         if(m_id.depth < mainNeighbour->m_id.depth && m_id.depth < optionnalNeighbour->m_id.depth)
         {
-            m_vertexNormals[4] = mainNeighbour->m_vertexNormals[0];
-            m_vertexNormals[9] = mainNeighbour->m_vertexNormals[10];
-            m_vertexNormals[14] = optionnalNeighbour->m_vertexNormals[0];
-            m_vertexNormals[19] = optionnalNeighbour->m_vertexNormals[10];
+            if(direction == nzNeighbourDirection_right)
+            {
+                m_vertexNormals[4] = mainNeighbour->m_vertexNormals[0];
+                m_vertexNormals[9] = mainNeighbour->m_vertexNormals[10];
+                m_vertexNormals[14] = optionnalNeighbour->m_vertexNormals[0];
+                m_vertexNormals[19] = optionnalNeighbour->m_vertexNormals[10];
+            }
+            else if(direction == nzNeighbourDirection_bottom)
+            {
+                //TODO
+            }
+            #if NAZARA_DYNATERRAIN_SAFE
+            else
+            {
+                NazaraWarning("Only right and bottom directions supported");
+            }
+            #endif
         }
         #if NAZARA_DYNATERRAIN_SAFE
         else
