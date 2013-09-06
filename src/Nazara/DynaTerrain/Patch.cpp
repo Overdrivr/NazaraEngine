@@ -280,7 +280,46 @@ void NzPatch::SetConfiguration(nzNeighbourDirection toNeighbor, unsigned int lev
 
 void NzPatch::SetRightNeighboursNormals(const NzPatch* mainNeighbour, const NzPatch* optionnalNeighbour)
 {
+    if(optionnalNeighbour == nullptr)
+    {
+        if(m_id.depth == mainNeighbour->m_id.depth)
+        {
+            m_vertexNormals[4] = mainNeighbour->m_vertexNormals[0];
+            m_vertexNormals[9] = mainNeighbour->m_vertexNormals[5];
+            m_vertexNormals[14] = mainNeighbour->m_vertexNormals[10];
+            m_vertexNormals[19] = mainNeighbour->m_vertexNormals[15];
+            m_vertexNormals[24] = mainNeighbour->m_vertexNormals[20];
+        }
+        else if(m_id.depth > mainNeighbour->m_id.depth)
+        {
+            m_vertexNormals[4] = mainNeighbour->m_vertexNormals[0];
+            m_vertexNormals[14] = mainNeighbour->m_vertexNormals[5];
+            m_vertexNormals[24] = mainNeighbour->m_vertexNormals[10];
+        }
+        #if NAZARA_DYNATERRAIN_SAFE
+        else
+        {
+            NazaraWarning("optionnal neighbour is mandatory if local depth is lower than neighbour's depth");
+        }
+        #endif
 
+    }
+    else
+    {
+        if(m_id.depth < mainNeighbour->m_id.depth && m_id.depth < optionnalNeighbour->m_id.depth)
+        {
+            m_vertexNormals[4] = mainNeighbour->m_vertexNormals[0];
+            m_vertexNormals[9] = mainNeighbour->m_vertexNormals[10];
+            m_vertexNormals[14] = optionnalNeighbour->m_vertexNormals[0];
+            m_vertexNormals[19] = optionnalNeighbour->m_vertexNormals[10];
+        }
+        #if NAZARA_DYNATERRAIN_SAFE
+        else
+        {
+            NazaraWarning("Something's wrong with neighbours' depth");
+        }
+        #endif
+    }
 }
 
 void NzPatch::UploadMesh(bool firstTime)
