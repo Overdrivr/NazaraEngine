@@ -66,7 +66,8 @@ class NAZARA_API NzTerrainNode
         void InitializeData(nzTerrainNodeData *data, NzTerrainNode* parent, nzNodeLocation location = nzNodeLocation_topleft);
         //Garantit un écart de profondeur d'1 niveau maximum avec un voisin
         void AssertNeighborRule(nzNeighbourDirection direction, bool isNotReversible = false);
-
+        void NeighborNormalsSmooth(nzNeighbourDirection direction);
+        void NeighborNormalsChanged(nzNeighbourDirection direction);
 
         nzTerrainNodeData* m_data;
         NzTerrainNode* m_parent;
