@@ -311,13 +311,25 @@ bool NzTerrainNode::Subdivide(bool isNotReversible)
     m_children[nzNodeLocation_bottomleft]->m_patch->SetNormalsFromNeighbours(nzNeighbourDirection_right,m_children[nzNodeLocation_bottomright]->m_patch);
     m_children[nzNodeLocation_topright]->m_patch->SetNormalsFromNeighbours(nzNeighbourDirection_bottom, m_children[nzNodeLocation_bottomright]->m_patch);
 
+    m_children[nzNodeLocation_topleft]->m_patch->SetCornerNormalFromNeighbour(m_children[nzNodeLocation_bottomleft]->m_patch);
+
     //Gestion des normales avec les nodes voisins
     m_children[nzNodeLocation_topright]->NeighborNormalsSmooth(nzNeighbourDirection_right);
-    m_children[nzNodeLocation_topleft]->NeighborNormalsChanged(nzNeighbourDirection_left);
     m_children[nzNodeLocation_bottomright]->NeighborNormalsSmooth(nzNeighbourDirection_right);
+
+    m_children[nzNodeLocation_topleft]->NeighborNormalsChanged(nzNeighbourDirection_left);
     m_children[nzNodeLocation_bottomleft]->NeighborNormalsChanged(nzNeighbourDirection_left);
 
+    m_children[nzNodeLocation_bottomright]->NeighborNormalsSmooth(nzNeighbourDirection_bottom);
+    m_children[nzNodeLocation_bottomleft]->NeighborNormalsSmooth(nzNeighbourDirection_bottom);
 
+    m_children[nzNodeLocation_topleft]->NeighborNormalsChanged(nzNeighbourDirection_top);
+    m_children[nzNodeLocation_topright]->NeighborNormalsChanged(nzNeighbourDirection_top);
+
+    m_children[nzNodeLocation_topleft]->m_patch->UploadMesh(false);
+    m_children[nzNodeLocation_topright]->m_patch->UploadMesh(false);
+    m_children[nzNodeLocation_bottomleft]->m_patch->UploadMesh(false);
+    m_children[nzNodeLocation_bottomright]->m_patch->UploadMesh(false);
 
     return true;
 }
@@ -663,8 +675,6 @@ void NzTerrainNode::NeighborNormalsSmooth(nzNeighbourDirection direction)
 
         m_patch->SetNormalsFromNeighbours(direction,node1->m_patch,node2->m_patch);
     }
-
-    m_patch->UploadMesh(false);
 }
 
 void NzTerrainNode::NeighborNormalsChanged(nzNeighbourDirection direction)
