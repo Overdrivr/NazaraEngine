@@ -23,6 +23,9 @@ class NAZARA_API NzTerrainNodeID
         bool IsValid() const;
         void InvertXY();
 
+        //TODO
+        //Move(nzNeighbourDirection direction);
+
         void Normalize();//A RENOMMER ?
 
         NzTerrainNodeID& operator --();
