@@ -73,7 +73,7 @@ void NzPatch::ComputeNormals()
 
             if(i == 4 || j == 4)
             {
-                m_vertexNormals.at(i+5*j) = NzVector3f(0.f,1.f,0.f);
+                m_vertexNormals.at(i+5*j) = NzVector3f(0.f,0.f,0.f);
                 continue;
             }
 
@@ -219,11 +219,6 @@ void NzPatch::Invalidate()
     }
 }
 
-void NzPatch::SetBottomNeighboursNormals(const NzPatch* mainNeighbour, const NzPatch* optionnalNeighbour)
-{
-
-}
-
 void NzPatch::SetConfiguration(nzNeighbourDirection toNeighbor, unsigned int levelDifference, bool autoUpdate)
 {
     if(!m_isInitialized)
@@ -294,7 +289,11 @@ void NzPatch::SetNormalsFromNeighbours(nzNeighbourDirection direction, const NzP
             }
             else if(direction == nzNeighbourDirection_bottom)
             {
-                //TODO
+                m_vertexNormals[20] = mainNeighbour->m_vertexNormals[0];
+                m_vertexNormals[21] = mainNeighbour->m_vertexNormals[1];
+                m_vertexNormals[22] = mainNeighbour->m_vertexNormals[2];
+                m_vertexNormals[23] = mainNeighbour->m_vertexNormals[3];
+                m_vertexNormals[24] = mainNeighbour->m_vertexNormals[4];
             }
             #if NAZARA_DYNATERRAIN_SAFE
             else
@@ -313,7 +312,9 @@ void NzPatch::SetNormalsFromNeighbours(nzNeighbourDirection direction, const NzP
             }
             else if(direction == nzNeighbourDirection_bottom)
             {
-                //TODO
+                m_vertexNormals[20] = mainNeighbour->m_vertexNormals[0];
+                m_vertexNormals[22] = mainNeighbour->m_vertexNormals[1];
+                m_vertexNormals[24] = mainNeighbour->m_vertexNormals[2];
             }
             #if NAZARA_DYNATERRAIN_SAFE
             else
@@ -344,7 +345,10 @@ void NzPatch::SetNormalsFromNeighbours(nzNeighbourDirection direction, const NzP
             }
             else if(direction == nzNeighbourDirection_bottom)
             {
-                //TODO
+                m_vertexNormals[20] = mainNeighbour->m_vertexNormals[0];
+                m_vertexNormals[21] = mainNeighbour->m_vertexNormals[2];
+                m_vertexNormals[22] = optionnalNeighbour->m_vertexNormals[0];
+                m_vertexNormals[23] = optionnalNeighbour->m_vertexNormals[2];
             }
             #if NAZARA_DYNATERRAIN_SAFE
             else
@@ -360,6 +364,11 @@ void NzPatch::SetNormalsFromNeighbours(nzNeighbourDirection direction, const NzP
         }
         #endif
     }
+}
+
+void NzPatch::SetCornerNormalFromNeighbour(const NzPatch* neighbourPatch)
+{
+    m_vertexNormals[24] = neighbourPatch->m_vertexNormals[0];
 }
 
 void NzPatch::UploadMesh(bool firstTime)

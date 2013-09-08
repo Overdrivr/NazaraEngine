@@ -36,10 +36,9 @@ class NAZARA_API NzPatch
 
         void Reset();
 
-        void SetBottomNeighboursNormals(const NzPatch* mainNeighbour, const NzPatch* optionnalNeighbour = nullptr);
         void SetConfiguration(nzNeighbourDirection toNeighbor, unsigned int levelDifference, bool autoUpdate = true);
         void SetNormalsFromNeighbours(nzNeighbourDirection direction, const NzPatch* mainNeighbour, const NzPatch* optionnalNeighbour = nullptr);
-
+        void SetCornerNormalFromNeighbour(const NzPatch* neighbourPatch);
         void UploadMesh(bool firstTime = true);
         void UnUploadMesh();
 
