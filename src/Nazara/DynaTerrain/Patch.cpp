@@ -306,15 +306,37 @@ void NzPatch::SetNormalsFromNeighbours(nzNeighbourDirection direction, const NzP
         {
             if(direction == nzNeighbourDirection_right)
             {
-                m_vertexNormals[4] = mainNeighbour->m_vertexNormals[0];
-                m_vertexNormals[14] = mainNeighbour->m_vertexNormals[5];
-                m_vertexNormals[24] = mainNeighbour->m_vertexNormals[10];
+                //TODO : IMPLEMENTER LA RECONNAISSANCE DE L'EMPLACEMENT TL TR BL BR DANS NODEID
+                //top
+                if((m_id.locy & 0x1) == 0x0)
+                {
+                    m_vertexNormals[4] = mainNeighbour->m_vertexNormals[0];
+                    m_vertexNormals[14] = mainNeighbour->m_vertexNormals[5];
+                    m_vertexNormals[24] = mainNeighbour->m_vertexNormals[10];
+                }
+                else//bottom
+                {
+                    m_vertexNormals[4] = mainNeighbour->m_vertexNormals[10];
+                    m_vertexNormals[14] = mainNeighbour->m_vertexNormals[15];
+                    m_vertexNormals[24] = mainNeighbour->m_vertexNormals[20];
+                }
+
             }
             else if(direction == nzNeighbourDirection_bottom)
             {
-                m_vertexNormals[20] = mainNeighbour->m_vertexNormals[0];
-                m_vertexNormals[22] = mainNeighbour->m_vertexNormals[1];
-                m_vertexNormals[24] = mainNeighbour->m_vertexNormals[2];
+                //left
+                if((m_id.locx & 0x1) == 0x0)
+                {
+                    m_vertexNormals[20] = mainNeighbour->m_vertexNormals[0];
+                    m_vertexNormals[22] = mainNeighbour->m_vertexNormals[1];
+                    m_vertexNormals[24] = mainNeighbour->m_vertexNormals[2];
+                }
+                else//right
+                {
+                    m_vertexNormals[20] = mainNeighbour->m_vertexNormals[2];
+                    m_vertexNormals[22] = mainNeighbour->m_vertexNormals[3];
+                    m_vertexNormals[24] = mainNeighbour->m_vertexNormals[4];
+                }
             }
             #if NAZARA_DYNATERRAIN_SAFE
             else

@@ -311,18 +311,16 @@ bool NzTerrainNode::Subdivide(bool isNotReversible)
     m_children[nzNodeLocation_bottomleft]->m_patch->SetNormalsFromNeighbours(nzNeighbourDirection_right,m_children[nzNodeLocation_bottomright]->m_patch);
     m_children[nzNodeLocation_topright]->m_patch->SetNormalsFromNeighbours(nzNeighbourDirection_bottom, m_children[nzNodeLocation_bottomright]->m_patch);
 
-    m_children[nzNodeLocation_topleft]->m_patch->SetCornerNormalFromNeighbour(m_children[nzNodeLocation_bottomleft]->m_patch);
+    m_children[nzNodeLocation_topleft]->m_patch->SetCornerNormalFromNeighbour(m_children[nzNodeLocation_bottomright]->m_patch);
 
     //Gestion des normales avec les nodes voisins
     m_children[nzNodeLocation_topright]->NeighborNormalsSmooth(nzNeighbourDirection_right);
     m_children[nzNodeLocation_bottomright]->NeighborNormalsSmooth(nzNeighbourDirection_right);
-
-    m_children[nzNodeLocation_topleft]->NeighborNormalsChanged(nzNeighbourDirection_left);
-    m_children[nzNodeLocation_bottomleft]->NeighborNormalsChanged(nzNeighbourDirection_left);
-
     m_children[nzNodeLocation_bottomright]->NeighborNormalsSmooth(nzNeighbourDirection_bottom);
     m_children[nzNodeLocation_bottomleft]->NeighborNormalsSmooth(nzNeighbourDirection_bottom);
 
+    m_children[nzNodeLocation_topleft]->NeighborNormalsChanged(nzNeighbourDirection_left);
+    m_children[nzNodeLocation_bottomleft]->NeighborNormalsChanged(nzNeighbourDirection_left);
     m_children[nzNodeLocation_topleft]->NeighborNormalsChanged(nzNeighbourDirection_top);
     m_children[nzNodeLocation_topright]->NeighborNormalsChanged(nzNeighbourDirection_top);
 
@@ -689,9 +687,41 @@ void NzTerrainNode::NeighborNormalsChanged(nzNeighbourDirection direction)
             return;
 
     }
+    if(neighbour->IsLeaf())
+    {
+        neighbour->m_patch->SetNormalsFromNeighbours(Reverse(direction),m_patch);
+        neighbour->m_patch->UploadMesh(false);
+    }
+    else
+    {
+        NzTerrainNode *node1, *node2;
+        switch(direction)
+        {
+            case nzNeighbourDirection_top :
+                node1 = neighbour->m_children[nzNodeLocation_bottomleft];
+                node2 = neighbour->m_children[nzNodeLocation_bottomright];
+            break;
 
-    neighbour->m_patch->SetNormalsFromNeighbours(Reverse(direction),m_patch);
-    neighbour->m_patch->UploadMesh(false);
+            case nzNeighbourDirection_right :
+                node1 = neighbour->m_children[nzNodeLocation_topleft];
+                node2 = neighbour->m_children[nzNodeLocation_bottomleft];
+            break;
+
+            case nzNeighbourDirection_bottom :
+                node1 = neighbour->m_children[nzNodeLocation_topright];
+                node2 = neighbour->m_children[nzNodeLocation_topleft];
+            break;
+
+            case nzNeighbourDirection_left :
+                node1 = neighbour->m_children[nzNodeLocation_topright];
+                node2 = neighbour->m_children[nzNodeLocation_bottomright];
+            break;
+        }
+
+        node1->m_patch->SetNormalsFromNeighbours(Reverse(direction),m_patch);
+        node2->m_patch->SetNormalsFromNeighbours(Reverse(direction),m_patch);
+    }
+
 }
 
 void NzTerrainNode::Update(const NzVector3f& cameraPosition)
