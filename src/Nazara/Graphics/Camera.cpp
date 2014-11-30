@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -62,6 +62,11 @@ NzVector3f NzCamera::GetEyePosition() const
 	return GetPosition(nzCoordSys_Global);
 }
 
+NzVector3f NzCamera::GetForward() const
+{
+	return NzNode::GetForward();
+}
+
 float NzCamera::GetFOV() const
 {
 	return m_fov;
@@ -101,7 +106,7 @@ const NzMatrix4f& NzCamera::GetViewMatrix() const
 	return m_viewMatrix;
 }
 
-const NzRectui& NzCamera::GetViewport() const
+const NzRecti& NzCamera::GetViewport() const
 {
 	#if NAZARA_GRAPHICS_SAFE
 	if (!m_target)
@@ -129,6 +134,14 @@ float NzCamera::GetZNear() const
 
 void NzCamera::SetFOV(float fov)
 {
+	#if NAZARA_GRAPHICS_SAFE
+	if (NzNumberEquals(fov, 0.f))
+	{
+		NazaraError("FOV must be different from zero");
+		return;
+	}
+	#endif
+
 	m_fov = fov;
 
 	m_frustumUpdated = false;
@@ -159,7 +172,7 @@ void NzCamera::SetTargetRegion(const NzRectf& region)
 	m_viewportUpdated = false;
 }
 
-void NzCamera::SetViewport(const NzRectui& viewport)
+void NzCamera::SetViewport(const NzRecti& viewport)
 {
 	#if NAZARA_GRAPHICS_SAFE
 	if (!m_target)
@@ -186,6 +199,14 @@ void NzCamera::SetZFar(float zFar)
 
 void NzCamera::SetZNear(float zNear)
 {
+	#if NAZARA_GRAPHICS_SAFE
+	if (zNear < 0.f || NzNumberEquals(zNear, 0.f))
+	{
+		NazaraError("ZNear shall be a strictly positive number");
+		return;
+	}
+	#endif
+
 	m_zNear = zNear;
 
 	m_frustumUpdated = false;
@@ -213,12 +234,13 @@ void NzCamera::ApplyView() const
 
 	NzRenderer::SetMatrix(nzMatrixType_Projection, m_projectionMatrix);
 	NzRenderer::SetMatrix(nzMatrixType_View, m_viewMatrix);
+	NzRenderer::SetTarget(m_target);
 	NzRenderer::SetViewport(m_viewport);
 }
 
-void NzCamera::Invalidate()
+void NzCamera::InvalidateNode()
 {
-	NzNode::Invalidate();
+	NzNode::InvalidateNode();
 
 	// Le frustum et la view matrix dépendent des paramètres du node, invalidons-les
 	m_frustumUpdated = false;
@@ -244,11 +266,14 @@ bool NzCamera::OnRenderTargetSizeChange(const NzRenderTarget* renderTarget, void
 		m_frustumUpdated = false;
 		m_projectionMatrixUpdated = false;
 		m_viewportUpdated = false;
+
+		return true;
 	}
 	else
+	{
 		NazaraInternalError("Not listening to " + NzString::Pointer(renderTarget));
-
-	return true;
+		return false;
+	}
 }
 
 void NzCamera::UpdateFrustum() const
@@ -265,6 +290,12 @@ void NzCamera::UpdateFrustum() const
 
 void NzCamera::UpdateProjectionMatrix() const
 {
+	#if NAZARA_GRAPHICS_SAFE
+	// Il n'y a pas grand chose à faire d'autre qu'un avertissement à ce stade
+	if (m_zNear >= m_zFar)
+		NazaraWarning("ZNear is greater or equal to ZFar (" + NzString::Number(m_zNear) + " >= " + NzString::Number(m_zFar) + ").");
+	#endif
+
 	if (!m_viewportUpdated)
 		UpdateViewport(); // Peut affecter l'aspect ratio
 
@@ -283,6 +314,14 @@ void NzCamera::UpdateViewMatrix() const
 
 void NzCamera::UpdateViewport() const
 {
+	#if NAZARA_GRAPHICS_SAFE
+	if (!m_target)
+	{
+		NazaraError("Camera has no render target");
+		return;
+	}
+	#endif
+
 	unsigned int width = m_target->GetWidth();
 	unsigned int height = std::max(m_target->GetHeight(), 1U);
 
@@ -297,9 +336,9 @@ void NzCamera::UpdateViewport() const
 		m_projectionMatrixUpdated = false;
 	}
 
-	m_viewport.x = width * m_targetRegion.x;
-	m_viewport.y = height * m_targetRegion.y;
-	m_viewport.width = vWidth;
-	m_viewport.height = vHeight;
+	m_viewport.x = static_cast<int>(width * m_targetRegion.x);
+	m_viewport.y = static_cast<int>(height * m_targetRegion.y);
+	m_viewport.width = static_cast<int>(vWidth);
+	m_viewport.height = static_cast<int>(vHeight);
 	m_viewportUpdated = true;
 }

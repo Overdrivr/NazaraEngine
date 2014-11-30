@@ -1,9 +1,9 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Mathematics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Core/StringStream.hpp>
-#include <Nazara/Math/Basic.hpp>
+#include <Nazara/Math/Algorithm.hpp>
 #include <cstring>
 #include <Nazara/Core/Debug.hpp>
 
@@ -150,6 +150,24 @@ NzPlane<T> NzPlane<T>::Lerp(const NzPlane& from, const NzPlane& to, T interpolat
 	plane.normal.Normalize();
 
 	return plane;
+}
+
+template<typename T>
+NzPlane<T> NzPlane<T>::XY()
+{
+    return NzPlane<T>(F(0.0), F(0.0), F(1.0), F(0.0));
+}
+
+template<typename T>
+NzPlane<T> NzPlane<T>::XZ()
+{
+    return NzPlane<T>(F(0.0), F(1.0), F(0.0), F(0.0));
+}
+
+template<typename T>
+NzPlane<T> NzPlane<T>::YZ()
+{
+    return NzPlane<T>(F(1.0), F(0.0), F(0.0), F(0.0));
 }
 
 template<typename T>

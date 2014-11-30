@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -18,9 +18,9 @@
 #include <Nazara/Core/String.hpp>
 
 #if NAZARA_CORE_THREADSAFE && NAZARA_THREADSAFETY_FILE
-#include <Nazara/Core/ThreadSafety.hpp>
+	#include <Nazara/Core/ThreadSafety.hpp>
 #else
-#include <Nazara/Core/ThreadSafetyOff.hpp>
+	#include <Nazara/Core/ThreadSafetyOff.hpp>
 #endif
 
 class NzFileImpl;
@@ -78,6 +78,7 @@ class NAZARA_API NzFile : public NzHashable, public NzInputStream, NzNonCopyable
 		bool IsOpen() const;
 
 		bool Open(unsigned long openMode = Current);
+		bool Open(const NzString& filePath, unsigned long openMode = Current);
 
 		std::size_t Read(void* buffer, std::size_t size);
 		std::size_t Read(void* buffer, std::size_t typeSize, unsigned int count);

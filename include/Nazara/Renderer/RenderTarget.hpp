@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -54,6 +54,7 @@ class NAZARA_API NzRenderTarget
 	protected:
 		virtual bool Activate() const = 0;
 		virtual void Desactivate() const;
+		virtual void EnsureTargetUpdated() const = 0;
 
 		void NotifyParametersChange();
 		void NotifySizeChange();

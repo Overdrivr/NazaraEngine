@@ -1,22 +1,23 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Renderer/Renderer.hpp>
+#include <Nazara/Core/CallOnExit.hpp>
 #include <Nazara/Core/Color.hpp>
 #include <Nazara/Core/Error.hpp>
+#include <Nazara/Core/ErrorFlags.hpp>
 #include <Nazara/Core/Log.hpp>
-#include <Nazara/Renderer/AbstractShaderProgram.hpp>
 #include <Nazara/Renderer/Config.hpp>
 #include <Nazara/Renderer/Context.hpp>
 #include <Nazara/Renderer/DebugDrawer.hpp>
 #include <Nazara/Renderer/HardwareBuffer.hpp>
-#include <Nazara/Renderer/Material.hpp>
 #include <Nazara/Renderer/OpenGL.hpp>
 #include <Nazara/Renderer/RenderTarget.hpp>
-#include <Nazara/Renderer/ShaderProgram.hpp>
-#include <Nazara/Renderer/ShaderProgramManager.hpp>
-#include <Nazara/Renderer/Loaders/Texture.hpp>
+#include <Nazara/Renderer/Shader.hpp>
+#include <Nazara/Renderer/ShaderLibrary.hpp>
+#include <Nazara/Renderer/Texture.hpp>
+#include <Nazara/Renderer/UberShaderLibrary.hpp>
 #include <Nazara/Utility/AbstractBuffer.hpp>
 #include <Nazara/Utility/IndexBuffer.hpp>
 #include <Nazara/Utility/Utility.hpp>
@@ -33,12 +34,20 @@
 
 namespace
 {
+	enum ResourceType
+	{
+		ResourceType_Context,
+		ResourceType_IndexBuffer,
+		ResourceType_VertexBuffer,
+		ResourceType_VertexDeclaration
+	};
+
 	enum UpdateFlags
 	{
 		Update_None = 0,
 
 		Update_Matrices     = 0x1,
-		Update_Program       = 0x2,
+		Update_Shader       = 0x2,
 		Update_Textures     = 0x4,
 		Update_VAO          = 0x8
 	};
@@ -55,18 +64,15 @@ namespace
 		NzTextureSampler sampler;
 		const NzTexture* texture = nullptr;
 		bool samplerUpdated = false;
-		bool textureUpdated = true;
 	};
 
-	NzAbstractBuffer* HardwareBufferFunction(NzBuffer* parent, nzBufferType type)
-	{
-		return new NzHardwareBuffer(parent, type);
-	}
-
 	using VAO_Key = std::tuple<const NzIndexBuffer*, const NzVertexBuffer*, const NzVertexDeclaration*, const NzVertexDeclaration*>;
+	using VAO_Map = std::map<VAO_Key, GLuint>;
 
-	std::unordered_map<NzContext*, std::map<VAO_Key, unsigned int>> s_vaos;
-	std::set<unsigned int> s_dirtyTextureUnits;
+	using Context_Map = std::unordered_map<const NzContext*, VAO_Map>;
+
+	Context_Map s_vaos;
+	std::vector<unsigned int> s_dirtyTextureUnits;
 	std::vector<TextureUnit> s_textureUnits;
 	GLuint s_currentVAO = 0;
 	NzVertexBuffer s_instanceBuffer;
@@ -78,17 +84,154 @@ namespace
 	nzUInt32 s_updateFlags;
 	const NzIndexBuffer* s_indexBuffer;
 	const NzRenderTarget* s_target;
-	const NzShaderProgram* s_program;
+	const NzShader* s_shader;
 	const NzVertexBuffer* s_vertexBuffer;
-	const NzVertexDeclaration* s_instancingDeclaration;
 	bool s_capabilities[nzRendererCap_Max+1];
 	bool s_instancing;
-	bool s_uniformTargetSizeUpdated;
 	bool s_useSamplerObjects;
 	bool s_useVertexArrayObjects;
+	unsigned int s_maxColorAttachments;
 	unsigned int s_maxRenderTarget;
 	unsigned int s_maxTextureUnit;
 	unsigned int s_maxVertexAttribs;
+
+	class ResourceListener : public NzResourceListener
+	{
+		public:
+			void OnResourceReleased(const NzResource* resource, int index) override
+			{
+				switch (index)
+				{
+					case ResourceType_Context:
+					{
+						const NzContext* context = static_cast<const NzContext*>(resource);
+						s_vaos.erase(context);
+						break;
+					}
+
+					case ResourceType_IndexBuffer:
+					{
+						const NzIndexBuffer* indexBuffer = static_cast<const NzIndexBuffer*>(resource);
+						for (auto& pair : s_vaos)
+						{
+							const NzContext* context = pair.first;
+							VAO_Map& vaos = pair.second;
+
+							auto it = vaos.begin();
+							while (it != vaos.end())
+							{
+								const VAO_Key& key = it->first;
+								const NzIndexBuffer* vaoIndexBuffer = std::get<0>(key);
+
+								if (vaoIndexBuffer == indexBuffer)
+								{
+									// Suppression du VAO:
+									// Comme celui-ci est local à son contexte de création, sa suppression n'est possible que si
+									// son contexte d'origine est actif, sinon il faudra le mettre en file d'attente
+									// Ceci est géré par la méthode OpenGL::DeleteVertexArray
+
+									NzOpenGL::DeleteVertexArray(context, it->second);
+									vaos.erase(it++);
+								}
+								else
+									++it;
+							}
+						}
+						break;
+					}
+
+					case ResourceType_VertexBuffer:
+					{
+						const NzVertexBuffer* vertexBuffer = static_cast<const NzVertexBuffer*>(resource);
+						for (auto& pair : s_vaos)
+						{
+							const NzContext* context = pair.first;
+							VAO_Map& vaos = pair.second;
+
+							auto it = vaos.begin();
+							while (it != vaos.end())
+							{
+								const VAO_Key& key = it->first;
+								const NzVertexBuffer* vaoVertexBuffer = std::get<1>(key);
+
+								if (vaoVertexBuffer == vertexBuffer)
+								{
+									// Suppression du VAO:
+									// Comme celui-ci est local à son contexte de création, sa suppression n'est possible que si
+									// son contexte d'origine est actif, sinon il faudra le mettre en file d'attente
+									// Ceci est géré par la méthode OpenGL::DeleteVertexArray
+
+									NzOpenGL::DeleteVertexArray(context, it->second);
+									vaos.erase(it++);
+								}
+								else
+									++it;
+							}
+						}
+						break;
+					}
+
+					case ResourceType_VertexDeclaration:
+					{
+						const NzVertexDeclaration* vertexDeclaration = static_cast<const NzVertexDeclaration*>(resource);
+						for (auto& pair : s_vaos)
+						{
+							const NzContext* context = pair.first;
+							VAO_Map& vaos = pair.second;
+
+							auto it = vaos.begin();
+							while (it != vaos.end())
+							{
+								const VAO_Key& key = it->first;
+								const NzVertexDeclaration* vaoVertexDeclaration = std::get<2>(key);
+								const NzVertexDeclaration* vaoInstancingDeclaration = std::get<3>(key);
+
+								if (vaoVertexDeclaration == vertexDeclaration || vaoInstancingDeclaration == vertexDeclaration)
+								{
+									// Suppression du VAO:
+									// Comme celui-ci est local à son contexte de création, sa suppression n'est possible que si
+									// son contexte d'origine est actif, sinon il faudra le mettre en file d'attente
+									// Ceci est géré par la méthode OpenGL::DeleteVertexArray
+
+									NzOpenGL::DeleteVertexArray(context, it->second);
+									vaos.erase(it++);
+								}
+								else
+									++it;
+							}
+						}
+						break;
+					}
+
+					default:
+						NazaraInternalError("Unknown resource type");
+						break;
+				}
+			}
+	};
+
+	ResourceListener s_listener;
+}
+
+void NzRenderer::BeginCondition(const NzGpuQuery& query, nzGpuQueryCondition condition)
+{
+	#ifdef NAZARA_DEBUG
+	if (NzContext::GetCurrent() == nullptr)
+	{
+		NazaraError("No active context");
+		return;
+	}
+	#endif
+
+	#if NAZARA_RENDERER_SAFE
+	if (!s_capabilities[nzRendererCap_ConditionalRendering])
+	{
+		NazaraError("Conditional rendering is not supported");
+		return;
+	}
+	#endif
+
+	glBeginConditionalRender(query.GetOpenGLID(), NzOpenGL::QueryCondition[condition]);
 }
 
 void NzRenderer::Clear(nzUInt32 flags)
@@ -103,18 +246,20 @@ void NzRenderer::Clear(nzUInt32 flags)
 
 	if (flags)
 	{
+		// On n'oublie pas de mettre à jour la cible
+		s_target->EnsureTargetUpdated();
 		// Les états du rendu sont suceptibles d'influencer glClear
 		NzOpenGL::ApplyStates(s_states);
 
 		GLenum mask = 0;
 
-		if (flags & nzRendererClear_Color)
+		if (flags & nzRendererBuffer_Color)
 			mask |= GL_COLOR_BUFFER_BIT;
 
-		if (flags & nzRendererClear_Depth)
+		if (flags & nzRendererBuffer_Depth)
 			mask |= GL_DEPTH_BUFFER_BIT;
 
-		if (flags & nzRendererClear_Stencil)
+		if (flags & nzRendererBuffer_Stencil)
 			mask |= GL_STENCIL_BUFFER_BIT;
 
 		glClear(mask);
@@ -137,7 +282,7 @@ void NzRenderer::DrawFullscreenQuad()
 
 	if (!EnsureStateUpdate())
 	{
-		NazaraError("Failed to update states");
+		NazaraError("Failed to update states: " + NzError::GetLastError());
 		return;
 	}
 
@@ -175,7 +320,7 @@ void NzRenderer::DrawIndexedPrimitives(nzPrimitiveMode mode, unsigned int firstI
 
 	if (!EnsureStateUpdate())
 	{
-		NazaraError("Failed to update states");
+		NazaraError("Failed to update states: " + NzError::GetLastError());
 		return;
 	}
 
@@ -184,12 +329,12 @@ void NzRenderer::DrawIndexedPrimitives(nzPrimitiveMode mode, unsigned int firstI
 
 	if (s_indexBuffer->HasLargeIndices())
 	{
-		offset += firstIndex*sizeof(nzUInt64);
+		offset += firstIndex*sizeof(nzUInt32);
 		type = GL_UNSIGNED_INT;
 	}
 	else
 	{
-		offset += firstIndex*sizeof(nzUInt32);
+		offset += firstIndex*sizeof(nzUInt16);
 		type = GL_UNSIGNED_SHORT;
 	}
 
@@ -230,7 +375,7 @@ void NzRenderer::DrawIndexedPrimitivesInstanced(unsigned int instanceCount, nzPr
 
 	if (instanceCount == 0)
 	{
-		NazaraError("Instance count must be over 0");
+		NazaraError("Instance count must be over zero");
 		return;
 	}
 
@@ -246,7 +391,7 @@ void NzRenderer::DrawIndexedPrimitivesInstanced(unsigned int instanceCount, nzPr
 
 	if (!EnsureStateUpdate())
 	{
-		NazaraError("Failed to update states");
+		NazaraError("Failed to update states: " + NzError::GetLastError());
 		return;
 	}
 
@@ -255,12 +400,12 @@ void NzRenderer::DrawIndexedPrimitivesInstanced(unsigned int instanceCount, nzPr
 
 	if (s_indexBuffer->HasLargeIndices())
 	{
-		offset += firstIndex*sizeof(nzUInt64);
+		offset += firstIndex*sizeof(nzUInt32);
 		type = GL_UNSIGNED_INT;
 	}
 	else
 	{
-		offset += firstIndex*sizeof(nzUInt32);
+		offset += firstIndex*sizeof(nzUInt16);
 		type = GL_UNSIGNED_SHORT;
 	}
 
@@ -290,7 +435,7 @@ void NzRenderer::DrawPrimitives(nzPrimitiveMode mode, unsigned int firstVertex, 
 
 	if (!EnsureStateUpdate())
 	{
-		NazaraError("Failed to update states");
+		NazaraError("Failed to update states: " + NzError::GetLastError());
 		return;
 	}
 
@@ -325,7 +470,7 @@ void NzRenderer::DrawPrimitivesInstanced(unsigned int instanceCount, nzPrimitive
 
 	if (instanceCount == 0)
 	{
-		NazaraError("Instance count must be over 0");
+		NazaraError("Instance count must be over zero");
 		return;
 	}
 
@@ -341,7 +486,7 @@ void NzRenderer::DrawPrimitivesInstanced(unsigned int instanceCount, nzPrimitive
 
 	if (!EnsureStateUpdate())
 	{
-		NazaraError("Failed to update states");
+		NazaraError("Failed to update states: " + NzError::GetLastError());
 		return;
 	}
 
@@ -370,6 +515,27 @@ void NzRenderer::Enable(nzRendererParameter parameter, bool enable)
 	s_states.parameters[parameter] = enable;
 }
 
+void NzRenderer::EndCondition()
+{
+	#ifdef NAZARA_DEBUG
+	if (NzContext::GetCurrent() == nullptr)
+	{
+		NazaraError("No active context");
+		return;
+	}
+	#endif
+
+	#if NAZARA_RENDERER_SAFE
+	if (!s_capabilities[nzRendererCap_ConditionalRendering])
+	{
+		NazaraError("Conditional rendering is not supported");
+		return;
+	}
+	#endif
+
+	glEndConditionalRender();
+}
+
 void NzRenderer::Flush()
 {
 	#ifdef NAZARA_DEBUG
@@ -381,6 +547,11 @@ void NzRenderer::Flush()
 	#endif
 
 	glFlush();
+}
+
+nzRendererComparison NzRenderer::GetDepthFunc()
+{
+	return s_states.depthFunc;
 }
 
 NzVertexBuffer* NzRenderer::GetInstanceBuffer()
@@ -431,6 +602,11 @@ nzUInt8 NzRenderer::GetMaxAnisotropyLevel()
 	return s_maxAnisotropyLevel;
 }
 
+unsigned int NzRenderer::GetMaxColorAttachments()
+{
+	return s_maxColorAttachments;
+}
+
 unsigned int NzRenderer::GetMaxRenderTargets()
 {
 	return s_maxRenderTarget;
@@ -456,25 +632,14 @@ const NzRenderStates& NzRenderer::GetRenderStates()
 	return s_states;
 }
 
-NzRectui NzRenderer::GetScissorRect()
+NzRecti NzRenderer::GetScissorRect()
 {
-	#ifdef NAZARA_DEBUG
-	if (NzContext::GetCurrent() == nullptr)
-	{
-		NazaraError("No active context");
-		return NzRectui();
-	}
-	#endif
-
-	GLint params[4];
-	glGetIntegerv(GL_SCISSOR_BOX, &params[0]);
-
-	return NzRectui(params[0], params[1], params[2], params[3]);
+	return NzOpenGL::GetCurrentScissorBox();
 }
 
-const NzShaderProgram* NzRenderer::GetShaderProgram()
+const NzShader* NzRenderer::GetShader()
 {
-	return s_program;
+	return s_shader;
 }
 
 const NzRenderTarget* NzRenderer::GetTarget()
@@ -482,20 +647,9 @@ const NzRenderTarget* NzRenderer::GetTarget()
 	return s_target;
 }
 
-NzRectui NzRenderer::GetViewport()
+NzRecti NzRenderer::GetViewport()
 {
-	#ifdef NAZARA_DEBUG
-	if (NzContext::GetCurrent() == nullptr)
-	{
-		NazaraError("No active context");
-		return NzRectui();
-	}
-	#endif
-
-	GLint params[4];
-	glGetIntegerv(GL_VIEWPORT, &params[0]);
-
-	return NzRectui(params[0], params[1], params[2], params[3]);
+	return NzOpenGL::GetCurrentViewport();
 }
 
 bool NzRenderer::HasCapability(nzRendererCap capability)
@@ -513,28 +667,32 @@ bool NzRenderer::HasCapability(nzRendererCap capability)
 
 bool NzRenderer::Initialize()
 {
-	if (s_moduleReferenceCounter++ != 0)
+	if (s_moduleReferenceCounter > 0)
+	{
+		s_moduleReferenceCounter++;
 		return true; // Déjà initialisé
+	}
 
 	// Initialisation des dépendances
 	if (!NzUtility::Initialize())
 	{
 		NazaraError("Failed to initialize Utility module");
-		Uninitialize();
-
 		return false;
 	}
 
+	s_moduleReferenceCounter++;
+
 	// Initialisation du module
+	NzCallOnExit onExit(NzRenderer::Uninitialize);
+
+	// Initialisation d'OpenGL
 	if (!NzOpenGL::Initialize())
 	{
 		NazaraError("Failed to initialize OpenGL");
-		Uninitialize();
-
 		return false;
 	}
 
-	NzBuffer::SetBufferFunction(nzBufferStorage_Hardware, HardwareBufferFunction);
+	NzBuffer::SetBufferFunction(nzBufferStorage_Hardware, [](NzBuffer* parent, nzBufferType type) -> NzAbstractBuffer* { return new NzHardwareBuffer(parent, type); } );
 
 	for (unsigned int i = 0; i <= nzMatrixType_Max; ++i)
 	{
@@ -546,6 +704,7 @@ bool NzRenderer::Initialize()
 
 	// Récupération des capacités d'OpenGL
 	s_capabilities[nzRendererCap_AnisotropicFilter] = NzOpenGL::IsSupported(nzOpenGLExtension_AnisotropicFilter);
+	s_capabilities[nzRendererCap_ConditionalRendering] = NzOpenGL::IsSupported(nzOpenGLExtension_ConditionalRender);
 	s_capabilities[nzRendererCap_FP64] = NzOpenGL::IsSupported(nzOpenGLExtension_FP64);
 	s_capabilities[nzRendererCap_HardwareBuffer] = true; // Natif depuis OpenGL 1.5
 	s_capabilities[nzRendererCap_Instancing] = NzOpenGL::IsSupported(nzOpenGLExtension_DrawInstanced) && NzOpenGL::IsSupported(nzOpenGLExtension_InstancedArray);
@@ -569,6 +728,16 @@ bool NzRenderer::Initialize()
 	}
 	else
 		s_maxAnisotropyLevel = 1;
+
+	if (s_capabilities[nzRendererCap_RenderTexture])
+	{
+		GLint maxColorAttachments;
+		glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &maxColorAttachments);
+
+		s_maxColorAttachments = static_cast<unsigned int>(maxColorAttachments);
+	}
+	else
+		s_maxColorAttachments = 1;
 
 	if (s_capabilities[nzRendererCap_MultipleRenderTargets])
 	{
@@ -597,14 +766,14 @@ bool NzRenderer::Initialize()
 	s_states = NzRenderStates();
 
 	s_indexBuffer = nullptr;
-	s_program = nullptr;
+	s_shader = nullptr;
 	s_target = nullptr;
+	s_targetSize.Set(0U);
 	s_textureUnits.resize(s_maxTextureUnit);
-	s_uniformTargetSizeUpdated = false;
 	s_useSamplerObjects = NzOpenGL::IsSupported(nzOpenGLExtension_SamplerObjects);
 	s_useVertexArrayObjects = NzOpenGL::IsSupported(nzOpenGLExtension_VertexArrayObjects);
+	s_updateFlags = Update_Matrices | Update_Shader | Update_VAO;
 	s_vertexBuffer = nullptr;
-	s_updateFlags = (Update_Matrices | Update_Program | Update_VAO);
 
 	s_fullscreenQuadBuffer.Reset(NzVertexDeclaration::Get(nzVertexLayout_XY), 4, nzBufferStorage_Hardware, nzBufferUsage_Static);
 
@@ -619,8 +788,6 @@ bool NzRenderer::Initialize()
 	if (!s_fullscreenQuadBuffer.Fill(vertices, 0, 4))
 	{
 		NazaraError("Failed to fill fullscreen quad buffer");
-		Uninitialize();
-
 		return false;
 	}
 
@@ -628,45 +795,137 @@ bool NzRenderer::Initialize()
 	{
 		try
 		{
+			NzErrorFlags errFlags(nzErrorFlag_ThrowException, true);
 			s_instanceBuffer.Reset(nullptr, NAZARA_RENDERER_INSTANCE_BUFFER_SIZE, nzBufferStorage_Hardware, nzBufferUsage_Dynamic);
 		}
 		catch (const std::exception& e)
 		{
 			s_capabilities[nzRendererCap_Instancing] = false;
-			NazaraError("Failed to create instancing buffer: " + NzString(e.what())); ///TODO: Noexcept
+
+			NzErrorFlags flags(nzErrorFlag_ThrowExceptionDisabled);
+			NazaraError("Failed to create instancing buffer: " + NzString(e.what()));
 		}
 	}
 
-	if (!NzMaterial::Initialize())
+	if (!NzShaderLibrary::Initialize())
 	{
-		NazaraError("Failed to initialize materials");
-		Uninitialize();
-
-		return false;
-	}
-
-	if (!NzShaderProgramManager::Initialize())
-	{
-		NazaraError("Failed to initialize shader program manager");
-		Uninitialize();
-
+		NazaraError("Failed to initialize shader library");
 		return false;
 	}
 
 	if (!NzTextureSampler::Initialize())
 	{
 		NazaraError("Failed to initialize texture sampler");
-		Uninitialize();
-
 		return false;
 	}
 
-	// Loaders
-	NzLoaders_Texture_Register();
+	if (!NzUberShaderLibrary::Initialize())
+	{
+		NazaraError("Failed to initialize uber shader library");
+		return false;
+	}
+
+	// Création du shader de Debug
+	std::unique_ptr<NzShader> shader(new NzShader);
+	shader->SetPersistent(false);
+
+	if (!shader->Create())
+	{
+		NazaraError("Failed to create debug shader");
+		return false;
+	}
+
+	const nzUInt8 coreFragmentShader[] = {
+		#include <Nazara/Renderer/Resources/Shaders/Debug/core.frag.h>
+	};
+
+	const nzUInt8 coreVertexShader[] = {
+		#include <Nazara/Renderer/Resources/Shaders/Debug/core.vert.h>
+	};
+
+	const nzUInt8 compatibilityFragmentShader[] = {
+		#include <Nazara/Renderer/Resources/Shaders/Debug/compatibility.frag.h>
+	};
+
+	const nzUInt8 compatibilityVertexShader[] = {
+		#include <Nazara/Renderer/Resources/Shaders/Debug/compatibility.vert.h>
+	};
+
+	const char* fragmentShader;
+	const char* vertexShader;
+	unsigned int fragmentShaderLength;
+	unsigned int vertexShaderLength;
+	if (NzOpenGL::GetGLSLVersion() >= 140)
+	{
+		fragmentShader = reinterpret_cast<const char*>(coreFragmentShader);
+		fragmentShaderLength = sizeof(coreFragmentShader);
+		vertexShader = reinterpret_cast<const char*>(coreVertexShader);
+		vertexShaderLength = sizeof(coreVertexShader);
+	}
+	else
+	{
+		fragmentShader = reinterpret_cast<const char*>(compatibilityFragmentShader);
+		fragmentShaderLength = sizeof(compatibilityFragmentShader);
+		vertexShader = reinterpret_cast<const char*>(compatibilityVertexShader);
+		vertexShaderLength = sizeof(compatibilityVertexShader);
+	}
+
+	if (!shader->AttachStageFromSource(nzShaderStage_Fragment, fragmentShader, fragmentShaderLength))
+	{
+		NazaraError("Failed to attach fragment stage");
+		return false;
+	}
+
+	if (!shader->AttachStageFromSource(nzShaderStage_Vertex, vertexShader, vertexShaderLength))
+	{
+		NazaraError("Failed to attach vertex stage");
+		return false;
+	}
+
+	if (!shader->Link())
+	{
+		NazaraError("Failed to link shader");
+		return false;
+	}
+
+	NzShaderLibrary::Register("DebugSimple", shader.get());
+	shader.release();
+
+	onExit.Reset();
 
 	NazaraNotice("Initialized: Renderer module");
-
 	return true;
+}
+
+bool NzRenderer::IsComponentTypeSupported(nzComponentType type)
+{
+	switch (type)
+	{
+		case nzComponentType_Color:
+		case nzComponentType_Float1:
+		case nzComponentType_Float2:
+		case nzComponentType_Float3:
+		case nzComponentType_Float4:
+			return true; // Supportés nativement
+
+		case nzComponentType_Double1:
+		case nzComponentType_Double2:
+		case nzComponentType_Double3:
+		case nzComponentType_Double4:
+			return glVertexAttribLPointer != nullptr; // Fonction requise pour envoyer des doubles
+
+		case nzComponentType_Int1:
+		case nzComponentType_Int2:
+		case nzComponentType_Int3:
+		case nzComponentType_Int4:
+			return glVertexAttribIPointer != nullptr; // Fonction requise pour envoyer des entiers
+
+		case nzComponentType_Quaternion:
+			return false;
+	}
+
+	NazaraError("Attribute type out of enum (0x" + NzString::Number(type, 16) + ')');
+	return false;
 }
 
 bool NzRenderer::IsEnabled(nzRendererParameter parameter)
@@ -772,17 +1031,17 @@ void NzRenderer::SetDepthFunc(nzRendererComparison compareFunc)
 	s_states.depthFunc = compareFunc;
 }
 
-void NzRenderer::SetFaceCulling(nzFaceCulling cullingMode)
+void NzRenderer::SetFaceCulling(nzFaceSide faceSide)
 {
 	#ifdef NAZARA_DEBUG
-	if (cullingMode > nzFaceCulling_Max)
+	if (faceSide > nzFaceSide_Max)
 	{
-		NazaraError("Face culling out of enum");
+		NazaraError("Face side out of enum");
 		return;
 	}
 	#endif
 
-	s_states.faceCulling = cullingMode;
+	s_states.faceCulling = faceSide;
 }
 
 void NzRenderer::SetFaceFilling(nzFaceFilling fillingMode)
@@ -844,30 +1103,53 @@ void NzRenderer::SetMatrix(nzMatrixType type, const NzMatrix4f& matrix)
 	// Invalidation des combinaisons
 	switch (type)
 	{
+		// Matrices de base
 		case nzMatrixType_Projection:
+			s_matrices[nzMatrixType_InvProjection].updated = false;
+			s_matrices[nzMatrixType_InvViewProj].updated = false;
+			s_matrices[nzMatrixType_InvWorldViewProj].updated = false;
 			s_matrices[nzMatrixType_ViewProj].updated = false;
 			s_matrices[nzMatrixType_WorldViewProj].updated = false;
 			break;
 
 		case nzMatrixType_View:
+			s_matrices[nzMatrixType_InvView].updated = false;
+			s_matrices[nzMatrixType_InvViewProj].updated = false;
+			s_matrices[nzMatrixType_InvWorld].updated = false;
+			s_matrices[nzMatrixType_InvWorldViewProj].updated = false;
 			s_matrices[nzMatrixType_ViewProj].updated = false;
 			s_matrices[nzMatrixType_World].updated = false;
 			s_matrices[nzMatrixType_WorldViewProj].updated = false;
 			break;
 
 		case nzMatrixType_World:
+			s_matrices[nzMatrixType_InvWorld].updated = false;
+			s_matrices[nzMatrixType_InvWorldView].updated = false;
+			s_matrices[nzMatrixType_InvWorldViewProj].updated = false;
 			s_matrices[nzMatrixType_WorldView].updated = false;
 			s_matrices[nzMatrixType_WorldViewProj].updated = false;
 			break;
 
+		// Matrices combinées
 		case nzMatrixType_ViewProj:
+			s_matrices[nzMatrixType_InvViewProj].updated = false;
 			break;
 
 		case nzMatrixType_WorldView:
+			s_matrices[nzMatrixType_InvWorldView].updated = false;
 			s_matrices[nzMatrixType_WorldViewProj].updated = false;
 			break;
 
 		case nzMatrixType_WorldViewProj:
+			s_matrices[nzMatrixType_InvWorldViewProj].updated = false;
+			break;
+
+		case nzMatrixType_InvProjection:
+		case nzMatrixType_InvView:
+		case nzMatrixType_InvViewProj:
+		case nzMatrixType_InvWorld:
+		case nzMatrixType_InvWorldView:
+		case nzMatrixType_InvWorldViewProj:
 			break;
 	}
 
@@ -892,54 +1174,32 @@ void NzRenderer::SetRenderStates(const NzRenderStates& states)
 	s_states = states;
 }
 
-void NzRenderer::SetScissorRect(const NzRectui& rect)
+void NzRenderer::SetScissorRect(const NzRecti& rect)
 {
-	#ifdef NAZARA_DEBUG
-	if (NzContext::GetCurrent() == nullptr)
-	{
-		NazaraError("No active context");
-		return;
-	}
-	#endif
-
-	unsigned int height = s_target->GetHeight();
-
-	#if NAZARA_RENDERER_SAFE
-	if (!s_target)
-	{
-		NazaraError("Renderer has no target");
-		return;
-	}
-
-	unsigned int width = s_target->GetWidth();
-	if (rect.x+rect.width > width || rect.y+rect.height > height)
-	{
-		NazaraError("Rectangle dimensions are out of bounds");
-		return;
-	}
-	#endif
-
-	glScissor(rect.x, height-rect.height-rect.y, rect.width, rect.height);
+	NzOpenGL::BindScissorBox(rect);
 }
 
-void NzRenderer::SetShaderProgram(const NzShaderProgram* program)
+void NzRenderer::SetShader(const NzShader* shader)
 {
 	#if NAZARA_RENDERER_SAFE
-	if (program && !program->IsCompiled())
+	if (shader)
 	{
-		NazaraError("Shader program is not compiled");
-		return;
+		if (!shader->IsValid() || !shader->IsLinked())
+		{
+			NazaraError("Invalid shader");
+			return;
+		}
 	}
 	#endif
 
-	if (s_program != program)
+	if (s_shader != shader)
 	{
-		s_program = program;
-		s_updateFlags |= Update_Program;
+		s_shader = shader;
+		s_updateFlags |= Update_Shader;
 	}
 }
 
-void NzRenderer::SetStencilCompareFunction(nzRendererComparison compareFunc)
+void NzRenderer::SetStencilCompareFunction(nzRendererComparison compareFunc, nzFaceSide faceSide)
 {
 	#ifdef NAZARA_DEBUG
 	if (compareFunc > nzRendererComparison_Max)
@@ -947,12 +1207,32 @@ void NzRenderer::SetStencilCompareFunction(nzRendererComparison compareFunc)
 		NazaraError("Renderer comparison out of enum");
 		return;
 	}
+
+	if (faceSide > nzFaceSide_Max)
+	{
+		NazaraError("Face side out of enum");
+		return;
+	}
 	#endif
 
-	s_states.stencilCompare = compareFunc;
+	switch (faceSide)
+	{
+		case nzFaceSide_Back:
+			s_states.backFace.stencilCompare = compareFunc;
+			break;
+
+		case nzFaceSide_Front:
+			s_states.frontFace.stencilCompare = compareFunc;
+			break;
+
+		case nzFaceSide_FrontAndBack:
+			s_states.backFace.stencilCompare = compareFunc;
+			s_states.frontFace.stencilCompare = compareFunc;
+			break;
+	}
 }
 
-void NzRenderer::SetStencilFailOperation(nzStencilOperation failOperation)
+void NzRenderer::SetStencilFailOperation(nzStencilOperation failOperation, nzFaceSide faceSide)
 {
 	#ifdef NAZARA_DEBUG
 	if (failOperation > nzStencilOperation_Max)
@@ -960,17 +1240,59 @@ void NzRenderer::SetStencilFailOperation(nzStencilOperation failOperation)
 		NazaraError("Stencil fail operation out of enum");
 		return;
 	}
+
+	if (faceSide > nzFaceSide_Max)
+	{
+		NazaraError("Face side out of enum");
+		return;
+	}
 	#endif
 
-	s_states.stencilFail = failOperation;
+	switch (faceSide)
+	{
+		case nzFaceSide_Back:
+			s_states.backFace.stencilFail = failOperation;
+			break;
+
+		case nzFaceSide_Front:
+			s_states.frontFace.stencilFail = failOperation;
+			break;
+
+		case nzFaceSide_FrontAndBack:
+			s_states.backFace.stencilFail = failOperation;
+			s_states.frontFace.stencilFail = failOperation;
+			break;
+	}
 }
 
-void NzRenderer::SetStencilMask(nzUInt32 mask)
+void NzRenderer::SetStencilMask(nzUInt32 mask, nzFaceSide faceSide)
 {
-	s_states.stencilMask = mask;
+	#ifdef NAZARA_DEBUG
+	if (faceSide > nzFaceSide_Max)
+	{
+		NazaraError("Face side out of enum");
+		return;
+	}
+	#endif
+
+	switch (faceSide)
+	{
+		case nzFaceSide_Back:
+			s_states.backFace.stencilMask = mask;
+			break;
+
+		case nzFaceSide_Front:
+			s_states.frontFace.stencilMask = mask;
+			break;
+
+		case nzFaceSide_FrontAndBack:
+			s_states.backFace.stencilMask = mask;
+			s_states.frontFace.stencilMask = mask;
+			break;
+	}
 }
 
-void NzRenderer::SetStencilPassOperation(nzStencilOperation passOperation)
+void NzRenderer::SetStencilPassOperation(nzStencilOperation passOperation, nzFaceSide faceSide)
 {
 	#ifdef NAZARA_DEBUG
 	if (passOperation > nzStencilOperation_Max)
@@ -978,27 +1300,89 @@ void NzRenderer::SetStencilPassOperation(nzStencilOperation passOperation)
 		NazaraError("Stencil pass operation out of enum");
 		return;
 	}
-	#endif
 
-	s_states.stencilPass = passOperation;
-}
-
-void NzRenderer::SetStencilReferenceValue(unsigned int refValue)
-{
-	s_states.stencilReference = refValue;
-}
-
-void NzRenderer::SetStencilZFailOperation(nzStencilOperation zfailOperation)
-{
-	#ifdef NAZARA_DEBUG
-	if (zfailOperation > nzStencilOperation_Max)
+	if (faceSide > nzFaceSide_Max)
 	{
-		NazaraError("Stencil zfail operation out of enum");
+		NazaraError("Face side out of enum");
 		return;
 	}
 	#endif
 
-	s_states.stencilZFail = zfailOperation;
+	switch (faceSide)
+	{
+		case nzFaceSide_Back:
+			s_states.backFace.stencilPass = passOperation;
+			break;
+
+		case nzFaceSide_Front:
+			s_states.frontFace.stencilPass = passOperation;
+			break;
+
+		case nzFaceSide_FrontAndBack:
+			s_states.backFace.stencilPass = passOperation;
+			s_states.frontFace.stencilPass = passOperation;
+			break;
+	}
+}
+
+void NzRenderer::SetStencilReferenceValue(unsigned int refValue, nzFaceSide faceSide)
+{
+	#ifdef NAZARA_DEBUG
+	if (faceSide > nzFaceSide_Max)
+	{
+		NazaraError("Face side out of enum");
+		return;
+	}
+	#endif
+
+	switch (faceSide)
+	{
+		case nzFaceSide_Back:
+			s_states.backFace.stencilReference = refValue;
+			break;
+
+		case nzFaceSide_Front:
+			s_states.frontFace.stencilReference = refValue;
+			break;
+
+		case nzFaceSide_FrontAndBack:
+			s_states.backFace.stencilReference = refValue;
+			s_states.frontFace.stencilReference = refValue;
+			break;
+	}
+}
+
+void NzRenderer::SetStencilZFailOperation(nzStencilOperation zfailOperation, nzFaceSide faceSide)
+{
+	#ifdef NAZARA_DEBUG
+	if (zfailOperation > nzStencilOperation_Max)
+	{
+		NazaraError("Stencil pass operation out of enum");
+		return;
+	}
+
+	if (faceSide > nzFaceSide_Max)
+	{
+		NazaraError("Face side out of enum");
+		return;
+	}
+	#endif
+
+	switch (faceSide)
+	{
+		case nzFaceSide_Back:
+			s_states.backFace.stencilZFail = zfailOperation;
+			break;
+
+		case nzFaceSide_Front:
+			s_states.frontFace.stencilZFail = zfailOperation;
+			break;
+
+		case nzFaceSide_FrontAndBack:
+			s_states.backFace.stencilZFail = zfailOperation;
+			s_states.frontFace.stencilZFail = zfailOperation;
+			break;
+	}
 }
 
 bool NzRenderer::SetTarget(const NzRenderTarget* target)
@@ -1031,10 +1415,9 @@ bool NzRenderer::SetTarget(const NzRenderTarget* target)
 		}
 
 		s_target = target;
-		s_targetSize.Set(target->GetWidth(), target->GetHeight());
-
-		s_uniformTargetSizeUpdated = false;
 	}
+
+	NzOpenGL::SetTarget(s_target);
 
 	return true;
 }
@@ -1052,7 +1435,6 @@ void NzRenderer::SetTexture(nzUInt8 unit, const NzTexture* texture)
 	if (s_textureUnits[unit].texture != texture)
 	{
 		s_textureUnits[unit].texture = texture;
-		s_textureUnits[unit].textureUpdated = false;
 
 		if (texture)
 		{
@@ -1060,7 +1442,7 @@ void NzRenderer::SetTexture(nzUInt8 unit, const NzTexture* texture)
 				s_textureUnits[unit].samplerUpdated = false;
 		}
 
-		s_dirtyTextureUnits.insert(unit);
+		s_dirtyTextureUnits.push_back(unit);
 		s_updateFlags |= Update_Textures;
 	}
 }
@@ -1081,7 +1463,7 @@ void NzRenderer::SetTextureSampler(nzUInt8 unit, const NzTextureSampler& sampler
 	if (s_textureUnits[unit].texture)
 		s_textureUnits[unit].sampler.UseMipmaps(s_textureUnits[unit].texture->HasMipmaps());
 
-	s_dirtyTextureUnits.insert(unit);
+	s_dirtyTextureUnits.push_back(unit);
 	s_updateFlags |= Update_Textures;
 }
 
@@ -1102,35 +1484,9 @@ void NzRenderer::SetVertexBuffer(const NzVertexBuffer* vertexBuffer)
 	}
 }
 
-void NzRenderer::SetViewport(const NzRectui& viewport)
+void NzRenderer::SetViewport(const NzRecti& viewport)
 {
-	#ifdef NAZARA_DEBUG
-	if (NzContext::GetCurrent() == nullptr)
-	{
-		NazaraError("No active context");
-		return;
-	}
-	#endif
-
-	unsigned int height = s_target->GetHeight();
-
-	#if NAZARA_RENDERER_SAFE
-	if (!s_target)
-	{
-		NazaraError("Renderer has no target");
-		return;
-	}
-
-	unsigned int width = s_target->GetWidth();
-	if (viewport.x+viewport.width > width || viewport.y+viewport.height > height)
-	{
-		NazaraError("Rectangle dimensions are out of bounds (" + NzString::Number(viewport.x+viewport.width) + ", " + NzString::Number(viewport.y+viewport.height) + " > "
-		                                                       + NzString::Number(width) + ", " + NzString::Number(height) + ")");
-		return;
-	}
-	#endif
-
-	glViewport(viewport.x, height-viewport.height-viewport.y, viewport.width, viewport.height);
+	NzOpenGL::BindViewport(viewport);
 }
 
 void NzRenderer::Uninitialize()
@@ -1147,15 +1503,14 @@ void NzRenderer::Uninitialize()
 	// Libération du module
 	s_moduleReferenceCounter = 0;
 
-	s_textureUnits.clear();
+	NzShaderLibrary::Unregister("DebugSimple");
 
-	// Loaders
-	NzLoaders_Texture_Unregister();
-
+	NzUberShaderLibrary::Uninitialize();
 	NzTextureSampler::Uninitialize();
-	NzShaderProgramManager::Uninitialize();
-	NzMaterial::Uninitialize();
+	NzShaderLibrary::Uninitialize();
 	NzDebugDrawer::Uninitialize();
+
+	s_textureUnits.clear();
 
 	// Libération des buffers
 	s_fullscreenQuadBuffer.Reset();
@@ -1164,12 +1519,29 @@ void NzRenderer::Uninitialize()
 	// Libération des VAOs
 	for (auto& pair : s_vaos)
 	{
+		const NzContext* context = pair.first;
+
 		for (auto& pair2 : pair.second)
 		{
-			GLuint vao = static_cast<GLuint>(pair2.second);
-			glDeleteVertexArrays(1, &vao);
+			const VAO_Key& key = pair2.first;
+			const NzIndexBuffer* indexBuffer = std::get<0>(key);
+			const NzVertexBuffer* vertexBuffer = std::get<1>(key);
+			const NzVertexDeclaration* vertexDeclaration = std::get<2>(key);
+			const NzVertexDeclaration* instancingDeclaration = std::get<3>(key);
+
+			if (indexBuffer)
+				indexBuffer->RemoveResourceListener(&s_listener);
+
+			vertexBuffer->RemoveResourceListener(&s_listener);
+			vertexDeclaration->RemoveResourceListener(&s_listener);
+
+			if (instancingDeclaration)
+				instancingDeclaration->RemoveResourceListener(&s_listener);
+
+			NzOpenGL::DeleteVertexArray(context, pair2.second);
 		}
 	}
+
 	s_vaos.clear();
 
 	NzOpenGL::Uninitialize();
@@ -1191,6 +1563,9 @@ void NzRenderer::EnableInstancing(bool instancing)
 
 bool NzRenderer::EnsureStateUpdate()
 {
+	// Toutes les erreurs sont silencieuses car l'erreur est gérée par la fonction appelante
+	NzErrorFlags flags(nzErrorFlag_Silent | nzErrorFlag_ThrowExceptionDisabled);
+
 	#ifdef NAZARA_DEBUG
 	if (NzContext::GetCurrent() == nullptr)
 	{
@@ -1200,50 +1575,63 @@ bool NzRenderer::EnsureStateUpdate()
 	#endif
 
 	#if NAZARA_RENDERER_SAFE
-	if (!s_program)
+	if (!s_shader)
 	{
-		NazaraError("No shader program");
+		NazaraError("No shader");
+		return false;
+	}
+
+	if (!s_target)
+	{
+		NazaraError("No target");
 		return false;
 	}
 	#endif
 
-	NzAbstractShaderProgram* programImpl = s_program->m_impl;
-	programImpl->Bind(); // Active le programme si ce n'est pas déjà le cas
+	s_target->EnsureTargetUpdated();
+
+	s_shader->Bind(); // Active le programme si ce n'est pas déjà le cas
 
 	// Si le programme a été changé depuis la dernière fois
-	if (s_updateFlags & Update_Program)
+	if (s_updateFlags & Update_Shader)
 	{
 		// Récupération des indices des variables uniformes (-1 si la variable n'existe pas)
-		s_matrices[nzMatrixType_Projection].location = programImpl->GetUniformLocation(nzShaderUniform_ProjMatrix);
-		s_matrices[nzMatrixType_View].location = programImpl->GetUniformLocation(nzShaderUniform_ViewMatrix);
-		s_matrices[nzMatrixType_World].location = programImpl->GetUniformLocation(nzShaderUniform_WorldMatrix);
+		s_matrices[nzMatrixType_Projection].location = s_shader->GetUniformLocation(nzShaderUniform_ProjMatrix);
+		s_matrices[nzMatrixType_View].location = s_shader->GetUniformLocation(nzShaderUniform_ViewMatrix);
+		s_matrices[nzMatrixType_World].location = s_shader->GetUniformLocation(nzShaderUniform_WorldMatrix);
 
-		s_matrices[nzMatrixType_ViewProj].location = programImpl->GetUniformLocation(nzShaderUniform_ViewProjMatrix);
-		s_matrices[nzMatrixType_WorldView].location = programImpl->GetUniformLocation(nzShaderUniform_WorldViewMatrix);
-		s_matrices[nzMatrixType_WorldViewProj].location = programImpl->GetUniformLocation(nzShaderUniform_WorldViewProjMatrix);
+		s_matrices[nzMatrixType_ViewProj].location = s_shader->GetUniformLocation(nzShaderUniform_ViewProjMatrix);
+		s_matrices[nzMatrixType_WorldView].location = s_shader->GetUniformLocation(nzShaderUniform_WorldViewMatrix);
+		s_matrices[nzMatrixType_WorldViewProj].location = s_shader->GetUniformLocation(nzShaderUniform_WorldViewProjMatrix);
 
-		s_uniformTargetSizeUpdated = false;
+		s_matrices[nzMatrixType_InvProjection].location = s_shader->GetUniformLocation(nzShaderUniform_InvProjMatrix);
+		s_matrices[nzMatrixType_InvView].location = s_shader->GetUniformLocation(nzShaderUniform_InvViewMatrix);
+		s_matrices[nzMatrixType_InvViewProj].location = s_shader->GetUniformLocation(nzShaderUniform_InvViewProjMatrix);
+		s_matrices[nzMatrixType_InvWorld].location = s_shader->GetUniformLocation(nzShaderUniform_InvWorldMatrix);
+		s_matrices[nzMatrixType_InvWorldView].location = s_shader->GetUniformLocation(nzShaderUniform_InvWorldViewMatrix);
+		s_matrices[nzMatrixType_InvWorldViewProj].location = s_shader->GetUniformLocation(nzShaderUniform_InvWorldViewProjMatrix);
+
+		s_targetSize.Set(0U); // On force l'envoi des uniformes
 		s_updateFlags |= Update_Matrices; // Changement de programme, on renvoie toutes les matrices demandées
 
-		s_updateFlags &= ~Update_Program;
+		s_updateFlags &= ~Update_Shader;
 	}
 
-	programImpl->BindTextures();
-
 	// Envoi des uniformes liées au Renderer
-	if (!s_uniformTargetSizeUpdated)
+	NzVector2ui targetSize(s_target->GetWidth(), s_target->GetHeight());
+	if (s_targetSize != targetSize)
 	{
 		int location;
 
-		location = programImpl->GetUniformLocation(nzShaderUniform_InvTargetSize);
+		location = s_shader->GetUniformLocation(nzShaderUniform_InvTargetSize);
 		if (location != -1)
-			programImpl->SendVector(location, 1.f/NzVector2f(s_targetSize));
+			s_shader->SendVector(location, 1.f/NzVector2f(targetSize));
 
-		location = programImpl->GetUniformLocation(nzShaderUniform_TargetSize);
+		location = s_shader->GetUniformLocation(nzShaderUniform_TargetSize);
 		if (location != -1)
-			programImpl->SendVector(location, NzVector2f(s_targetSize));
+			s_shader->SendVector(location, NzVector2f(targetSize));
 
-		s_uniformTargetSizeUpdated = true;
+		s_targetSize.Set(targetSize);
 	}
 
 	if (s_updateFlags != Update_None)
@@ -1256,15 +1644,7 @@ bool NzRenderer::EnsureStateUpdate()
 				{
 					TextureUnit& unit = s_textureUnits[i];
 
-					if (!unit.textureUpdated)
-					{
-						NzOpenGL::BindTextureUnit(i);
-						unit.texture->Bind();
-
-						unit.textureUpdated = true;
-					}
-
-					if (!unit.samplerUpdated)
+					if (unit.texture && !unit.samplerUpdated)
 					{
 						unit.sampler.Bind(i);
 						unit.samplerUpdated = true;
@@ -1277,13 +1657,12 @@ bool NzRenderer::EnsureStateUpdate()
 				{
 					TextureUnit& unit = s_textureUnits[i];
 
-					NzOpenGL::BindTextureUnit(i);
-
-					unit.texture->Bind();
-					unit.textureUpdated = true;
-
-					unit.sampler.Apply(unit.texture);
-					unit.samplerUpdated = true;
+					if (unit.texture && !unit.samplerUpdated)
+					{
+						NzOpenGL::BindTextureUnit(i);
+						unit.sampler.Apply(unit.texture);
+						unit.samplerUpdated = true;
+					}
 				}
 			}
 
@@ -1301,7 +1680,7 @@ bool NzRenderer::EnsureStateUpdate()
 					if (!unit.updated)
 						UpdateMatrix(static_cast<nzMatrixType>(i));
 
-					programImpl->SendMatrix(unit.location, unit.matrix);
+					s_shader->SendMatrix(unit.location, unit.matrix);
 				}
 			}
 
@@ -1319,26 +1698,48 @@ bool NzRenderer::EnsureStateUpdate()
 			#endif
 
 			bool update;
+			VAO_Map::iterator vaoIt;
 
 			// Si les VAOs sont supportés, on entoure nos appels par ceux-ci
 			if (s_useVertexArrayObjects)
 			{
 				// Note: Les VAOs ne sont pas partagés entre les contextes, nous avons donc un tableau de VAOs par contexte
-				auto& vaos = s_vaos[NzContext::GetCurrent()];
+				const NzContext* context = NzContext::GetCurrent();
+
+				VAO_Map* vaos;
+				auto it = s_vaos.find(context);
+				if (it == s_vaos.end())
+				{
+					context->AddResourceListener(&s_listener, ResourceType_Context);
+					auto pair = s_vaos.insert(std::make_pair(context, Context_Map::mapped_type()));
+					vaos = &pair.first->second;
+				}
+				else
+					vaos = &it->second;
 
 				// Notre clé est composée de ce qui définit un VAO
-				VAO_Key key(s_indexBuffer, s_vertexBuffer, s_vertexBuffer->GetVertexDeclaration(), (s_instancing) ? s_instancingDeclaration : nullptr);
+				const NzVertexDeclaration* vertexDeclaration = s_vertexBuffer->GetVertexDeclaration();
+				const NzVertexDeclaration* instancingDeclaration = (s_instancing) ? s_instanceBuffer.GetVertexDeclaration() : nullptr;
+				VAO_Key key(s_indexBuffer, s_vertexBuffer, vertexDeclaration, instancingDeclaration);
 
 				// On recherche un VAO existant avec notre configuration
-				auto it = vaos.find(key);
-				if (it == vaos.end())
+				vaoIt = vaos->find(key);
+				if (vaoIt == vaos->end())
 				{
 					// On créé notre VAO
 					glGenVertexArrays(1, &s_currentVAO);
 					glBindVertexArray(s_currentVAO);
 
 					// On l'ajoute à notre liste
-					vaos.insert(std::make_pair(key, static_cast<unsigned int>(s_currentVAO)));
+					vaoIt = vaos->insert(std::make_pair(key, s_currentVAO)).first;
+					if (s_indexBuffer)
+						s_indexBuffer->AddResourceListener(&s_listener, ResourceType_IndexBuffer);
+
+					s_vertexBuffer->AddResourceListener(&s_listener, ResourceType_VertexBuffer);
+					vertexDeclaration->AddResourceListener(&s_listener, ResourceType_VertexDeclaration);
+
+					if (instancingDeclaration)
+						instancingDeclaration->AddResourceListener(&s_listener, ResourceType_VertexDeclaration);
 
 					// Et on indique qu'on veut le programmer
 					update = true;
@@ -1346,7 +1747,7 @@ bool NzRenderer::EnsureStateUpdate()
 				else
 				{
 					// Notre VAO existe déjà, il est donc inutile de le reprogrammer
-					s_currentVAO = it->second;
+					s_currentVAO = vaoIt->second;
 
 					update = false;
 				}
@@ -1354,73 +1755,126 @@ bool NzRenderer::EnsureStateUpdate()
 			else
 				update = true; // Fallback si les VAOs ne sont pas supportés
 
+			bool updateFailed = false;
+
 			if (update)
 			{
 				const NzVertexDeclaration* vertexDeclaration;
 				unsigned int bufferOffset;
 				unsigned int stride;
 
-				NzHardwareBuffer* vertexBufferImpl = static_cast<NzHardwareBuffer*>(s_vertexBuffer->GetBuffer()->GetImpl());
-				glBindBuffer(NzOpenGL::BufferTarget[nzBufferType_Vertex], vertexBufferImpl->GetOpenGLID());
-
-				bufferOffset = s_vertexBuffer->GetStartOffset();
-				vertexDeclaration = s_vertexBuffer->GetVertexDeclaration();
-				stride = vertexDeclaration->GetStride();
-				for (unsigned int i = nzAttributeUsage_FirstVertexData; i <= nzAttributeUsage_LastVertexData; ++i)
+				// Pour éviter la duplication de code, on va utiliser une astuce via une boucle for
+				for (unsigned int i = 0; i < (s_instancing ? 2 : 1); ++i)
 				{
-					nzAttributeType type;
-					bool enabled;
-					unsigned int offset;
-					vertexDeclaration->GetAttribute(static_cast<nzAttributeUsage>(i), &enabled, &type, &offset);
+					// Selon l'itération nous choisissons un buffer différent
+					const NzVertexBuffer* vertexBuffer = (i == 0) ? s_vertexBuffer : &s_instanceBuffer;
 
-					if (enabled)
-					{
-						glEnableVertexAttribArray(NzOpenGL::AttributeIndex[i]);
-						glVertexAttribPointer(NzOpenGL::AttributeIndex[i],
-						                      NzVertexDeclaration::GetAttributeSize(type),
-						                      NzOpenGL::AttributeType[type],
-						                      (type == nzAttributeType_Color) ? GL_TRUE : GL_FALSE,
-						                      stride,
-						                      reinterpret_cast<void*>(bufferOffset + offset));
-					}
-					else
-						glDisableVertexAttribArray(NzOpenGL::AttributeIndex[i]);
-				}
+					NzHardwareBuffer* vertexBufferImpl = static_cast<NzHardwareBuffer*>(vertexBuffer->GetBuffer()->GetImpl());
+					glBindBuffer(NzOpenGL::BufferTarget[nzBufferType_Vertex], vertexBufferImpl->GetOpenGLID());
 
-				if (s_instancing)
-				{
-					NzHardwareBuffer* instanceBufferImpl = static_cast<NzHardwareBuffer*>(s_instanceBuffer.GetBuffer()->GetImpl());
-					glBindBuffer(NzOpenGL::BufferTarget[nzBufferType_Vertex], instanceBufferImpl->GetOpenGLID());
-
-					bufferOffset = s_instanceBuffer.GetStartOffset();
-					vertexDeclaration = s_instanceBuffer.GetVertexDeclaration();
+					bufferOffset = vertexBuffer->GetStartOffset();
+					vertexDeclaration = vertexBuffer->GetVertexDeclaration();
 					stride = vertexDeclaration->GetStride();
-					for (unsigned int i = nzAttributeUsage_FirstInstanceData; i <= nzAttributeUsage_LastInstanceData; ++i)
+
+					// On définit les bornes (une fois de plus selon l'itération)
+					unsigned int start = (i == 0) ? nzVertexComponent_FirstVertexData : nzVertexComponent_FirstInstanceData;
+					unsigned int end = (i == 0) ? nzVertexComponent_LastVertexData : nzVertexComponent_LastInstanceData;
+					for (unsigned int j = start; j <= end; ++j)
 					{
-						nzAttributeType type;
+						nzComponentType type;
 						bool enabled;
 						unsigned int offset;
-						vertexDeclaration->GetAttribute(static_cast<nzAttributeUsage>(i), &enabled, &type, &offset);
+						vertexDeclaration->GetComponent(static_cast<nzVertexComponent>(j), &enabled, &type, &offset);
 
 						if (enabled)
 						{
-							glEnableVertexAttribArray(NzOpenGL::AttributeIndex[i]);
-							glVertexAttribPointer(NzOpenGL::AttributeIndex[i],
-												  NzVertexDeclaration::GetAttributeSize(type),
-												  NzOpenGL::AttributeType[type],
-												  (type == nzAttributeType_Color) ? GL_TRUE : GL_FALSE,
-												  stride,
-												  reinterpret_cast<void*>(bufferOffset + offset));
-							glVertexAttribDivisor(NzOpenGL::AttributeIndex[i], 1);
+							if (!IsComponentTypeSupported(type))
+							{
+								NazaraError("Invalid vertex declaration " + NzString::Pointer(vertexDeclaration) + ": Vertex component 0x" + NzString::Number(j, 16) + " (type: 0x" + NzString::Number(type, 16) + ") is not supported");
+								updateFailed = true;
+								break;
+							}
+
+							glEnableVertexAttribArray(NzOpenGL::VertexComponentIndex[j]);
+
+							switch (type)
+							{
+								case nzComponentType_Color:
+								{
+									glVertexAttribPointer(NzOpenGL::VertexComponentIndex[j],
+									                      NzUtility::ComponentCount[type],
+									                      NzOpenGL::ComponentType[type],
+									                      GL_TRUE,
+									                      stride,
+									                      reinterpret_cast<void*>(bufferOffset + offset));
+
+									break;
+								}
+
+								case nzComponentType_Double1:
+								case nzComponentType_Double2:
+								case nzComponentType_Double3:
+								case nzComponentType_Double4:
+								{
+									glVertexAttribLPointer(NzOpenGL::VertexComponentIndex[j],
+									                       NzUtility::ComponentCount[type],
+									                       NzOpenGL::ComponentType[type],
+									                       stride,
+									                       reinterpret_cast<void*>(bufferOffset + offset));
+
+									break;
+								}
+
+								case nzComponentType_Float1:
+								case nzComponentType_Float2:
+								case nzComponentType_Float3:
+								case nzComponentType_Float4:
+								{
+									glVertexAttribPointer(NzOpenGL::VertexComponentIndex[j],
+									                      NzUtility::ComponentCount[type],
+									                      NzOpenGL::ComponentType[type],
+									                      GL_FALSE,
+									                      stride,
+									                      reinterpret_cast<void*>(bufferOffset + offset));
+
+									break;
+								}
+
+								case nzComponentType_Int1:
+								case nzComponentType_Int2:
+								case nzComponentType_Int3:
+								case nzComponentType_Int4:
+								{
+									glVertexAttribIPointer(NzOpenGL::VertexComponentIndex[j],
+									                       NzUtility::ComponentCount[type],
+									                       NzOpenGL::ComponentType[type],
+									                       stride,
+									                       reinterpret_cast<void*>(bufferOffset + offset));
+
+									break;
+								}
+
+								default:
+								{
+									NazaraInternalError("Unsupported component type");
+									break;
+								}
+							}
+							// Les attributs d'instancing ont un diviseur spécifique (pour dépendre de l'instance en cours)
+							if (i == 1)
+								glVertexAttribDivisor(NzOpenGL::VertexComponentIndex[j], 1);
 						}
 						else
-							glDisableVertexAttribArray(NzOpenGL::AttributeIndex[i]);
+							glDisableVertexAttribArray(NzOpenGL::VertexComponentIndex[j]);
 					}
 				}
-				else
+
+				if (!s_instancing)
 				{
-					for (unsigned int i = nzAttributeUsage_FirstInstanceData; i <= nzAttributeUsage_LastInstanceData; ++i)
-						glDisableVertexAttribArray(NzOpenGL::AttributeIndex[i]);
+					// Je ne sais pas si c'est vraiment nécessaire de désactiver les attributs, sur mon ordinateur ça ne pose aucun problème
+					// mais dans le doute, je laisse ça comme ça.
+					for (unsigned int i = nzVertexComponent_FirstInstanceData; i <= nzVertexComponent_LastInstanceData; ++i)
+						glDisableVertexAttribArray(NzOpenGL::VertexComponentIndex[i]);
 				}
 
 				// Et on active l'index buffer (Un seul index buffer par VAO)
@@ -1431,21 +1885,30 @@ bool NzRenderer::EnsureStateUpdate()
 				}
 				else
 					glBindBuffer(NzOpenGL::BufferTarget[nzBufferType_Index], 0);
+
+				// On invalide les bindings des buffers (car nous les avons défini manuellement)
+				NzOpenGL::SetBuffer(nzBufferType_Index, 0);
+				NzOpenGL::SetBuffer(nzBufferType_Vertex, 0);
 			}
 
 			if (s_useVertexArrayObjects)
 			{
-				// Si nous venons de définir notre VAO, nous devons le débinder pour indiquer la fin de sa construction
 				if (update)
-					glBindVertexArray(0);
+				{
+					if (updateFailed)
+					{
+						// La création de notre VAO a échoué, libérons-le et marquons-le comme problématique
+						glDeleteVertexArrays(1, &vaoIt->second);
+						vaoIt->second = 0;
+						s_currentVAO = 0;
+					}
+					else
+						glBindVertexArray(0); // On marque la fin de la construction du VAO en le débindant
+				}
 
 				// En cas de non-support des VAOs, les attributs doivent être respécifiés à chaque frame
 				s_updateFlags &= ~Update_VAO;
 			}
-
-			// On invalide les bindings des buffers (pour éviter des bugs)
-			NzOpenGL::SetBuffer(nzBufferType_Index, 0);
-			NzOpenGL::SetBuffer(nzBufferType_Vertex, 0);
 		}
 
 		#ifdef NAZARA_DEBUG
@@ -1456,22 +1919,52 @@ bool NzRenderer::EnsureStateUpdate()
 
 	// On bind notre VAO
 	if (s_useVertexArrayObjects)
+	{
+		if (!s_currentVAO)
+		{
+			NazaraError("Failed to create VAO");
+			return false;
+		}
+
 		glBindVertexArray(s_currentVAO);
+	}
 
 	// On vérifie que les textures actuellement bindées sont bien nos textures
-	// Ceci à cause du fait qu'il est possible que des opérations sur les textures ait eu lieu
+	// Ceci à cause du fait qu'il est possible que des opérations sur les textures aient eu lieu
 	// entre le dernier rendu et maintenant
 	for (unsigned int i = 0; i < s_maxTextureUnit; ++i)
 	{
 		const NzTexture* texture = s_textureUnits[i].texture;
 		if (texture)
+		{
 			NzOpenGL::BindTexture(i, texture->GetType(), texture->GetOpenGLID());
+			texture->EnsureMipmapsUpdate();
+		}
 	}
 
-	// Et on termine par envoyer nos états à OpenGL
+	// Et on termine par envoyer nos états au driver
 	NzOpenGL::ApplyStates(s_states);
 
 	return true;
+}
+
+void NzRenderer::OnShaderReleased(const NzShader* shader)
+{
+	if (s_shader == shader)
+	{
+		s_shader = nullptr;
+		s_updateFlags |= Update_Shader;
+	}
+}
+
+void NzRenderer::OnTextureReleased(const NzTexture* texture)
+{
+	for (TextureUnit& unit : s_textureUnits)
+	{
+		if (unit.texture == texture)
+			unit.texture = nullptr;
+			// Inutile de changer le flag pour une texture désactivée
+	}
 }
 
 void NzRenderer::UpdateMatrix(nzMatrixType type)
@@ -1486,11 +1979,14 @@ void NzRenderer::UpdateMatrix(nzMatrixType type)
 
 	switch (type)
 	{
+		// Matrices de base
 		case nzMatrixType_Projection:
 		case nzMatrixType_View:
 		case nzMatrixType_World:
+			s_matrices[type].updated = true;
 			break;
 
+		// Matrices combinées
 		case nzMatrixType_ViewProj:
 			s_matrices[nzMatrixType_ViewProj].matrix = s_matrices[nzMatrixType_View].matrix * s_matrices[nzMatrixType_Projection].matrix;
 			s_matrices[nzMatrixType_ViewProj].updated = true;
@@ -1509,6 +2005,67 @@ void NzRenderer::UpdateMatrix(nzMatrixType type)
 			s_matrices[nzMatrixType_WorldViewProj].matrix = s_matrices[nzMatrixType_WorldView].matrix;
 			s_matrices[nzMatrixType_WorldViewProj].matrix.Concatenate(s_matrices[nzMatrixType_Projection].matrix);
 			s_matrices[nzMatrixType_WorldViewProj].updated = true;
+			break;
+
+		// Matrices inversées
+		case nzMatrixType_InvProjection:
+			if (!s_matrices[nzMatrixType_Projection].updated)
+				UpdateMatrix(nzMatrixType_Projection);
+
+			if (!s_matrices[nzMatrixType_Projection].matrix.GetInverse(&s_matrices[nzMatrixType_InvProjection].matrix))
+				NazaraWarning("Failed to inverse Proj matrix");
+
+			s_matrices[nzMatrixType_InvProjection].updated = true;
+			break;
+
+		case nzMatrixType_InvView:
+			if (!s_matrices[nzMatrixType_View].updated)
+				UpdateMatrix(nzMatrixType_View);
+
+			if (!s_matrices[nzMatrixType_View].matrix.GetInverse(&s_matrices[nzMatrixType_InvView].matrix))
+				NazaraWarning("Failed to inverse View matrix");
+
+			s_matrices[nzMatrixType_InvView].updated = true;
+			break;
+
+		case nzMatrixType_InvViewProj:
+			if (!s_matrices[nzMatrixType_ViewProj].updated)
+				UpdateMatrix(nzMatrixType_ViewProj);
+
+			if (!s_matrices[nzMatrixType_ViewProj].matrix.GetInverse(&s_matrices[nzMatrixType_InvViewProj].matrix))
+				NazaraWarning("Failed to inverse ViewProj matrix");
+
+			s_matrices[nzMatrixType_InvViewProj].updated = true;
+			break;
+
+		case nzMatrixType_InvWorld:
+			if (!s_matrices[nzMatrixType_World].updated)
+				UpdateMatrix(nzMatrixType_World);
+
+			if (!s_matrices[nzMatrixType_World].matrix.GetInverse(&s_matrices[nzMatrixType_InvWorld].matrix))
+				NazaraWarning("Failed to inverse World matrix");
+
+			s_matrices[nzMatrixType_InvWorld].updated = true;
+			break;
+
+		case nzMatrixType_InvWorldView:
+			if (!s_matrices[nzMatrixType_WorldView].updated)
+				UpdateMatrix(nzMatrixType_WorldView);
+
+			if (!s_matrices[nzMatrixType_WorldView].matrix.GetInverse(&s_matrices[nzMatrixType_InvWorldView].matrix))
+				NazaraWarning("Failed to inverse WorldView matrix");
+
+			s_matrices[nzMatrixType_InvWorldView].updated = true;
+			break;
+
+		case nzMatrixType_InvWorldViewProj:
+			if (!s_matrices[nzMatrixType_WorldViewProj].updated)
+				UpdateMatrix(nzMatrixType_WorldViewProj);
+
+			if (!s_matrices[nzMatrixType_WorldViewProj].matrix.GetInverse(&s_matrices[nzMatrixType_InvWorldViewProj].matrix))
+				NazaraWarning("Failed to inverse WorldViewProj matrix");
+
+			s_matrices[nzMatrixType_InvWorldViewProj].updated = true;
 			break;
 	}
 }

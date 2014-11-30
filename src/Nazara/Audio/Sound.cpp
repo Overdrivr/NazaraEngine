@@ -1,14 +1,15 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Audio module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Audio/Sound.hpp>
 #include <Nazara/Audio/Audio.hpp>
 #include <Nazara/Audio/Config.hpp>
+#include <Nazara/Audio/OpenAL.hpp>
 #include <Nazara/Core/Error.hpp>
 #include <cstring>
+#include <memory>
 #include <stdexcept>
-#include <AL/al.h>
 #include <Nazara/Audio/Debug.hpp>
 
 NzSound::NzSound(const NzSoundBuffer* soundBuffer)
@@ -42,7 +43,7 @@ nzUInt32 NzSound::GetDuration() const
 	#if NAZARA_AUDIO_SAFE
 	if (!m_buffer)
 	{
-		NazaraError("No sound buffer");
+		NazaraError("Invalid sound buffer");
 		return 0;
 	}
 	#endif
@@ -71,56 +72,63 @@ bool NzSound::IsLooping() const
 	return loop != AL_FALSE;
 }
 
+bool NzSound::IsPlayable() const
+{
+	return m_buffer != nullptr;
+}
+
+bool NzSound::IsPlaying() const
+{
+	return GetStatus() == nzSoundStatus_Playing;
+}
+
 bool NzSound::LoadFromFile(const NzString& filePath, const NzSoundBufferParams& params)
 {
-	NzSoundBuffer* buffer = new NzSoundBuffer;
+	std::unique_ptr<NzSoundBuffer> buffer(new NzSoundBuffer);
+	buffer->SetPersistent(false);
+
 	if (!buffer->LoadFromFile(filePath, params))
 	{
 		NazaraError("Failed to load buffer from file (" + filePath + ')');
-		delete buffer;
-
 		return false;
 	}
 
-	SetBuffer(buffer);
-
-	buffer->SetPersistent(false);
+	SetBuffer(buffer.get());
+	buffer.release();
 
 	return true;
 }
 
 bool NzSound::LoadFromMemory(const void* data, std::size_t size, const NzSoundBufferParams& params)
 {
-	NzSoundBuffer* buffer = new NzSoundBuffer;
+	std::unique_ptr<NzSoundBuffer> buffer(new NzSoundBuffer);
+	buffer->SetPersistent(false);
+
 	if (!buffer->LoadFromMemory(data, size, params))
 	{
 		NazaraError("Failed to load buffer from memory (" + NzString::Pointer(data) + ')');
-		delete buffer;
-
 		return false;
 	}
 
-	SetBuffer(buffer);
-
-	buffer->SetPersistent(false);
+	SetBuffer(buffer.get());
+	buffer.release();
 
 	return true;
 }
 
 bool NzSound::LoadFromStream(NzInputStream& stream, const NzSoundBufferParams& params)
 {
-	NzSoundBuffer* buffer = new NzSoundBuffer;
+	std::unique_ptr<NzSoundBuffer> buffer(new NzSoundBuffer);
+	buffer->SetPersistent(false);
+
 	if (!buffer->LoadFromStream(stream, params))
 	{
 		NazaraError("Failed to load buffer from stream");
-		delete buffer;
-
 		return false;
 	}
 
-	SetBuffer(buffer);
-
-	buffer->SetPersistent(false);
+	SetBuffer(buffer.get());
+	buffer.release();
 
 	return true;
 }
@@ -130,23 +138,29 @@ void NzSound::Pause()
 	alSourcePause(m_source);
 }
 
-bool NzSound::Play()
+void NzSound::Play()
 {
 	#if NAZARA_AUDIO_SAFE
 	if (!m_buffer)
 	{
-		NazaraError("No sound buffer to play");
-		return false;
+		NazaraError("Invalid sound buffer");
+		return;
 	}
 	#endif
 
 	alSourcePlay(m_source);
-
-	return true;
 }
 
 void NzSound::SetBuffer(const NzSoundBuffer* buffer)
 {
+	#if NAZARA_AUDIO_SAFE
+	if (buffer && !buffer->IsValid())
+	{
+		NazaraError("Invalid sound buffer");
+		return;
+	}
+	#endif
+
 	if (m_buffer == buffer)
 		return;
 

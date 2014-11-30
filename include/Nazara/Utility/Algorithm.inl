@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -28,9 +28,6 @@ NzBoxf NzComputeVerticesAABB(const T* vertices, unsigned int vertexCount)
 template<typename T>
 void NzTransformVertices(T* vertices, unsigned int vertexCount, const NzMatrix4f& matrix)
 {
-	if (matrix.IsIdentity())
-		return;
-
 	NzVector3f scale = matrix.GetScale();
 
 	for (unsigned int i = 0; i < vertexCount; ++i)

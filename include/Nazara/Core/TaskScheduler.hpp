@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -9,7 +9,6 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Core/Functor.hpp>
-#include <Nazara/Core/Thread.hpp>
 
 class NAZARA_API NzTaskScheduler
 {
@@ -22,6 +21,7 @@ class NAZARA_API NzTaskScheduler
 		template<typename C> static void AddTask(void (C::*function)(), C* object);
 		static unsigned int GetWorkerCount();
 		static bool Initialize();
+		static void Run();
 		static void SetWorkerCount(unsigned int workerCount);
 		static void Uninitialize();
 		static void WaitForTasks();

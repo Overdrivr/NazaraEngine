@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -13,15 +13,15 @@
 #include <Nazara/Core/String.hpp>
 
 #if NAZARA_CORE_THREADSAFE && NAZARA_THREADSAFETY_LOG
-#include <Nazara/Core/ThreadSafety.hpp>
+	#include <Nazara/Core/ThreadSafety.hpp>
 #else
-#include <Nazara/Core/ThreadSafetyOff.hpp>
+	#include <Nazara/Core/ThreadSafetyOff.hpp>
 #endif
 
 #ifdef NAZARA_DEBUG
-#define NazaraDebug(txt) NazaraNotice(txt)
+	#define NazaraDebug(txt) NazaraNotice(txt)
 #else
-#define NazaraDebug(txt)
+	#define NazaraDebug(txt)
 #endif
 
 #define NazaraLog NzLog::Instance()
@@ -43,6 +43,7 @@ class NAZARA_API NzLog : NzNonCopyable
 		void SetFile(const NzString& filePath);
 
 		void Write(const NzString& string);
+		void WriteError(nzErrorType type, const NzString& error);
 		void WriteError(nzErrorType type, const NzString& error, unsigned int line, const NzString& file, const NzString& func);
 
 		static NzLog* Instance();

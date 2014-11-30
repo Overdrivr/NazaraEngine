@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -135,7 +135,7 @@ bool operator>=(const NzThread::Id& lhs, const NzThread::Id& rhs)
 	return lhs.m_id >= rhs.m_id;
 }
 
-bool operator<<(std::ostream& o, const NzThread::Id& id)
+std::ostream& operator<<(std::ostream& o, const NzThread::Id& id)
 {
 	o << id.m_id;
 	return o;

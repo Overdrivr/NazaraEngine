@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -35,7 +35,7 @@ bool NzResourceLoader<Type, Parameters>::LoadFromFile(Type* resource, const NzSt
 	#endif
 
 	NzString path = NzFile::NormalizePath(filePath);
-	NzString ext = path.SubStringFrom('.', -1, true);
+	NzString ext = path.SubStringFrom('.', -1, true).ToLower();
 	if (ext.IsEmpty())
 	{
 		NazaraError("Failed to get file extension from \"" + filePath + '"');
@@ -109,7 +109,7 @@ bool NzResourceLoader<Type, Parameters>::LoadFromFile(Type* resource, const NzSt
 	if (found)
 		NazaraError("Failed to load file: all loaders failed");
 	else
-		NazaraError("Failed to load file: no loader found");
+		NazaraError("Failed to load file: no loader found for extension \"" + ext + '"');
 
 	return false;
 }

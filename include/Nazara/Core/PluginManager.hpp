@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -10,19 +10,23 @@
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Core/Enums.hpp>
 #include <Nazara/Core/String.hpp>
+#include <set>
+#include <unordered_map>
 
-class NzPluginManager
+class NzDynLib;
+
+class NAZARA_API NzPluginManager
 {
 	public:
 		NzPluginManager() = delete;
 		~NzPluginManager() = delete;
 
-		static bool AddDirectory(const NzString& directoryPath);
+		static void AddDirectory(const NzString& directoryPath);
 
 		static bool Initialize();
 
 		static bool Mount(nzPlugin plugin);
-		static bool Mount(const NzString& pluginPath);
+		static bool Mount(const NzString& pluginPath, bool appendExtension = true);
 
 		static void RemoveDirectory(const NzString& directoryPath);
 
@@ -30,6 +34,12 @@ class NzPluginManager
 		static void Unmount(const NzString& pluginPath);
 
 		static void Uninitialize();
+
+	private:
+		static std::set<NzString> s_directories;
+		static std::unordered_map<NzString, NzDynLib*> s_plugins;
+		static bool s_initialized;
+
 };
 
 #endif // NAZARA_PLUGINMANAGER_HPP

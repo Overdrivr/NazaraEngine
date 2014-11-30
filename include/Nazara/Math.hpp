@@ -1,9 +1,9 @@
-// This file was automatically generated on 09 Jun 2013 at 11:23:10
+// This file was automatically generated on 21 Feb 2014 at 18:17:18
 
 /*
 	Nazara Engine - Mathematics module
 
-	Copyright (C) 2013 Jérôme "Lynix" Leclercq (Lynix680@gmail.com)
+	Copyright (C) 2014 Jérôme "Lynix" Leclercq (Lynix680@gmail.com)
 	                   Rémi "overdrivr" Bèges (remi.beges@laposte.net)
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -30,7 +30,7 @@
 #ifndef NAZARA_GLOBAL_MATH_HPP
 #define NAZARA_GLOBAL_MATH_HPP
 
-#include <Nazara/Math/Basic.hpp>
+#include <Nazara/Math/Algorithm.hpp>
 #include <Nazara/Math/BoundingVolume.hpp>
 #include <Nazara/Math/Box.hpp>
 #include <Nazara/Math/Config.hpp>
@@ -41,6 +41,7 @@
 #include <Nazara/Math/OrientedBox.hpp>
 #include <Nazara/Math/Plane.hpp>
 #include <Nazara/Math/Quaternion.hpp>
+#include <Nazara/Math/Ray.hpp>
 #include <Nazara/Math/Rect.hpp>
 #include <Nazara/Math/Sphere.hpp>
 #include <Nazara/Math/Vector2.hpp>

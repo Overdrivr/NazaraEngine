@@ -1,13 +1,15 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Renderer/Context.hpp>
+#include <Nazara/Core/CallOnExit.hpp>
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Core/Log.hpp>
 #include <Nazara/Core/StringStream.hpp>
 #include <Nazara/Renderer/Config.hpp>
 #include <Nazara/Renderer/OpenGL.hpp>
+#include <memory>
 #include <vector>
 
 #if defined(NAZARA_PLATFORM_WINDOWS)
@@ -22,10 +24,8 @@
 
 namespace
 {
-	thread_local NzContext* currentContext = nullptr;
-	thread_local NzContext* threadContext = nullptr;
-
-	std::vector<NzContext*> contexts;
+	thread_local const NzContext* s_currentContext = nullptr;
+	thread_local const NzContext* s_threadContext = nullptr;
 
 	void CALLBACK DebugCallback(unsigned int source, unsigned int type, unsigned int id, unsigned int severity, int length, const char* message, const void* userParam)
 	{
@@ -141,26 +141,22 @@ bool NzContext::Create(const NzContextParameters& parameters)
 
 	m_parameters = parameters;
 	if (m_parameters.shared && !m_parameters.shareContext)
-		m_parameters.shareContext = s_reference;
+		m_parameters.shareContext = s_reference.get();
 
-	m_impl = new NzContextImpl;
-	if (!m_impl->Create(m_parameters))
+	std::unique_ptr<NzContextImpl> impl(new NzContextImpl);
+	if (!impl->Create(m_parameters))
 	{
 		NazaraError("Failed to create context implementation");
-		delete m_impl;
-		m_impl = nullptr;
-
 		return false;
 	}
+
+	m_impl = impl.release();
+
+	NzCallOnExit onExit([this] () { Destroy(); });
 
 	if (!SetActive(true))
 	{
 		NazaraError("Failed to activate context");
-
-		m_impl->Destroy();
-		delete m_impl;
-		m_impl = nullptr;
-
 		return false;
 	}
 
@@ -175,6 +171,8 @@ bool NzContext::Create(const NzContextParameters& parameters)
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		#endif
 	}
+
+	onExit.Reset();
 
 	NotifyCreated();
 
@@ -216,10 +214,10 @@ bool NzContext::IsActive() const
 	}
 	#endif
 
-	return currentContext == this;
+	return s_currentContext == this;
 }
 
-bool NzContext::SetActive(bool active)
+bool NzContext::SetActive(bool active) const
 {
 	#ifdef NAZARA_RENDERER_SAFE
 	if (!m_impl)
@@ -230,7 +228,7 @@ bool NzContext::SetActive(bool active)
 	#endif
 
 	// Si le contexte est déjà activé/désactivé
-	if ((currentContext == this) == active)
+	if ((s_currentContext == this) == active)
 		return true;
 
 	if (active)
@@ -238,17 +236,17 @@ bool NzContext::SetActive(bool active)
 		if (!m_impl->Activate())
 			return false;
 
-		currentContext = this;
+		s_currentContext = this;
 	}
 	else
 	{
 		if (!NzContextImpl::Desactivate())
 			return false;
 
-		currentContext = nullptr;
+		s_currentContext = nullptr;
 	}
 
-	NzOpenGL::OnContextChange(currentContext);
+	NzOpenGL::OnContextChanged(s_currentContext);
 
 	return true;
 }
@@ -274,25 +272,23 @@ void NzContext::SwapBuffers()
 
 bool NzContext::EnsureContext()
 {
-	if (!currentContext)
+	if (!s_currentContext)
 	{
-		if (!threadContext)
+		if (!s_threadContext)
 		{
-			NzContext* context = new NzContext;
+			std::unique_ptr<NzContext> context(new NzContext);
 			if (!context->Create())
 			{
 				NazaraError("Failed to create context");
-				delete context;
-
 				return false;
 			}
 
-			contexts.push_back(context);
+			s_threadContext = context.get();
 
-			threadContext = context;
+			s_contexts.emplace_back(std::move(context));
 		}
 
-		if (!threadContext->SetActive(true))
+		if (!s_threadContext->SetActive(true))
 		{
 			NazaraError("Failed to active thread context");
 			return false;
@@ -302,21 +298,21 @@ bool NzContext::EnsureContext()
 	return true;
 }
 
-NzContext* NzContext::GetCurrent()
+const NzContext* NzContext::GetCurrent()
 {
-	return currentContext;
+	return s_currentContext;
 }
 
-NzContext* NzContext::GetReference()
+const NzContext* NzContext::GetReference()
 {
-	return s_reference;
+	return s_reference.get();
 }
 
-NzContext* NzContext::GetThreadContext()
+const NzContext* NzContext::GetThreadContext()
 {
 	EnsureContext();
 
-	return threadContext;
+	return s_threadContext;
 }
 
 bool NzContext::Initialize()
@@ -324,32 +320,32 @@ bool NzContext::Initialize()
 	NzContextParameters parameters;
 	parameters.shared = false; // Difficile de partager le contexte de référence avec lui-même
 
-	s_reference = new NzContext;
-	if (!s_reference->Create(parameters))
+	std::unique_ptr<NzContext> reference(new NzContext);
+	if (!reference->Create(parameters))
 	{
-		delete s_reference;
-		s_reference = nullptr;
-
+		NazaraError("Failed to create reference context");
 		return false;
 	}
 
 	// Le contexte de référence doit rester désactivé pour le partage
-	s_reference->SetActive(false);
+	if (!reference->SetActive(false))
+	{
+		NazaraError("Failed to desactive reference context");
+		return false;
+	}
 
-	NzContextParameters::defaultShareContext = s_reference;
+	s_reference = std::move(reference);
 
+	// Le contexte de référence est partagé par défaut avec les autres contextes
+	NzContextParameters::defaultShareContext = s_reference.get();
 	return true;
 }
 
 void NzContext::Uninitialize()
 {
-	for (NzContext* context : contexts)
-		delete context;
-
-	contexts.clear(); // On supprime tous les contextes créés
-
-	delete s_reference;
-	s_reference = nullptr;
+	s_contexts.clear(); // On supprime tous les contextes créés
+	s_reference.reset();
 }
 
-NzContext* NzContext::s_reference = nullptr;
+std::unique_ptr<NzContext> NzContext::s_reference;
+std::vector<std::unique_ptr<NzContext>> NzContext::s_contexts;

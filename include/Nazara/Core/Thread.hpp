@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -54,7 +54,7 @@ class NAZARA_API NzThread::Id
 		NAZARA_API friend bool operator>(const Id& lhs, const Id& rhs);
 		NAZARA_API friend bool operator>=(const Id& lhs, const Id& rhs);
 
-		NAZARA_API friend bool operator<<(std::ostream& o, const Id& id);
+		NAZARA_API friend std::ostream& operator<<(std::ostream& o, const Id& id);
 
 	private:
 		Id(NzThreadImpl* thread);

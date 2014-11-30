@@ -1,13 +1,13 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Graphics/ForwardRenderQueue.hpp>
-#include <Nazara/Graphics/Camera.hpp>
+#include <Nazara/Graphics/AbstractViewer.hpp>
 #include <Nazara/Graphics/Light.hpp>
+#include <Nazara/Graphics/Material.hpp>
 #include <Nazara/Graphics/Model.hpp>
 #include <Nazara/Graphics/Sprite.hpp>
-#include <Nazara/Renderer/Material.hpp>
 #include <Nazara/Utility/SkeletalMesh.hpp>
 #include <Nazara/Utility/StaticMesh.hpp>
 #include <Nazara/Graphics/Debug.hpp>
@@ -16,9 +16,9 @@ namespace
 {
 	enum ResourceType
 	{
+		ResourceType_IndexBuffer,
 		ResourceType_Material,
-		ResourceType_SkeletalMesh,
-		ResourceType_StaticMesh
+		ResourceType_VertexBuffer
 	};
 }
 
@@ -53,7 +53,7 @@ void NzForwardRenderQueue::AddLight(const NzLight* light)
 	switch (light->GetLightType())
 	{
 		case nzLightType_Directional:
-			directionnalLights.push_back(light);
+			directionalLights.push_back(light);
 			break;
 
 		case nzLightType_Point:
@@ -68,107 +68,56 @@ void NzForwardRenderQueue::AddLight(const NzLight* light)
 	}
 }
 
-void NzForwardRenderQueue::AddModel(const NzModel* model)
+void NzForwardRenderQueue::AddMesh(const NzMaterial* material, const NzMeshData& meshData, const NzBoxf& meshAABB, const NzMatrix4f& transformMatrix)
 {
-	#if NAZARA_GRAPHICS_SAFE
-	if (!model)
+	if (material->IsEnabled(nzRendererParameter_Blend))
 	{
-		NazaraError("Invalid model");
-		return;
+		unsigned int index = transparentModelData.size();
+		transparentModelData.resize(index+1);
+
+		TransparentModelData& data = transparentModelData.back();
+		data.boundingSphere = NzSpheref(transformMatrix.GetTranslation() + meshAABB.GetCenter(), meshAABB.GetSquaredRadius());
+		data.material = material;
+		data.meshData = meshData;
+		data.transformMatrix = transformMatrix;
+
+		transparentModels.push_back(index);
 	}
-
-	if (!model->IsDrawable())
+	else
 	{
-		NazaraError("Model is not drawable");
-		return;
-	}
-	#endif
-
-	const NzMatrix4f& transformMatrix = model->GetTransformMatrix();
-
-	NzMesh* mesh = model->GetMesh();
-	unsigned int submeshCount = mesh->GetSubMeshCount();
-
-	for (unsigned int i = 0; i < submeshCount; ++i)
-	{
-		NzSubMesh* subMesh = mesh->GetSubMesh(i);
-		NzMaterial* material = model->GetMaterial(subMesh->GetMaterialIndex());
-
-		switch (subMesh->GetAnimationType())
+		ModelBatches::iterator it = opaqueModels.find(material);
+		if (it == opaqueModels.end())
 		{
-			case nzAnimationType_Skeletal:
-			{
-				///TODO
-				/*
-				** Il y a ici deux choses importantes à gérer:
-				** -Pour commencer, la mise en cache de std::vector suffisamment grands pour contenir le résultat du skinning
-				**  l'objectif ici est d'éviter une allocation à chaque frame, donc de réutiliser un tableau existant
-				**  Note: Il faudrait évaluer aussi la possibilité de conserver le buffer d'une frame à l'autre.
-				**        Ceci permettant de ne pas skinner inutilement ce qui ne bouge pas, ou de skinner partiellement un mesh.
-				**        Il faut cependant voir où stocker ce set de buffers, qui doit être communs à toutes les RQ d'une même scène.
-				**
-				** -Ensuite, la possibilité de regrouper les modèles skinnés identiques, une centaine de soldats marchant au pas
-				**  ne devrait requérir qu'un skinning.
-				*/
-				NazaraError("Skeletal mesh not supported yet, sorry");
-				break;
-			}
-
-			case nzAnimationType_Static:
-			{
-				NzStaticMesh* staticMesh = static_cast<NzStaticMesh*>(subMesh);
-				if (material->IsEnabled(nzRendererParameter_Blend))
-				{
-					unsigned int index = transparentStaticModels.size();
-					transparentStaticModels.resize(index+1);
-
-					TransparentStaticModel& data = transparentStaticModels.back();
-					data.boundingSphere = staticMesh->GetAABB().GetSquaredBoundingSphere();
-					data.material = material;
-					data.mesh = staticMesh;
-					data.transformMatrix = transformMatrix;
-
-					transparentsModels.push_back(std::make_pair(index, true));
-				}
-				else
-				{
-					auto pair = opaqueModels.insert(std::make_pair(material, BatchedModelContainer::mapped_type()));
-					if (pair.second)
-						material->AddResourceListener(this, ResourceType_Material);
-
-					bool& used = std::get<0>(pair.first->second);
-					bool& enableInstancing = std::get<1>(pair.first->second);
-
-					used = true;
-
-					auto& meshMap = std::get<3>(pair.first->second);
-
-					auto pair2 = meshMap.insert(std::make_pair(staticMesh, BatchedStaticMeshContainer::mapped_type()));
-					if (pair2.second)
-					{
-						staticMesh->AddResourceListener(this, ResourceType_StaticMesh);
-
-						NzSpheref& squaredBoundingSphere = pair2.first->second.first;
-						squaredBoundingSphere.Set(staticMesh->GetAABB().GetSquaredBoundingSphere());
-						///TODO: Écouter le StaticMesh pour repérer tout changement de géométrie
-					}
-
-					std::vector<StaticData>& staticDataContainer = pair2.first->second.second;
-
-					unsigned int instanceCount = staticDataContainer.size() + 1;
-
-					// As-t-on suffisamment d'instances pour que le coût d'utilisation de l'instancing soit payé ?
-					if (instanceCount >= NAZARA_GRAPHICS_INSTANCING_MIN_INSTANCES_COUNT)
-						enableInstancing = true; // Apparemment oui, activons l'instancing avec ce matériau
-
-					staticDataContainer.resize(instanceCount);
-					StaticData& data = staticDataContainer.back();
-					data.transformMatrix = transformMatrix;
-				}
-
-				break;
-			}
+			it = opaqueModels.insert(std::make_pair(material, ModelBatches::mapped_type())).first;
+			material->AddResourceListener(this, ResourceType_Material);
 		}
+
+		bool& used = std::get<0>(it->second);
+		bool& enableInstancing = std::get<1>(it->second);
+		MeshInstanceContainer& meshMap = std::get<2>(it->second);
+
+		used = true;
+
+		MeshInstanceContainer::iterator it2 = meshMap.find(meshData);
+		if (it2 == meshMap.end())
+		{
+			it2 = meshMap.insert(std::make_pair(meshData, MeshInstanceContainer::mapped_type())).first;
+
+			NzSpheref& squaredBoundingSphere = it2->second.first;
+			squaredBoundingSphere.Set(meshAABB.GetSquaredBoundingSphere());
+
+			if (meshData.indexBuffer)
+				meshData.indexBuffer->AddResourceListener(this, ResourceType_IndexBuffer);
+
+			meshData.vertexBuffer->AddResourceListener(this, ResourceType_VertexBuffer);
+		}
+
+		std::vector<NzMatrix4f>& instances = it2->second.second;
+		instances.push_back(transformMatrix);
+
+		// Avons-nous suffisamment d'instances pour que le coût d'utilisation de l'instancing soit payé ?
+		if (instances.size() >= NAZARA_GRAPHICS_INSTANCING_MIN_INSTANCES_COUNT)
+			enableInstancing = true; // Apparemment oui, activons l'instancing avec ce matériau
 	}
 }
 
@@ -180,6 +129,12 @@ void NzForwardRenderQueue::AddSprite(const NzSprite* sprite)
 		NazaraError("Invalid sprite");
 		return;
 	}
+
+	if (!sprite->IsDrawable())
+	{
+		NazaraError("Sprite is not drawable");
+		return;
+	}
 	#endif
 
 	sprites[sprite->GetMaterial()].push_back(sprite);
@@ -187,70 +142,91 @@ void NzForwardRenderQueue::AddSprite(const NzSprite* sprite)
 
 void NzForwardRenderQueue::Clear(bool fully)
 {
-	directionnalLights.clear();
+	directionalLights.clear();
 	lights.clear();
 	otherDrawables.clear();
-	transparentsModels.clear();
-	transparentSkeletalModels.clear();
-	transparentStaticModels.clear();
+	transparentModels.clear();
+	transparentModelData.clear();
 
 	if (fully)
 	{
+		for (auto& matIt : opaqueModels)
+		{
+			const NzMaterial* material = matIt.first;
+			material->RemoveResourceListener(this);
+
+			MeshInstanceContainer& instances = std::get<2>(matIt.second);
+			for (auto& instanceIt : instances)
+			{
+				const NzMeshData& renderData = instanceIt.first;
+
+				if (renderData.indexBuffer)
+					renderData.indexBuffer->RemoveResourceListener(this);
+
+				renderData.vertexBuffer->RemoveResourceListener(this);
+			}
+		}
 		opaqueModels.clear();
 		sprites.clear();
 	}
 }
 
-void NzForwardRenderQueue::Sort(const NzCamera& camera)
+void NzForwardRenderQueue::Sort(const NzAbstractViewer* viewer)
 {
-	struct TransparentModelComparator
+	NzPlanef nearPlane = viewer->GetFrustum().GetPlane(nzFrustumPlane_Near);
+	NzVector3f viewerNormal = viewer->GetForward();
+
+	std::sort(transparentModels.begin(), transparentModels.end(), [this, &nearPlane, &viewerNormal](unsigned int index1, unsigned int index2)
 	{
-		bool operator()(const std::pair<unsigned int, bool>& index1, const std::pair<unsigned int, bool>& index2)
-		{
-			const NzSpheref& sphere1 = (index1.second) ?
-			                     queue->transparentStaticModels[index1.first].boundingSphere :
-			                     queue->transparentSkeletalModels[index1.first].boundingSphere;
+		const NzSpheref& sphere1 = transparentModelData[index1].boundingSphere;
+		const NzSpheref& sphere2 = transparentModelData[index2].boundingSphere;
 
-			const NzSpheref& sphere2 = (index1.second) ?
-			                     queue->transparentStaticModels[index2.first].boundingSphere :
-			                     queue->transparentSkeletalModels[index2.first].boundingSphere;
+		NzVector3f position1 = sphere1.GetNegativeVertex(viewerNormal);
+		NzVector3f position2 = sphere2.GetNegativeVertex(viewerNormal);
 
-			NzVector3f position1 = sphere1.GetNegativeVertex(cameraNormal);
-			NzVector3f position2 = sphere2.GetNegativeVertex(cameraNormal);
-
-			return nearPlane.Distance(position1) < nearPlane.Distance(position2);
-		}
-
-		NzForwardRenderQueue* queue;
-		NzPlanef nearPlane;
-		NzVector3f cameraNormal;
-	};
-
-	TransparentModelComparator comparator {this, camera.GetFrustum().GetPlane(nzFrustumPlane_Near), camera.GetForward()};
-	std::sort(transparentsModels.begin(), transparentsModels.end(), comparator);
+		return nearPlane.Distance(position1) > nearPlane.Distance(position2);
+	});
 }
 
 bool NzForwardRenderQueue::OnResourceDestroy(const NzResource* resource, int index)
 {
 	switch (index)
 	{
+		case ResourceType_IndexBuffer:
+		{
+			for (auto& modelPair : opaqueModels)
+			{
+				MeshInstanceContainer& meshes = std::get<2>(modelPair.second);
+				for (auto it = meshes.begin(); it != meshes.end();)
+				{
+					const NzMeshData& renderData = it->first;
+					if (renderData.indexBuffer == resource)
+						it = meshes.erase(it);
+					else
+						++it;
+				}
+			}
+			break;
+		}
+
 		case ResourceType_Material:
 			opaqueModels.erase(static_cast<const NzMaterial*>(resource));
 			break;
 
-		case ResourceType_SkeletalMesh:
+		case ResourceType_VertexBuffer:
 		{
-			for (auto& pair : opaqueModels)
-				std::get<2>(pair.second).erase(static_cast<const NzSkeletalMesh*>(resource));
-
-			break;
-		}
-
-		case ResourceType_StaticMesh:
-		{
-			for (auto& pair : opaqueModels)
-				std::get<3>(pair.second).erase(static_cast<const NzStaticMesh*>(resource));
-
+			for (auto& modelPair : opaqueModels)
+			{
+				MeshInstanceContainer& meshes = std::get<2>(modelPair.second);
+				for (auto it = meshes.begin(); it != meshes.end();)
+				{
+					const NzMeshData& renderData = it->first;
+					if (renderData.vertexBuffer == resource)
+						it = meshes.erase(it);
+					else
+						++it;
+				}
+			}
 			break;
 		}
 	}
@@ -258,16 +234,74 @@ bool NzForwardRenderQueue::OnResourceDestroy(const NzResource* resource, int ind
 	return false; // Nous ne voulons plus recevoir d'évènement de cette ressource
 }
 
+void NzForwardRenderQueue::OnResourceReleased(const NzResource* resource, int index)
+{
+	// La ressource vient d'être libérée, nous ne pouvons donc plus utiliser la méthode traditionnelle de recherche
+	// des pointeurs stockés (À cause de la fonction de triage utilisant des spécificités des ressources)
+
+	switch (index)
+	{
+		case ResourceType_IndexBuffer:
+		{
+			for (auto& modelPair : opaqueModels)
+			{
+				MeshInstanceContainer& meshes = std::get<2>(modelPair.second);
+				for (auto it = meshes.begin(); it != meshes.end();)
+				{
+					const NzMeshData& renderData = it->first;
+					if (renderData.indexBuffer == resource)
+						it = meshes.erase(it);
+					else
+						++it;
+				}
+			}
+			break;
+		}
+
+		case ResourceType_Material:
+		{
+			for (auto it = opaqueModels.begin(); it != opaqueModels.end(); ++it)
+			{
+				if (it->first == resource)
+				{
+					opaqueModels.erase(it);
+					break;
+				}
+			}
+			break;
+		}
+
+		case ResourceType_VertexBuffer:
+		{
+			for (auto& modelPair : opaqueModels)
+			{
+				MeshInstanceContainer& meshes = std::get<2>(modelPair.second);
+				for (auto it = meshes.begin(); it != meshes.end();)
+				{
+					const NzMeshData& renderData = it->first;
+					if (renderData.vertexBuffer == resource)
+						it = meshes.erase(it);
+					else
+						++it;
+				}
+			}
+			break;
+		}
+	}
+}
+
 bool NzForwardRenderQueue::BatchedModelMaterialComparator::operator()(const NzMaterial* mat1, const NzMaterial* mat2)
 {
-	for (unsigned int i = 0; i <= nzShaderFlags_Max; ++i)
-	{
-		const NzShaderProgram* program1 = mat1->GetShaderProgram(nzShaderTarget_Model, i);
-		const NzShaderProgram* program2 = mat2->GetShaderProgram(nzShaderTarget_Model, i);
+	const NzUberShader* uberShader1 = mat1->GetShader();
+	const NzUberShader* uberShader2 = mat2->GetShader();
+	if (uberShader1 != uberShader2)
+		return uberShader1 < uberShader2;
 
-		if (program1 != program2)
-			return program1 < program2;
-	}
+	const NzShader* shader1 = mat1->GetShaderInstance()->GetShader();
+	const NzShader* shader2 = mat2->GetShaderInstance()->GetShader();
+
+	if (shader1 != shader2)
+		return shader1 < shader2;
 
 	const NzTexture* diffuseMap1 = mat1->GetDiffuseMap();
 	const NzTexture* diffuseMap2 = mat2->GetDiffuseMap();
@@ -279,14 +313,16 @@ bool NzForwardRenderQueue::BatchedModelMaterialComparator::operator()(const NzMa
 
 bool NzForwardRenderQueue::BatchedSpriteMaterialComparator::operator()(const NzMaterial* mat1, const NzMaterial* mat2)
 {
-	for (unsigned int i = 0; i <= nzShaderFlags_Max; ++i)
-	{
-		const NzShaderProgram* program1 = mat1->GetShaderProgram(nzShaderTarget_Sprite, i);
-		const NzShaderProgram* program2 = mat2->GetShaderProgram(nzShaderTarget_Sprite, i);
+	const NzUberShader* uberShader1 = mat1->GetShader();
+	const NzUberShader* uberShader2 = mat2->GetShader();
+	if (uberShader1 != uberShader2)
+		return uberShader1 < uberShader2;
 
-		if (program1 != program2)
-			return program1 < program2;
-	}
+	const NzShader* shader1 = mat1->GetShaderInstance()->GetShader();
+	const NzShader* shader2 = mat2->GetShaderInstance()->GetShader();
+
+	if (shader1 != shader2)
+		return shader1 < shader2;
 
 	const NzTexture* diffuseMap1 = mat1->GetDiffuseMap();
 	const NzTexture* diffuseMap2 = mat2->GetDiffuseMap();
@@ -296,38 +332,20 @@ bool NzForwardRenderQueue::BatchedSpriteMaterialComparator::operator()(const NzM
 	return mat1 < mat2;
 }
 
-bool NzForwardRenderQueue::BatchedSkeletalMeshComparator::operator()(const NzSkeletalMesh* subMesh1, const NzSkeletalMesh* subMesh2)
+bool NzForwardRenderQueue::MeshDataComparator::operator()(const NzMeshData& data1, const NzMeshData& data2)
 {
-	const NzIndexBuffer* iBuffer1 = subMesh1->GetIndexBuffer();
-	const NzBuffer* buffer1 = (iBuffer1) ? iBuffer1->GetBuffer() : nullptr;
+	const NzBuffer* buffer1;
+	const NzBuffer* buffer2;
 
-	const NzIndexBuffer* iBuffer2 = subMesh1->GetIndexBuffer();
-	const NzBuffer* buffer2 = (iBuffer2) ? iBuffer2->GetBuffer() : nullptr;
-
-	if (buffer1 == buffer2)
-		return subMesh1 < subMesh2;
-	else
-		return buffer2 < buffer2;
-}
-
-bool NzForwardRenderQueue::BatchedStaticMeshComparator::operator()(const NzStaticMesh* subMesh1, const NzStaticMesh* subMesh2)
-{
-	const NzIndexBuffer* iBuffer1 = subMesh1->GetIndexBuffer();
-	const NzBuffer* buffer1 = (iBuffer1) ? iBuffer1->GetBuffer() : nullptr;
-
-	const NzIndexBuffer* iBuffer2 = subMesh2->GetIndexBuffer();
-	const NzBuffer* buffer2 = (iBuffer2) ? iBuffer2->GetBuffer() : nullptr;
-
-	if (buffer1 == buffer2)
-	{
-		buffer1 = subMesh1->GetVertexBuffer()->GetBuffer();
-		buffer2 = subMesh2->GetVertexBuffer()->GetBuffer();
-
-		if (buffer1 == buffer2)
-			return subMesh1 < subMesh2;
-		else
-			return buffer1 < buffer2;
-	}
-	else
+	buffer1 = (data1.indexBuffer) ? data1.indexBuffer->GetBuffer() : nullptr;
+	buffer2 = (data2.indexBuffer) ? data2.indexBuffer->GetBuffer() : nullptr;
+	if (buffer1 != buffer2)
 		return buffer1 < buffer2;
+
+	buffer1 = data1.vertexBuffer->GetBuffer();
+	buffer2 = data2.vertexBuffer->GetBuffer();
+	if (buffer1 != buffer2)
+		return buffer1 < buffer2;
+
+	return data1.primitiveMode < data2.primitiveMode;
 }

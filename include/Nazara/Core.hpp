@@ -1,9 +1,9 @@
-// This file was automatically generated on 09 Jun 2013 at 11:23:10
+// This file was automatically generated on 11 Jul 2014 at 10:21:52
 
 /*
 	Nazara Engine - Core module
 
-	Copyright (C) 2013 Jérôme "Lynix" Leclercq (Lynix680@gmail.com)
+	Copyright (C) 2014 Jérôme "Lynix" Leclercq (Lynix680@gmail.com)
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy of
 	this software and associated documentation files (the "Software"), to deal in
@@ -31,6 +31,7 @@
 
 #include <Nazara/Core/AbstractHash.hpp>
 #include <Nazara/Core/ByteArray.hpp>
+#include <Nazara/Core/CallOnExit.hpp>
 #include <Nazara/Core/Clock.hpp>
 #include <Nazara/Core/Color.hpp>
 #include <Nazara/Core/ConditionVariable.hpp>
@@ -41,6 +42,7 @@
 #include <Nazara/Core/Endianness.hpp>
 #include <Nazara/Core/Enums.hpp>
 #include <Nazara/Core/Error.hpp>
+#include <Nazara/Core/ErrorFlags.hpp>
 #include <Nazara/Core/File.hpp>
 #include <Nazara/Core/Format.hpp>
 #include <Nazara/Core/Functor.hpp>
@@ -52,9 +54,14 @@
 #include <Nazara/Core/InputStream.hpp>
 #include <Nazara/Core/LockGuard.hpp>
 #include <Nazara/Core/Log.hpp>
+#include <Nazara/Core/MemoryHelper.hpp>
+#include <Nazara/Core/MemoryManager.hpp>
+#include <Nazara/Core/MemoryPool.hpp>
 #include <Nazara/Core/MemoryStream.hpp>
 #include <Nazara/Core/Mutex.hpp>
 #include <Nazara/Core/NonCopyable.hpp>
+#include <Nazara/Core/OffsetOf.hpp>
+#include <Nazara/Core/ParameterList.hpp>
 #include <Nazara/Core/PluginManager.hpp>
 #include <Nazara/Core/Primitive.hpp>
 #include <Nazara/Core/PrimitiveList.hpp>
@@ -63,6 +70,7 @@
 #include <Nazara/Core/ResourceLoader.hpp>
 #include <Nazara/Core/ResourceRef.hpp>
 #include <Nazara/Core/Semaphore.hpp>
+#include <Nazara/Core/SparsePtr.hpp>
 #include <Nazara/Core/Stream.hpp>
 #include <Nazara/Core/String.hpp>
 #include <Nazara/Core/StringStream.hpp>

@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -33,7 +33,10 @@ class NAZARA_API NzString : public NzHashable
 
 		NzString();
 		explicit NzString(char character);
-		explicit NzString(unsigned int length, char character = '\0');
+		NzString(unsigned int rep, char character);
+		NzString(unsigned int rep, const char* string);
+		NzString(unsigned int rep, const char* string, unsigned int length);
+		NzString(unsigned int rep, const NzString& string);
 		NzString(const char* string);
 		NzString(const char* string, unsigned int length);
 		NzString(const std::string& string);
@@ -123,6 +126,18 @@ class NAZARA_API NzString : public NzHashable
 
 		NzString& Reverse();
 		NzString Reversed() const;
+
+		NzString& Set(char character);
+		NzString& Set(unsigned int rep, char character);
+		NzString& Set(unsigned int rep, const char* string);
+		NzString& Set(unsigned int rep, const char* string, unsigned int length);
+		NzString& Set(unsigned int rep, const NzString& string);
+		NzString& Set(const char* string);
+		NzString& Set(const char* string, unsigned int length);
+		NzString& Set(const std::string& string);
+		NzString& Set(const NzString& string);
+		NzString& Set(NzString&& string) noexcept;
+		NzString& Set(SharedString* sharedString);
 
 		NzString Simplified(nzUInt32 flags = None) const;
 		NzString& Simplify(nzUInt32 flags = None);
@@ -310,7 +325,7 @@ class NAZARA_API NzString : public NzHashable
 		static const unsigned int npos;
 
 	private:
-		void EnsureOwnership();
+		void EnsureOwnership(bool discardContent = false);
 		bool FillHash(NzAbstractHash* hash) const;
 		void ReleaseString();
 

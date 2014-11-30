@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Mathematics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -6,6 +6,8 @@
 
 #ifndef NAZARA_MATRIX4_HPP
 #define NAZARA_MATRIX4_HPP
+
+///FIXME: Matrices column-major, difficile de bosser avec (Tout passer en row-major et transposer dans les shaders ?)
 
 #include <Nazara/Core/String.hpp>
 #include <Nazara/Math/Config.hpp>
@@ -38,12 +40,14 @@ class NzMatrix4
 		NzMatrix4& Concatenate(const NzMatrix4& matrix);
 		NzMatrix4& ConcatenateAffine(const NzMatrix4& matrix);
 
+		NzVector4<T> GetColumn(unsigned int column) const;
 		T GetDeterminant() const;
 		T GetDeterminantAffine() const;
 		bool GetInverse(NzMatrix4* dest) const;
 		bool GetInverseAffine(NzMatrix4* dest) const;
 		NzQuaternion<T> GetRotation() const;
 		//NzMatrix3 GetRotationMatrix() const;
+		NzVector4<T> GetRow(unsigned int row) const;
 		NzVector3<T> GetScale() const;
 		NzVector3<T> GetTranslation() const;
 		void GetTransposed(NzMatrix4* dest) const;
@@ -110,6 +114,8 @@ class NzMatrix4
 		bool operator==(const NzMatrix4& mat) const;
 		bool operator!=(const NzMatrix4& mat) const;
 
+		static NzMatrix4 Concatenate(const NzMatrix4& left, const NzMatrix4& right);
+		static NzMatrix4 ConcatenateAffine(const NzMatrix4& left, const NzMatrix4& right);
 		static NzMatrix4 Identity();
 		static NzMatrix4 LookAt(const NzVector3<T>& eye, const NzVector3<T>& target, const NzVector3<T>& up = NzVector3<T>::Up());
 		static NzMatrix4 Ortho(T left, T right, T top, T bottom, T zNear = -1.0, T zFar = 1.0);
@@ -122,12 +128,10 @@ class NzMatrix4
 		static NzMatrix4 ViewMatrix(const NzVector3<T>& translation, const NzQuaternion<T>& rotation);
 		static NzMatrix4 Zero();
 
-		private:
-			T m11, m12, m13, m14,
-			  m21, m22, m23, m24,
-			  m31, m32, m33, m34,
-			  m41, m42, m43, m44;
-			mutable bool m_isIdentity;
+		T m11, m12, m13, m14,
+		  m21, m22, m23, m24,
+		  m31, m32, m33, m34,
+		  m41, m42, m43, m44;
 };
 
 template<typename T> std::ostream& operator<<(std::ostream& out, const NzMatrix4<T>& matrix);

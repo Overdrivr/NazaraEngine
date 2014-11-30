@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -9,6 +9,7 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Core/Initializer.hpp>
+#include <Nazara/Utility/Enums.hpp>
 
 class NAZARA_API NzUtility
 {
@@ -21,6 +22,9 @@ class NAZARA_API NzUtility
 		static bool IsInitialized();
 
 		static void Uninitialize();
+
+		static unsigned int ComponentCount[nzComponentType_Max+1];
+		static std::size_t ComponentStride[nzComponentType_Max+1];
 
 	private:
 		static unsigned int s_moduleReferenceCounter;

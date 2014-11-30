@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -12,6 +12,7 @@
 #include <Nazara/Math/Matrix4.hpp>
 #include <Nazara/Math/Rect.hpp>
 #include <Nazara/Renderer/Enums.hpp>
+#include <Nazara/Renderer/GpuQuery.hpp>
 #include <Nazara/Renderer/RenderStates.hpp>
 #include <Nazara/Renderer/TextureSampler.hpp>
 #include <Nazara/Utility/Enums.hpp>
@@ -20,18 +21,22 @@
 class NzColor;
 class NzContext;
 class NzIndexBuffer;
-class NzMaterial;
 class NzRenderTarget;
-class NzShaderProgram;
+class NzShader;
+class NzTexture;
 class NzVertexBuffer;
 
 class NAZARA_API NzRenderer
 {
+	friend NzTexture;
+
 	public:
 		NzRenderer() = delete;
 		~NzRenderer() = delete;
 
-		static void Clear(nzUInt32 flags = nzRendererClear_Color | nzRendererClear_Depth);
+		static void BeginCondition(const NzGpuQuery& query, nzGpuQueryCondition condition);
+
+		static void Clear(nzUInt32 flags = nzRendererBuffer_Color | nzRendererBuffer_Depth);
 
 		static void DrawFullscreenQuad();
 		static void DrawIndexedPrimitives(nzPrimitiveMode mode, unsigned int firstIndex, unsigned int indexCount);
@@ -41,26 +46,31 @@ class NAZARA_API NzRenderer
 
 		static void Enable(nzRendererParameter parameter, bool enable);
 
+		static void EndCondition();
+
 		static void Flush();
 
+		static nzRendererComparison GetDepthFunc();
 		static NzVertexBuffer* GetInstanceBuffer();
 		static float GetLineWidth();
 		static NzMatrix4f GetMatrix(nzMatrixType type);
 		static nzUInt8 GetMaxAnisotropyLevel();
+		static unsigned int GetMaxColorAttachments();
 		static unsigned int GetMaxRenderTargets();
 		static unsigned int GetMaxTextureUnits();
 		static unsigned int GetMaxVertexAttribs();
 		static float GetPointSize();
 		static const NzRenderStates& GetRenderStates();
-		static NzRectui GetScissorRect();
-		static const NzShaderProgram* GetShaderProgram();
+		static NzRecti GetScissorRect();
+		static const NzShader* GetShader();
 		static const NzRenderTarget* GetTarget();
-		static NzRectui GetViewport();
+		static NzRecti GetViewport();
 
 		static bool HasCapability(nzRendererCap capability);
 
 		static bool Initialize();
 
+		static bool IsComponentTypeSupported(nzComponentType type);
 		static bool IsEnabled(nzRendererParameter parameter);
 		static bool IsInitialized();
 
@@ -70,32 +80,34 @@ class NAZARA_API NzRenderer
 		static void SetClearDepth(double depth);
 		static void SetClearStencil(unsigned int value);
 		static void SetDepthFunc(nzRendererComparison compareFunc);
-		static void SetFaceCulling(nzFaceCulling cullingMode);
+		static void SetFaceCulling(nzFaceSide faceSide);
 		static void SetFaceFilling(nzFaceFilling fillingMode);
 		static void SetIndexBuffer(const NzIndexBuffer* indexBuffer);
 		static void SetLineWidth(float size);
 		static void SetMatrix(nzMatrixType type, const NzMatrix4f& matrix);
 		static void SetPointSize(float size);
 		static void SetRenderStates(const NzRenderStates& states);
-		static void SetScissorRect(const NzRectui& viewport);
-		static void SetShaderProgram(const NzShaderProgram* shader);
-		static void SetStencilCompareFunction(nzRendererComparison compareFunc);
-		static void SetStencilFailOperation(nzStencilOperation failOperation);
-		static void SetStencilMask(nzUInt32 mask);
-		static void SetStencilPassOperation(nzStencilOperation passOperation);
-		static void SetStencilReferenceValue(unsigned int refValue);
-		static void SetStencilZFailOperation(nzStencilOperation zfailOperation);
+		static void SetScissorRect(const NzRecti& rect);
+		static void SetShader(const NzShader* shader);
+		static void SetStencilCompareFunction(nzRendererComparison compareFunc, nzFaceSide faceSide = nzFaceSide_FrontAndBack);
+		static void SetStencilFailOperation(nzStencilOperation failOperation, nzFaceSide faceSide = nzFaceSide_FrontAndBack);
+		static void SetStencilMask(nzUInt32 mask, nzFaceSide faceSide = nzFaceSide_FrontAndBack);
+		static void SetStencilPassOperation(nzStencilOperation passOperation, nzFaceSide faceSide = nzFaceSide_FrontAndBack);
+		static void SetStencilReferenceValue(unsigned int refValue, nzFaceSide faceSide = nzFaceSide_FrontAndBack);
+		static void SetStencilZFailOperation(nzStencilOperation zfailOperation, nzFaceSide faceSide = nzFaceSide_FrontAndBack);
 		static bool SetTarget(const NzRenderTarget* target);
 		static void SetTexture(nzUInt8 unit, const NzTexture* texture);
 		static void SetTextureSampler(nzUInt8 textureUnit, const NzTextureSampler& sampler);
 		static void SetVertexBuffer(const NzVertexBuffer* vertexBuffer);
-		static void SetViewport(const NzRectui& viewport);
+		static void SetViewport(const NzRecti& viewport);
 
 		static void Uninitialize();
 
 	private:
 		static void EnableInstancing(bool instancing);
 		static bool EnsureStateUpdate();
+		static void OnShaderReleased(const NzShader* shader);
+		static void OnTextureReleased(const NzTexture* texture);
 		static void UpdateMatrix(nzMatrixType type);
 
 		static unsigned int s_moduleReferenceCounter;

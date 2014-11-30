@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -6,6 +6,8 @@
 
 #ifndef NAZARA_HASHDIGEST_HPP
 #define NAZARA_HASHDIGEST_HPP
+
+///TODO: Remplacer par ByteArray
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Core/String.hpp>
@@ -28,7 +30,7 @@ class NAZARA_API NzHashDigest
 
 		NzString ToHex() const;
 
-		nzUInt8 operator[](unsigned short pos) const;
+		nzUInt8 operator[](unsigned int pos) const;
 
 		NzHashDigest& operator=(const NzHashDigest& rhs);
 		NzHashDigest& operator=(NzHashDigest&& rhs) noexcept;
@@ -45,7 +47,7 @@ class NAZARA_API NzHashDigest
 	private:
 		NzString m_hashName;
 		nzUInt8* m_digest;
-		unsigned short m_digestLength;
+		unsigned int m_digestLength;
 };
 
 #endif // NAZARA_HASHDIGEST_HPP

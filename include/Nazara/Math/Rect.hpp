@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Mathematics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -65,9 +65,13 @@ class NzRect
 
 		NzRect operator*(T scalar) const;
 		NzRect operator*(const NzVector2<T>& vec) const;
+		NzRect operator/(T scalar) const;
+		NzRect operator/(const NzVector2<T>& vec) const;
 
 		NzRect& operator*=(T scalar);
 		NzRect& operator*=(const NzVector2<T>& vec);
+		NzRect& operator/=(T scalar);
+		NzRect& operator/=(const NzVector2<T>& vec);
 
 		bool operator==(const NzRect& rect) const;
 		bool operator!=(const NzRect& rect) const;
@@ -85,6 +89,8 @@ typedef NzRect<double> NzRectd;
 typedef NzRect<float> NzRectf;
 typedef NzRect<int> NzRecti;
 typedef NzRect<unsigned int> NzRectui;
+typedef NzRect<nzInt32> NzRecti32;
+typedef NzRect<nzUInt32> NzRectui32;
 
 #include <Nazara/Math/Rect.inl>
 

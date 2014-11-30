@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -7,18 +7,13 @@
 #include <Nazara/Core/DynLib.hpp>
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Core/File.hpp>
-#include <list>
 #include <memory>
-#include <unordered_map>
 #include <Nazara/Core/Debug.hpp>
 
 namespace
 {
-	using PluginLoad = bool (*)();
+	using PluginLoad = int (*)();
 	using PluginUnload = void (*)();
-
-	std::list<NzString> s_directories;
-	std::unordered_map<NzString, NzDynLib*> s_plugins;
 
 	NzString s_pluginFiles[] =
 	{
@@ -27,28 +22,26 @@ namespace
 	};
 }
 
-bool NzPluginManager::AddDirectory(const NzString& directoryPath)
+void NzPluginManager::AddDirectory(const NzString& directoryPath)
 {
-	NzString path = NzFile::AbsolutePath(directoryPath);
-
-	if (!NzDirectory::Exists(path))
+	if (!Initialize())
 	{
-		NazaraWarning("Directory not existing: " + directoryPath);
-		return false;
+		NazaraError("Failed to initialize PluginManager");
+		return;
 	}
 
-	s_directories.push_back(path);
-
-	return true;
+	s_directories.insert(NzFile::AbsolutePath(directoryPath));
 }
 
 bool NzPluginManager::Initialize()
 {
-	s_directories.push_back(NzFile::AbsolutePath("."));
+	if (s_initialized)
+		return true;
 
-	NzString libDir = NzFile::AbsolutePath("lib");
-	if (NzDirectory::Exists(libDir))
-		s_directories.push_back(libDir);
+	s_initialized = true;
+
+	AddDirectory(".");
+	AddDirectory("plugins");
 
 	return true;
 }
@@ -58,10 +51,16 @@ bool NzPluginManager::Mount(nzPlugin plugin)
 	return Mount(s_pluginFiles[plugin]);
 }
 
-bool NzPluginManager::Mount(const NzString& pluginPath)
+bool NzPluginManager::Mount(const NzString& pluginPath, bool appendExtension)
 {
+	if (!Initialize())
+	{
+		NazaraError("Failed to initialize PluginManager");
+		return false;
+	}
+
 	NzString path = pluginPath;
-	if (!path.EndsWith(NAZARA_DYNLIB_EXTENSION))
+	if (appendExtension && !path.EndsWith(NAZARA_DYNLIB_EXTENSION))
 		path += NAZARA_DYNLIB_EXTENSION;
 
 	bool exists = false;
@@ -93,8 +92,8 @@ bool NzPluginManager::Mount(const NzString& pluginPath)
 		return false;
 	}
 
-	std::unique_ptr<NzDynLib> library(new NzDynLib(path));
-	if (!library->Load())
+	std::unique_ptr<NzDynLib> library(new NzDynLib);
+	if (!library->Load(path))
 	{
 		NazaraError("Failed to load plugin");
 		return false;
@@ -120,7 +119,13 @@ bool NzPluginManager::Mount(const NzString& pluginPath)
 
 void NzPluginManager::RemoveDirectory(const NzString& directoryPath)
 {
-	s_directories.remove(directoryPath);
+	if (!Initialize())
+	{
+		NazaraError("Failed to initialize PluginManager");
+		return;
+	}
+
+	s_directories.erase(NzFile::AbsolutePath(directoryPath));
 }
 
 void NzPluginManager::Unmount(nzPlugin plugin)
@@ -130,6 +135,12 @@ void NzPluginManager::Unmount(nzPlugin plugin)
 
 void NzPluginManager::Unmount(const NzString& pluginPath)
 {
+	if (!Initialize())
+	{
+		NazaraError("Failed to initialize PluginManager");
+		return;
+	}
+
 	auto it = s_plugins.find(pluginPath);
 	if (it == s_plugins.end())
 	{
@@ -142,12 +153,18 @@ void NzPluginManager::Unmount(const NzString& pluginPath)
 		func();
 
 	it->second->Unload();
+	delete it->second;
 
 	s_plugins.erase(it);
 }
 
 void NzPluginManager::Uninitialize()
 {
+	if (!s_initialized)
+		return;
+
+	s_initialized = false;
+
 	s_directories.clear();
 
 	for (auto& pair : s_plugins)
@@ -157,7 +174,12 @@ void NzPluginManager::Uninitialize()
 			func();
 
 		pair.second->Unload();
+		delete pair.second;
 	}
 
 	s_plugins.clear();
 }
+
+std::set<NzString> NzPluginManager::s_directories;
+std::unordered_map<NzString, NzDynLib*> NzPluginManager::s_plugins;
+bool NzPluginManager::s_initialized = false;

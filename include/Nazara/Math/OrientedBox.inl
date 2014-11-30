@@ -1,11 +1,13 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Mathematics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Core/StringStream.hpp>
-#include <Nazara/Math/Basic.hpp>
+#include <Nazara/Math/Algorithm.hpp>
 #include <cstring>
 #include <Nazara/Core/Debug.hpp>
+
+///DOC: Pour que les coins soient valides, la méthode Update doit être appelée
 
 #define F(a) static_cast<T>(a)
 
@@ -156,7 +158,7 @@ NzVector3<T>& NzOrientedBox<T>::operator()(unsigned int i)
 	}
 	#endif
 
-	return &m_corners[i];
+	return m_corners[i];
 }
 
 template<typename T>
@@ -173,7 +175,7 @@ NzVector3<T> NzOrientedBox<T>::operator()(unsigned int i) const
 	}
 	#endif
 
-	return &m_corners[i];
+	return m_corners[i];
 }
 
 template<typename T>

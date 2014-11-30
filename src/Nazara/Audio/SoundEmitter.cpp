@@ -1,12 +1,12 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Audio module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 // http://connect.creativelabs.com/openal/Documentation/OpenAL_Programmers_Guide.pdf
 
 #include <Nazara/Audio/SoundEmitter.hpp>
+#include <Nazara/Audio/OpenAL.hpp>
 #include <Nazara/Core/Error.hpp>
-#include <AL/al.h>
 #include <Nazara/Audio/Debug.hpp>
 
 NzSoundEmitter::NzSoundEmitter()
@@ -32,7 +32,7 @@ NzSoundEmitter::~NzSoundEmitter()
 
 void NzSoundEmitter::EnableSpatialization(bool spatialization)
 {
-	alSourcei(m_source, AL_SOURCE_RELATIVE, spatialization);
+	alSourcei(m_source, AL_SOURCE_RELATIVE, !spatialization);
 }
 
 float NzSoundEmitter::GetAttenuation() const
@@ -88,7 +88,7 @@ bool NzSoundEmitter::IsSpatialized() const
 	ALint relative;
 	alGetSourcei(m_source, AL_SOURCE_RELATIVE, &relative);
 
-	return relative != AL_FALSE;
+	return relative == AL_FALSE;
 }
 
 void NzSoundEmitter::SetAttenuation(float attenuation)

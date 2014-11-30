@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -136,7 +136,7 @@ namespace
 		 * On little-endian machines, we can process properly aligned
 		 * data without copying it.
 		 */
-		if (!(data - static_cast<const nzUInt8*>(nullptr)) & 3)
+		if (!((data - static_cast<const nzUInt8*>(nullptr)) & 3))
 		{
 			/* data are properly aligned */
 			X = reinterpret_cast<const nzUInt32*>(data);

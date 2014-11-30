@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -20,7 +20,9 @@ class NAZARA_API NzStaticMesh final : public NzSubMesh, NzResourceListener
 {
 	public:
 		NzStaticMesh(const NzMesh* parent);
-		virtual ~NzStaticMesh();
+		~NzStaticMesh();
+
+		void Center();
 
 		bool Create(NzVertexBuffer* vertexBuffer);
 		void Destroy();
@@ -41,8 +43,6 @@ class NAZARA_API NzStaticMesh final : public NzSubMesh, NzResourceListener
 		void SetIndexBuffer(const NzIndexBuffer* indexBuffer);
 
 	private:
-		void OnResourceReleased(const NzResource* resource, int index) override;
-
 		NzBoxf m_aabb;
 		NzIndexBufferConstRef m_indexBuffer = nullptr;
 		NzVertexBufferRef m_vertexBuffer = nullptr;

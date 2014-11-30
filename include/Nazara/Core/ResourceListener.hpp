@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -19,6 +19,7 @@ class NAZARA_API NzResourceListener
 
 		virtual bool OnResourceCreated(const NzResource* resource, int index);
 		virtual bool OnResourceDestroy(const NzResource* resource, int index);
+		virtual bool OnResourceModified(const NzResource* resource, int index, unsigned int code);
 		virtual void OnResourceReleased(const NzResource* resource, int index);
 };
 

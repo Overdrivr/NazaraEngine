@@ -1,28 +1,31 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Renderer/DebugDrawer.hpp>
+#include <Nazara/Core/ErrorFlags.hpp>
 #include <Nazara/Renderer/OpenGL.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
 #include <Nazara/Renderer/RenderStates.hpp>
-#include <Nazara/Renderer/ShaderProgramManager.hpp>
+#include <Nazara/Renderer/Shader.hpp>
+#include <Nazara/Renderer/ShaderLibrary.hpp>
 #include <Nazara/Utility/BufferMapper.hpp>
 #include <Nazara/Utility/Mesh.hpp>
 #include <Nazara/Utility/Skeleton.hpp>
 #include <Nazara/Utility/VertexBuffer.hpp>
 #include <Nazara/Utility/VertexDeclaration.hpp>
 #include <Nazara/Utility/VertexStruct.hpp>
+#include <memory>
 #include <Nazara/Renderer/Debug.hpp>
 
 ///TODO: Améliorer
 
 namespace
 {
+	static NzShader* s_shader = nullptr;
 	static NzColor s_primaryColor;
 	static NzColor s_secondaryColor;
 	static NzRenderStates s_renderStates;
-	static const NzShaderProgram* s_program = nullptr;
 	static NzVertexBuffer s_vertexBuffer;
 	static bool s_initialized = false;
 	static int s_colorLocation = -1;
@@ -30,6 +33,12 @@ namespace
 
 void NzDebugDrawer::Draw(const NzBoundingVolumef& volume)
 {
+	if (!Initialize())
+	{
+		NazaraError("Failed to initialize Debug Drawer");
+		return;
+	}
+
 	if (!volume.IsFinite())
 		return;
 
@@ -50,9 +59,9 @@ void NzDebugDrawer::Draw(const NzBoxi& box)
 
 void NzDebugDrawer::Draw(const NzBoxf& box)
 {
-	if (!s_initialized)
+	if (!Initialize())
 	{
-		NazaraError("Debug drawer is not initialized");
+		NazaraError("Failed to initialize Debug Drawer");
 		return;
 	}
 
@@ -126,10 +135,10 @@ void NzDebugDrawer::Draw(const NzBoxf& box)
 	mapper.Unmap();
 
 	NzRenderer::SetRenderStates(s_renderStates);
-	NzRenderer::SetShaderProgram(s_program);
+	NzRenderer::SetShader(s_shader);
 	NzRenderer::SetVertexBuffer(&s_vertexBuffer);
 
-	s_program->SendColor(s_colorLocation, s_primaryColor);
+	s_shader->SendColor(s_colorLocation, s_primaryColor);
 
 	NzRenderer::DrawPrimitives(nzPrimitiveMode_LineList, 0, 24);
 }
@@ -141,9 +150,9 @@ void NzDebugDrawer::Draw(const NzBoxui& box)
 
 void NzDebugDrawer::Draw(const NzFrustumf& frustum)
 {
-	if (!s_initialized)
+	if (!Initialize())
 	{
-		NazaraError("Debug drawer is not initialized");
+		NazaraError("Failed to initialize Debug Drawer");
 		return;
 	}
 
@@ -213,19 +222,19 @@ void NzDebugDrawer::Draw(const NzFrustumf& frustum)
 	mapper.Unmap();
 
 	NzRenderer::SetRenderStates(s_renderStates);
-	NzRenderer::SetShaderProgram(s_program);
+	NzRenderer::SetShader(s_shader);
 	NzRenderer::SetVertexBuffer(&s_vertexBuffer);
 
-	s_program->SendColor(s_colorLocation, s_primaryColor);
+	s_shader->SendColor(s_colorLocation, s_primaryColor);
 
 	NzRenderer::DrawPrimitives(nzPrimitiveMode_LineList, 0, 24);
 }
 
 void NzDebugDrawer::Draw(const NzOrientedBoxf& orientedBox)
 {
-	if (!s_initialized)
+	if (!Initialize())
 	{
-		NazaraError("Debug drawer is not initialized");
+		NazaraError("Failed to initialize Debug Drawer");
 		return;
 	}
 
@@ -295,19 +304,19 @@ void NzDebugDrawer::Draw(const NzOrientedBoxf& orientedBox)
 	mapper.Unmap();
 
 	NzRenderer::SetRenderStates(s_renderStates);
-	NzRenderer::SetShaderProgram(s_program);
+	NzRenderer::SetShader(s_shader);
 	NzRenderer::SetVertexBuffer(&s_vertexBuffer);
 
-	s_program->SendColor(s_colorLocation, s_primaryColor);
+	s_shader->SendColor(s_colorLocation, s_primaryColor);
 
 	NzRenderer::DrawPrimitives(nzPrimitiveMode_LineList, 0, 24);
 }
 
 void NzDebugDrawer::Draw(const NzSkeleton* skeleton)
 {
-	if (!s_initialized)
+	if (!Initialize())
 	{
-		NazaraError("Debug drawer is not initialized");
+		NazaraError("Failed to initialize Debug Drawer");
 		return;
 	}
 
@@ -343,22 +352,22 @@ void NzDebugDrawer::Draw(const NzSkeleton* skeleton)
 	if (vertexCount > 0)
 	{
 		NzRenderer::SetRenderStates(s_renderStates);
-		NzRenderer::SetShaderProgram(s_program);
+		NzRenderer::SetShader(s_shader);
 		NzRenderer::SetVertexBuffer(&s_vertexBuffer);
 
-		s_program->SendColor(s_colorLocation, s_primaryColor);
+		s_shader->SendColor(s_colorLocation, s_primaryColor);
 		NzRenderer::DrawPrimitives(nzPrimitiveMode_LineList, 0, vertexCount);
 
-		s_program->SendColor(s_colorLocation, s_secondaryColor);
+		s_shader->SendColor(s_colorLocation, s_secondaryColor);
 		NzRenderer::DrawPrimitives(nzPrimitiveMode_PointList, 0, vertexCount);
 	}
 }
 
 void NzDebugDrawer::DrawBinormals(const NzStaticMesh* subMesh)
 {
-	if (!s_initialized)
+	if (!Initialize())
 	{
-		NazaraError("Debug drawer is not initialized");
+		NazaraError("Failed to initialize Debug Drawer");
 		return;
 	}
 
@@ -393,19 +402,140 @@ void NzDebugDrawer::DrawBinormals(const NzStaticMesh* subMesh)
 	if (vertexCount > 0)
 	{
 		NzRenderer::SetRenderStates(s_renderStates);
-		NzRenderer::SetShaderProgram(s_program);
+		NzRenderer::SetShader(s_shader);
 		NzRenderer::SetVertexBuffer(&s_vertexBuffer);
 
-		s_program->SendColor(s_colorLocation, s_primaryColor);
+		s_shader->SendColor(s_colorLocation, s_primaryColor);
 		NzRenderer::DrawPrimitives(nzPrimitiveMode_LineList, 0, vertexCount);
+	}
+}
+
+void NzDebugDrawer::DrawCone(const NzVector3f& origin, const NzQuaternionf& rotation, float angle, float length)
+{
+	if (!Initialize())
+	{
+		NazaraError("Failed to initialize Debug Drawer");
+		return;
+	}
+
+	NzMatrix4f transformMatrix;
+	transformMatrix.MakeIdentity();
+	transformMatrix.SetRotation(rotation);
+	transformMatrix.SetTranslation(origin);
+
+	NzBufferMapper<NzVertexBuffer> mapper(s_vertexBuffer, nzBufferAccess_DiscardAndWrite, 0, 16);
+	NzVertexStruct_XYZ* vertex = reinterpret_cast<NzVertexStruct_XYZ*>(mapper.GetPointer());
+
+	// On calcule le reste des points
+	NzVector3f base(NzVector3f::Forward()*length);
+
+	// Il nous faut maintenant le rayon du cercle projeté à cette distance
+	// Tangente = Opposé/Adjaçent <=> Opposé = Adjaçent*Tangente
+	float radius = length*std::tan(NzDegreeToRadian(angle));
+	NzVector3f lExtend = NzVector3f::Left()*radius;
+	NzVector3f uExtend = NzVector3f::Up()*radius;
+
+	vertex->position.Set(transformMatrix * NzVector3f::Zero());
+	vertex++;
+	vertex->position.Set(transformMatrix * (base + lExtend + uExtend));
+	vertex++;
+
+	vertex->position.Set(transformMatrix * (base + lExtend + uExtend));
+	vertex++;
+	vertex->position.Set(transformMatrix * (base + lExtend - uExtend));
+	vertex++;
+
+	vertex->position.Set(transformMatrix * NzVector3f::Zero());
+	vertex++;
+	vertex->position.Set(transformMatrix * (base + lExtend - uExtend));
+	vertex++;
+
+	vertex->position.Set(transformMatrix * (base + lExtend - uExtend));
+	vertex++;
+	vertex->position.Set(transformMatrix * (base - lExtend - uExtend));
+	vertex++;
+
+	vertex->position.Set(transformMatrix * NzVector3f::Zero());
+	vertex++;
+	vertex->position.Set(transformMatrix * (base - lExtend + uExtend));
+	vertex++;
+
+	vertex->position.Set(transformMatrix * (base - lExtend + uExtend));
+	vertex++;
+	vertex->position.Set(transformMatrix * (base - lExtend - uExtend));
+	vertex++;
+
+	vertex->position.Set(transformMatrix * NzVector3f::Zero());
+	vertex++;
+	vertex->position.Set(transformMatrix * (base - lExtend - uExtend));
+	vertex++;
+
+	vertex->position.Set(transformMatrix * (base - lExtend + uExtend));
+	vertex++;
+	vertex->position.Set(transformMatrix * (base + lExtend + uExtend));
+	vertex++;
+
+	mapper.Unmap();
+
+	NzRenderer::SetRenderStates(s_renderStates);
+	NzRenderer::SetShader(s_shader);
+	NzRenderer::SetVertexBuffer(&s_vertexBuffer);
+
+	s_shader->SendColor(s_colorLocation, s_primaryColor);
+
+	NzRenderer::DrawPrimitives(nzPrimitiveMode_LineList, 0, 16);
+}
+
+void NzDebugDrawer::DrawLine(const NzVector3f& p1, const NzVector3f& p2)
+{
+	if (!s_initialized && !Initialize())
+	{
+		NazaraError("Failed to initialize Debug Drawer");
+		return;
+	}
+
+	NzVertexStruct_XYZ buffer[2];
+	buffer[0].position = p1;
+	buffer[1].position = p2;
+
+	s_vertexBuffer.Fill(&buffer[0], 0, 2);
+
+	NzRenderer::SetRenderStates(s_renderStates);
+	NzRenderer::SetShader(s_shader);
+	NzRenderer::SetVertexBuffer(&s_vertexBuffer);
+
+	s_shader->SendColor(s_colorLocation, s_primaryColor);
+	NzRenderer::DrawPrimitives(nzPrimitiveMode_LineList, 0, 2);
+}
+
+void NzDebugDrawer::DrawPoints(const NzVector3f* ptr, unsigned int pointCount)
+{
+	static_assert(sizeof(NzVertexStruct_XYZ) == sizeof(NzVector3f), "NzVertexStruct_XYZ is no longer equal to NzVector3f, please rewrite this");
+
+	if (!s_initialized && !Initialize())
+	{
+		NazaraError("Failed to initialize Debug Drawer");
+		return;
+	}
+
+	if (pointCount > 0)
+	{
+		s_vertexBuffer.Fill(ptr, 0, pointCount);
+
+		NzRenderer::SetRenderStates(s_renderStates);
+		NzRenderer::SetShader(s_shader);
+		NzRenderer::SetVertexBuffer(&s_vertexBuffer);
+
+		s_shader->SendColor(s_colorLocation, s_primaryColor);
+		NzRenderer::DrawPrimitives(nzPrimitiveMode_PointList, 0, pointCount);
 	}
 }
 
 void NzDebugDrawer::DrawNormals(const NzStaticMesh* subMesh)
 {
-	if (!s_initialized)
+	if (!s_initialized && !Initialize())
 	{
-		NazaraError("Debug drawer is not initialized");
+		NazaraError("Failed to initialize Debug Drawer");
 		return;
 	}
 
@@ -440,19 +570,19 @@ void NzDebugDrawer::DrawNormals(const NzStaticMesh* subMesh)
 	if (vertexCount > 0)
 	{
 		NzRenderer::SetRenderStates(s_renderStates);
-		NzRenderer::SetShaderProgram(s_program);
+		NzRenderer::SetShader(s_shader);
 		NzRenderer::SetVertexBuffer(&s_vertexBuffer);
 
-		s_program->SendColor(s_colorLocation, s_primaryColor);
+		s_shader->SendColor(s_colorLocation, s_primaryColor);
 		NzRenderer::DrawPrimitives(nzPrimitiveMode_LineList, 0, vertexCount);
 	}
 }
 
 void NzDebugDrawer::DrawTangents(const NzStaticMesh* subMesh)
 {
-	if (!s_initialized)
+	if (!s_initialized && !Initialize())
 	{
-		NazaraError("Debug drawer is not initialized");
+		NazaraError("Failed to initialize Debug Drawer");
 		return;
 	}
 
@@ -487,10 +617,10 @@ void NzDebugDrawer::DrawTangents(const NzStaticMesh* subMesh)
 	if (vertexCount > 0)
 	{
 		NzRenderer::SetRenderStates(s_renderStates);
-		NzRenderer::SetShaderProgram(s_program);
+		NzRenderer::SetShader(s_shader);
 		NzRenderer::SetVertexBuffer(&s_vertexBuffer);
 
-		s_program->SendColor(s_colorLocation, s_primaryColor);
+		s_shader->SendColor(s_colorLocation, s_primaryColor);
 		NzRenderer::DrawPrimitives(nzPrimitiveMode_LineList, 0, vertexCount);
 	}
 }
@@ -524,35 +654,14 @@ bool NzDebugDrawer::Initialize()
 {
 	if (!s_initialized)
 	{
-		// s_program
-		{
-			NzShaderProgramManagerParams params;
-			params.target = nzShaderTarget_Model;
-			params.flags = 0;
-			params.model.alphaMapping = false;
-			params.model.alphaTest = false;
-			params.model.diffuseMapping = false;
-			params.model.emissiveMapping = false;
-			params.model.lighting = false;
-			params.model.normalMapping = false;
-			params.model.parallaxMapping = false;
-			params.model.specularMapping = false;
-
-			s_program = NzShaderProgramManager::Get(params);
-			if (!s_program)
-			{
-				NazaraError("Failed to build debug s_program");
-
-				Uninitialize();
-				return false;
-			}
-
-			s_colorLocation = s_program->GetUniformLocation(nzShaderUniform_MaterialDiffuse);
-		}
+		// s_shader
+		s_shader = NzShaderLibrary::Get("DebugSimple");
+		s_colorLocation = s_shader->GetUniformLocation("Color");
 
 		// s_vertexBuffer
 		try
 		{
+			NzErrorFlags flags(nzErrorFlag_ThrowException, true);
 			s_vertexBuffer.Reset(NzVertexDeclaration::Get(nzVertexLayout_XYZ), 65365, nzBufferStorage_Hardware, nzBufferUsage_Dynamic);
 		}
 		catch (const std::exception& e)
@@ -600,6 +709,7 @@ void NzDebugDrawer::SetSecondaryColor(const NzColor& color)
 
 void NzDebugDrawer::Uninitialize()
 {
+	s_shader = nullptr;
 	s_vertexBuffer.Reset();
 	s_initialized = false;
 }

@@ -1,40 +1,30 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Renderer/RenderWindow.hpp>
 #include <Nazara/Core/Error.hpp>
+#include <Nazara/Core/ErrorFlags.hpp>
 #include <Nazara/Core/Thread.hpp>
 #include <Nazara/Renderer/Context.hpp>
 #include <Nazara/Renderer/OpenGL.hpp>
+#include <Nazara/Renderer/Renderer.hpp>
 #include <Nazara/Renderer/Texture.hpp>
 #include <stdexcept>
 #include <Nazara/Renderer/Debug.hpp>
 
+///TODO: Améliorer les méthode CopyTo*
+
 NzRenderWindow::NzRenderWindow(NzVideoMode mode, const NzString& title, nzUInt32 style, const NzContextParameters& parameters)
 {
+	NzErrorFlags flags(nzErrorFlag_ThrowException, true);
 	Create(mode, title, style, parameters);
-
-	#ifdef NAZARA_DEBUG
-	if (!m_impl)
-	{
-		NazaraError("Failed to create render window");
-		throw std::runtime_error("Constructor failed");
-	}
-	#endif
 }
 
 NzRenderWindow::NzRenderWindow(NzWindowHandle handle, const NzContextParameters& parameters)
 {
+	NzErrorFlags flags(nzErrorFlag_ThrowException, true);
 	Create(handle, parameters);
-
-	#ifdef NAZARA_DEBUG
-	if (!m_impl)
-	{
-		NazaraError("Failed to create render window");
-		throw std::runtime_error("Constructor failed");
-	}
-	#endif
 }
 
 NzRenderWindow::~NzRenderWindow()
@@ -59,7 +49,7 @@ bool NzRenderWindow::CopyToImage(NzImage* image) const
 	}
 	#endif
 
-	NzContext* currentContext = NzContext::GetCurrent();
+	const NzContext* currentContext = NzContext::GetCurrent();
 	if (m_context != currentContext)
 	{
 		if (!m_context->SetActive(true))
@@ -112,7 +102,7 @@ bool NzRenderWindow::CopyToTexture(NzTexture* texture) const
 	}
 	#endif
 
-	NzContext* currentContext = NzContext::GetCurrent();
+	const NzContext* currentContext = NzContext::GetCurrent();
 	if (m_context != currentContext)
 	{
 		if (!m_context->SetActive(true))
@@ -148,21 +138,21 @@ bool NzRenderWindow::CopyToTexture(NzTexture* texture) const
 
 bool NzRenderWindow::Create(NzVideoMode mode, const NzString& title, nzUInt32 style, const NzContextParameters& parameters)
 {
-    m_parameters = parameters;
-    return NzWindow::Create(mode, title, style);
+	m_parameters = parameters;
+	return NzWindow::Create(mode, title, style);
 }
 
 bool NzRenderWindow::Create(NzWindowHandle handle, const NzContextParameters& parameters)
 {
-    m_parameters = parameters;
-    return NzWindow::Create(handle);
+	m_parameters = parameters;
+	return NzWindow::Create(handle);
 }
 
 void NzRenderWindow::Display()
 {
 	if (m_framerateLimit > 0)
 	{
-		int remainingTime = 1000/m_framerateLimit - m_clock.GetMilliseconds();
+		int remainingTime = 1000/static_cast<int>(m_framerateLimit) - static_cast<int>(m_clock.GetMilliseconds());
 		if (remainingTime > 0)
 			NzThread::Sleep(remainingTime);
 
@@ -175,35 +165,35 @@ void NzRenderWindow::Display()
 
 void NzRenderWindow::EnableVerticalSync(bool enabled)
 {
-    if (m_context)
-    {
+	if (m_context)
+	{
 		#if defined(NAZARA_PLATFORM_WINDOWS)
-        if (!m_context->SetActive(true))
+		if (!m_context->SetActive(true))
 		{
 			NazaraError("Failed to activate context");
 			return;
 		}
 
-        if (wglSwapInterval)
-            wglSwapInterval(enabled ? 1 : 0);
-        else
+		if (wglSwapInterval)
+			wglSwapInterval(enabled ? 1 : 0);
+		else
 		#elif defined(NAZARA_PLATFORM_LINUX)
-        if (!m_context->SetActive(true))
-        {
-            NazaraError("Failed to activate context");
-            return;
-        }
+		if (!m_context->SetActive(true))
+		{
+			NazaraError("Failed to activate context");
+			return;
+		}
 
-        if (glXSwapInterval)
-            glXSwapInterval(enabled ? 1 : 0);
-        else
+		if (glXSwapInterval)
+			glXSwapInterval(enabled ? 1 : 0);
+		else
 		#else
 			#error Vertical Sync is not supported on this platform
 		#endif
-            NazaraError("Vertical Sync is not supported on this platform");
-    }
-    else
-        NazaraError("No context");
+			NazaraError("Vertical Sync is not supported on this platform");
+	}
+	else
+		NazaraError("No context");
 }
 
 unsigned int NzRenderWindow::GetHeight() const
@@ -275,37 +265,52 @@ bool NzRenderWindow::Activate() const
 	}
 }
 
+void NzRenderWindow::EnsureTargetUpdated() const
+{
+	// Rien à faire
+}
+
 bool NzRenderWindow::OnWindowCreated()
 {
 	m_parameters.doubleBuffered = true;
-    m_parameters.window = GetHandle();
+	m_parameters.window = GetHandle();
 
-    m_context = new NzContext;
-    if (!m_context->Create(m_parameters))
-    {
-        NazaraError("Failed not create context");
-        delete m_context;
+	std::unique_ptr<NzContext> context(new NzContext);
+	if (!context->Create(m_parameters))
+	{
+		NazaraError("Failed to create context");
+		return false;
+	}
 
-        return false;
-    }
-
-    EnableVerticalSync(false);
+	m_context = context.release();
 
 	if (!SetActive(true)) // Les fenêtres s'activent à la création
 		NazaraWarning("Failed to activate window");
+
+	EnableVerticalSync(false);
+
+	NzVector2ui size = GetSize();
+
+	// Le scissorBox/viewport (à la création) est de la taille de la fenêtre
+	// https://www.opengl.org/sdk/docs/man/xhtml/glGet.xml
+	NzOpenGL::SetScissorBox(NzRecti(0, 0, size.x, size.y));
+	NzOpenGL::SetViewport(NzRecti(0, 0, size.x, size.y));
 
 	NotifyParametersChange();
 	NotifySizeChange();
 
 	m_clock.Restart();
 
-    return true;
+	return true;
 }
 
 void NzRenderWindow::OnWindowDestroy()
 {
 	if (m_context)
 	{
+		if (IsActive())
+			NzRenderer::SetTarget(nullptr);
+
 		delete m_context;
 		m_context = nullptr;
 	}

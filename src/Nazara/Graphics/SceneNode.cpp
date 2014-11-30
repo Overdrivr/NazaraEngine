@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -6,6 +6,8 @@
 #include <Nazara/Graphics/Config.hpp>
 #include <Nazara/Graphics/Scene.hpp>
 #include <Nazara/Graphics/Debug.hpp>
+
+///FIXME: Constructeur de copie
 
 NzSceneNode::NzSceneNode() :
 m_scene(nullptr),
@@ -16,7 +18,7 @@ m_visible(false)
 
 NzSceneNode::NzSceneNode(const NzSceneNode& sceneNode) :
 NzNode(sceneNode),
-m_scene(sceneNode.m_scene),
+m_scene(nullptr),
 m_drawingEnabled(sceneNode.m_drawingEnabled),
 m_visible(false)
 {
@@ -51,8 +53,10 @@ bool NzSceneNode::IsVisible() const
 
 NzSceneNode& NzSceneNode::operator=(const NzSceneNode& sceneNode)
 {
+	NzNode::operator=(sceneNode);
+
+	// La scène est affectée via le parenting du node
 	m_drawingEnabled = sceneNode.m_drawingEnabled;
-	m_scene = sceneNode.m_scene;
 	m_visible = false;
 
 	return *this;
@@ -60,11 +64,18 @@ NzSceneNode& NzSceneNode::operator=(const NzSceneNode& sceneNode)
 
 NzSceneNode& NzSceneNode::operator=(NzSceneNode&& sceneNode)
 {
+	NzNode::operator=(sceneNode);
+
+	// La scène est affectée via le parenting du node
 	m_drawingEnabled = sceneNode.m_drawingEnabled;
-	m_scene = sceneNode.m_scene;
 	m_visible = sceneNode.m_visible;
 
 	return *this;
+}
+
+bool NzSceneNode::FrustumCull(const NzFrustumf& frustum) const
+{
+	return frustum.Contains(GetBoundingVolume());
 }
 
 void NzSceneNode::OnParenting(const NzNode* parent)

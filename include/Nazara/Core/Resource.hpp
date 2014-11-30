@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -12,9 +12,9 @@
 #include <unordered_map>
 
 #if NAZARA_CORE_THREADSAFE && NAZARA_THREADSAFETY_RESOURCE
-#include <Nazara/Core/ThreadSafety.hpp>
+	#include <Nazara/Core/ThreadSafety.hpp>
 #else
-#include <Nazara/Core/ThreadSafetyOff.hpp>
+	#include <Nazara/Core/ThreadSafetyOff.hpp>
 #endif
 
 class NzResourceListener;
@@ -40,12 +40,17 @@ class NAZARA_API NzResource
 	protected:
 		void NotifyCreated();
 		void NotifyDestroy();
+		void NotifyModified(unsigned int code);
 
 	private:
+		using ResourceListenerMap = std::unordered_map<NzResourceListener*, std::pair<int, unsigned int>>;
+
+		void RemoveResourceListenerIterator(ResourceListenerMap::iterator iterator) const;
+
 		NazaraMutexAttrib(m_mutex, mutable)
 
 		// Je fais précéder le nom par 'resource' pour éviter les éventuels conflits de noms
-		mutable std::unordered_map<NzResourceListener*, int> m_resourceListeners;
+		mutable ResourceListenerMap m_resourceListeners;
 		        std::atomic_bool m_resourcePersistent;
 		mutable std::atomic_uint m_resourceReferenceCount;
 		        bool m_resourceListenersLocked;

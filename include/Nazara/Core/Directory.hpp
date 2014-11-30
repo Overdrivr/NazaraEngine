@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -8,6 +8,7 @@
 #define NAZARA_DIRECTORY_HPP
 
 #include <Nazara/Prerequesites.hpp>
+#include <Nazara/Core/NonCopyable.hpp>
 #include <Nazara/Core/String.hpp>
 
 #if defined(NAZARA_PLATFORM_WINDOWS)
@@ -20,14 +21,14 @@
 #endif
 
 #if NAZARA_CORE_THREADSAFE && NAZARA_THREADSAFETY_DIRECTORY
-#include <Nazara/Core/ThreadSafety.hpp>
+	#include <Nazara/Core/ThreadSafety.hpp>
 #else
-#include <Nazara/Core/ThreadSafetyOff.hpp>
+	#include <Nazara/Core/ThreadSafetyOff.hpp>
 #endif
 
 class NzDirectoryImpl;
 
-class NAZARA_API NzDirectory
+class NAZARA_API NzDirectory : NzNonCopyable
 {
 	public:
 		NzDirectory();
@@ -38,6 +39,7 @@ class NAZARA_API NzDirectory
 
 		bool Exists() const;
 
+		NzString GetPath() const;
 		NzString GetPattern() const;
 		NzString GetResultName() const;
 		NzString GetResultPath() const;
@@ -50,7 +52,7 @@ class NAZARA_API NzDirectory
 
 		bool Open();
 
-		void SetDirectory(const NzString& dirPath);
+		void SetPath(const NzString& dirPath);
 		void SetPattern(const NzString& pattern);
 
 		static bool Copy(const NzString& sourcePath, const NzString& destPath);
@@ -66,7 +68,7 @@ class NAZARA_API NzDirectory
 
 		NzString m_dirPath;
 		NzString m_pattern;
-		NzDirectoryImpl* m_impl = nullptr;
+		NzDirectoryImpl* m_impl;
 };
 
 #endif // NAZARA_DIRECTORY_HPP

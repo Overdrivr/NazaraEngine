@@ -1,12 +1,14 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Utility/Utility.hpp>
+#include <Nazara/Core/CallOnExit.hpp>
 #include <Nazara/Core/Core.hpp>
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Core/HardwareInfo.hpp>
 #include <Nazara/Core/Log.hpp>
+#include <Nazara/Core/TaskScheduler.hpp>
 #include <Nazara/Core/Thread.hpp>
 #include <Nazara/Utility/Buffer.hpp>
 #include <Nazara/Utility/Config.hpp>
@@ -22,58 +24,45 @@
 
 bool NzUtility::Initialize()
 {
-	if (s_moduleReferenceCounter++ != 0)
+	if (s_moduleReferenceCounter > 0)
+	{
+		s_moduleReferenceCounter++;
 		return true; // Déjà initialisé
+	}
 
 	// Initialisation des dépendances
 	if (!NzCore::Initialize())
 	{
 		NazaraError("Failed to initialize core module");
-		Uninitialize();
-
 		return false;
 	}
+
+	s_moduleReferenceCounter++;
 
 	// Initialisation du module
-	#if NAZARA_UTILITY_MULTITHREADED_SKINNING
-	if (!NzTaskScheduler::Initialize())
-	{
-		NazaraError("Failed to initialize task scheduler");
-		Uninitialize();
-
-		return false;
-	}
-	#endif
+	NzCallOnExit onExit(NzUtility::Uninitialize);
 
 	if (!NzBuffer::Initialize())
 	{
 		NazaraError("Failed to initialize buffers");
-		Uninitialize();
-
 		return false;
 	}
 
 	if (!NzPixelFormat::Initialize())
 	{
 		NazaraError("Failed to initialize pixel formats");
-		Uninitialize();
-
 		return false;
 	}
 
 	if (!NzVertexDeclaration::Initialize())
 	{
 		NazaraError("Failed to initialize vertex declarations");
-		Uninitialize();
-
 		return false;
 	}
 
 	if (!NzWindow::Initialize())
 	{
 		NazaraError("Failed to initialize window's system");
-		Uninitialize();
-
 		return false;
 	}
 
@@ -95,8 +84,9 @@ bool NzUtility::Initialize()
 	// Image
 	NzLoaders_PCX_Register(); // Loader de fichiers .pcx (1, 4, 8, 24 bits)
 
-	NazaraNotice("Initialized: Utility module");
+	onExit.Reset();
 
+	NazaraNotice("Initialized: Utility module");
 	return true;
 }
 
@@ -136,5 +126,44 @@ void NzUtility::Uninitialize()
 	NzCore::Uninitialize();
 }
 
-unsigned int NzUtility::s_moduleReferenceCounter = 0;
+unsigned int NzUtility::ComponentCount[nzComponentType_Max+1] =
+{
+	4, // nzComponentType_Color
+	1, // nzComponentType_Double1
+	2, // nzComponentType_Double2
+	3, // nzComponentType_Double3
+	4, // nzComponentType_Double4
+	1, // nzComponentType_Float1
+	2, // nzComponentType_Float2
+	3, // nzComponentType_Float3
+	4, // nzComponentType_Float4
+	1, // nzComponentType_Int1
+	2, // nzComponentType_Int2
+	3, // nzComponentType_Int3
+	4, // nzComponentType_Int4
+	4  // nzComponentType_Quaternion
+};
 
+static_assert(nzComponentType_Max+1 == 14, "Component count array is incomplete");
+
+std::size_t NzUtility::ComponentStride[nzComponentType_Max+1] =
+{
+	4*sizeof(nzUInt8),  // nzComponentType_Color
+	1*sizeof(double),   // nzComponentType_Double1
+	2*sizeof(double),   // nzComponentType_Double2
+	3*sizeof(double),   // nzComponentType_Double3
+	4*sizeof(double),   // nzComponentType_Double4
+	1*sizeof(float),    // nzComponentType_Float1
+	2*sizeof(float),    // nzComponentType_Float2
+	3*sizeof(float),    // nzComponentType_Float3
+	4*sizeof(float),    // nzComponentType_Float4
+	1*sizeof(nzUInt32), // nzComponentType_Int1
+	2*sizeof(nzUInt32), // nzComponentType_Int2
+	3*sizeof(nzUInt32), // nzComponentType_Int3
+	4*sizeof(nzUInt32), // nzComponentType_Int4
+	4*sizeof(float)     // nzComponentType_Quaternion
+};
+
+static_assert(nzComponentType_Max+1 == 14, "Component stride array is incomplete");
+
+unsigned int NzUtility::s_moduleReferenceCounter = 0;

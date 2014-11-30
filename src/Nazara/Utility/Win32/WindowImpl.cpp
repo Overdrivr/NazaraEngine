@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -36,6 +36,30 @@
 
 namespace
 {
+	LPTSTR windowsCursors[] =
+	{
+		IDC_CROSS,       // nzWindowCursor_Crosshair
+		IDC_ARROW,       // nzWindowCursor_Default
+		IDC_HAND,        // nzWindowCursor_Hand
+		IDC_HAND,        // nzWindowCursor_Pointer
+		IDC_HELP,        // nzWindowCursor_Help
+		IDC_SIZEALL,     // nzWindowCursor_Move
+		nullptr,         // nzWindowCursor_None
+		IDC_APPSTARTING, // nzWindowCursor_Progress
+		IDC_SIZENS,      // nzWindowCursor_ResizeN
+		IDC_SIZENS,      // nzWindowCursor_ResizeS
+		IDC_SIZENWSE,    // nzWindowCursor_ResizeNW
+		IDC_SIZENWSE,    // nzWindowCursor_ResizeSE
+		IDC_SIZENESW,    // nzWindowCursor_ResizeNE
+		IDC_SIZENESW,    // nzWindowCursor_ResizeSW
+		IDC_SIZEWE,      // nzWindowCursor_ResizeE
+		IDC_SIZEWE,      // nzWindowCursor_ResizeW
+		IDC_IBEAM,       // nzWindowCursor_Text
+		IDC_WAIT         // nzWindowCursor_Wait
+	};
+
+	static_assert(sizeof(windowsCursors)/sizeof(LPTSTR) == nzWindowCursor_Max+1, "Cursor type array is incomplete");
+
 	const wchar_t* className = L"Nazara Window";
 	NzWindowImpl* fullscreenWindow = nullptr;
 }
@@ -281,12 +305,12 @@ void NzWindowImpl::IgnoreNextMouseEvent(int mouseX, int mouseY)
 
 bool NzWindowImpl::IsMinimized() const
 {
-	return IsIconic(m_handle);
+	return IsIconic(m_handle) == TRUE;
 }
 
 bool NzWindowImpl::IsVisible() const
 {
-	return IsWindowVisible(m_handle);
+	return IsWindowVisible(m_handle) == TRUE;
 }
 
 void NzWindowImpl::ProcessEvents(bool block)
@@ -307,65 +331,18 @@ void NzWindowImpl::ProcessEvents(bool block)
 
 void NzWindowImpl::SetCursor(nzWindowCursor cursor)
 {
-	switch (cursor)
+	#ifdef NAZARA_DEBUG
+	if (cursor > nzWindowCursor_Max)
 	{
-		case nzWindowCursor_Crosshair:
-			m_cursor = reinterpret_cast<HCURSOR>(LoadImage(nullptr, IDC_CROSS, IMAGE_CURSOR, 0, 0, LR_SHARED));
-			break;
-
-		case nzWindowCursor_Default:
-			m_cursor = reinterpret_cast<HCURSOR>(LoadImage(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_SHARED));
-			break;
-
-		case nzWindowCursor_Hand:
-		case nzWindowCursor_Pointer:
-			m_cursor = reinterpret_cast<HCURSOR>(LoadImage(nullptr, IDC_HAND, IMAGE_CURSOR, 0, 0, LR_SHARED));
-			break;
-
-		case nzWindowCursor_Help:
-			m_cursor = reinterpret_cast<HCURSOR>(LoadImage(nullptr, IDC_HELP, IMAGE_CURSOR, 0, 0, LR_SHARED));
-			break;
-
-		case nzWindowCursor_Move:
-			m_cursor = reinterpret_cast<HCURSOR>(LoadImage(nullptr, IDC_SIZEALL, IMAGE_CURSOR, 0, 0, LR_SHARED));
-			break;
-
-		case nzWindowCursor_None:
-			m_cursor = nullptr;
-			break;
-
-		case nzWindowCursor_Progress:
-			m_cursor = reinterpret_cast<HCURSOR>(LoadImage(nullptr, IDC_APPSTARTING, IMAGE_CURSOR, 0, 0, LR_SHARED));
-			break;
-
-		case nzWindowCursor_ResizeN:
-		case nzWindowCursor_ResizeS:
-			m_cursor = reinterpret_cast<HCURSOR>(LoadImage(nullptr, IDC_SIZENS, IMAGE_CURSOR, 0, 0, LR_SHARED));
-			break;
-
-		case nzWindowCursor_ResizeNW:
-		case nzWindowCursor_ResizeSE:
-			m_cursor = reinterpret_cast<HCURSOR>(LoadImage(nullptr, IDC_SIZENWSE, IMAGE_CURSOR, 0, 0, LR_SHARED));
-			break;
-
-		case nzWindowCursor_ResizeNE:
-		case nzWindowCursor_ResizeSW:
-			m_cursor = reinterpret_cast<HCURSOR>(LoadImage(nullptr, IDC_SIZENESW, IMAGE_CURSOR, 0, 0, LR_SHARED));
-			break;
-
-		case nzWindowCursor_ResizeE:
-		case nzWindowCursor_ResizeW:
-			m_cursor = reinterpret_cast<HCURSOR>(LoadImage(nullptr, IDC_SIZEWE, IMAGE_CURSOR, 0, 0, LR_SHARED));
-			break;
-
-		case nzWindowCursor_Text:
-			m_cursor = reinterpret_cast<HCURSOR>(LoadImage(nullptr, IDC_IBEAM, IMAGE_CURSOR, 0, 0, LR_SHARED));
-			break;
-
-		case nzWindowCursor_Wait:
-			m_cursor = reinterpret_cast<HCURSOR>(LoadImage(nullptr, IDC_WAIT, IMAGE_CURSOR, 0, 0, LR_SHARED));
-			break;
+		NazaraError("Window cursor out of enum");
+		return;
 	}
+	#endif
+
+	if (cursor != nzWindowCursor_None)
+		m_cursor = reinterpret_cast<HCURSOR>(LoadImage(nullptr, windowsCursors[cursor], IMAGE_CURSOR, 0, 0, LR_SHARED));
+	else
+		m_cursor = nullptr;
 
 	// Pas besoin de libérer le curseur par la suite s'il est partagé
 	// http://msdn.microsoft.com/en-us/library/windows/desktop/ms648045(v=vs.85).aspx
@@ -800,7 +777,7 @@ bool NzWindowImpl::HandleMessage(HWND window, UINT message, WPARAM wParam, LPARA
 					{
 						NzEvent event;
 						event.type = nzEventType_MouseWheelMoved;
-						event.mouseWheel.delta = m_scrolling/WHEEL_DELTA;
+						event.mouseWheel.delta = static_cast<float>(m_scrolling/WHEEL_DELTA);
 						m_parent->PushEvent(event);
 
 						m_scrolling %= WHEEL_DELTA;
@@ -1001,7 +978,7 @@ bool NzWindowImpl::Initialize()
 	windowClass.lpszMenuName = nullptr;
 	windowClass.style = CS_DBLCLKS; // Gestion du double-clic
 
-	return RegisterClassW(&windowClass);
+	return RegisterClassW(&windowClass) != 0;
 }
 
 void NzWindowImpl::Uninitialize()
@@ -1021,120 +998,121 @@ NzKeyboard::Key NzWindowImpl::ConvertVirtualKey(WPARAM key, LPARAM flags)
 			return (((flags >> 16) & 0xFF) == scancode) ? NzKeyboard::LShift : NzKeyboard::RShift;
 		}
 
-		case 0x30:				   return NzKeyboard::Num0;
-		case 0x31:				   return NzKeyboard::Num1;
-		case 0x32:				   return NzKeyboard::Num2;
-		case 0x33:				   return NzKeyboard::Num3;
-		case 0x34:				   return NzKeyboard::Num4;
-		case 0x35:				   return NzKeyboard::Num5;
-		case 0x36:				   return NzKeyboard::Num6;
-		case 0x37:				   return NzKeyboard::Num7;
-		case 0x38:				   return NzKeyboard::Num8;
-		case 0x39:				   return NzKeyboard::Num9;
-		case 0x41:				   return NzKeyboard::A;
-		case 0x42:				   return NzKeyboard::B;
-		case 0x43:				   return NzKeyboard::C;
-		case 0x44:				   return NzKeyboard::D;
-		case 0x45:				   return NzKeyboard::E;
-		case 0x46:				   return NzKeyboard::F;
-		case 0x47:				   return NzKeyboard::G;
-		case 0x48:				   return NzKeyboard::H;
-		case 0x49:				   return NzKeyboard::I;
-		case 0x4A:				   return NzKeyboard::J;
-		case 0x4B:				   return NzKeyboard::K;
-		case 0x4C:				   return NzKeyboard::L;
-		case 0x4D:				   return NzKeyboard::M;
-		case 0x4E:				   return NzKeyboard::N;
-		case 0x4F:				   return NzKeyboard::O;
-		case 0x50:				   return NzKeyboard::P;
-		case 0x51:				   return NzKeyboard::Q;
-		case 0x52:				   return NzKeyboard::R;
-		case 0x53:				   return NzKeyboard::S;
-		case 0x54:				   return NzKeyboard::T;
-		case 0x55:				   return NzKeyboard::U;
-		case 0x56:				   return NzKeyboard::V;
-		case 0x57:				   return NzKeyboard::W;
-		case 0x58:				   return NzKeyboard::X;
-		case 0x59:				   return NzKeyboard::Y;
-		case 0x5A:				   return NzKeyboard::Z;
-		case VK_ADD:			   return NzKeyboard::Add;
-		case VK_BACK:			   return NzKeyboard::Backspace;
-		case VK_BROWSER_BACK:	   return NzKeyboard::Browser_Back;
+		case 0x30:                 return NzKeyboard::Num0;
+		case 0x31:                 return NzKeyboard::Num1;
+		case 0x32:                 return NzKeyboard::Num2;
+		case 0x33:                 return NzKeyboard::Num3;
+		case 0x34:                 return NzKeyboard::Num4;
+		case 0x35:                 return NzKeyboard::Num5;
+		case 0x36:                 return NzKeyboard::Num6;
+		case 0x37:                 return NzKeyboard::Num7;
+		case 0x38:                 return NzKeyboard::Num8;
+		case 0x39:                 return NzKeyboard::Num9;
+		case 0x41:                 return NzKeyboard::A;
+		case 0x42:                 return NzKeyboard::B;
+		case 0x43:                 return NzKeyboard::C;
+		case 0x44:                 return NzKeyboard::D;
+		case 0x45:                 return NzKeyboard::E;
+		case 0x46:                 return NzKeyboard::F;
+		case 0x47:                 return NzKeyboard::G;
+		case 0x48:                 return NzKeyboard::H;
+		case 0x49:                 return NzKeyboard::I;
+		case 0x4A:                 return NzKeyboard::J;
+		case 0x4B:                 return NzKeyboard::K;
+		case 0x4C:                 return NzKeyboard::L;
+		case 0x4D:                 return NzKeyboard::M;
+		case 0x4E:                 return NzKeyboard::N;
+		case 0x4F:                 return NzKeyboard::O;
+		case 0x50:                 return NzKeyboard::P;
+		case 0x51:                 return NzKeyboard::Q;
+		case 0x52:                 return NzKeyboard::R;
+		case 0x53:                 return NzKeyboard::S;
+		case 0x54:                 return NzKeyboard::T;
+		case 0x55:                 return NzKeyboard::U;
+		case 0x56:                 return NzKeyboard::V;
+		case 0x57:                 return NzKeyboard::W;
+		case 0x58:                 return NzKeyboard::X;
+		case 0x59:                 return NzKeyboard::Y;
+		case 0x5A:                 return NzKeyboard::Z;
+		case VK_ADD:               return NzKeyboard::Add;
+		case VK_BACK:              return NzKeyboard::Backspace;
+		case VK_BROWSER_BACK:      return NzKeyboard::Browser_Back;
 		case VK_BROWSER_FAVORITES: return NzKeyboard::Browser_Favorites;
 		case VK_BROWSER_FORWARD:   return NzKeyboard::Browser_Forward;
-		case VK_BROWSER_HOME:	   return NzKeyboard::Browser_Home;
+		case VK_BROWSER_HOME:      return NzKeyboard::Browser_Home;
 		case VK_BROWSER_REFRESH:   return NzKeyboard::Browser_Refresh;
-		case VK_BROWSER_SEARCH:	   return NzKeyboard::Browser_Search;
-		case VK_BROWSER_STOP:	   return NzKeyboard::Browser_Stop;
-		case VK_CAPITAL:		   return NzKeyboard::CapsLock;
-		case VK_CLEAR:			   return NzKeyboard::Clear;
-		case VK_DELETE:			   return NzKeyboard::Delete;
-		case VK_DIVIDE:			   return NzKeyboard::Divide;
-		case VK_DOWN:			   return NzKeyboard::Down;
-		case VK_END:			   return NzKeyboard::End;
-		case VK_ESCAPE:			   return NzKeyboard::Escape;
-		case VK_F1:				   return NzKeyboard::F1;
-		case VK_F2:				   return NzKeyboard::F2;
-		case VK_F3:				   return NzKeyboard::F3;
-		case VK_F4:				   return NzKeyboard::F4;
-		case VK_F5:				   return NzKeyboard::F5;
-		case VK_F6:				   return NzKeyboard::F6;
-		case VK_F7:				   return NzKeyboard::F7;
-		case VK_F8:				   return NzKeyboard::F8;
-		case VK_F9:				   return NzKeyboard::F9;
-		case VK_F10:			   return NzKeyboard::F10;
-		case VK_F11:			   return NzKeyboard::F11;
-		case VK_F12:			   return NzKeyboard::F12;
-		case VK_F13:			   return NzKeyboard::F13;
-		case VK_F14:			   return NzKeyboard::F14;
-		case VK_F15:			   return NzKeyboard::F15;
-		case VK_HOME:			   return NzKeyboard::Home;
-		case VK_INSERT:			   return NzKeyboard::Insert;
-		case VK_LEFT:			   return NzKeyboard::Left;
-		case VK_LWIN:			   return NzKeyboard::LSystem;
+		case VK_BROWSER_SEARCH:    return NzKeyboard::Browser_Search;
+		case VK_BROWSER_STOP:      return NzKeyboard::Browser_Stop;
+		case VK_CAPITAL:           return NzKeyboard::CapsLock;
+		case VK_CLEAR:             return NzKeyboard::Clear;
+		case VK_DECIMAL:           return NzKeyboard::Decimal;
+		case VK_DELETE:            return NzKeyboard::Delete;
+		case VK_DIVIDE:            return NzKeyboard::Divide;
+		case VK_DOWN:              return NzKeyboard::Down;
+		case VK_END:               return NzKeyboard::End;
+		case VK_ESCAPE:            return NzKeyboard::Escape;
+		case VK_F1:                return NzKeyboard::F1;
+		case VK_F2:                return NzKeyboard::F2;
+		case VK_F3:                return NzKeyboard::F3;
+		case VK_F4:                return NzKeyboard::F4;
+		case VK_F5:                return NzKeyboard::F5;
+		case VK_F6:                return NzKeyboard::F6;
+		case VK_F7:                return NzKeyboard::F7;
+		case VK_F8:                return NzKeyboard::F8;
+		case VK_F9:                return NzKeyboard::F9;
+		case VK_F10:               return NzKeyboard::F10;
+		case VK_F11:               return NzKeyboard::F11;
+		case VK_F12:               return NzKeyboard::F12;
+		case VK_F13:               return NzKeyboard::F13;
+		case VK_F14:               return NzKeyboard::F14;
+		case VK_F15:               return NzKeyboard::F15;
+		case VK_HOME:              return NzKeyboard::Home;
+		case VK_INSERT:            return NzKeyboard::Insert;
+		case VK_LEFT:              return NzKeyboard::Left;
+		case VK_LWIN:              return NzKeyboard::LSystem;
 		case VK_MEDIA_NEXT_TRACK:  return NzKeyboard::Media_Next;
 		case VK_MEDIA_PLAY_PAUSE:  return NzKeyboard::Media_Play;
 		case VK_MEDIA_PREV_TRACK:  return NzKeyboard::Media_Previous;
-		case VK_MEDIA_STOP:		   return NzKeyboard::Media_Stop;
-		case VK_MULTIPLY:		   return NzKeyboard::Multiply;
-		case VK_NEXT:			   return NzKeyboard::PageDown;
-		case VK_NUMPAD0:		   return NzKeyboard::Numpad0;
-		case VK_NUMPAD1:		   return NzKeyboard::Numpad1;
-		case VK_NUMPAD2:		   return NzKeyboard::Numpad2;
-		case VK_NUMPAD3:		   return NzKeyboard::Numpad3;
-		case VK_NUMPAD4:		   return NzKeyboard::Numpad4;
-		case VK_NUMPAD5:		   return NzKeyboard::Numpad5;
-		case VK_NUMPAD6:		   return NzKeyboard::Numpad6;
-		case VK_NUMPAD7:		   return NzKeyboard::Numpad7;
-		case VK_NUMPAD8:		   return NzKeyboard::Numpad8;
-		case VK_NUMPAD9:		   return NzKeyboard::Numpad9;
-		case VK_NUMLOCK:		   return NzKeyboard::NumLock;
-		case VK_OEM_1:			   return NzKeyboard::Semicolon;
-		case VK_OEM_2:			   return NzKeyboard::Slash;
-		case VK_OEM_3:			   return NzKeyboard::Tilde;
-		case VK_OEM_4:			   return NzKeyboard::LBracket;
-		case VK_OEM_5:			   return NzKeyboard::Backslash;
-		case VK_OEM_6:			   return NzKeyboard::RBracket;
-		case VK_OEM_7:			   return NzKeyboard::Quote;
-		case VK_OEM_COMMA:		   return NzKeyboard::Comma;
-		case VK_OEM_MINUS:		   return NzKeyboard::Dash;
-		case VK_OEM_PERIOD:		   return NzKeyboard::Period;
-		case VK_OEM_PLUS:		   return NzKeyboard::Equal;
-		case VK_RIGHT:			   return NzKeyboard::Right;
-		case VK_PRIOR:			   return NzKeyboard::PageUp;
-		case VK_PAUSE:			   return NzKeyboard::Pause;
-		case VK_PRINT:			   return NzKeyboard::Print;
-		case VK_SCROLL:			   return NzKeyboard::ScrollLock;
-		case VK_SNAPSHOT:		   return NzKeyboard::PrintScreen;
-		case VK_SUBTRACT:		   return NzKeyboard::Subtract;
-		case VK_RETURN:			   return NzKeyboard::Return;
-		case VK_RWIN:			   return NzKeyboard::RSystem;
-		case VK_SPACE:			   return NzKeyboard::Space;
-		case VK_TAB:			   return NzKeyboard::Tab;
-		case VK_UP:				   return NzKeyboard::Up;
-		case VK_VOLUME_DOWN:	   return NzKeyboard::Volume_Down;
-		case VK_VOLUME_MUTE:	   return NzKeyboard::Volume_Mute;
-		case VK_VOLUME_UP:		   return NzKeyboard::Volume_Up;
+		case VK_MEDIA_STOP:        return NzKeyboard::Media_Stop;
+		case VK_MULTIPLY:          return NzKeyboard::Multiply;
+		case VK_NEXT:              return NzKeyboard::PageDown;
+		case VK_NUMPAD0:           return NzKeyboard::Numpad0;
+		case VK_NUMPAD1:           return NzKeyboard::Numpad1;
+		case VK_NUMPAD2:           return NzKeyboard::Numpad2;
+		case VK_NUMPAD3:           return NzKeyboard::Numpad3;
+		case VK_NUMPAD4:           return NzKeyboard::Numpad4;
+		case VK_NUMPAD5:           return NzKeyboard::Numpad5;
+		case VK_NUMPAD6:           return NzKeyboard::Numpad6;
+		case VK_NUMPAD7:           return NzKeyboard::Numpad7;
+		case VK_NUMPAD8:           return NzKeyboard::Numpad8;
+		case VK_NUMPAD9:           return NzKeyboard::Numpad9;
+		case VK_NUMLOCK:           return NzKeyboard::NumLock;
+		case VK_OEM_1:             return NzKeyboard::Semicolon;
+		case VK_OEM_2:             return NzKeyboard::Slash;
+		case VK_OEM_3:             return NzKeyboard::Tilde;
+		case VK_OEM_4:             return NzKeyboard::LBracket;
+		case VK_OEM_5:             return NzKeyboard::Backslash;
+		case VK_OEM_6:             return NzKeyboard::RBracket;
+		case VK_OEM_7:             return NzKeyboard::Quote;
+		case VK_OEM_COMMA:         return NzKeyboard::Comma;
+		case VK_OEM_MINUS:         return NzKeyboard::Dash;
+		case VK_OEM_PERIOD:        return NzKeyboard::Period;
+		case VK_OEM_PLUS:          return NzKeyboard::Equal;
+		case VK_RIGHT:             return NzKeyboard::Right;
+		case VK_PRIOR:             return NzKeyboard::PageUp;
+		case VK_PAUSE:             return NzKeyboard::Pause;
+		case VK_PRINT:             return NzKeyboard::Print;
+		case VK_SCROLL:            return NzKeyboard::ScrollLock;
+		case VK_SNAPSHOT:          return NzKeyboard::PrintScreen;
+		case VK_SUBTRACT:          return NzKeyboard::Subtract;
+		case VK_RETURN:            return NzKeyboard::Return;
+		case VK_RWIN:              return NzKeyboard::RSystem;
+		case VK_SPACE:             return NzKeyboard::Space;
+		case VK_TAB:               return NzKeyboard::Tab;
+		case VK_UP:                return NzKeyboard::Up;
+		case VK_VOLUME_DOWN:       return NzKeyboard::Volume_Down;
+		case VK_VOLUME_MUTE:       return NzKeyboard::Volume_Mute;
+		case VK_VOLUME_UP:         return NzKeyboard::Volume_Up;
 
 		default:
 			return NzKeyboard::Undefined;

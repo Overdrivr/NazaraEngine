@@ -1,9 +1,9 @@
-// This file was automatically generated on 13 Mar 2013 at 23:20:31
+// This file was automatically generated on 21 Feb 2014 at 18:17:18
 
 /*
 	Nazara Engine - Noise module
 
-	Copyright (C) 2013 Rémi "Overdrivr" Bèges (remi.beges@laposte.net)
+	Copyright (C) 2014 Rémi "Overdrivr" Bèges (remi.beges@laposte.net)
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy of
 	this software and associated documentation files (the "Software"), to deal in

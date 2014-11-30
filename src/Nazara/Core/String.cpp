@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -9,7 +9,7 @@
 #include <Nazara/Core/Config.hpp>
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Core/Unicode.hpp>
-#include <Nazara/Math/Basic.hpp>
+#include <Nazara/Math/Algorithm.hpp>
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
@@ -90,22 +90,52 @@ NzString::NzString(char character)
 		m_sharedString = &emptyString;
 }
 
-NzString::NzString(unsigned int length, char character)
+NzString::NzString(unsigned int rep, char character)
 {
-	if (length > 0)
+	if (rep > 0)
 	{
 		m_sharedString = new SharedString;
-		m_sharedString->capacity = length;
-		m_sharedString->size = length;
-		m_sharedString->string = new char[length+1];
+		m_sharedString->capacity = rep;
+		m_sharedString->size = rep;
+		m_sharedString->string = new char[rep+1];
 
 		if (character != '\0')
-			std::memset(m_sharedString->string, character, length);
+			std::memset(m_sharedString->string, character, rep);
 
-		m_sharedString->string[length] = '\0';
+		m_sharedString->string[rep] = '\0';
 	}
 	else
 		m_sharedString = &emptyString;
+}
+
+NzString::NzString(unsigned int rep, const char* string) :
+NzString(rep, string, (string) ? std::strlen(string) : 0)
+{
+}
+
+NzString::NzString(unsigned int rep, const char* string, unsigned int length)
+{
+	unsigned int totalSize = rep*length;
+
+	if (totalSize > 0)
+	{
+		m_sharedString = new SharedString;
+		m_sharedString->capacity = totalSize;
+		m_sharedString->size = totalSize;
+		m_sharedString->string = new char[totalSize+1];
+
+		for (unsigned int i = 0; i < rep; ++i)
+			std::memcpy(&m_sharedString->string[i*length], string, length);
+
+		m_sharedString->string[totalSize] = '\0';
+	}
+	else
+		m_sharedString = &emptyString;
+}
+
+NzString::NzString(unsigned int rep, const NzString& string) :
+NzString(rep, string.m_sharedString->string, string.m_sharedString->size)
+{
 }
 
 NzString::NzString(const char* string) :
@@ -121,7 +151,8 @@ NzString::NzString(const char* string, unsigned int length)
 		m_sharedString->capacity = length;
 		m_sharedString->size = length;
 		m_sharedString->string = new char[length+1];
-		std::memcpy(m_sharedString->string, string, length+1);
+		std::memcpy(m_sharedString->string, string, length);
+		m_sharedString->string[length] = '\0';
 	}
 	else
 		m_sharedString = &emptyString;
@@ -188,7 +219,7 @@ void NzString::Clear(bool keepBuffer)
 {
 	if (keepBuffer)
 	{
-		EnsureOwnership();
+		EnsureOwnership(true);
 		m_sharedString->size = 0;
 	}
 	else
@@ -2024,8 +2055,8 @@ bool NzString::IsNumber(nzUInt8 base, nzUInt32 flags) const
 	{
 		if (flags & CaseInsensitive)
 		{
-			char limitLower = 'a'+base-1;
-			char limitUpper = 'A'+base-1;
+			char limitLower = 'a' + base-10 - 1;
+			char limitUpper = 'A' + base-10 - 1;
 
 			do
 			{
@@ -2037,7 +2068,7 @@ bool NzString::IsNumber(nzUInt8 base, nzUInt32 flags) const
 		}
 		else
 		{
-			char limit = 'a'+base-1;
+			char limit = 'a' + base-10 - 1;
 			do
 			{
 				char c = *ptr;
@@ -2049,7 +2080,7 @@ bool NzString::IsNumber(nzUInt8 base, nzUInt32 flags) const
 	}
 	else
 	{
-		char limit = '0'+base-1;
+		char limit = '0' + base - 1;
 
 		do
 		{
@@ -2550,7 +2581,6 @@ NzString& NzString::Resize(int size, char character)
 			std::memset(&m_sharedString->string[m_sharedString->size], character, newSize-m_sharedString->size);
 
 		m_sharedString->size = newSize;
-		m_sharedString->string[newSize] = '\0';
 	}
 	else // On veut forcément agrandir la chaine
 	{
@@ -2566,6 +2596,9 @@ NzString& NzString::Resize(int size, char character)
 		m_sharedString->size = newSize;
 		m_sharedString->string = newString;
 	}
+
+	// On rajoute le caractère de fin
+	m_sharedString->string[newSize] = '\0';
 
 	return *this;
 }
@@ -2628,6 +2661,160 @@ NzString NzString::Reversed() const
 	str[m_sharedString->size] = '\0';
 
 	return NzString(new SharedString(1, m_sharedString->size, m_sharedString->size, str));
+}
+
+NzString& NzString::Set(char character)
+{
+	if (character != '\0')
+	{
+		if (m_sharedString->capacity >= 1)
+			EnsureOwnership(true);
+		else
+		{
+			ReleaseString();
+			m_sharedString = new SharedString;
+			m_sharedString->capacity = 1;
+			m_sharedString->string = new char[2];
+		}
+
+		m_sharedString->size = 1;
+		m_sharedString->string[0] = character;
+		m_sharedString->string[1] = '\0';
+	}
+	else
+		ReleaseString();
+
+	return *this;
+}
+
+NzString& NzString::Set(unsigned int rep, char character)
+{
+	if (rep > 0)
+	{
+		if (m_sharedString->capacity >= rep)
+			EnsureOwnership(true);
+		else
+		{
+			ReleaseString();
+			m_sharedString = new SharedString;
+			m_sharedString->capacity = rep;
+			m_sharedString->string = new char[rep+1];
+		}
+
+		m_sharedString->size = rep;
+
+		if (character != '\0')
+			std::memset(m_sharedString->string, character, rep);
+
+		m_sharedString->string[rep] = '\0';
+	}
+	else
+		ReleaseString();
+
+	return *this;
+}
+
+NzString& NzString::Set(unsigned int rep, const char* string)
+{
+	return Set(rep, string, (string) ? std::strlen(string) : 0);
+}
+
+NzString& NzString::Set(unsigned int rep, const char* string, unsigned int length)
+{
+	unsigned int totalSize = rep*length;
+
+	if (totalSize > 0)
+	{
+		if (m_sharedString->capacity >= totalSize)
+			EnsureOwnership(true);
+		else
+		{
+			ReleaseString();
+			m_sharedString = new SharedString;
+			m_sharedString->capacity = totalSize;
+			m_sharedString->string = new char[totalSize+1];
+		}
+
+		m_sharedString->size = totalSize;
+
+		for (unsigned int i = 0; i < rep; ++i)
+			std::memcpy(&m_sharedString->string[i*length], string, length);
+
+		m_sharedString->string[totalSize] = '\0';
+	}
+	else
+		ReleaseString();
+
+	return *this;
+}
+
+NzString& NzString::Set(unsigned int rep, const NzString& string)
+{
+	return Set(rep, string.m_sharedString->string, string.m_sharedString->size);
+}
+
+NzString& NzString::Set(const char* string)
+{
+	return Set(string, (string) ? std::strlen(string) : 0);
+}
+
+NzString& NzString::Set(const char* string, unsigned int length)
+{
+	if (length > 0)
+	{
+		if (m_sharedString->capacity >= length)
+			EnsureOwnership(true);
+		else
+		{
+			ReleaseString();
+
+			m_sharedString = new SharedString;
+			m_sharedString->capacity = length;
+			m_sharedString->string = new char[length+1];
+		}
+
+		m_sharedString->size = length;
+		std::memcpy(m_sharedString->string, string, length);
+		m_sharedString->string[length] = '\0';
+	}
+	else
+		ReleaseString();
+
+	return *this;
+}
+
+NzString& NzString::Set(const std::string& string)
+{
+	return Set(string.data(), string.size());
+}
+
+NzString& NzString::Set(const NzString& string)
+{
+	if (this != &string)
+	{
+		ReleaseString();
+
+		m_sharedString = string.m_sharedString;
+		if (m_sharedString != &emptyString)
+			m_sharedString->refCount++;
+	}
+
+	return *this;
+}
+
+NzString& NzString::Set(NzString&& string) noexcept
+{
+	std::swap(m_sharedString, string.m_sharedString);
+
+	return *this;
+}
+
+NzString& NzString::Set(SharedString* sharedString)
+{
+	ReleaseString();
+	m_sharedString = sharedString;
+
+	return *this;
 }
 
 NzString NzString::Simplified(nzUInt32 flags) const
@@ -2693,7 +2880,7 @@ NzString NzString::Simplified(nzUInt32 flags) const
 
 NzString& NzString::Simplify(nzUInt32 flags)
 {
-	return operator=(Simplified(flags));
+	return Set(Simplified(flags));
 }
 
 unsigned int NzString::Split(std::vector<NzString>& result, char separation, int start, nzUInt32 flags) const
@@ -3188,12 +3375,12 @@ NzString NzString::ToUpper(nzUInt32 flags) const
 
 NzString& NzString::Trim(nzUInt32 flags)
 {
-	return operator=(Trimmed(flags));
+	return Set(Trimmed(flags));
 }
 
 NzString& NzString::Trim(char character, nzUInt32 flags)
 {
-	return operator=(Trimmed(character, flags));
+	return Set(Trimmed(character, flags));
 }
 
 NzString NzString::Trimmed(nzUInt32 flags) const
@@ -3393,93 +3580,27 @@ char NzString::operator[](unsigned int pos) const
 
 NzString& NzString::operator=(char character)
 {
-	if (character != '\0')
-	{
-		if (m_sharedString->capacity >= 1)
-			EnsureOwnership();
-		else
-		{
-			ReleaseString();
-			m_sharedString = new SharedString;
-			m_sharedString->capacity = 1;
-			m_sharedString->string = new char[2];
-		}
-
-		m_sharedString->size = 1;
-		m_sharedString->string[0] = character;
-		m_sharedString->string[1] = '\0';
-	}
-	else
-		ReleaseString();
-
-	return *this;
+	return Set(character);
 }
 
 NzString& NzString::operator=(const char* string)
 {
-	if (string && string[0] != '\0')
-	{
-		unsigned int size = std::strlen(string);
-		if (m_sharedString->capacity >= size)
-			EnsureOwnership();
-		else
-		{
-			ReleaseString();
-
-			m_sharedString = new SharedString;
-			m_sharedString->capacity = size;
-			m_sharedString->string = new char[size+1];
-		}
-
-		m_sharedString->size = size;
-		std::memcpy(m_sharedString->string, string, size+1);
-	}
-	else
-		ReleaseString();
-
-	return *this;
+	return Set(string);
 }
 
 NzString& NzString::operator=(const std::string& string)
 {
-	if (string.size() > 0)
-	{
-		if (m_sharedString->capacity >= string.size())
-			EnsureOwnership();
-		else
-		{
-			ReleaseString();
-
-			m_sharedString = new SharedString;
-			m_sharedString->capacity = string.size();
-			m_sharedString->string = new char[string.size()+1];
-		}
-
-		m_sharedString->size = string.size();
-		std::memcpy(m_sharedString->string, string.c_str(), string.size()+1);
-	}
-	else
-		ReleaseString();
-
-	return *this;
+	return Set(string);
 }
 
 NzString& NzString::operator=(const NzString& string)
 {
-	ReleaseString();
-
-	m_sharedString = string.m_sharedString;
-	if (m_sharedString != &emptyString)
-		m_sharedString->refCount++;
-
-	return *this;
+	return Set(string);
 }
 
 NzString& NzString::operator=(NzString&& string) noexcept
 {
-	std::swap(m_sharedString, string.m_sharedString);
-
-	return *this;
+	return Set(string);
 }
 
 NzString NzString::operator+(char character) const
@@ -3793,7 +3914,7 @@ int NzString::Compare(const NzString& first, const NzString& second)
 NzString NzString::Number(float number)
 {
 	std::ostringstream oss;
-	oss.precision(NAZARA_CORE_REAL_PRECISION);
+	oss.precision(NAZARA_CORE_DECIMAL_DIGITS);
 	oss << number;
 
 	return NzString(oss.str());
@@ -3802,7 +3923,7 @@ NzString NzString::Number(float number)
 NzString NzString::Number(double number)
 {
 	std::ostringstream oss;
-	oss.precision(NAZARA_CORE_REAL_PRECISION);
+	oss.precision(NAZARA_CORE_DECIMAL_DIGITS);
 	oss << number;
 
 	return NzString(oss.str());
@@ -3811,7 +3932,7 @@ NzString NzString::Number(double number)
 NzString NzString::Number(long double number)
 {
 	std::ostringstream oss;
-	oss.precision(NAZARA_CORE_REAL_PRECISION);
+	oss.precision(NAZARA_CORE_DECIMAL_DIGITS);
 	oss << number;
 
 	return NzString(oss.str());
@@ -3869,7 +3990,8 @@ NzString NzString::Number(unsigned long long number, nzUInt8 radix)
 
 NzString NzString::Pointer(const void* ptr)
 {
-	unsigned int size = sizeof(ptr)*2+2;
+	const unsigned int size = sizeof(void*)*2 + 2;
+
 	char* str = new char[size+1];
 	std::sprintf(str, "0x%p", ptr);
 
@@ -4069,6 +4191,9 @@ bool operator==(const NzString& first, const NzString& second)
 	if (first.m_sharedString->size != second.m_sharedString->size)
 		return false;
 
+	if (first.m_sharedString == second.m_sharedString)
+		return true;
+
 	return std::strcmp(first.m_sharedString->string, second.m_sharedString->string) == 0;
 }
 
@@ -4193,7 +4318,7 @@ bool operator>=(const std::string& string, const NzString& nstring)
 	return !operator<(string, nstring);
 }
 
-void NzString::EnsureOwnership()
+void NzString::EnsureOwnership(bool discardContent)
 {
 	if (m_sharedString == &emptyString)
 		return;
@@ -4203,15 +4328,16 @@ void NzString::EnsureOwnership()
 		m_sharedString->refCount--;
 
 		char* string = new char[m_sharedString->capacity+1];
-		std::memcpy(string, m_sharedString->string, m_sharedString->size+1);
+		if (!discardContent)
+			std::memcpy(string, m_sharedString->string, m_sharedString->size+1);
 
 		m_sharedString = new SharedString(1, m_sharedString->capacity, m_sharedString->size, string);
 	}
 }
 
-bool NzString::FillHash(NzAbstractHash* hazh) const
+bool NzString::FillHash(NzAbstractHash* hash) const
 {
-	hazh->Append(reinterpret_cast<const nzUInt8*>(m_sharedString->string), m_sharedString->size);
+	hash->Append(reinterpret_cast<const nzUInt8*>(m_sharedString->string), m_sharedString->size);
 
 	return true;
 }

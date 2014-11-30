@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -26,7 +26,6 @@ class NAZARA_API NzSceneRoot : public NzSceneNode
 		NzSceneRoot(NzScene* scene);
 		virtual ~NzSceneRoot();
 
-		bool FrustumCull(const NzFrustumf& frustum) override;
 		void Register();
 		void Unregister();
 };

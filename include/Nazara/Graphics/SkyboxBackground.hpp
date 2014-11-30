@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -9,7 +9,7 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Graphics/AbstractBackground.hpp>
-#include <Nazara/Renderer/ShaderProgram.hpp>
+#include <Nazara/Renderer/Shader.hpp>
 #include <Nazara/Renderer/Texture.hpp>
 #include <Nazara/Renderer/TextureSampler.hpp>
 #include <Nazara/Utility/IndexBuffer.hpp>
@@ -35,7 +35,7 @@ class NAZARA_API NzSkyboxBackground : public NzAbstractBackground
 		NzTextureRef m_texture;
 		NzTextureSampler m_sampler;
 		NzIndexBufferRef m_indexBuffer;
-		NzShaderProgramRef m_program;
+		NzShaderRef m_shader;
 		NzVertexBufferRef m_vertexBuffer;
 };
 

@@ -1,9 +1,10 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Mathematics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Core/StringStream.hpp>
-#include <Nazara/Math/Basic.hpp>
+#include <Nazara/Math/Algorithm.hpp>
+#include <Nazara/Math/Box.hpp>
 #include <algorithm>
 #include <cstring>
 #include <Nazara/Core/Debug.hpp>
@@ -56,32 +57,13 @@ bool NzSphere<T>::Contains(const NzSphere& sphere) const
 template<typename T>
 bool NzSphere<T>::Contains(const NzBox<T>& box) const
 {
-    if(!Contains(box.GetBoundingSphere()) && !Intersect(box.GetBoundingSphere()))
-        return false;
+    if (box.GetMinimum().SquaredDistance(GetPosition()) <= radius * radius)
+    {
+        if (box.GetMaximum().SquaredDistance(GetPosition()) <= radius * radius)
+            return true;
+    }
 
-    if(Contains(box.GetBoundingSphere()))
-        return true;
-
-    //Brute force : il doit �tre possible de faire mieux (minkowski ?)
-    if(!Contains(box.GetPosition()))
-        return false;
-    if(!Contains(box.GetPosition() + NzVector3<T>(box.width,  F(0.0),      F(0.0))))
-        return false;
-    if(!Contains(box.GetPosition() + NzVector3<T>(box.width,  box.height,  F(0.0))))
-        return false;
-    if(!Contains(box.GetPosition() + NzVector3<T>(F(0.0),     box.height,  F(0.0))))
-        return false;
-    if(!Contains(box.GetPosition() + NzVector3<T>(F(0.0),     F(0.0),      box.depth)))
-        return false;
-    if(!Contains(box.GetPosition() + NzVector3<T>(box.width,  F(0.0),      box.depth)))
-        return false;
-    if(!Contains(box.GetPosition() + NzVector3<T>(box.width,  box.height,  box.depth)))
-        return false;
-    if(!Contains(box.GetPosition() + NzVector3<T>(F(0.0),     box.height,  box.depth)))
-        return false;
-
-    return true;
-
+    return false;
 }
 
 template<typename T>
@@ -107,7 +89,6 @@ template<typename T>
 NzSphere<T>& NzSphere<T>::ExtendTo(T X, T Y, T Z)
 {
 	T distance = SquaredDistance(X, Y, Z);
-
 	if (distance > radius*radius)
 		radius = std::sqrt(distance);
 
@@ -117,7 +98,7 @@ NzSphere<T>& NzSphere<T>::ExtendTo(T X, T Y, T Z)
 template<typename T>
 NzSphere<T>& NzSphere<T>::ExtendTo(const NzVector3<T>& point)
 {
-	return ExtendTo(point);
+	return ExtendTo(point.x, point.y, point.z);
 }
 
 template<typename T>
@@ -166,45 +147,48 @@ T NzSphere<T>::GetSquaredRadius() const
 {
     return radius * radius;
 }
-/*
+
 template<typename T>
 bool NzSphere<T>::Intersect(const NzBox<T>& box) const
 {
-    T dmin(0.0);
-	T dmax(0.0);
-	bool face = false;
-	T sqrt_radius = std::sqrt(radius);
-	T a,b;
-
-	NzVector3<T> corner(cube.x + cube.width, cube.y + cube.height, cube.z + cube.depth);
-
-	for(unsigned int i(0) ; i < 3 ; ++i)
+	// Arvo's algorithm.
+	T squaredDistance = T(0.0);
+	if (x < box.x)
 	{
-		a = std::sqrt(*(&x+i) - cube[i] );
-		b = std::sqrt(*(&x+i) - corner[i] );
-
-		dmax = std::max(a,b);
-
-		if(*(&x+i) < cube[i])
-		{
-			face = true;
-			dmin = a;
-		}
-		else if(*(&x+i) > corner[i])
-		{
-			face = true;
-			dmin = b;
-		}
-		else if(std::min(a,b) <= sqrt_radius)
-			face = true;
+		T diff = x - box.x;
+		squaredDistance += diff*diff;
+	}
+	else if (x > box.x + box.width)
+	{
+		T diff = x - (box.x + box.width);
+		squaredDistance += diff*diff;
 	}
 
-	if(face && (dmin <= sqrt_radius) && (sqrt_radius <= dmax))
-		return true;
+	if (y < box.y)
+	{
+		T diff = y - box.y;
+		squaredDistance += diff*diff;
+	}
+	else if (y > box.y + box.height)
+	{
+		T diff = y - (box.y + box.height);
+		squaredDistance += diff*diff;
+	}
 
-	return false;
+	if (z < box.z)
+	{
+		T diff = z - box.z;
+		squaredDistance += diff*diff;
+	}
+	else if (z > box.z + box.depth)
+	{
+		T diff = z - (box.z + box.depth);
+		squaredDistance += diff*diff;
+	}
+
+    return squaredDistance <= radius * radius;
 }
-*/
+
 template<typename T>
 bool NzSphere<T>::Intersect(const NzSphere& sphere) const
 {
@@ -296,7 +280,7 @@ template<typename T>
 T NzSphere<T>::SquaredDistance(T X, T Y, T Z) const
 {
 	NzVector3<T> distance(X-x, Y-y, Z-z);
-	return distance.SquaredLength();
+	return distance.GetSquaredLength();
 }
 
 template<typename T>

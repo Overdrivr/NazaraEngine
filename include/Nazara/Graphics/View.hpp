@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -29,25 +29,26 @@ class NAZARA_API NzView : public NzAbstractViewer, public NzNode, NzRenderTarget
 
 		float GetAspectRatio() const;
 		NzVector3f GetEyePosition() const;
+		NzVector3f GetForward() const;
 		const NzFrustumf& GetFrustum() const;
 		const NzMatrix4f& GetProjectionMatrix() const;
 		const NzRenderTarget* GetTarget() const;
 		const NzRectf& GetTargetRegion() const;
 		const NzMatrix4f& GetViewMatrix() const;
-		const NzRectui& GetViewport() const;
+		const NzRecti& GetViewport() const;
 		float GetZFar() const;
 		float GetZNear() const;
 
 		void SetTarget(const NzRenderTarget* renderTarget);
 		void SetTarget(const NzRenderTarget& renderTarget);
 		void SetTargetRegion(const NzRectf& region);
-		void SetViewport(const NzRectui& viewport);
+		void SetViewport(const NzRecti& viewport);
 		void SetZFar(float zFar);
 		void SetZNear(float zNear);
 
 	private:
 		void ApplyView() const override;
-		void Invalidate() override;
+		void InvalidateNode() override;
 
 		void OnRenderTargetReleased(const NzRenderTarget* renderTarget, void* userdata) override;
 		bool OnRenderTargetSizeChange(const NzRenderTarget* renderTarget, void* userdata) override;
@@ -61,7 +62,7 @@ class NAZARA_API NzView : public NzAbstractViewer, public NzNode, NzRenderTarget
 		mutable NzMatrix4f m_projectionMatrix;
 		mutable NzMatrix4f m_viewMatrix;
 		NzRectf m_targetRegion;
-		mutable NzRectui m_viewport;
+		mutable NzRecti m_viewport;
 		const NzRenderTarget* m_target;
 		mutable bool m_frustumUpdated;
 		mutable bool m_projectionMatrixUpdated;

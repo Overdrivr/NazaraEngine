@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -7,9 +7,9 @@
 #include <Nazara/Graphics/Camera.hpp>
 #include <Nazara/Graphics/Drawable.hpp>
 #include <Nazara/Graphics/Light.hpp>
+#include <Nazara/Graphics/Material.hpp>
 #include <Nazara/Graphics/Sprite.hpp>
 #include <Nazara/Renderer/Config.hpp>
-#include <Nazara/Renderer/Material.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
 #include <Nazara/Utility/BufferMapper.hpp>
 #include <Nazara/Utility/StaticMesh.hpp>
@@ -18,10 +18,11 @@
 #include <memory>
 #include <Nazara/Graphics/Debug.hpp>
 
+///TODO: Surveiller les shaders et supprimer les données uniformes en cas de changement (recompilation/destruction)
+
 namespace
 {
 	static NzIndexBuffer* s_indexBuffer = nullptr;
-	unsigned int maxLightCount = 3; ///TODO: Constante sur le nombre maximum de lumières
 	unsigned int s_maxSprites = 8192;
 
 	NzIndexBuffer* BuildIndexBuffer()
@@ -49,7 +50,7 @@ namespace
 
 NzForwardRenderTechnique::NzForwardRenderTechnique() :
 m_spriteBuffer(NzVertexDeclaration::Get(nzVertexLayout_XYZ_UV), s_maxSprites*4, nzBufferStorage_Hardware, nzBufferUsage_Dynamic),
-m_maxLightsPerObject(maxLightCount)
+m_maxLightPassPerObject(3)
 {
 	if (!s_indexBuffer)
 		s_indexBuffer = BuildIndexBuffer();
@@ -63,35 +64,37 @@ NzForwardRenderTechnique::~NzForwardRenderTechnique()
 		s_indexBuffer = nullptr;
 }
 
-void NzForwardRenderTechnique::Clear(const NzScene* scene)
+void NzForwardRenderTechnique::Clear(const NzScene* scene) const
 {
 	NzRenderer::Enable(nzRendererParameter_DepthBuffer, true);
 	NzRenderer::Enable(nzRendererParameter_DepthWrite, true);
-	NzRenderer::Clear(nzRendererClear_Depth);
+	NzRenderer::Clear(nzRendererBuffer_Depth);
 
-	NzAbstractBackground* background = scene->GetBackground();
+	NzAbstractBackground* background = (scene->IsBackgroundEnabled()) ? scene->GetBackground() : nullptr;
 	if (background)
 		background->Draw(scene);
 }
 
-void NzForwardRenderTechnique::Draw(const NzScene* scene)
+bool NzForwardRenderTechnique::Draw(const NzScene* scene) const
 {
-	// Rendu en projection perspective (3D)
-	m_directionnalLights.SetLights(&m_renderQueue.directionnalLights[0], m_renderQueue.directionnalLights.size());
+	m_directionalLights.SetLights(&m_renderQueue.directionalLights[0], m_renderQueue.directionalLights.size());
 	m_lights.SetLights(&m_renderQueue.lights[0], m_renderQueue.lights.size());
+	m_renderQueue.Sort(scene->GetViewer());
 
 	if (!m_renderQueue.opaqueModels.empty())
-		DrawOpaqueModels(scene, m_renderQueue.opaqueModels);
+		DrawOpaqueModels(scene);
+
+	if (!m_renderQueue.transparentModels.empty())
+		DrawTransparentModels(scene);
 
 	if (!m_renderQueue.sprites.empty())
-		DrawSprites(scene, m_renderQueue.sprites);
-
-	if (!m_renderQueue.transparentsModels.empty())
-		DrawTransparentModels(scene, m_renderQueue.transparentsModels);
+		DrawSprites(scene);
 
 	// Les autres drawables (Exemple: Terrain)
 	for (const NzDrawable* drawable : m_renderQueue.otherDrawables)
 		drawable->Draw();
+
+	return true;
 
 	// Les billboards
 	/*if (!m_renderQueue.billboards.empty())
@@ -139,9 +142,9 @@ void NzForwardRenderTechnique::Draw(const NzScene* scene)
 	}*/
 }
 
-unsigned int NzForwardRenderTechnique::GetMaxLightsPerObject() const
+unsigned int NzForwardRenderTechnique::GetMaxLightPassPerObject() const
 {
-	return m_maxLightsPerObject;
+	return m_maxLightPassPerObject;
 }
 
 NzAbstractRenderQueue* NzForwardRenderTechnique::GetRenderQueue()
@@ -149,88 +152,67 @@ NzAbstractRenderQueue* NzForwardRenderTechnique::GetRenderQueue()
 	return &m_renderQueue;
 }
 
-void NzForwardRenderTechnique::SetMaxLightsPerObject(unsigned int lightCount)
+nzRenderTechniqueType NzForwardRenderTechnique::GetType() const
 {
-	#if NAZARA_GRAPHICS_SAFE
-	if (lightCount > maxLightCount)
-	{
-		NazaraError("Light count is over maximum light count (" + NzString::Number(lightCount) + " > " + NzString::Number(lightCount) + ')');
-		return;
-	}
-	#endif
-
-	m_maxLightsPerObject = lightCount;
+	return nzRenderTechniqueType_BasicForward;
 }
 
-void NzForwardRenderTechnique::DrawOpaqueModels(const NzScene* scene, NzForwardRenderQueue::BatchedModelContainer& opaqueModels)
+void NzForwardRenderTechnique::SetMaxLightPassPerObject(unsigned int passCount)
+{
+	m_maxLightPassPerObject = passCount;
+}
+
+void NzForwardRenderTechnique::DrawOpaqueModels(const NzScene* scene) const
 {
 	NzAbstractViewer* viewer = scene->GetViewer();
-	const NzShaderProgram* lastProgram = nullptr;
+	const LightUniforms* lightUniforms = nullptr;
+	const NzShader* lastShader = nullptr;
 
-	for (auto& matIt : opaqueModels)
+	for (auto& matIt : m_renderQueue.opaqueModels)
 	{
 		bool& used = std::get<0>(matIt.second);
 		if (used)
 		{
 			bool& renderQueueInstancing = std::get<1>(matIt.second);
-			NzForwardRenderQueue::BatchedSkeletalMeshContainer& skeletalContainer = std::get<2>(matIt.second);
-			NzForwardRenderQueue::BatchedStaticMeshContainer& staticContainer = std::get<3>(matIt.second);
+			NzForwardRenderQueue::MeshInstanceContainer& meshInstances = std::get<2>(matIt.second);
 
-			if (!skeletalContainer.empty() || !staticContainer.empty())
+			if (!meshInstances.empty())
 			{
 				const NzMaterial* material = matIt.first;
 
 				// Nous utilisons de l'instancing que lorsqu'aucune lumière (autre que directionnelle) n'est active
 				// Ceci car l'instancing n'est pas compatible avec la recherche des lumières les plus proches
 				// (Le deferred shading n'a pas ce problème)
-				bool instancing = m_instancingEnabled && m_lights.IsEmpty() && renderQueueInstancing;
+				bool instancing = m_instancingEnabled && (!material->IsLightingEnabled() || m_lights.IsEmpty()) && renderQueueInstancing;
 
-				// On commence par récupérer le programme du matériau
-				const NzShaderProgram* program = material->GetShaderProgram(nzShaderTarget_Model, (instancing) ? nzShaderFlags_Instancing : 0);
-
-				unsigned int lightCount = 0;
+				// On commence par appliquer du matériau (et récupérer le shader ainsi activé)
+				const NzShader* shader = material->Apply((instancing) ? nzShaderFlags_Instancing : 0);
 
 				// Les uniformes sont conservées au sein d'un programme, inutile de les renvoyer tant qu'il ne change pas
-				if (program != lastProgram)
+				if (shader != lastShader)
 				{
-					NzRenderer::SetShaderProgram(program);
-
 					// Couleur ambiante de la scène
-					program->SendColor(program->GetUniformLocation(nzShaderUniform_SceneAmbient), scene->GetAmbientColor());
+					shader->SendColor(shader->GetUniformLocation(nzShaderUniform_SceneAmbient), scene->GetAmbientColor());
 					// Position de la caméra
-					program->SendVector(program->GetUniformLocation(nzShaderUniform_EyePosition), viewer->GetEyePosition());
+					shader->SendVector(shader->GetUniformLocation(nzShaderUniform_EyePosition), viewer->GetEyePosition());
 
-					// On envoie les lumières directionnelles s'il y a (Les mêmes pour tous)
-					lightCount = std::min(m_directionnalLights.GetLightCount(), 3U);
-					for (unsigned int i = 0; i < lightCount; ++i)
-						m_directionnalLights.GetLight(i)->Enable(program, i);
+					// Index des uniformes d'éclairage dans le shader
+					lightUniforms = GetLightUniforms(shader);
 
-					lastProgram = program;
+					lastShader = shader;
 				}
 
-				material->Apply(program);
-
-				// Meshs squelettiques
-				/*if (!skeletalContainer.empty())
+				// Meshes
+				for (auto& subMeshIt : meshInstances)
 				{
-					NzRenderer::SetVertexBuffer(m_skinningBuffer); // Vertex buffer commun
-					for (auto& subMeshIt : container)
-					{
-						///TODO
-					}
-				}*/
-
-				// Meshs statiques
-				for (auto& subMeshIt : staticContainer)
-				{
+					const NzMeshData& meshData = subMeshIt.first;
 					const NzSpheref& boundingSphere = subMeshIt.second.first;
-					const NzStaticMesh* mesh = subMeshIt.first;
-					std::vector<NzForwardRenderQueue::StaticData>& staticData = subMeshIt.second.second;
+					std::vector<NzMatrix4f>& instances = subMeshIt.second.second;
 
-					if (!staticData.empty())
+					if (!instances.empty())
 					{
-						const NzIndexBuffer* indexBuffer = mesh->GetIndexBuffer();
-						const NzVertexBuffer* vertexBuffer = mesh->GetVertexBuffer();
+						const NzIndexBuffer* indexBuffer = meshData.indexBuffer;
+						const NzVertexBuffer* vertexBuffer = meshData.vertexBuffer;
 
 						// Gestion du draw call avant la boucle de rendu
 						std::function<void(nzPrimitiveMode, unsigned int, unsigned int)> DrawFunc;
@@ -253,62 +235,133 @@ void NzForwardRenderTechnique::DrawOpaqueModels(const NzScene* scene, NzForwardR
 						NzRenderer::SetIndexBuffer(indexBuffer);
 						NzRenderer::SetVertexBuffer(vertexBuffer);
 
-						nzPrimitiveMode primitiveMode = mesh->GetPrimitiveMode();
 						if (instancing)
 						{
+							// On calcule le nombre d'instances que l'on pourra afficher cette fois-ci (Selon la taille du buffer d'instancing)
 							NzVertexBuffer* instanceBuffer = NzRenderer::GetInstanceBuffer();
-
 							instanceBuffer->SetVertexDeclaration(NzVertexDeclaration::Get(nzVertexLayout_Matrix4));
 
-							unsigned int stride = instanceBuffer->GetStride();
+							// Avec l'instancing, impossible de sélectionner les lumières pour chaque objet
+							// Du coup, il n'est activé que pour les lumières directionnelles
+							unsigned int lightCount = m_directionalLights.GetLightCount();
+							unsigned int lightIndex = 0;
+							nzRendererComparison oldDepthFunc = NzRenderer::GetDepthFunc();
 
-							const NzForwardRenderQueue::StaticData* data = &staticData[0];
-							unsigned int instanceCount = staticData.size();
-							unsigned int maxInstanceCount = instanceBuffer->GetVertexCount();
-
-							while (instanceCount > 0)
+							unsigned int passCount = (lightCount == 0) ? 1 : (lightCount-1)/NAZARA_GRAPHICS_MAX_LIGHT_PER_PASS + 1;
+							for (unsigned int pass = 0; pass < passCount; ++pass)
 							{
-								unsigned int renderedInstanceCount = std::min(instanceCount, maxInstanceCount);
-								instanceCount -= renderedInstanceCount;
-
-								NzBufferMapper<NzVertexBuffer> mapper(instanceBuffer, nzBufferAccess_DiscardAndWrite, 0, renderedInstanceCount);
-								nzUInt8* ptr = reinterpret_cast<nzUInt8*>(mapper.GetPointer());
-
-								for (unsigned int i = 0; i < renderedInstanceCount; ++i)
+								if (lightUniforms->exists)
 								{
-									std::memcpy(ptr, data->transformMatrix, sizeof(float)*16);
+									unsigned int renderedLightCount = std::min(lightCount, NazaraSuffixMacro(NAZARA_GRAPHICS_MAX_LIGHT_PER_PASS, U));
+									lightCount -= renderedLightCount;
 
-									data++;
-									ptr += stride;
+									if (pass == 1)
+									{
+										// Pour additionner le résultat des calculs de lumière
+										// Aucune chance d'interférer avec les paramètres du matériau car nous ne rendons que les objets opaques
+										// (Autrement dit, sans blending)
+										// Quant à la fonction de profondeur, elle ne doit être appliquée que la première fois
+										NzRenderer::Enable(nzRendererParameter_Blend, true);
+										NzRenderer::SetBlendFunc(nzBlendFunc_One, nzBlendFunc_One);
+										NzRenderer::SetDepthFunc(nzRendererComparison_Equal);
+									}
+
+									for (unsigned int i = 0; i < renderedLightCount; ++i)
+										m_directionalLights.GetLight(lightIndex++)->Enable(shader, lightUniforms->uniforms, lightUniforms->offset*i);
+
+									for (unsigned int i = renderedLightCount; i < NAZARA_GRAPHICS_MAX_LIGHT_PER_PASS; ++i)
+										NzLight::Disable(shader, lightUniforms->uniforms, lightUniforms->offset*i);
 								}
 
-								mapper.Unmap();
+								const NzMatrix4f* instanceMatrices = &instances[0];
+								unsigned int instanceCount = instances.size();
+								unsigned int maxInstanceCount = instanceBuffer->GetVertexCount(); // On calcule le nombre d'instances que l'on pourra afficher cette fois-ci (Selon la taille du buffer d'instancing)
 
-								InstancedDrawFunc(renderedInstanceCount, primitiveMode, 0, indexCount);
+								while (instanceCount > 0)
+								{
+									// On calcule le nombre d'instances que l'on pourra afficher cette fois-ci (Selon la taille du buffer d'instancing)
+									unsigned int renderedInstanceCount = std::min(instanceCount, maxInstanceCount);
+									instanceCount -= renderedInstanceCount;
+
+									// On remplit l'instancing buffer avec nos matrices world
+									instanceBuffer->Fill(instanceMatrices, 0, renderedInstanceCount, true);
+									instanceMatrices += renderedInstanceCount;
+
+									// Et on affiche
+									InstancedDrawFunc(renderedInstanceCount, meshData.primitiveMode, 0, indexCount);
+								}
 							}
+
+							// On n'oublie pas de désactiver le blending pour ne pas interférer sur le reste du rendu
+							NzRenderer::Enable(nzRendererParameter_Blend, false);
+							NzRenderer::SetDepthFunc(oldDepthFunc);
 						}
 						else
 						{
-							for (const NzForwardRenderQueue::StaticData& data : staticData)
+							if (lightUniforms->exists)
 							{
-								// Calcul des lumières les plus proches
-								if (lightCount < m_maxLightsPerObject && !m_lights.IsEmpty())
+								for (const NzMatrix4f& matrix : instances)
 								{
-									unsigned int count = m_lights.ComputeClosestLights(data.transformMatrix.GetTranslation() + boundingSphere.GetPosition(), boundingSphere.radius, maxLightCount);
-									count -= lightCount;
+									unsigned int directionalLightCount = m_directionalLights.GetLightCount();
+									unsigned int otherLightCount = m_lights.ComputeClosestLights(matrix.GetTranslation() + boundingSphere.GetPosition(), boundingSphere.radius, m_maxLightPassPerObject*NAZARA_GRAPHICS_MAX_LIGHT_PER_PASS - directionalLightCount);
+									unsigned int lightCount = directionalLightCount + otherLightCount;
 
-									for (unsigned int i = 0; i < count; ++i)
-										m_lights.GetResult(i)->Enable(program, lightCount++);
+									NzRenderer::SetMatrix(nzMatrixType_World, matrix);
+									unsigned int directionalLightIndex = 0;
+									unsigned int otherLightIndex = 0;
+									nzRendererComparison oldDepthFunc = NzRenderer::GetDepthFunc(); // Dans le cas où nous aurions à le changer
+
+									unsigned int passCount = (lightCount == 0) ? 1 : (lightCount-1)/NAZARA_GRAPHICS_MAX_LIGHT_PER_PASS + 1;
+									for (unsigned int pass = 0; pass < passCount; ++pass)
+									{
+										unsigned int renderedLightCount = std::min(lightCount, NazaraSuffixMacro(NAZARA_GRAPHICS_MAX_LIGHT_PER_PASS, U));
+										lightCount -= renderedLightCount;
+
+										if (pass == 1)
+										{
+											// Pour additionner le résultat des calculs de lumière
+											// Aucune chance d'interférer avec les paramètres du matériau car nous ne rendons que les objets opaques
+											// (Autrement dit, sans blending)
+											// Quant à la fonction de profondeur, elle ne doit être appliquée que la première fois
+											NzRenderer::Enable(nzRendererParameter_Blend, true);
+											NzRenderer::SetBlendFunc(nzBlendFunc_One, nzBlendFunc_One);
+											NzRenderer::SetDepthFunc(nzRendererComparison_Equal);
+										}
+
+										// On active les lumières de cette passe-ci
+										for (unsigned int i = 0; i < renderedLightCount; ++i)
+										{
+											if (directionalLightIndex >= directionalLightCount)
+												m_lights.GetResult(otherLightIndex++)->Enable(shader, lightUniforms->uniforms, lightUniforms->offset*i);
+											else
+												m_directionalLights.GetLight(directionalLightIndex++)->Enable(shader, lightUniforms->uniforms, lightUniforms->offset*i);
+										}
+
+										// On désactive l'éventuel surplus
+										for (unsigned int i = renderedLightCount; i < NAZARA_GRAPHICS_MAX_LIGHT_PER_PASS; ++i)
+											NzLight::Disable(shader, lightUniforms->uniforms, lightUniforms->offset*i);
+
+										// Et on passe à l'affichage
+										DrawFunc(meshData.primitiveMode, 0, indexCount);
+									}
+
+									NzRenderer::Enable(nzRendererParameter_Blend, false);
+									NzRenderer::SetDepthFunc(oldDepthFunc);
 								}
-
-								for (unsigned int i = lightCount; i < maxLightCount; ++i)
-									NzLight::Disable(program, i);
-
-								NzRenderer::SetMatrix(nzMatrixType_World, data.transformMatrix);
-								DrawFunc(primitiveMode, 0, indexCount);
+							}
+							else
+							{
+								// Sans instancing, on doit effectuer un drawcall pour chaque instance
+								// Cela reste néanmoins plus rapide que l'instancing en dessous d'un certain nombre d'instances
+								// À cause du temps de modification du buffer d'instancing
+								for (const NzMatrix4f& matrix : instances)
+								{
+									NzRenderer::SetMatrix(nzMatrixType_World, matrix);
+									DrawFunc(meshData.primitiveMode, 0, indexCount);
+								}
 							}
 						}
-						staticData.clear();
+						instances.clear();
 					}
 				}
 			}
@@ -320,16 +373,16 @@ void NzForwardRenderTechnique::DrawOpaqueModels(const NzScene* scene, NzForwardR
 	}
 }
 
-void NzForwardRenderTechnique::DrawSprites(const NzScene* scene, NzForwardRenderQueue::BatchedSpriteContainer& sprites)
+void NzForwardRenderTechnique::DrawSprites(const NzScene* scene) const
 {
 	NzAbstractViewer* viewer = scene->GetViewer();
-	const NzShaderProgram* lastProgram = nullptr;
+	const NzShader* lastShader = nullptr;
 
 	NzRenderer::SetIndexBuffer(m_indexBuffer);
 	NzRenderer::SetMatrix(nzMatrixType_World, NzMatrix4f::Identity());
 	NzRenderer::SetVertexBuffer(&m_spriteBuffer);
 
-	for (auto& matIt : sprites)
+	for (auto& matIt : m_renderQueue.sprites)
 	{
 		const NzMaterial* material = matIt.first;
 		auto& spriteVector = matIt.second;
@@ -337,23 +390,19 @@ void NzForwardRenderTechnique::DrawSprites(const NzScene* scene, NzForwardRender
 		unsigned int spriteCount = spriteVector.size();
 		if (spriteCount > 0)
 		{
-			// On commence par récupérer le programme du matériau
-			const NzShaderProgram* program = material->GetShaderProgram(nzShaderTarget_Sprite, 0);
+			// On commence par appliquer du matériau (et récupérer le shader ainsi activé)
+			const NzShader* shader = material->Apply();
 
-			// Les uniformes sont conservées au sein du shader, inutile de les renvoyer tant que le shader reste le même
-			if (program != lastProgram)
+			// Les uniformes sont conservées au sein d'un programme, inutile de les renvoyer tant qu'il ne change pas
+			if (shader != lastShader)
 			{
-				NzRenderer::SetShaderProgram(program);
-
 				// Couleur ambiante de la scène
-				program->SendColor(program->GetUniformLocation(nzShaderUniform_SceneAmbient), scene->GetAmbientColor());
+				shader->SendColor(shader->GetUniformLocation(nzShaderUniform_SceneAmbient), scene->GetAmbientColor());
 				// Position de la caméra
-				program->SendVector(program->GetUniformLocation(nzShaderUniform_EyePosition), viewer->GetEyePosition());
+				shader->SendVector(shader->GetUniformLocation(nzShaderUniform_EyePosition), viewer->GetEyePosition());
 
-				lastProgram = program;
+				lastShader = shader;
 			}
-
-			material->Apply(program);
 
 			const NzSprite** spritePtr = &spriteVector[0];
 			do
@@ -400,91 +449,111 @@ void NzForwardRenderTechnique::DrawSprites(const NzScene* scene, NzForwardRender
 	}
 }
 
-void NzForwardRenderTechnique::DrawTransparentModels(const NzScene* scene, NzForwardRenderQueue::TransparentModelContainer& transparentModels)
+void NzForwardRenderTechnique::DrawTransparentModels(const NzScene* scene) const
 {
 	NzAbstractViewer* viewer = scene->GetViewer();
-	const NzShaderProgram* lastProgram = nullptr;
+	const LightUniforms* lightUniforms = nullptr;
+	const NzShader* lastShader = nullptr;
+	unsigned int lightCount = 0;
 
-	for (const std::pair<unsigned int, bool>& pair : transparentModels)
+	for (unsigned int index : m_renderQueue.transparentModels)
 	{
+		const NzForwardRenderQueue::TransparentModelData& modelData = m_renderQueue.transparentModelData[index];
+
 		// Matériau
-		NzMaterial* material = (pair.second) ?
-							   m_renderQueue.transparentStaticModels[pair.first].material :
-							   m_renderQueue.transparentSkeletalModels[pair.first].material;
+		const NzMaterial* material = modelData.material;
 
-		// On commence par récupérer le shader du matériau
-		const NzShaderProgram* program = material->GetShaderProgram(nzShaderTarget_Model, 0);
+		// On commence par appliquer du matériau (et récupérer le shader ainsi activé)
+		const NzShader* shader = material->Apply();
 
-		unsigned int lightCount = 0;
-
-		// Les uniformes sont conservées au sein du shader, inutile de les renvoyer tant que le shader reste le même
-		if (program != lastProgram)
+		// Les uniformes sont conservées au sein d'un programme, inutile de les renvoyer tant qu'il ne change pas
+		if (shader != lastShader)
 		{
-			NzRenderer::SetShaderProgram(program);
-
 			// Couleur ambiante de la scène
-			program->SendColor(program->GetUniformLocation(nzShaderUniform_SceneAmbient), scene->GetAmbientColor());
+			shader->SendColor(shader->GetUniformLocation(nzShaderUniform_SceneAmbient), scene->GetAmbientColor());
 			// Position de la caméra
-			program->SendVector(program->GetUniformLocation(nzShaderUniform_EyePosition), viewer->GetEyePosition());
+			shader->SendVector(shader->GetUniformLocation(nzShaderUniform_EyePosition), viewer->GetEyePosition());
+
+			// Index des uniformes d'éclairage dans le shader
+			lightUniforms = GetLightUniforms(shader);
 
 			// On envoie les lumières directionnelles s'il y a (Les mêmes pour tous)
-			lightCount = std::min(m_directionnalLights.GetLightCount(), 3U);
+			lightCount = std::min(m_directionalLights.GetLightCount(), NazaraSuffixMacro(NAZARA_GRAPHICS_MAX_LIGHT_PER_PASS, U));
 			for (unsigned int i = 0; i < lightCount; ++i)
-				m_directionnalLights.GetLight(i)->Enable(program, i);
+				m_directionalLights.GetLight(i)->Enable(shader, lightUniforms->uniforms, lightUniforms->offset*i);
 
-			lastProgram = program;
+			lastShader = shader;
 		}
 
-		material->Apply(program);
-
 		// Mesh
-		if (pair.second)
+		const NzMatrix4f& matrix = modelData.transformMatrix;
+		const NzMeshData& meshData = modelData.meshData;
+
+		const NzIndexBuffer* indexBuffer = meshData.indexBuffer;
+		const NzVertexBuffer* vertexBuffer = meshData.vertexBuffer;
+
+		// Gestion du draw call avant la boucle de rendu
+		std::function<void(nzPrimitiveMode, unsigned int, unsigned int)> DrawFunc;
+		unsigned int indexCount;
+
+		if (indexBuffer)
 		{
-			NzForwardRenderQueue::TransparentStaticModel& staticModel = m_renderQueue.transparentStaticModels[pair.first];
-
-			const NzMatrix4f& matrix = staticModel.transformMatrix;
-			NzStaticMesh* mesh = staticModel.mesh;
-
-			const NzIndexBuffer* indexBuffer = mesh->GetIndexBuffer();
-			const NzVertexBuffer* vertexBuffer = mesh->GetVertexBuffer();
-
-			// Gestion du draw call avant la boucle de rendu
-			std::function<void(nzPrimitiveMode, unsigned int, unsigned int)> DrawFunc;
-			unsigned int indexCount;
-
-			if (indexBuffer)
-			{
-				DrawFunc = NzRenderer::DrawIndexedPrimitives;
-				indexCount = indexBuffer->GetIndexCount();
-			}
-			else
-			{
-				DrawFunc = NzRenderer::DrawPrimitives;
-				indexCount = vertexBuffer->GetVertexCount();
-			}
-
-			NzRenderer::SetIndexBuffer(indexBuffer);
-			NzRenderer::SetVertexBuffer(vertexBuffer);
-
-			// Calcul des lumières les plus proches
-			if (lightCount < m_maxLightsPerObject && !m_lights.IsEmpty())
-			{
-				unsigned int count = m_lights.ComputeClosestLights(matrix.GetTranslation() + staticModel.boundingSphere.GetPosition(), staticModel.boundingSphere.radius, maxLightCount);
-				count -= lightCount;
-
-				for (unsigned int i = 0; i < count; ++i)
-					m_lights.GetResult(i)->Enable(program, lightCount++);
-			}
-
-			for (unsigned int i = lightCount; i < maxLightCount; ++i)
-				NzLight::Disable(program, i);
-
-			NzRenderer::SetMatrix(nzMatrixType_World, matrix);
-			DrawFunc(mesh->GetPrimitiveMode(), 0, indexCount);
+			DrawFunc = NzRenderer::DrawIndexedPrimitives;
+			indexCount = indexBuffer->GetIndexCount();
 		}
 		else
 		{
-			///TODO
+			DrawFunc = NzRenderer::DrawPrimitives;
+			indexCount = vertexBuffer->GetVertexCount();
 		}
+
+		NzRenderer::SetIndexBuffer(indexBuffer);
+		NzRenderer::SetVertexBuffer(vertexBuffer);
+
+		// Calcul des lumières les plus proches
+		if (lightCount < NAZARA_GRAPHICS_MAX_LIGHT_PER_PASS && !m_lights.IsEmpty())
+		{
+			unsigned int count = std::min(NAZARA_GRAPHICS_MAX_LIGHT_PER_PASS - lightCount, m_lights.ComputeClosestLights(matrix.GetTranslation() + modelData.boundingSphere.GetPosition(), modelData.boundingSphere.radius, NAZARA_GRAPHICS_MAX_LIGHT_PER_PASS));
+			for (unsigned int i = 0; i < count; ++i)
+				m_lights.GetResult(i)->Enable(shader, lightUniforms->uniforms, lightUniforms->offset*(lightCount++));
+		}
+
+		for (unsigned int i = lightCount; i < NAZARA_GRAPHICS_MAX_LIGHT_PER_PASS; ++i)
+			NzLight::Disable(shader, lightUniforms->uniforms, lightUniforms->offset*i);
+
+		NzRenderer::SetMatrix(nzMatrixType_World, matrix);
+		DrawFunc(meshData.primitiveMode, 0, indexCount);
+	}
+}
+
+const NzForwardRenderTechnique::LightUniforms* NzForwardRenderTechnique::GetLightUniforms(const NzShader* shader) const
+{
+	auto it = m_lightUniforms.find(shader);
+	if (it != m_lightUniforms.end())
+		return &(it->second);
+	else
+	{
+		int type0Location = shader->GetUniformLocation("Lights[0].type");
+		int type1Location = shader->GetUniformLocation("Lights[1].type");
+
+		LightUniforms lightUniforms;
+
+		if (type0Location > 0 && type1Location > 0)
+		{
+			lightUniforms.exists = true;
+			lightUniforms.offset = type1Location - type0Location;
+			lightUniforms.uniforms.ubo = false;
+			lightUniforms.uniforms.locations.type = type0Location;
+			lightUniforms.uniforms.locations.color = shader->GetUniformLocation("Lights[0].color");
+			lightUniforms.uniforms.locations.factors = shader->GetUniformLocation("Lights[0].factors");
+			lightUniforms.uniforms.locations.parameters1 = shader->GetUniformLocation("Lights[0].parameters1");
+			lightUniforms.uniforms.locations.parameters2 = shader->GetUniformLocation("Lights[0].parameters2");
+			lightUniforms.uniforms.locations.parameters3 = shader->GetUniformLocation("Lights[0].parameters3");
+		}
+		else
+			lightUniforms.exists = false;
+
+		auto pair = m_lightUniforms.emplace(shader, lightUniforms);
+		return &(pair.first->second);
 	}
 }

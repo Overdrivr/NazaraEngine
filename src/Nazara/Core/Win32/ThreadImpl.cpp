@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -12,7 +12,7 @@ NzThreadImpl::NzThreadImpl(NzFunctor* functor)
 {
 	m_handle = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0, &NzThreadImpl::ThreadProc, functor, 0, nullptr));
 	if (!m_handle)
-		NazaraInternalError("Failed to create thread: " + NzGetLastSystemError());
+		NazaraInternalError("Failed to create thread: " + NzError::GetLastSystemError());
 }
 
 void NzThreadImpl::Detach()

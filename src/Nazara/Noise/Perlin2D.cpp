@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Rémi Bèges
+// Copyright (C) 2014 Rémi Bèges
 // This file is part of the "Nazara Engine - Noise module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -9,8 +9,17 @@
 
 NzPerlin2D::NzPerlin2D()
 {
-    int grad2Temp[][2] = {{1,1},{-1,1},{1,-1},{-1,-1},
-                        {1,0},{-1,0},{0,1},{0,-1}};
+    float grad2Temp[][2] = {
+		{1.f,1.f},
+		{-1.f,1.f},
+		{1.f,-1.f},
+		{-1.f,-1.f},
+
+		{1.f,0.f},
+		{-1.f,0.f},
+		{0.f,1.f},
+		{0.f,-1.f}
+	};
 
     for(int i(0) ; i < 8 ; ++i)
         for(int j(0) ; j < 2 ; ++j)

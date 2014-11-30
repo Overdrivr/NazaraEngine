@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -22,35 +22,36 @@
 #endif
 
 #if NAZARA_CORE_THREADSAFE && NAZARA_THREADSAFETY_DYNLIB
-#include <Nazara/Core/ThreadSafety.hpp>
+	#include <Nazara/Core/ThreadSafety.hpp>
 #else
-#include <Nazara/Core/ThreadSafetyOff.hpp>
+	#include <Nazara/Core/ThreadSafetyOff.hpp>
 #endif
 
 using NzDynLibFunc =  int (*)(); // Type "générique" de pointeur sur fonction
 
 class NzDynLibImpl;
 
-class NzDynLib : NzNonCopyable
+class NAZARA_API NzDynLib : NzNonCopyable
 {
-	friend NzDynLibImpl;
-
 	public:
-		NzDynLib(const NzString& libraryPath);
+		NzDynLib();
+		NzDynLib(NzDynLib&& lib);
 		~NzDynLib();
 
 		NzString GetLastError() const;
 		NzDynLibFunc GetSymbol(const NzString& symbol) const;
-		bool Load();
+
+		bool IsLoaded() const;
+
+		bool Load(const NzString& libraryPath);
 		void Unload();
 
-	private:
-		void SetLastError(const NzString& error);
+		NzDynLib& operator=(NzDynLib&& lib);
 
+	private:
 		NazaraMutexAttrib(m_mutex, mutable)
 
-		NzString m_lastError;
-		NzString m_path;
+		mutable NzString m_lastError;
 		NzDynLibImpl* m_impl;
 };
 

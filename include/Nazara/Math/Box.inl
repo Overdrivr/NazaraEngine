@@ -1,9 +1,9 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Mathematics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Core/StringStream.hpp>
-#include <Nazara/Math/Basic.hpp>
+#include <Nazara/Math/Algorithm.hpp>
 #include <algorithm>
 #include <cstring>
 #include <Nazara/Core/Debug.hpp>
@@ -221,32 +221,32 @@ NzVector3<T> NzBox<T>::GetCorner(nzCorner corner) const
 	switch (corner)
 	{
 		case nzCorner_FarLeftBottom:
-			return NzVector3f(x, y, z);
+			return NzVector3<T>(x, y, z);
 
 		case nzCorner_FarLeftTop:
-			return NzVector3f(x, y + height, z);
+			return NzVector3<T>(x, y + height, z);
 
 		case nzCorner_FarRightBottom:
-			return NzVector3f(x + width, y, z);
+			return NzVector3<T>(x + width, y, z);
 
 		case nzCorner_FarRightTop:
-			return NzVector3f(x + width, y + height, z);
+			return NzVector3<T>(x + width, y + height, z);
 
 		case nzCorner_NearLeftBottom:
-			return NzVector3f(x, y, z + depth);
+			return NzVector3<T>(x, y, z + depth);
 
 		case nzCorner_NearLeftTop:
-			return NzVector3f(x, y + height, z + depth);
+			return NzVector3<T>(x, y + height, z + depth);
 
 		case nzCorner_NearRightBottom:
-			return NzVector3f(x + width, y, z + depth);
+			return NzVector3<T>(x + width, y, z + depth);
 
 		case nzCorner_NearRightTop:
-			return NzVector3f(x + width, y + height, z + depth);
+			return NzVector3<T>(x + width, y + height, z + depth);
 	}
 
 	NazaraError("Corner not handled (0x" + NzString::Number(corner, 16) + ')');
-	return NzVector3f();
+	return NzVector3<T>();
 }
 
 template<typename T>
@@ -258,7 +258,7 @@ NzSphere<T> NzBox<T>::GetBoundingSphere() const
 template<typename T>
 NzVector3<T> NzBox<T>::GetCenter() const
 {
-	return GetPosition() + F(0.5)*GetLengths();
+	return GetPosition() + GetLengths()/F(2.0);
 }
 
 template<typename T>
@@ -336,7 +336,7 @@ template<typename T>
 T NzBox<T>::GetSquaredRadius() const
 {
 	NzVector3<T> size(GetLengths());
-	size *= F(0.5); // La taille étant relative à la position (minimum) de la boite et non pas à son centre
+	size /= F(2.0); // La taille étant relative à la position (minimum) de la boite et non pas à son centre
 
 	return size.GetSquaredLength();
 }
@@ -493,7 +493,7 @@ template<typename T>
 NzBox<T>& NzBox<T>::Transform(const NzMatrix4<T>& matrix, bool applyTranslation)
 {
 	NzVector3<T> center = matrix.Transform(GetCenter(), (applyTranslation) ? F(1.0) : F(0.0)); // Valeur multipliant la translation
-	NzVector3<T> halfSize = GetLengths() * F(0.5);
+	NzVector3<T> halfSize = GetLengths()/F(2.0);
 
 	halfSize.Set(std::fabs(matrix(0,0))*halfSize.x + std::fabs(matrix(1,0))*halfSize.y + std::fabs(matrix(2,0))*halfSize.z,
 	             std::fabs(matrix(0,1))*halfSize.x + std::fabs(matrix(1,1))*halfSize.y + std::fabs(matrix(2,1))*halfSize.z,
@@ -574,6 +574,8 @@ NzBox<T>& NzBox<T>::operator*=(const NzVector3<T>& vec)
 	width *= vec.x;
 	height *= vec.y;
 	depth *= vec.z;
+
+	return *this;
 }
 
 template<typename T>

@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -10,7 +10,7 @@
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Core/Color.hpp>
 #include <Nazara/Graphics/AbstractBackground.hpp>
-#include <Nazara/Renderer/ShaderProgram.hpp>
+#include <Nazara/Renderer/UberShader.hpp>
 
 class NAZARA_API NzColorBackground : public NzAbstractBackground
 {
@@ -26,7 +26,10 @@ class NAZARA_API NzColorBackground : public NzAbstractBackground
 
 	private:
 		NzColor m_color;
-		NzShaderProgramConstRef m_program;
+		NzUberShaderConstRef m_uberShader;
+		const NzUberShaderInstance* m_uberShaderInstance;
+		int m_materialDiffuseUniform;
+		int m_vertexDepthUniform;
 };
 
 #endif // NAZARA_COLORBACKGROUND_HPP

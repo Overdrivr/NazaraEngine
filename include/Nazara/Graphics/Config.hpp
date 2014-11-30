@@ -1,7 +1,7 @@
 /*
 	Nazara Engine - Graphics module
 
-	Copyright (C) 2013 Jérôme "Lynix" Leclercq (Lynix680@gmail.com)
+	Copyright (C) 2014 Jérôme "Lynix" Leclercq (Lynix680@gmail.com)
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy of
 	this software and associated documentation files (the "Software"), to deal in
@@ -30,12 +30,20 @@
 /// Chaque modification d'un paramètre du module nécessite une recompilation de celui-ci
 
 // À partir de combien d'instances d'un même mesh/matériau l'instancing doit-il être utilisé ?
-#define NAZARA_GRAPHICS_INSTANCING_MIN_INSTANCES_COUNT 100
+#define NAZARA_GRAPHICS_INSTANCING_MIN_INSTANCES_COUNT 10
 
-// Utilise un tracker pour repérer les éventuels leaks (Ralentit l'exécution)
-#define NAZARA_GRAPHICS_MEMORYLEAKTRACKER 1
+// Utilise un manager de mémoire pour gérer les allocations dynamiques (détecte les leaks au prix d'allocations/libérations dynamiques plus lentes)
+#define NAZARA_GRAPHICS_MANAGE_MEMORY 0
 
 // Active les tests de sécurité basés sur le code (Conseillé pour le développement)
 #define NAZARA_GRAPHICS_SAFE 1
+
+/// Chaque modification d'un paramètre ci-dessous implique une modification (souvent mineure) du code
+
+// Le nombre maximum de lumières qu'un shader standard supportera
+#define NAZARA_GRAPHICS_MAX_LIGHT_PER_PASS 3
+
+/// Vérification des valeurs et types de certaines constantes
+#include <Nazara/Graphics/ConfigCheck.hpp>
 
 #endif // NAZARA_CONFIG_GRAPHICS_HPP

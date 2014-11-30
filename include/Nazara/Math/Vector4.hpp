@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Rémi Bèges - Jérôme Leclercq
+// Copyright (C) 2014 Rémi Bèges - Jérôme Leclercq
 // This file is part of the "Nazara Engine - Mathematics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -50,9 +50,6 @@ template<typename T> class NzVector4
 		operator T*();
 		operator const T*() const;
 
-		T& operator[](unsigned int i);
-		T operator[](unsigned int i) const;
-
 		const NzVector4& operator+() const;
 		NzVector4 operator-() const;
 
@@ -93,6 +90,9 @@ template<typename T> NzVector4<T> operator/(T scale, const NzVector4<T>& vec);
 typedef NzVector4<double> NzVector4d;
 typedef NzVector4<float> NzVector4f;
 typedef NzVector4<int> NzVector4i;
+typedef NzVector4<unsigned int> NzVector4ui;
+typedef NzVector4<nzInt32> NzVector4i32;
+typedef NzVector4<nzUInt32> NzVector4ui32;
 
 #include <Nazara/Math/Vector4.inl>
 

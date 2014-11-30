@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -33,6 +33,12 @@ struct NAZARA_API NzMeshParams
 	// Charger une version animée du mesh si possible ?
 	bool animated = true;
 
+	// Faut-il centrer le mesh autour de l'origine ?
+	bool center = false;
+
+	// Faut-il retourner les UV ?
+	bool flipUVs = false;
+
 	// Faut-il optimiser les index buffers ? (Rendu plus rapide, mais le chargement dure plus longtemps)
 	bool optimizeIndexBuffers = true;
 
@@ -40,10 +46,11 @@ struct NAZARA_API NzMeshParams
 };
 
 class NzAnimation;
-class NzPrimitiveList;
 class NzMesh;
+class NzPrimitiveList;
 
 typedef NzVertexStruct_XYZ_Normal_UV_Tangent NzMeshVertex;
+typedef NzVertexStruct_XYZ_Normal_UV_Tangent_Skinning NzSkeletalMeshVertex;
 
 using NzMeshConstRef = NzResourceRef<const NzMesh>;
 using NzMeshLoader = NzResourceLoader<NzMesh, NzMeshParams>;

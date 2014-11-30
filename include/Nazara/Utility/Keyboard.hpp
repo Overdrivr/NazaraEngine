@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -72,6 +72,7 @@ class NAZARA_API NzKeyboard
 
 			// Pavé numérique
 			Add,
+			Decimal,
 			Divide,
 			Multiply,
 			Numpad0,
@@ -159,6 +160,9 @@ class NAZARA_API NzKeyboard
 
 			Count
 		};
+
+		NzKeyboard() = delete;
+		~NzKeyboard() = delete;
 
 		static NzString GetKeyName(Key key);
 		static bool IsKeyPressed(Key key);

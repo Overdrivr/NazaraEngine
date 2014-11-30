@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -11,6 +11,8 @@
 #include <Nazara/Core/Resource.hpp>
 #include <Nazara/Core/ResourceRef.hpp>
 #include <Nazara/Renderer/ContextParameters.hpp>
+#include <memory>
+#include <vector>
 
 class NzContext;
 
@@ -22,6 +24,7 @@ class NzContextImpl;
 class NAZARA_API NzContext : public NzResource
 {
 	friend NzContextImpl;
+	friend class NzOpenGL;
 
 	public:
 		NzContext() = default;
@@ -32,21 +35,23 @@ class NAZARA_API NzContext : public NzResource
 
 		const NzContextParameters& GetParameters() const;
 		bool IsActive() const;
-		bool SetActive(bool active);
+		bool SetActive(bool active) const;
 		void SwapBuffers();
 
 		static bool EnsureContext();
-		static NzContext* GetCurrent();
-		static NzContext* GetReference();
-		static NzContext* GetThreadContext();
+		static const NzContext* GetCurrent();
+		static const NzContext* GetReference();
+		static const NzContext* GetThreadContext();
+
+	private:
 		static bool Initialize();
 		static void Uninitialize();
 
-	private:
 		NzContextParameters m_parameters;
 		NzContextImpl* m_impl = nullptr;
 
-		static NzContext* s_reference;
+		static std::unique_ptr<NzContext> s_reference;
+		static std::vector<std::unique_ptr<NzContext>> s_contexts;
 };
 
 #endif // NAZARA_CONTEXT_HPP

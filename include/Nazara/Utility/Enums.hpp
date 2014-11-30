@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -13,48 +13,6 @@ enum nzAnimationType
 	nzAnimationType_Static,
 
 	nzAnimationType_Max = nzAnimationType_Static
-};
-
-enum nzAttributeType
-{
-	nzAttributeType_Color,
-	nzAttributeType_Double1,
-	nzAttributeType_Double2,
-	nzAttributeType_Double3,
-	nzAttributeType_Double4,
-	nzAttributeType_Float1,
-	nzAttributeType_Float2,
-	nzAttributeType_Float3,
-	nzAttributeType_Float4,
-
-	nzAttributeType_Max = nzAttributeType_Float4
-};
-
-enum nzAttributeUsage
-{
-	nzAttributeUsage_InstanceData0,
-	nzAttributeUsage_InstanceData1,
-	nzAttributeUsage_InstanceData2,
-	nzAttributeUsage_InstanceData3,
-	nzAttributeUsage_InstanceData4,
-	nzAttributeUsage_InstanceData5,
-	nzAttributeUsage_Normal,
-	nzAttributeUsage_Position,
-	nzAttributeUsage_Tangent,
-	nzAttributeUsage_TexCoord,
-	nzAttributeUsage_Userdata0,
-	nzAttributeUsage_Userdata1,
-	nzAttributeUsage_Userdata2,
-	nzAttributeUsage_Userdata3,
-	nzAttributeUsage_Userdata4,
-	nzAttributeUsage_Userdata5,
-
-	nzAttributeUsage_FirstInstanceData = nzAttributeUsage_InstanceData0,
-	nzAttributeUsage_FirstVertexData = nzAttributeUsage_Normal,
-	nzAttributeUsage_LastInstanceData = nzAttributeUsage_InstanceData5,
-	nzAttributeUsage_LastVertexData = nzAttributeUsage_Userdata5,
-
-	nzAttributeUsage_Max = nzAttributeUsage_Userdata5
 };
 
 enum nzBufferAccess
@@ -90,6 +48,26 @@ enum nzBufferUsage
 	nzBufferUsage_Static,
 
 	nzBufferUsage_Max = nzBufferUsage_Static
+};
+
+enum nzComponentType
+{
+	nzComponentType_Color,
+	nzComponentType_Double1,
+	nzComponentType_Double2,
+	nzComponentType_Double3,
+	nzComponentType_Double4,
+	nzComponentType_Float1,
+	nzComponentType_Float2,
+	nzComponentType_Float3,
+	nzComponentType_Float4,
+	nzComponentType_Int1,
+	nzComponentType_Int2,
+	nzComponentType_Int3,
+	nzComponentType_Int4,
+	nzComponentType_Quaternion,
+
+	nzComponentType_Max = nzComponentType_Quaternion
 };
 
 enum nzCubemapFace
@@ -152,27 +130,49 @@ enum nzPixelFormat
 {
 	nzPixelFormat_Undefined = -1,
 
-	nzPixelFormat_BGR8,            // 3*nzUInt8
-	nzPixelFormat_BGRA8,           // 4*nzUInt8
+	nzPixelFormat_BGR8,            // 3*uint8
+	nzPixelFormat_BGRA8,           // 4*uint8
 	nzPixelFormat_DXT1,
 	nzPixelFormat_DXT3,
 	nzPixelFormat_DXT5,
-	nzPixelFormat_L8,              // 1*nzUInt8
-	nzPixelFormat_LA8,             // 2*nzUInt8
-	/*
-	nzPixelFormat_RGB16F,
-	nzPixelFormat_RGB16I,          // 4*nzUInt16
-	nzPixelFormat_RGB32F,
-	nzPixelFormat_RGB32I,          // 4*nzUInt32
-	nzPixelFormat_RGBA16F,
-	nzPixelFormat_RGBA16I,         // 4*nzUInt16
-	nzPixelFormat_RGBA32F,
-	nzPixelFormat_RGBA32I,         // 4*nzUInt32
-	*/
-	nzPixelFormat_RGB5A1,          // 1*nzUInt16
-	nzPixelFormat_RGB8,            // 3*nzUInt8
-	nzPixelFormat_RGBA4,           // 1*nzUInt16
-	nzPixelFormat_RGBA8,           // 4*nzUInt8
+	nzPixelFormat_L8,              // 1*uint8
+	nzPixelFormat_LA8,             // 2*uint8
+	nzPixelFormat_R8,              // 1*uint8
+	nzPixelFormat_R8I,             // 1*int8
+	nzPixelFormat_R8UI,            // 1*uint8
+	nzPixelFormat_R16,             // 1*uint16
+	nzPixelFormat_R16F,            // 1*half
+	nzPixelFormat_R16I,            // 1*int16
+	nzPixelFormat_R16UI,           // 1*uint16
+	nzPixelFormat_R32F,            // 1*float
+	nzPixelFormat_R32I,            // 1*uint16
+	nzPixelFormat_R32UI,           // 1*uint32
+	nzPixelFormat_RG8,             // 2*int8
+	nzPixelFormat_RG8I,            // 2*int8
+	nzPixelFormat_RG8UI,           // 2*uint8
+	nzPixelFormat_RG16,            // 2*uint16
+	nzPixelFormat_RG16F,           // 2*half
+	nzPixelFormat_RG16I,           // 2*int16
+	nzPixelFormat_RG16UI,          // 2*uint16
+	nzPixelFormat_RG32F,           // 2*float
+	nzPixelFormat_RG32I,           // 2*uint16
+	nzPixelFormat_RG32UI,          // 2*uint32
+	nzPixelFormat_RGB5A1,          // 3*uint5 + alpha bit
+	nzPixelFormat_RGB8,            // 3*uint8
+	nzPixelFormat_RGB16F,          // 3*half
+	nzPixelFormat_RGB16I,          // 4*int16
+	nzPixelFormat_RGB16UI,         // 4*uint16
+	nzPixelFormat_RGB32F,          // 3*float
+	nzPixelFormat_RGB32I,          // 4*int32
+	nzPixelFormat_RGB32UI,         // 4*uint32
+	nzPixelFormat_RGBA4,           // 4*uint4
+	nzPixelFormat_RGBA8,           // 4*uint8
+	nzPixelFormat_RGBA16F,         // 4*half
+	nzPixelFormat_RGBA16I,         // 4*int16
+	nzPixelFormat_RGBA16UI,        // 4*uint16
+	nzPixelFormat_RGBA32F,         // 4*float
+	nzPixelFormat_RGBA32I,         // 4*int32
+	nzPixelFormat_RGBA32UI,        // 4*uint32
 	nzPixelFormat_Depth16,
 	nzPixelFormat_Depth24,
 	nzPixelFormat_Depth24Stencil8,
@@ -217,6 +217,36 @@ enum nzPrimitiveMode
 	nzPrimitiveMode_Max = nzPrimitiveMode_TriangleFan
 };
 
+enum nzVertexComponent
+{
+	nzVertexComponent_Unused = -1,
+
+	// Nous nous limitons à 16 composants de sommets car c'est le minimum supporté par le GPU
+	nzVertexComponent_InstanceData0,
+	nzVertexComponent_InstanceData1,
+	nzVertexComponent_InstanceData2,
+	nzVertexComponent_InstanceData3,
+	nzVertexComponent_InstanceData4,
+	nzVertexComponent_InstanceData5,
+	nzVertexComponent_Color,
+	nzVertexComponent_Normal,
+	nzVertexComponent_Position,
+	nzVertexComponent_Tangent,
+	nzVertexComponent_TexCoord,
+	nzVertexComponent_Userdata0,
+	nzVertexComponent_Userdata1,
+	nzVertexComponent_Userdata2,
+	nzVertexComponent_Userdata3,
+	nzVertexComponent_Userdata4,
+
+	nzVertexComponent_FirstInstanceData = nzVertexComponent_InstanceData0,
+	nzVertexComponent_FirstVertexData = nzVertexComponent_Color,
+	nzVertexComponent_LastInstanceData = nzVertexComponent_InstanceData5,
+	nzVertexComponent_LastVertexData = nzVertexComponent_Userdata4,
+
+	nzVertexComponent_Max = nzVertexComponent_Userdata4
+};
+
 enum nzVertexLayout
 {
 	// Déclarations destinées au rendu
@@ -226,6 +256,7 @@ enum nzVertexLayout
 	nzVertexLayout_XYZ_Normal,
 	nzVertexLayout_XYZ_Normal_UV,
 	nzVertexLayout_XYZ_Normal_UV_Tangent,
+	nzVertexLayout_XYZ_Normal_UV_Tangent_Skinning,
 	nzVertexLayout_XYZ_UV,
 
 	// Déclarations destinées à l'instancing

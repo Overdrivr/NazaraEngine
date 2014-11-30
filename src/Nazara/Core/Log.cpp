@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -6,12 +6,17 @@
 #include <Nazara/Core/Config.hpp>
 #include <Nazara/Core/File.hpp>
 #include <Nazara/Core/StringStream.hpp>
-#include <Nazara/Math/Basic.hpp>
 #include <ctime>
 #include <cstring>
 
-#if NAZARA_CORE_DUPLICATE_TO_COUT
-#include <cstdio>
+#if NAZARA_CORE_DUPLICATE_LOG_TO_COUT
+	#include <cstdio>
+#endif
+
+#if NAZARA_CORE_THREADSAFE && NAZARA_THREADSAFETY_LOG
+	#include <Nazara/Core/ThreadSafety.hpp>
+#else
+	#include <Nazara/Core/ThreadSafetyOff.hpp>
 #endif
 
 #include <Nazara/Core/Debug.hpp>
@@ -116,7 +121,7 @@ void NzLog::Write(const NzString& string)
 		if (m_writeTime)
 		{
 			line.Reserve(23 + string.GetSize() + 1);
-			line.Resize(23);
+			line.Set(23, '\0'); // Buffer non-initialisé
 
 			time_t currentTime = std::time(nullptr);
 			std::strftime(&line[0], 24, "%d/%m/%Y - %H:%M:%S: ", std::localtime(&currentTime));
@@ -130,27 +135,23 @@ void NzLog::Write(const NzString& string)
 		if (m_file->IsOpen())
 			m_file->Write(line);
 
-		#if NAZARA_CORE_DUPLICATE_TO_COUT
+		#if NAZARA_CORE_DUPLICATE_LOG_TO_COUT
 		std::fputs(line.GetConstBuffer(), stdout);
 		#endif
 	}
 }
 
+void NzLog::WriteError(nzErrorType type, const NzString& error)
+{
+	NzStringStream stream;
+	stream << errorType[type] << error;
+	Write(stream);
+}
+
 void NzLog::WriteError(nzErrorType type, const NzString& error, unsigned int line, const NzString& file, const NzString& func)
 {
-	NzString stream;
-	stream.Reserve(std::strlen(errorType[type]) + error.GetSize() + 2 + file.GetSize() + 1 + NzGetNumberLength(line) +2 + func.GetSize() + 1);
-	stream += errorType[type];
-	stream += error;
-	stream += " (";
-	stream += file;
-	stream += ':';
-	stream += NzString::Number(line);
-	stream += ": ";
-	stream += func;
-	stream += ')';
-	/*NzStringStream stream;
-	stream << errorType[type] << error << " (" << file << ':' << line << ": " << func << ')';*/
+	NzStringStream stream;
+	stream << errorType[type] << error << " (" << file << ':' << line << ": " << func << ')';
 	Write(stream);
 }
 

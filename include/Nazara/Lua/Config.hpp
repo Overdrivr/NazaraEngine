@@ -1,7 +1,7 @@
 /*
 	Nazara Engine - Lua scripting module
 
-	Copyright (C) 2013 Jérôme Leclercq (lynix680@gmail.com)
+	Copyright (C) 2014 Jérôme Leclercq (lynix680@gmail.com)
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy of
 	this software and associated documentation files (the "Software"), to deal in
@@ -29,10 +29,13 @@
 
 /// Chaque modification d'un paramètre du module nécessite une recompilation de celui-ci
 
-// Utilise un tracker pour repérer les éventuels leaks (Ralentit l'exécution)
-#define NAZARA_LUA_MEMORYLEAKTRACKER 0
+// Utilise un manager de mémoire pour gérer les allocations dynamiques (détecte les leaks au prix d'allocations/libérations dynamiques plus lentes)
+#define NAZARA_LUA_MANAGE_MEMORY 0
 
 // Active les tests de sécurité basés sur le code (Conseillé pour le développement)
 #define NAZARA_LUA_SAFE 1
+
+/// Vérification des valeurs et types de certaines constantes
+#include <Nazara/Lua/ConfigCheck.hpp>
 
 #endif // NAZARA_CONFIG_LUA_HPP

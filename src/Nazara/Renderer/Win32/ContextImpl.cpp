@@ -1,10 +1,11 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 // Code inspiré de NeHe (Lesson1) et de la SFML par Laurent Gomila
 
 #include <Nazara/Renderer/Win32/ContextImpl.hpp>
+#include <Nazara/Core/CallOnExit.hpp>
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Core/LockGuard.hpp>
 #include <Nazara/Core/Mutex.hpp>
@@ -19,7 +20,7 @@ NzContextImpl::NzContextImpl()
 
 bool NzContextImpl::Activate()
 {
-	return wglMakeCurrent(m_deviceContext, m_context);
+	return wglMakeCurrent(m_deviceContext, m_context) == TRUE;
 }
 
 bool NzContextImpl::Create(NzContextParameters& parameters)
@@ -42,11 +43,16 @@ bool NzContextImpl::Create(NzContextParameters& parameters)
 		m_ownsWindow = true;
 	}
 
+	// En cas d'exception, la ressource sera quand même libérée
+	NzCallOnExit onExit([this] ()
+	{
+		Destroy();
+	});
+
 	m_deviceContext = GetDC(m_window);
 	if (!m_deviceContext)
 	{
 		NazaraError("Failed to get device context");
-		Destroy();
 		return false;
 	}
 
@@ -74,7 +80,7 @@ bool NzContextImpl::Create(NzContextParameters& parameters)
 
 			do
 			{
-				valid = wglChoosePixelFormat(m_deviceContext, attributes, nullptr, 1, &pixelFormat, &numFormats);
+				valid = (wglChoosePixelFormat(m_deviceContext, attributes, nullptr, 1, &pixelFormat, &numFormats) == TRUE);
 			}
 			while ((!valid || numFormats == 0) && --attributes[19] > 0);
 
@@ -116,8 +122,6 @@ bool NzContextImpl::Create(NzContextParameters& parameters)
 		if (pixelFormat == 0)
 		{
 			NazaraError("Failed to choose pixel format");
-			Destroy();
-
 			return false;
 		}
 	}
@@ -125,7 +129,6 @@ bool NzContextImpl::Create(NzContextParameters& parameters)
 	if (!SetPixelFormat(m_deviceContext, pixelFormat, &descriptor))
 	{
 		NazaraError("Failed to set pixel format");
-		Destroy();
 		return false;
 	}
 
@@ -157,15 +160,15 @@ bool NzContextImpl::Create(NzContextParameters& parameters)
 		{
 			*attrib++ = WGL_CONTEXT_PROFILE_MASK_ARB;
 			*attrib++ = (parameters.compatibilityProfile) ? WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB : WGL_CONTEXT_CORE_PROFILE_BIT_ARB;
+
+			// Les contextes forward-compatible ne sont plus utilisés pour cette raison :
+			// http://www.opengl.org/discussion_boards/showthread.php/175052-Forward-compatible-vs-Core-profile
 		}
 
 		if (parameters.debugMode)
 		{
 			*attrib++ = WGL_CONTEXT_FLAGS_ARB;
 			*attrib++ = WGL_CONTEXT_DEBUG_BIT_ARB;
-
-			// Les contextes forward-compatible ne sont plus utilisés pour cette raison :
-			// http://www.opengl.org/discussion_boards/showthread.php/175052-Forward-compatible-vs-Core-profile
 		}
 
 		*attrib++ = 0;
@@ -184,16 +187,17 @@ bool NzContextImpl::Create(NzContextParameters& parameters)
 			NzLockGuard lock(mutex);
 
 			if (!wglShareLists(shareContext, m_context))
-				NazaraWarning("Failed to share the context: " + NzGetLastSystemError());
+				NazaraWarning("Failed to share the context: " + NzError::GetLastSystemError());
 		}
 	}
 
 	if (!m_context)
 	{
 		NazaraError("Failed to create context");
-		Destroy();
 		return false;
 	}
+
+	onExit.Reset();
 
 	return true;
 }
@@ -229,6 +233,5 @@ void NzContextImpl::SwapBuffers()
 
 bool NzContextImpl::Desactivate()
 {
-	return wglMakeCurrent(nullptr, nullptr);
+	return wglMakeCurrent(nullptr, nullptr) == TRUE;
 }
-

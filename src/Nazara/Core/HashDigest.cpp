@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -89,7 +89,7 @@ NzString NzHashDigest::ToHex() const
 	return NzString(new NzString::SharedString(1, length, length, hexOutput));
 }
 
-nzUInt8 NzHashDigest::operator[](unsigned short pos) const
+nzUInt8 NzHashDigest::operator[](unsigned int pos) const
 {
 	#if NAZARA_CORE_SAFE
 	if (pos >= m_digestLength)

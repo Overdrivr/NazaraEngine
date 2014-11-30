@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -11,13 +11,14 @@
 #include <stdexcept>
 #include <Nazara/Renderer/Debug.hpp>
 
+///TODO: Virer les méthodes faisant référence aux faces et gérer ces dernières comme de simples niveaux de profondeurs (malgré OpenGL)
+
 struct NzTextureImpl
 {
 	GLuint id;
 	nzImageType type;
 	nzPixelFormat format;
 	nzUInt8 levelCount;
-	NzRenderTexture* renderTexture = nullptr;
 	bool mipmapping = false;
 	bool mipmapsUpdated = true;
 	unsigned int depth;
@@ -41,7 +42,7 @@ namespace
 		{
 			case nzImageType_1D:
 			{
-				if (glTexStorage1D)
+				if (glTexStorage1D && !proxy) // Les drivers AMD semblent ne pas aimer glTexStorage avec un format proxy
 					glTexStorage1D(target, impl->levelCount, openGLFormat.internalFormat, impl->width);
 				else
 				{
@@ -59,7 +60,7 @@ namespace
 			case nzImageType_1D_Array:
 			case nzImageType_2D:
 			{
-				if (glTexStorage2D)
+				if (glTexStorage2D && !proxy)
 					glTexStorage2D(target, impl->levelCount, openGLFormat.internalFormat, impl->width, impl->height);
 				else
 				{
@@ -81,7 +82,7 @@ namespace
 			case nzImageType_2D_Array:
 			case nzImageType_3D:
 			{
-				if (glTexStorage3D)
+				if (glTexStorage3D && !proxy)
 					glTexStorage3D(target, impl->levelCount, openGLFormat.internalFormat, impl->width, impl->height, impl->depth);
 				else
 				{
@@ -106,9 +107,9 @@ namespace
 
 			case nzImageType_Cubemap:
 			{
-				/*if (glTexStorage2D)
+				if (glTexStorage2D && !proxy)
 					glTexStorage2D(target, impl->levelCount, openGLFormat.internalFormat, impl->width, impl->height);
-				else*/
+				else
 				{
 					unsigned int size = impl->width; // Les cubemaps ont une longueur et largeur identique
 					for (nzUInt8 level = 0; level < impl->levelCount; ++level)
@@ -164,6 +165,7 @@ NzTexture::NzTexture(const NzImage& image)
 NzTexture::~NzTexture()
 {
 	Destroy();
+	NzRenderer::OnTextureReleased(this);
 }
 
 bool NzTexture::Create(nzImageType type, nzPixelFormat format, unsigned int width, unsigned int height, unsigned int depth, nzUInt8 levelCount)
@@ -275,13 +277,13 @@ bool NzTexture::Create(nzImageType type, nzPixelFormat format, unsigned int widt
 	NzOpenGL::BindTexture(impl->type, impl->id);
 
 	// Vérification du support par la carte graphique
-	/*if (!CreateTexture(impl, true))
+	if (!CreateTexture(impl.get(), true))
 	{
 		NzOpenGL::DeleteTexture(m_impl->id);
 
 		NazaraError("Texture's parameters not supported by driver");
 		return false;
-	}*/
+	}
 
 	// Création de la texture
 	if (!CreateTexture(impl.get(), false))
@@ -398,6 +400,16 @@ bool NzTexture::EnableMipmapping(bool enable)
 	return true;
 }
 
+void NzTexture::EnsureMipmapsUpdate() const
+{
+	if (m_impl->mipmapping && !m_impl->mipmapsUpdated)
+	{
+		NzOpenGL::BindTexture(m_impl->type, m_impl->id);
+		glGenerateMipmap(NzOpenGL::TextureTarget[m_impl->type]);
+		m_impl->mipmapsUpdated = true;
+	}
+}
+
 nzUInt8 NzTexture::GetBytesPerPixel() const
 {
 	#if NAZARA_RENDERER_SAFE
@@ -448,6 +460,19 @@ unsigned int NzTexture::GetHeight() const
 	#endif
 
 	return m_impl->height;
+}
+
+NzVector2ui NzTexture::GetSize() const
+{
+	#if NAZARA_RENDERER_SAFE
+	if (!m_impl)
+	{
+		NazaraError("Texture must be valid");
+		return NzVector2ui(0, 0);
+	}
+	#endif
+
+	return NzVector2ui(m_impl->width, m_impl->height);
 }
 
 nzImageType NzTexture::GetType() const
@@ -513,19 +538,6 @@ bool NzTexture::IsCubemap() const
 	#endif
 
 	return m_impl->type == nzImageType_Cubemap;
-}
-
-bool NzTexture::IsTarget() const
-{
-	#if NAZARA_RENDERER_SAFE
-	if (!m_impl)
-	{
-		NazaraError("Texture must be valid");
-		return false;
-	}
-	#endif
-
-	return m_impl->renderTexture != nullptr;
 }
 
 bool NzTexture::IsValid() const
@@ -649,124 +661,100 @@ bool NzTexture::LoadFromStream(NzInputStream& stream, const NzImageParams& param
 	return LoadFromImage(image, generateMipmaps);
 }
 
-bool NzTexture::LoadCubemapFromFile(const NzString& filePath, const NzImageParams& imageParams, bool generateMipmaps, const NzCubemapParams& cubemapParams)
+bool NzTexture::LoadArrayFromFile(const NzString& filePath, const NzImageParams& imageParams, bool generateMipmaps, const NzVector2ui& atlasSize)
 {
-	NzImage image;
-	if (!image.LoadFromFile(filePath, imageParams))
+	NzImage cubemap;
+	if (!cubemap.LoadArrayFromFile(filePath, imageParams, atlasSize))
 	{
-		NazaraError("Failed to load image");
+		NazaraError("Failed to load cubemap");
 		return false;
 	}
 
-	return LoadCubemapFromImage(image, generateMipmaps, cubemapParams);
+	return LoadFromImage(cubemap, generateMipmaps);
+}
+
+bool NzTexture::LoadArrayFromImage(const NzImage& image, bool generateMipmaps, const NzVector2ui& atlasSize)
+{
+	NzImage cubemap;
+	if (!cubemap.LoadArrayFromImage(image, atlasSize))
+	{
+		NazaraError("Failed to load cubemap");
+		return false;
+	}
+
+	return LoadFromImage(cubemap, generateMipmaps);
+}
+
+bool NzTexture::LoadArrayFromMemory(const void* data, std::size_t size, const NzImageParams& imageParams, bool generateMipmaps, const NzVector2ui& atlasSize)
+{
+	NzImage cubemap;
+	if (!cubemap.LoadArrayFromMemory(data, size, imageParams, atlasSize))
+	{
+		NazaraError("Failed to load cubemap");
+		return false;
+	}
+
+	return LoadFromImage(cubemap, generateMipmaps);
+}
+
+bool NzTexture::LoadArrayFromStream(NzInputStream& stream, const NzImageParams& imageParams, bool generateMipmaps, const NzVector2ui& atlasSize)
+{
+	NzImage cubemap;
+	if (!cubemap.LoadArrayFromStream(stream, imageParams, atlasSize))
+	{
+		NazaraError("Failed to load cubemap");
+		return false;
+	}
+
+	return LoadFromImage(cubemap, generateMipmaps);
+}
+
+bool NzTexture::LoadCubemapFromFile(const NzString& filePath, const NzImageParams& imageParams, bool generateMipmaps, const NzCubemapParams& cubemapParams)
+{
+	NzImage cubemap;
+	if (!cubemap.LoadCubemapFromFile(filePath, imageParams, cubemapParams))
+	{
+		NazaraError("Failed to load cubemap");
+		return false;
+	}
+
+	return LoadFromImage(cubemap, generateMipmaps);
 }
 
 bool NzTexture::LoadCubemapFromImage(const NzImage& image, bool generateMipmaps, const NzCubemapParams& params)
 {
-	// Implémentation presque identique à celle de Image::LoadCubemapFromImage
-	#if NAZARA_UTILITY_SAFE
-	if (!image.IsValid())
+	NzImage cubemap;
+	if (!cubemap.LoadCubemapFromImage(image, params))
 	{
-		NazaraError("Image must be valid");
-		return false;
-	}
-	#endif
-
-	unsigned int width = image.GetWidth();
-	unsigned int height = image.GetHeight();
-	unsigned int faceSize = (params.faceSize == 0) ? std::max(width, height)/4 : params.faceSize;
-
-	// Sans cette vérification, celles des rectangles pourrait réussir via un overflow
-	if (width < faceSize || height < faceSize)
-	{
-		NazaraError("Image is too small for this face size");
+		NazaraError("Failed to load cubemap");
 		return false;
 	}
 
-	// Calcul et vérification des surfaces
-	unsigned limitX = width - faceSize;
-	unsigned limitY = height - faceSize;
-
-	NzVector2ui backPos = params.backPosition * faceSize;
-	if (backPos.x > limitX || backPos.y > limitY)
-	{
-		NazaraError("Back rectangle is out of image");
-		return false;
-	}
-
-	NzVector2ui downPos = params.downPosition * faceSize;
-	if (downPos.x > limitX || downPos.y > limitY)
-	{
-		NazaraError("Down rectangle is out of image");
-		return false;
-	}
-
-	NzVector2ui forwardPos = params.forwardPosition * faceSize;
-	if (forwardPos.x > limitX || forwardPos.y > limitY)
-	{
-		NazaraError("Forward rectangle is out of image");
-		return false;
-	}
-
-	NzVector2ui leftPos = params.leftPosition * faceSize;
-	if (leftPos.x > limitX || leftPos.y > limitY)
-	{
-		NazaraError("Left rectangle is out of image");
-		return false;
-	}
-
-	NzVector2ui rightPos = params.rightPosition * faceSize;
-	if (rightPos.x > limitX || rightPos.y > limitY)
-	{
-		NazaraError("Right rectangle is out of image");
-		return false;
-	}
-
-	NzVector2ui upPos = params.upPosition * faceSize;
-	if (upPos.x > limitX || upPos.y > limitY)
-	{
-		NazaraError("Up rectangle is out of image");
-		return false;
-	}
-
-	if (!Create(nzImageType_Cubemap, image.GetFormat(), faceSize, faceSize, 1, (generateMipmaps) ? 0xFF : 1))
-	{
-		NazaraError("Failed to create texture");
-		return false;
-	}
-
-	UpdateFace(nzCubemapFace_NegativeX, image.GetConstPixels(leftPos.x, leftPos.y), width, height);
-	UpdateFace(nzCubemapFace_NegativeY, image.GetConstPixels(downPos.x, downPos.y), width, height);
-	UpdateFace(nzCubemapFace_NegativeZ, image.GetConstPixels(backPos.x, backPos.y), width, height);
-	UpdateFace(nzCubemapFace_PositiveX, image.GetConstPixels(rightPos.x, rightPos.y), width, height);
-	UpdateFace(nzCubemapFace_PositiveY, image.GetConstPixels(upPos.x, upPos.y), width, height);
-	UpdateFace(nzCubemapFace_PositiveZ, image.GetConstPixels(forwardPos.x, forwardPos.y), width, height);
-
-	return true;
+	return LoadFromImage(cubemap, generateMipmaps);
 }
 
 bool NzTexture::LoadCubemapFromMemory(const void* data, std::size_t size, const NzImageParams& imageParams, bool generateMipmaps, const NzCubemapParams& cubemapParams)
 {
-	NzImage image;
-	if (!image.LoadFromMemory(data, size, imageParams))
+	NzImage cubemap;
+	if (!cubemap.LoadCubemapFromMemory(data, size, imageParams, cubemapParams))
 	{
-		NazaraError("Failed to load image");
+		NazaraError("Failed to load cubemap");
 		return false;
 	}
 
-	return LoadCubemapFromImage(image, generateMipmaps, cubemapParams);
+	return LoadFromImage(cubemap, generateMipmaps);
 }
 
 bool NzTexture::LoadCubemapFromStream(NzInputStream& stream, const NzImageParams& imageParams, bool generateMipmaps, const NzCubemapParams& cubemapParams)
 {
-	NzImage image;
-	if (!image.LoadFromStream(stream, imageParams))
+	NzImage cubemap;
+	if (!cubemap.LoadCubemapFromStream(stream, imageParams, cubemapParams))
 	{
-		NazaraError("Failed to load image");
+		NazaraError("Failed to load cubemap");
 		return false;
 	}
 
-	return LoadCubemapFromImage(image, generateMipmaps, cubemapParams);
+	return LoadFromImage(cubemap, generateMipmaps);
 }
 
 bool NzTexture::LoadFaceFromFile(nzCubemapFace face, const NzString& filePath, const NzImageParams& params)
@@ -799,7 +787,6 @@ bool NzTexture::LoadFaceFromFile(nzCubemapFace face, const NzString& filePath, c
 	}
 
 	unsigned int faceSize = m_impl->width;
-
 	if (image.GetWidth() != faceSize || image.GetHeight() != faceSize)
 	{
 		NazaraError("Image size must match texture face size");
@@ -839,7 +826,6 @@ bool NzTexture::LoadFaceFromMemory(nzCubemapFace face, const void* data, std::si
 	}
 
 	unsigned int faceSize = m_impl->width;
-
 	if (image.GetWidth() != faceSize || image.GetHeight() != faceSize)
 	{
 		NazaraError("Image size must match texture face size");
@@ -960,7 +946,7 @@ bool NzTexture::Update(const NzImage& image, const NzBoxui& box, nzUInt8 level)
 	}
 	#endif
 
-	const nzUInt8* pixels = image.GetConstPixels(box.x, box.y, box.z, level);
+	const nzUInt8* pixels = image.GetConstPixels(0, 0, 0, level);
 	if (!pixels)
 	{
 		NazaraError("Failed to access image's pixels");
@@ -986,7 +972,7 @@ bool NzTexture::Update(const NzImage& image, const NzRectui& rect, unsigned int 
 	}
 	#endif
 
-	const nzUInt8* pixels = image.GetConstPixels(rect.x, rect.y, z, level);
+	const nzUInt8* pixels = image.GetConstPixels(0, 0, 0, level);
 	if (!pixels)
 	{
 		NazaraError("Failed to access image's pixels");
@@ -1015,12 +1001,6 @@ bool NzTexture::Update(const nzUInt8* pixels, const NzBoxui& box, unsigned int s
 	if (!m_impl)
 	{
 		NazaraError("Texture must be valid");
-		return false;
-	}
-
-	if (m_impl->renderTexture)
-	{
-		NazaraError("Texture is a target, it cannot be updated");
 		return false;
 	}
 
@@ -1068,33 +1048,25 @@ bool NzTexture::Update(const nzUInt8* pixels, const NzBoxui& box, unsigned int s
 		return false;
 	}
 
-	nzUInt8 bpp = NzPixelFormat::GetBytesPerPixel(m_impl->format);
-
-	unsigned int size = box.width*box.height*box.depth*bpp;
-	std::unique_ptr<nzUInt8[]> flipped(new nzUInt8[size]);
-	NzImage::Copy(flipped.get(), pixels, bpp, box.width, box.height, box.depth, 0, 0, srcWidth, srcHeight);
-
-	// Inversion de la texture pour le repère d'OpenGL
-	if (!NzPixelFormat::Flip(nzPixelFlipping_Horizontally, m_impl->format, box.width, box.height, box.depth, flipped.get(), flipped.get()))
-		NazaraWarning("Failed to flip image");
-
-	SetUnpackAlignement(bpp);
+	SetUnpackAlignement(NzPixelFormat::GetBytesPerPixel(m_impl->format));
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, srcWidth);
+	glPixelStorei(GL_UNPACK_IMAGE_HEIGHT, srcHeight);
 
 	NzOpenGL::BindTexture(m_impl->type, m_impl->id);
 	switch (m_impl->type)
 	{
 		case nzImageType_1D:
-			glTexSubImage1D(GL_TEXTURE_1D, level, box.x, box.width, format.dataFormat, format.dataType, flipped.get());
+			glTexSubImage1D(GL_TEXTURE_1D, level, box.x, box.width, format.dataFormat, format.dataType, pixels);
 			break;
 
 		case nzImageType_1D_Array:
 		case nzImageType_2D:
-			glTexSubImage2D(NzOpenGL::TextureTarget[m_impl->type], level, box.x, height-box.height-box.y, box.width, box.height, format.dataFormat, format.dataType, flipped.get());
+			glTexSubImage2D(NzOpenGL::TextureTarget[m_impl->type], level, box.x, height-box.height-box.y, box.width, box.height, format.dataFormat, format.dataType, pixels);
 			break;
 
 		case nzImageType_2D_Array:
 		case nzImageType_3D:
-			glTexSubImage3D(NzOpenGL::TextureTarget[m_impl->type], level, box.x, height-box.height-box.y, box.z, box.width, box.height, box.depth, format.dataFormat, format.dataType, flipped.get());
+			glTexSubImage3D(NzOpenGL::TextureTarget[m_impl->type], level, box.x, height-box.height-box.y, box.z, box.width, box.height, box.depth, format.dataFormat, format.dataType, pixels);
 			break;
 
 		case nzImageType_Cubemap:
@@ -1170,12 +1142,6 @@ bool NzTexture::UpdateFace(nzCubemapFace face, const nzUInt8* pixels, const NzRe
 		return false;
 	}
 
-	if (m_impl->renderTexture)
-	{
-		NazaraError("Texture is a target, it cannot be updated");
-		return false;
-	}
-
 	if (m_impl->type != nzImageType_Cubemap)
 	{
 		NazaraError("UpdateFace is designed for cubemaps, use Update instead");
@@ -1218,33 +1184,12 @@ bool NzTexture::UpdateFace(nzCubemapFace face, const nzUInt8* pixels, const NzRe
 		return false;
 	}
 
-	nzUInt8 bpp = NzPixelFormat::GetBytesPerPixel(m_impl->format);
-
-	// Inversion de la texture pour le repère d'OpenGL
-	unsigned int size = rect.width*rect.height*bpp;
-	std::unique_ptr<nzUInt8[]> flipped(new nzUInt8[size]);
-	NzImage::Copy(flipped.get(), pixels, bpp, rect.width, rect.height, 1, 0, 0, srcWidth, srcHeight);
-
-	if (!NzPixelFormat::Flip(nzPixelFlipping_Horizontally, m_impl->format, rect.width, rect.height, 1, flipped.get(), flipped.get()))
-		NazaraWarning("Failed to flip image");
-
-	SetUnpackAlignement(bpp);
+	SetUnpackAlignement(NzPixelFormat::GetBytesPerPixel(m_impl->format));
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, srcWidth);
+	glPixelStorei(GL_UNPACK_IMAGE_HEIGHT, srcHeight);
 
 	NzOpenGL::BindTexture(m_impl->type, m_impl->id);
-	glTexSubImage2D(NzOpenGL::CubemapFace[face], level, rect.x, height-rect.height-rect.y, rect.width, rect.height, format.dataFormat, format.dataType, flipped.get());
-
-	return true;
-}
-
-bool NzTexture::Bind() const
-{
-	NzOpenGL::BindTexture(m_impl->type, m_impl->id);
-
-	if (m_impl->mipmapping && !m_impl->mipmapsUpdated)
-	{
-		glGenerateMipmap(NzOpenGL::TextureTarget[m_impl->type]);
-		m_impl->mipmapsUpdated = true;
-	}
+	glTexSubImage2D(NzOpenGL::CubemapFace[face], level, rect.x, height-rect.height-rect.y, rect.width, rect.height, format.dataFormat, format.dataType, pixels);
 
 	return true;
 }
@@ -1291,6 +1236,41 @@ bool NzTexture::IsFormatSupported(nzPixelFormat format)
 		case nzPixelFormat_RGB5A1:
 		case nzPixelFormat_RGBA4:
 			return true;
+
+		// Formats supportés depuis OpenGL 3
+		case nzPixelFormat_R8:
+		case nzPixelFormat_R8I:
+		case nzPixelFormat_R8UI:
+		case nzPixelFormat_R16:
+		case nzPixelFormat_R16F:
+		case nzPixelFormat_R16I:
+		case nzPixelFormat_R16UI:
+		case nzPixelFormat_R32F:
+		case nzPixelFormat_R32I:
+		case nzPixelFormat_R32UI:
+		case nzPixelFormat_RG8:
+		case nzPixelFormat_RG8I:
+		case nzPixelFormat_RG8UI:
+		case nzPixelFormat_RG16:
+		case nzPixelFormat_RG16F:
+		case nzPixelFormat_RG16I:
+		case nzPixelFormat_RG16UI:
+		case nzPixelFormat_RG32F:
+		case nzPixelFormat_RG32I:
+		case nzPixelFormat_RG32UI:
+		case nzPixelFormat_RGB16F:
+		case nzPixelFormat_RGB16I:
+		case nzPixelFormat_RGB16UI:
+		case nzPixelFormat_RGB32F:
+		case nzPixelFormat_RGB32I:
+		case nzPixelFormat_RGB32UI:
+		case nzPixelFormat_RGBA16F:
+		case nzPixelFormat_RGBA16I:
+		case nzPixelFormat_RGBA16UI:
+		case nzPixelFormat_RGBA32F:
+		case nzPixelFormat_RGBA32I:
+		case nzPixelFormat_RGBA32UI:
+			return NzOpenGL::GetVersion() >= 300;
 
 		// Formats de profondeur (Supportés avec les FBOs)
 		case nzPixelFormat_Depth16:
@@ -1350,22 +1330,9 @@ bool NzTexture::IsTypeSupported(nzImageType type)
 	return false;
 }
 
-NzRenderTexture* NzTexture::GetRenderTexture() const
+void NzTexture::InvalidateMipmaps()
 {
-	#ifdef NAZARA_DEBUG
-	if (!m_impl)
-	{
-		NazaraInternalError("Texture must be valid");
-		return nullptr;
-	}
-	#endif
-
-	return m_impl->renderTexture;
-}
-
-void NzTexture::SetRenderTexture(NzRenderTexture* renderTexture)
-{
-	#ifdef NAZARA_DEBUG
+	#if NAZARA_RENDERER_SAFE
 	if (!m_impl)
 	{
 		NazaraInternalError("Texture must be valid");
@@ -1373,5 +1340,5 @@ void NzTexture::SetRenderTexture(NzRenderTexture* renderTexture)
 	}
 	#endif
 
-	m_impl->renderTexture = renderTexture;
+	m_impl->mipmapsUpdated = false;
 }

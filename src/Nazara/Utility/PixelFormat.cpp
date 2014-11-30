@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -11,7 +11,7 @@ namespace
 {
 	inline nzUInt8 c4to5(nzUInt8 c)
 	{
-		return c * (31.f/15.f);
+		return static_cast<nzUInt8>(c * (31.f/15.f));
 	}
 
 	inline nzUInt8 c4to8(nzUInt8 c)
@@ -21,12 +21,12 @@ namespace
 
 	inline nzUInt8 c5to4(nzUInt8 c)
 	{
-		return c * (15.f/31.f);
+		return static_cast<nzUInt8>(c * (15.f/31.f));
 	}
 
 	inline nzUInt8 c5to8(nzUInt8 c)
 	{
-		return c * (255.f/31.f);
+		return static_cast<nzUInt8>(c * (255.f/31.f));
 	}
 
 	inline nzUInt8 c8to4(nzUInt8 c)
@@ -36,7 +36,7 @@ namespace
 
 	inline nzUInt8 c8to5(nzUInt8 c)
 	{
-		return c * (31.f/255.f);
+		return static_cast<nzUInt8>(c * (31.f/255.f));
 	}
 
 	template<nzPixelFormat from, nzPixelFormat to>

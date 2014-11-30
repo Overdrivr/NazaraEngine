@@ -1,9 +1,9 @@
-// This file was automatically generated on 09 Jun 2013 at 11:23:10
+// This file was automatically generated on 11 Jul 2014 at 10:21:52
 
 /*
-	Nazara Engine - Window module
+	Nazara Engine - Utility module
 
-	Copyright (C) 2013 Jérôme "Lynix" Leclercq (Lynix680@gmail.com)
+	Copyright (C) 2014 Jérôme "Lynix" Leclercq (Lynix680@gmail.com)
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy of
 	this software and associated documentation files (the "Software"), to deal in
@@ -47,6 +47,7 @@
 #include <Nazara/Utility/Joint.hpp>
 #include <Nazara/Utility/Keyboard.hpp>
 #include <Nazara/Utility/Mesh.hpp>
+#include <Nazara/Utility/MeshData.hpp>
 #include <Nazara/Utility/Mouse.hpp>
 #include <Nazara/Utility/Node.hpp>
 #include <Nazara/Utility/PixelFormat.hpp>

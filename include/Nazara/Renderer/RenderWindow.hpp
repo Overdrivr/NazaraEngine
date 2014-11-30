@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -50,10 +50,11 @@ class NAZARA_API NzRenderWindow : public NzRenderTarget, public NzWindow
 
 		// Fonctions OpenGL
 		NzContextParameters GetContextParameters() const;
-		bool HasContext() const;
+		bool HasContext() const override;
 
 	protected:
 		bool Activate() const override;
+		void EnsureTargetUpdated() const override;
 
 	private:
 		bool OnWindowCreated() override;

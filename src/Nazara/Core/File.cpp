@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -6,9 +6,11 @@
 #include <Nazara/Core/AbstractHash.hpp>
 #include <Nazara/Core/Config.hpp>
 #include <Nazara/Core/Error.hpp>
+#include <Nazara/Core/ErrorFlags.hpp>
 #include <Nazara/Core/Hash.hpp>
 #include <Nazara/Core/StringStream.hpp>
 #include <cstring>
+#include <memory>
 #include <utility>
 
 #if defined(NAZARA_PLATFORM_WINDOWS)
@@ -17,6 +19,12 @@
 	#include <Nazara/Core/Posix/FileImpl.hpp>
 #else
 	#error OS not handled
+#endif
+
+#if NAZARA_CORE_THREADSAFE && NAZARA_THREADSAFETY_FILE
+	#include <Nazara/Core/ThreadSafety.hpp>
+#else
+	#include <Nazara/Core/ThreadSafetyOff.hpp>
 #endif
 
 #include <Nazara/Core/Debug.hpp>
@@ -41,8 +49,7 @@ m_endianness(nzEndianness_Unknown),
 m_impl(nullptr),
 m_openMode(0)
 {
-	SetFile(filePath);
-	Open(openMode);
+	Open(filePath, openMode);
 }
 
 NzFile::NzFile(NzFile&& file) noexcept :
@@ -237,7 +244,7 @@ std::size_t NzFile::Read(void* buffer, std::size_t size)
 
 		m_impl->SetCursorPos(NzFile::AtCurrent, size);
 
-		return m_impl->GetCursorPos()-currentPos;
+		return static_cast<std::size_t>(m_impl->GetCursorPos()-currentPos);
 	}
 }
 
@@ -289,19 +296,30 @@ bool NzFile::Open(unsigned long openMode)
 	if (m_openMode == 0)
 		return false;
 
-	m_impl = new NzFileImpl(this);
-	if (!m_impl->Open(m_filePath, m_openMode))
+	std::unique_ptr<NzFileImpl> impl(new NzFileImpl(this));
+	if (!impl->Open(m_filePath, m_openMode))
 	{
-		delete m_impl;
-		m_impl = nullptr;
-
+		NzErrorFlags flags(nzErrorFlag_Silent); // Silencieux par défaut
+		NazaraError("Failed to open \"" + m_filePath + "\": " + NzError::GetLastSystemError());
 		return false;
 	}
+
+	m_impl = impl.release();
 
 	if (m_openMode & Text)
 		m_streamOptions |= nzStreamOption_Text;
 
 	return true;
+}
+
+bool NzFile::Open(const NzString& filePath, unsigned long openMode)
+{
+	NazaraLock(m_mutex)
+
+	Close();
+
+	SetFile(filePath);
+	return Open(openMode);
 }
 
 bool NzFile::SetCursorPos(CursorPosition pos, nzInt64 offset)
@@ -350,17 +368,17 @@ bool NzFile::SetFile(const NzString& filePath)
 		if (filePath.IsEmpty())
 			return false;
 
-		NzFileImpl* impl = new NzFileImpl(this);
+		std::unique_ptr<NzFileImpl> impl(new NzFileImpl(this));
 		if (!impl->Open(filePath, m_openMode))
 		{
-			delete impl;
+			NazaraError("Failed to open new file; " + NzError::GetLastSystemError());
 			return false;
 		}
 
 		m_impl->Close();
 		delete m_impl;
 
-		m_impl = impl;
+		m_impl = impl.release();
 	}
 
 	m_filePath = AbsolutePath(filePath);
@@ -376,18 +394,17 @@ bool NzFile::SetOpenMode(unsigned int openMode)
 
 	if (IsOpen())
 	{
-		NzFileImpl* impl = new NzFileImpl(this);
+		std::unique_ptr<NzFileImpl> impl(new NzFileImpl(this));
 		if (!impl->Open(m_filePath, openMode))
 		{
-			delete impl;
-
+			NazaraError("Failed to open file with new mode: " + NzError::GetLastSystemError());
 			return false;
 		}
 
 		m_impl->Close();
 		delete m_impl;
 
-		m_impl = impl;
+		m_impl = impl.release();
 
 		if (m_openMode & Text)
 			m_streamOptions |= nzStreamOption_Text;
@@ -451,15 +468,13 @@ std::size_t NzFile::Write(const void* buffer, std::size_t typeSize, unsigned int
 	std::size_t bytesWritten;
 	if (m_endianness != nzEndianness_Unknown && m_endianness != NzGetPlatformEndianness() && typeSize != 1)
 	{
-		char* buf = new char[count*typeSize];
-		std::memcpy(buf, buffer, count*typeSize);
+		std::unique_ptr<char[]> buf(new char[count*typeSize]);
+		std::memcpy(buf.get(), buffer, count*typeSize);
 
 		for (unsigned int i = 0; i < count; ++i)
 			NzByteSwap(&buf[i*typeSize], typeSize);
 
-		bytesWritten = m_impl->Write(buf, count*typeSize);
-
-		delete[] buf;
+		bytesWritten = m_impl->Write(buf.get(), count*typeSize);
 	}
 	else
 		bytesWritten = m_impl->Write(buffer, count*typeSize);
@@ -554,21 +569,13 @@ NzString NzFile::AbsolutePath(const NzString& filePath)
 
 	pathLen += sep.size()-1;
 
-	///FIXME: Le destructeur de NzStringStream provoque un bug lors de la libération de son vector
-
-	//NzStringStream stream(base);
-	NzString stream;
-	stream.Reserve(pathLen);
-	stream.Append(base);
+	NzStringStream stream(base);
 	for (unsigned int i = 0; i < sep.size(); ++i)
 	{
-		stream.Append(sep[i]);
 		if (i != sep.size()-1)
-			stream.Append(NAZARA_DIRECTORY_SEPARATOR);
-		/*if (i != sep.size()-1)
 			stream << sep[i] << NAZARA_DIRECTORY_SEPARATOR;
 		else
-			stream << sep[i];*/
+			stream << sep[i];
 	}
 
 	return stream;

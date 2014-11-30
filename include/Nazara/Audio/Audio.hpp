@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Audio module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -15,9 +15,6 @@
 
 class NAZARA_API NzAudio
 {
-	friend class NzMusic;
-	friend class NzSoundBuffer;
-
 	public:
 		NzAudio() = delete;
 		~NzAudio() = delete;
@@ -27,7 +24,7 @@ class NAZARA_API NzAudio
 		static float GetGlobalVolume();
 		static NzVector3f GetListenerDirection();
 		static NzVector3f GetListenerPosition();
-		//static NzQuaternionf GetListenerRotation();
+		static NzQuaternionf GetListenerRotation();
 		static NzVector3f GetListenerVelocity();
 		static float GetSpeedOfSound();
 
@@ -42,7 +39,7 @@ class NAZARA_API NzAudio
 		static void SetListenerDirection(float dirX, float dirY, float dirZ);
 		static void SetListenerPosition(const NzVector3f& position);
 		static void SetListenerPosition(float x, float y, float z);
-		//static void SetListenerRotation(const NzQuaternionf& rotation);
+		static void SetListenerRotation(const NzQuaternionf& rotation);
 		static void SetListenerVelocity(const NzVector3f& velocity);
 		static void SetListenerVelocity(float velX, float velY, float velZ);
 		static void SetSpeedOfSound(float speed);
@@ -50,8 +47,6 @@ class NAZARA_API NzAudio
 		static void Uninitialize();
 
 	private:
-		static unsigned int GetOpenALFormat(nzAudioFormat format);
-
 		static unsigned int s_moduleReferenceCounter;
 };
 

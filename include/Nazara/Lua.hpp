@@ -1,9 +1,9 @@
-// This file was automatically generated on 24 Apr 2013 at 11:49:37
+// This file was automatically generated on 21 Feb 2014 at 18:17:18
 
 /*
 	Nazara Engine - Lua scripting module
 
-	Copyright (C) 2013 Jérôme Leclercq (lynix680@gmail.com)
+	Copyright (C) 2014 Jérôme Leclercq (lynix680@gmail.com)
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy of
 	this software and associated documentation files (the "Software"), to deal in

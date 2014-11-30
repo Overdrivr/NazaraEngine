@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -21,11 +21,12 @@ class NAZARA_API NzIndexBuffer : public NzResource
 {
 	public:
 		NzIndexBuffer() = default;
+		NzIndexBuffer(bool largeIndices, NzBuffer* buffer);
 		NzIndexBuffer(bool largeIndices, NzBuffer* buffer, unsigned int startOffset, unsigned int endOffset);
 		NzIndexBuffer(bool largeIndices, unsigned int length, nzBufferStorage storage = nzBufferStorage_Software, nzBufferUsage usage = nzBufferUsage_Static);
 		NzIndexBuffer(const NzIndexBuffer& indexBuffer);
 		NzIndexBuffer(NzIndexBuffer&& indexBuffer) noexcept;
-		~NzIndexBuffer() = default;
+		~NzIndexBuffer();
 
 		unsigned int ComputeCacheMissCount() const;
 
@@ -51,6 +52,7 @@ class NAZARA_API NzIndexBuffer : public NzResource
 		void Optimize();
 
 		void Reset();
+		void Reset(bool largeIndices, NzBuffer* buffer);
 		void Reset(bool largeIndices, NzBuffer* buffer, unsigned int startOffset, unsigned int endOffset);
 		void Reset(bool largeIndices, unsigned int length, nzBufferStorage storage = nzBufferStorage_Software, nzBufferUsage usage = nzBufferUsage_Static);
 		void Reset(const NzIndexBuffer& indexBuffer);

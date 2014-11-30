@@ -1,7 +1,7 @@
 /*
-	Nazara Engine - Window module
+	Nazara Engine - Utility module
 
-	Copyright (C) 2013 Jérôme "Lynix" Leclercq (Lynix680@gmail.com)
+	Copyright (C) 2014 Jérôme "Lynix" Leclercq (Lynix680@gmail.com)
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy of
 	this software and associated documentation files (the "Software"), to deal in
@@ -29,14 +29,8 @@
 
 /// Chaque modification d'un paramètre du module nécessite une recompilation de celui-ci
 
-// Force les buffers à posséder un stride multiple de 32 bytes (Gain de performances sur certaines cartes/plus de consommation mémoire)
-#define NAZARA_UTILITY_FORCE_DECLARATION_STRIDE_MULTIPLE_OF_32 0 ///FIXME: Ne peut pas être utilisé pour l'instant
-
-// Utilise un tracker pour repérer les éventuels leaks (Ralentit l'exécution)
-#define NAZARA_UTILITY_MEMORYLEAKTRACKER 0
-
-// Le skinning doit-il prendre avantage du multi-threading ? (Boost de performances sur les processeurs multi-coeurs)
-#define NAZARA_UTILITY_MULTITHREADED_SKINNING 0 ///FIXME: Bug du TaskScheduler
+// Utilise un manager de mémoire pour gérer les allocations dynamiques (détecte les leaks au prix d'allocations/libérations dynamiques plus lentes)
+#define NAZARA_UTILITY_MANAGE_MEMORY 0
 
 // Active les tests de sécurité basés sur le code (Conseillé pour le développement)
 #define NAZARA_UTILITY_SAFE 1
@@ -50,7 +44,18 @@
 // Protège les classes des accès concurrentiels
 //#define NAZARA_UTILITY_THREADSAFE 1
 
+// Force les buffers à posséder un stride multiple de 32 bytes (Gain de performances sur certaines cartes/plus de consommation mémoire)
+#define NAZARA_UTILITY_VERTEX_DECLARATION_FORCE_STRIDE_MULTIPLE_OF_32 0 ///FIXME: Ne peut pas être utilisé pour l'instant
+
 // Sous Windows, fait en sorte que les touches ALT et F10 n'activent pas le menu de la fenêtre
 #define NAZARA_UTILITY_WINDOWS_DISABLE_MENU_KEYS 1
+
+/// Chaque modification d'un paramètre ci-dessous implique une modification (souvent mineure) du code
+
+// Le nombre maximum de poids affectant un sommet (En cas de dépassement, les poids supplémentaires seront ignorés et les autres renormalisés)
+#define NAZARA_UTILITY_SKINNING_MAX_WEIGHTS 4
+
+/// Vérification des valeurs et types de certaines constantes
+#include <Nazara/Utility/ConfigCheck.hpp>
 
 #endif // NAZARA_CONFIG_UTILITY_HPP

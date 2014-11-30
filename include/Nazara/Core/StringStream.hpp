@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -11,12 +11,6 @@
 #include <Nazara/Core/String.hpp>
 #include <string>
 #include <vector>
-
-#if NAZARA_CORE_THREADSAFE && NAZARA_THREADSAFETY_STRINGSTREAM
-#include <Nazara/Core/ThreadSafety.hpp>
-#else
-#include <Nazara/Core/ThreadSafetyOff.hpp>
-#endif
 
 class NAZARA_API NzStringStream
 {
@@ -48,8 +42,6 @@ class NAZARA_API NzStringStream
 		operator NzString() const;
 
 	private:
-		NazaraMutexAttrib(m_mutex, mutable)
-
 		std::vector<NzString> m_strings;
 		unsigned int m_bufferSize;
 };

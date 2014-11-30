@@ -1,8 +1,9 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#if NAZARA_CORE_MEMORYLEAKTRACKER || defined(NAZARA_DEBUG)
+// On suppose que Debug.hpp a déjà été inclus, tout comme Config.hpp
+#if NAZARA_CORE_MANAGE_MEMORY
 	#undef delete
 	#undef new
 #endif

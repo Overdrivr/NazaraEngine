@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Mathematics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -12,6 +12,9 @@
 #include <Nazara/Math/Vector3.hpp>
 
 template <typename T> class NzBox;
+
+template<typename T>
+class NzBox;
 
 template<typename T>
 class NzSphere
@@ -44,7 +47,7 @@ class NzSphere
 		NzVector3<T> GetPositiveVertex(const NzVector3<T>& normal) const;
 		T GetSquaredRadius() const;
 
-		//bool Intersect(const NzBox<T>& box) const;
+		bool Intersect(const NzBox<T>& box) const;
 		bool Intersect(const NzSphere& sphere) const;
 
 		bool IsValid() const;

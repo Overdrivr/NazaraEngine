@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -34,7 +34,7 @@ bool NzCursorImpl::Create(const NzImage& cursor, int hotSpotX, int hotSpotY)
 
 	if (!m_cursor)
 	{
-		NazaraError("Failed to create cursor: " + NzGetLastSystemError());
+		NazaraError("Failed to create cursor: " + NzError::GetLastSystemError());
 		return false;
 	}
 

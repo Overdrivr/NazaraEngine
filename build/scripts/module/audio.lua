@@ -2,6 +2,8 @@ if (not _OPTIONS["united"]) then
 	project "NazaraAudio"
 end
 
+defines "NAZARA_AUDIO_OPENAL"
+
 files
 {
 	"../include/Nazara/Audio/**.hpp",
@@ -12,7 +14,6 @@ files
 
 if (os.is("windows")) then
 	excludes { "../src/Nazara/Audio/Posix/*.hpp", "../src/Nazara/Audio/Posix/*.cpp" }
-	links "OpenAL32"
 	links "sndfile-1"
 else
 	excludes { "../src/Nazara/Audio/Win32/*.hpp", "../src/Nazara/Audio/Win32/*.cpp" }
@@ -20,7 +21,7 @@ else
 end
 
 if (_OPTIONS["united"]) then
-	excludes "../src/Nazara/Audio/Debug/Leaks.cpp"
+	excludes "../src/Nazara/Audio/Debug/NewOverload.cpp"
 else
 	configuration "DebugStatic"
 		links "NazaraCore-s-d"

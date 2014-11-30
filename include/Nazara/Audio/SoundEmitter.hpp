@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Audio module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -37,7 +37,7 @@ class NAZARA_API NzSoundEmitter
 		bool IsSpatialized() const;
 
 		virtual void Pause() = 0;
-		virtual bool Play() = 0;
+		virtual void Play() = 0;
 
 		void SetAttenuation(float attenuation);
 		void SetMinDistance(float minDistance);

@@ -1,12 +1,12 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Graphics/Loaders/OBJ.hpp>
+#include <Nazara/Graphics/Material.hpp>
+#include <Nazara/Graphics/Model.hpp>
 #include <Nazara/Graphics/Loaders/OBJ/MTLParser.hpp>
 #include <Nazara/Graphics/Loaders/OBJ/OBJParser.hpp>
-#include <Nazara/Graphics/Model.hpp>
-#include <Nazara/Renderer/Material.hpp>
 #include <Nazara/Utility/BufferMapper.hpp>
 #include <Nazara/Utility/IndexMapper.hpp>
 #include <Nazara/Utility/Mesh.hpp>
@@ -61,9 +61,11 @@ namespace
 		for (unsigned int i = 0; i < meshCount; ++i)
 		{
 			unsigned int faceCount = meshes[i].faces.size();
+			if (faceCount == 0)
+				continue;
 
 			std::vector<unsigned int> indices;
-			indices.reserve(faceCount*3); // Pire cas (si les faces sont des triangles)
+			indices.reserve(faceCount*3); // Pire cas si les faces sont des triangles
 
 			// Bien plus rapide qu'un vector (pour la recherche)
 			std::unordered_map<int, std::unordered_map<int, std::unordered_map<int, unsigned int>>> vertices;
@@ -97,6 +99,7 @@ namespace
 				}
 			}
 
+			// Création des buffers
 			std::unique_ptr<NzIndexBuffer> indexBuffer(new NzIndexBuffer(vertexCount > std::numeric_limits<nzUInt16>::max(), indices.size(), parameters.mesh.storage, nzBufferUsage_Static));
 			indexBuffer->SetPersistent(false);
 
@@ -108,7 +111,7 @@ namespace
 			for (unsigned int j = 0; j < indices.size(); ++j)
 				indexMapper.Set(j, indices[j]);
 
-			indexMapper.Unmap();
+			indexMapper.Unmap(); // Pour laisser les autres tâches affecter l'index buffer
 
 			// Remplissage des vertices
 			bool hasNormals = true;
@@ -139,7 +142,7 @@ namespace
 						if (index >= 0)
 						{
 							const NzVector3f& uvw = texCoords[index];
-							vertex.uv.Set(uvw.x, uvw.y);
+							vertex.uv.Set(uvw.x, (parameters.mesh.flipUVs) ? 1.f - uvw.y : uvw.y); // Inversion des UVs si demandé
 						}
 						else
 							hasTexCoords = false;
@@ -167,6 +170,10 @@ namespace
 			subMesh->SetMaterialIndex(meshes[i].material);
 			subMesh->SetPrimitiveMode(nzPrimitiveMode_TriangleList);
 
+			if (parameters.mesh.center)
+				subMesh->Center();
+
+			// Ce que nous pouvons générer dépend des données à disposition (par exemple les tangentes nécessitent des coordonnées de texture)
 			if (hasNormals && hasTexCoords)
 				subMesh->GenerateTangents();
 			else if (hasTexCoords)
@@ -193,6 +200,7 @@ namespace
 				NzMTLParser materialParser(file);
 				if (materialParser.Parse())
 				{
+					std::unordered_map<NzString, NzMaterial*> materialCache;
 					NzString baseDir = file.GetDirectory();
 					for (unsigned int i = 0; i < meshCount; ++i)
 					{
@@ -200,83 +208,93 @@ namespace
 						const NzMTLParser::Material* mtlMat = materialParser.GetMaterial(matName);
 						if (mtlMat)
 						{
-							std::unique_ptr<NzMaterial> material(new NzMaterial);
-							material->SetPersistent(false);
-
-							nzUInt8 alphaValue = static_cast<nzUInt8>(mtlMat->alpha*255.f);
-
-							NzColor ambientColor(mtlMat->ambient);
-							ambientColor.a = alphaValue;
-
-							NzColor diffuseColor(mtlMat->diffuse);
-							diffuseColor.a = alphaValue;
-
-							NzColor specularColor(mtlMat->specular);
-							specularColor.a = alphaValue;
-
-							material->SetAmbientColor(ambientColor);
-							material->SetDiffuseColor(diffuseColor);
-							material->SetSpecularColor(specularColor);
-							material->SetShininess(mtlMat->shininess);
-
-							bool hasAlphaMap = false;;
-							if (parameters.material.loadAlphaMap && !mtlMat->alphaMap.IsEmpty())
+							auto it = materialCache.find(matName);
+							if (it != materialCache.end())
+								model->SetMaterial(meshes[i].material, it->second);
+							else
 							{
-								std::unique_ptr<NzTexture> alphaMap(new NzTexture);
-								alphaMap->SetPersistent(false);
+								std::unique_ptr<NzMaterial> material(new NzMaterial);
+								material->SetPersistent(false);
 
-								if (alphaMap->LoadFromFile(baseDir + mtlMat->alphaMap))
+								material->SetShader(parameters.material.shaderName);
+
+								nzUInt8 alphaValue = static_cast<nzUInt8>(mtlMat->alpha*255.f);
+
+								NzColor ambientColor(mtlMat->ambient);
+								ambientColor.a = alphaValue;
+
+								NzColor diffuseColor(mtlMat->diffuse);
+								diffuseColor.a = alphaValue;
+
+								NzColor specularColor(mtlMat->specular);
+								specularColor.a = alphaValue;
+
+								material->SetAmbientColor(ambientColor);
+								material->SetDiffuseColor(diffuseColor);
+								material->SetSpecularColor(specularColor);
+								material->SetShininess(mtlMat->shininess);
+
+								bool hasAlphaMap = false;;
+								if (parameters.material.loadAlphaMap && !mtlMat->alphaMap.IsEmpty())
 								{
-									hasAlphaMap = true;
+									std::unique_ptr<NzTexture> alphaMap(new NzTexture);
+									alphaMap->SetPersistent(false);
 
-									material->SetAlphaMap(alphaMap.get());
-									alphaMap.release();
+									if (alphaMap->LoadFromFile(baseDir + mtlMat->alphaMap))
+									{
+										hasAlphaMap = true;
+
+										material->SetAlphaMap(alphaMap.get());
+										alphaMap.release();
+									}
+									else
+										NazaraWarning("Failed to load alpha map (" + mtlMat->alphaMap + ')');
 								}
-								else
-									NazaraWarning("Failed to load alpha map (" + mtlMat->alphaMap + ')');
-							}
 
-							if (parameters.material.loadDiffuseMap && !mtlMat->diffuseMap.IsEmpty())
-							{
-								std::unique_ptr<NzTexture> diffuseMap(new NzTexture);
-								diffuseMap->SetPersistent(false);
-
-								if (diffuseMap->LoadFromFile(baseDir + mtlMat->diffuseMap))
+								if (parameters.material.loadDiffuseMap && !mtlMat->diffuseMap.IsEmpty())
 								{
-									material->SetDiffuseMap(diffuseMap.get());
-									diffuseMap.release();
+									std::unique_ptr<NzTexture> diffuseMap(new NzTexture);
+									diffuseMap->SetPersistent(false);
+
+									if (diffuseMap->LoadFromFile(baseDir + mtlMat->diffuseMap))
+									{
+										material->SetDiffuseMap(diffuseMap.get());
+										diffuseMap.release();
+									}
+									else
+										NazaraWarning("Failed to load diffuse map (" + mtlMat->diffuseMap + ')');
 								}
-								else
-									NazaraWarning("Failed to load diffuse map (" + mtlMat->diffuseMap + ')');
-							}
 
-							if (parameters.material.loadSpecularMap && !mtlMat->specularMap.IsEmpty())
-							{
-								std::unique_ptr<NzTexture> specularMap(new NzTexture);
-								specularMap->SetPersistent(false);
-
-								if (specularMap->LoadFromFile(baseDir + mtlMat->specularMap))
+								if (parameters.material.loadSpecularMap && !mtlMat->specularMap.IsEmpty())
 								{
-									material->SetSpecularMap(specularMap.get());
-									specularMap.release();
+									std::unique_ptr<NzTexture> specularMap(new NzTexture);
+									specularMap->SetPersistent(false);
+
+									if (specularMap->LoadFromFile(baseDir + mtlMat->specularMap))
+									{
+										material->SetSpecularMap(specularMap.get());
+										specularMap.release();
+									}
+									else
+										NazaraWarning("Failed to load specular map (" + mtlMat->specularMap + ')');
 								}
-								else
-									NazaraWarning("Failed to load specular map (" + mtlMat->specularMap + ')');
-							}
 
-							// Si nous avons une alpha map ou des couleurs transparentes,
-							// nous devons configurer le matériau pour accepter la transparence au mieux
-							if (hasAlphaMap || alphaValue != 255)
-							{
-								// On paramètre le matériau pour accepter la transparence au mieux
-								material->Enable(nzRendererParameter_Blend, true);
-								material->Enable(nzRendererParameter_DepthWrite, false);
-								material->SetDstBlend(nzBlendFunc_InvSrcAlpha);
-								material->SetSrcBlend(nzBlendFunc_SrcAlpha);
-							}
+								// Si nous avons une alpha map ou des couleurs transparentes,
+								// nous devons configurer le matériau pour accepter la transparence au mieux
+								if (hasAlphaMap || alphaValue != 255)
+								{
+									// On paramètre le matériau pour accepter la transparence au mieux
+									material->Enable(nzRendererParameter_Blend, true);
+									material->Enable(nzRendererParameter_DepthWrite, false);
+									material->SetDstBlend(nzBlendFunc_InvSrcAlpha);
+									material->SetSrcBlend(nzBlendFunc_SrcAlpha);
+								}
 
-							model->SetMaterial(meshes[i].material, material.get());
-							material.release();
+								materialCache[matName] = material.get();
+
+								model->SetMaterial(meshes[i].material, material.get());
+								material.release();
+							}
 						}
 						else
 							NazaraWarning("MTL has no material \"" + matName + '"');

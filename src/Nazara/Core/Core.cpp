@@ -1,4 +1,4 @@
-// Copyright (C) 2013 AUTHORS
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -7,16 +7,21 @@
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Core/HardwareInfo.hpp>
 #include <Nazara/Core/Log.hpp>
+#include <Nazara/Core/PluginManager.hpp>
 #include <Nazara/Core/TaskScheduler.hpp>
 #include <Nazara/Core/Debug.hpp>
 
 bool NzCore::Initialize()
 {
-	if (s_moduleReferenceCounter++ != 0)
+	if (s_moduleReferenceCounter > 0)
+	{
+		s_moduleReferenceCounter++;
 		return true; // Déjà initialisé
+	}
+
+	s_moduleReferenceCounter++;
 
 	NazaraNotice("Initialized: Core");
-
 	return true;
 }
 
@@ -40,6 +45,7 @@ void NzCore::Uninitialize()
 	s_moduleReferenceCounter = 0;
 
 	NzHardwareInfo::Uninitialize();
+	NzPluginManager::Uninitialize();
 	NzTaskScheduler::Uninitialize();
 
 	NazaraNotice("Uninitialized: Core");

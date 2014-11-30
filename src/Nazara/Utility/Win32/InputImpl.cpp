@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -64,6 +64,7 @@ namespace
 
 		// Pavé numérique
 		VK_ADD,		 // Key::Add
+		VK_DECIMAL,  // Key::Decimal
 		VK_DIVIDE,	 // Key::Divide
 		VK_MULTIPLY, // Key::Multiply
 		VK_NUMPAD0,	 // Key::Numpad0
@@ -108,7 +109,7 @@ namespace
 		VK_NEXT,	   // Key::PageDown
 		VK_PRIOR,	   // Key::PageUp
 		VK_PAUSE,	   // Key::Pause
-		VK_OEM_PERIOD, // Key::Period,
+		VK_OEM_PERIOD, // Key::Period
 		VK_PRINT,	   // Key::Print
 		VK_SNAPSHOT,   // Key::PrintScreen
 		VK_OEM_7,	   // Key::Quote
@@ -162,6 +163,7 @@ NzString NzEventImpl::GetKeyName(NzKeyboard::Key key)
 	{
 		case VK_ATTN:
 		case VK_DOWN:
+		case VK_DECIMAL:
 		case VK_DELETE:
 		case VK_DIVIDE:
 		case VK_END:
@@ -222,7 +224,7 @@ NzVector2i NzEventImpl::GetMousePosition(const NzWindow& relativeTo)
 	{
 		NazaraError("Window's handle is invalid");
 
-		// Attention que (-1, -1) est une position tout à fait valide et ne doit pas être utilisée pour tester l'erreur
+		// Attention que (-1, -1) est une position tout à fait valide et ne doit pas servir de test
 		return NzVector2i(-1, -1);
 	}
 }
@@ -252,22 +254,21 @@ bool NzEventImpl::IsMouseButtonPressed(NzMouse::Button button)
 	};
 
 	// Gestion de l'inversement des boutons de la souris
-	switch (button)
+	if (GetSystemMetrics(SM_SWAPBUTTON))
 	{
-		case NzMouse::Left:
-			if (GetSystemMetrics(SM_SWAPBUTTON))
-				return (GetAsyncKeyState(VK_RBUTTON) & 0x8000) != 0;
+		switch (button)
+		{
+			case NzMouse::Left:
+				button = NzMouse::Right;
+				break;
 
-			break;
+			case NzMouse::Right:
+				button = NzMouse::Left;
+				break;
 
-		case NzMouse::Right:
-			if (GetSystemMetrics(SM_SWAPBUTTON))
-				return (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0;
-
-			break;
-
-		default:
-			break;
+			default:
+				break;
+		}
 	}
 
 	return (GetAsyncKeyState(vButtons[button]) & 0x8000) != 0;

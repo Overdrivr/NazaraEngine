@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -40,9 +40,9 @@ class NAZARA_API NzSceneNode : public NzNode
 		NzSceneNode& operator=(NzSceneNode&& sceneNode);
 
 	protected:
+		virtual bool FrustumCull(const NzFrustumf& frustum) const;
 		virtual void OnParenting(const NzNode* parent) override;
 		virtual void OnVisibilityChange(bool visibility);
-		virtual bool FrustumCull(const NzFrustumf& frustum) = 0;
 		void RecursiveSetScene(NzScene* scene, NzNode* node);
 		virtual void Register();
 		void SetScene(NzScene* scene);

@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -57,7 +57,7 @@ void NzTextureSampler::SetAnisotropyLevel(nzUInt8 anisotropyLevel)
 	{
 		if (anisotropyLevel > s_maxAnisotropyLevel)
 		{
-			NazaraWarning("Anisotropy level is over maximum anisotropy level (" + NzString::Number(anisotropyLevel) + " > " + NzString::Number(s_maxAnisotropyLevel));
+			NazaraWarning("Anisotropy level is over maximum anisotropy level (" + NzString::Number(anisotropyLevel) + " > " + NzString::Number(s_maxAnisotropyLevel) + ')');
 			anisotropyLevel = s_maxAnisotropyLevel;
 		}
 
@@ -286,7 +286,7 @@ void NzTextureSampler::Bind(unsigned int unit) const
 	if (!m_samplerId)
 		UpdateSamplerId();
 
-	glBindSampler(unit, m_samplerId);
+	NzOpenGL::BindSampler(unit, m_samplerId);
 }
 
 unsigned int NzTextureSampler::GetOpenGLID() const
@@ -299,10 +299,10 @@ unsigned int NzTextureSampler::GetOpenGLID() const
 
 void NzTextureSampler::UpdateSamplerId() const
 {
-	nzUInt32 key = (m_mipmaps          << 0) | // 1 bit
-				   (m_filterMode       << 1) | // 2 bits
-				   (m_wrapMode         << 3) | // 2 bits
-				   (m_anisotropicLevel << 5);  // 8 bits
+	nzUInt32 key = (((m_mipmaps) ? 1 : 0) << 0) | // 1 bit
+				   (m_filterMode          << 1) | // 2 bits
+				   (m_wrapMode            << 3) | // 2 bits
+				   (m_anisotropicLevel    << 5);  // 8 bits
 
 	auto it = s_samplers.find(key);
 	if (it == s_samplers.end())
@@ -379,7 +379,7 @@ void NzTextureSampler::Uninitialize()
 	{
 		NzContext::EnsureContext();
 		for (const std::pair<nzUInt32, GLuint>& pair : s_samplers)
-			glDeleteSamplers(1, &pair.second);
+			NzOpenGL::DeleteSampler(pair.second);
 
 		s_samplers.clear();
 	}

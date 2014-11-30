@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Mathematics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -22,12 +22,11 @@ class NzVector2
 		~NzVector2() = default;
 
 		T AbsDotProduct(const NzVector2& vec) const;
-
+		T AngleBetween(const NzVector2& vec) const;
+		
 		T Determinant(const NzVector2& vec) const;
-
 		T Distance(const NzVector2& vec) const;
 		float Distancef(const NzVector2& vec) const;
-
 		T DotProduct(const NzVector2& vec) const;
 
 		T GetLength() const;
@@ -56,9 +55,6 @@ class NzVector2
 
 		operator T*();
 		operator const T*() const;
-
-		T& operator[](unsigned int i);
-		T operator[](unsigned int i) const;
 
 		const NzVector2& operator+() const;
 		NzVector2 operator-() const;
@@ -101,6 +97,8 @@ typedef NzVector2<double> NzVector2d;
 typedef NzVector2<float> NzVector2f;
 typedef NzVector2<int> NzVector2i;
 typedef NzVector2<unsigned int> NzVector2ui;
+typedef NzVector2<nzInt32> NzVector2i32;
+typedef NzVector2<nzUInt32> NzVector2ui32;
 
 #include <Nazara/Math/Vector2.inl>
 

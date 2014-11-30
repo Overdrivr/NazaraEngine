@@ -1,14 +1,16 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Graphics/Scene.hpp>
 #include <Nazara/Core/Clock.hpp>
 #include <Nazara/Core/Error.hpp>
+#include <Nazara/Core/ErrorFlags.hpp>
 #include <Nazara/Graphics/Camera.hpp>
 #include <Nazara/Graphics/ColorBackground.hpp>
-#include <Nazara/Graphics/ForwardRenderTechnique.hpp>
+#include <Nazara/Graphics/RenderTechniques.hpp>
 #include <Nazara/Graphics/SceneRoot.hpp>
+#include <Nazara/Graphics/SkinningManager.hpp>
 #include <Nazara/Renderer/Config.hpp>
 #include <functional>
 #include <memory>
@@ -30,29 +32,22 @@ struct NzSceneImpl
 	NzClock updateClock;
 	NzColor ambientColor = NzColor(25,25,25);
 	NzSceneRoot root;
-	NzAbstractViewer* viewer;
-	bool update;
+	NzAbstractViewer* viewer = nullptr;
+	bool backgroundEnabled = true;
+	bool update = false;
 	float frameTime;
 	float updateTime;
+	int renderTechniqueRanking;
 	unsigned int updatePerSecond = 60;
 };
 
 NzScene::NzScene()
 {
 	m_impl = new NzSceneImpl(this);
-	m_impl->background.reset(new NzColorBackground);
-	m_impl->renderTechnique.reset(new NzForwardRenderTechnique);
 }
 
 NzScene::~NzScene()
 {
-	const std::vector<NzNode*>& childs = m_impl->root.GetChilds();
-	for (NzNode* child : childs)
-	{
-		if (child->GetNodeType() == nzNodeType_Scene)
-			static_cast<NzSceneNode*>(child)->SetScene(nullptr);
-	}
-
 	delete m_impl;
 }
 
@@ -71,13 +66,13 @@ void NzScene::Cull()
 	}
 	#endif
 
-	NzAbstractRenderQueue* renderQueue = m_impl->renderTechnique->GetRenderQueue();
+	NzAbstractRenderQueue* renderQueue = GetRenderTechnique()->GetRenderQueue();
 	renderQueue->Clear(false);
 
 	m_impl->visibleUpdateList.clear();
 
 	// Frustum culling
-	RecursiveFrustumCull(m_impl->renderTechnique->GetRenderQueue(), m_impl->viewer->GetFrustum(), &m_impl->root);
+	RecursiveFrustumCull(renderQueue, m_impl->viewer->GetFrustum(), &m_impl->root);
 
 	///TODO: Occlusion culling
 
@@ -94,9 +89,36 @@ void NzScene::Draw()
 	}
 	#endif
 
-	m_impl->renderTechnique->Clear(this);
 	m_impl->viewer->ApplyView();
-	m_impl->renderTechnique->Draw(this);
+
+	try
+	{
+		NzErrorFlags errFlags(nzErrorFlag_ThrowException);
+		m_impl->renderTechnique->Clear(this);
+		m_impl->renderTechnique->Draw(this);
+	}
+	catch (const std::exception& e)
+	{
+		NzString oldName = m_impl->renderTechnique->GetName();
+
+		if (m_impl->renderTechniqueRanking > 0)
+		{
+			m_impl->renderTechnique.reset(NzRenderTechniques::GetByRanking(m_impl->renderTechniqueRanking-1, &m_impl->renderTechniqueRanking));
+			NazaraError("Render technique \"" + oldName + "\" failed, fallback to \"" + m_impl->renderTechnique->GetName() + '"');
+		}
+		else
+		{
+			NzErrorFlags errFlags(nzErrorFlag_ThrowException);
+			NazaraError("Render technique \"" + oldName + "\" failed and no fallback is available");
+		}
+
+		return;
+	}
+}
+
+void NzScene::EnableBackground(bool enable)
+{
+	m_impl->backgroundEnabled = enable;
 }
 
 NzColor NzScene::GetAmbientColor() const
@@ -106,11 +128,17 @@ NzColor NzScene::GetAmbientColor() const
 
 NzAbstractBackground* NzScene::GetBackground() const
 {
+	if (!m_impl->background)
+		m_impl->background.reset(new NzColorBackground);
+
 	return m_impl->background.get();
 }
 
 NzAbstractRenderTechnique* NzScene::GetRenderTechnique() const
 {
+	if (!m_impl->renderTechnique)
+		m_impl->renderTechnique.reset(NzRenderTechniques::GetByRanking(-1, &m_impl->renderTechniqueRanking));
+
 	return m_impl->renderTechnique.get();
 }
 
@@ -132,6 +160,11 @@ float NzScene::GetUpdateTime() const
 unsigned int NzScene::GetUpdatePerSecond() const
 {
 	return m_impl->updatePerSecond;
+}
+
+bool NzScene::IsBackgroundEnabled() const
+{
+	return m_impl->backgroundEnabled;
 }
 
 void NzScene::RegisterForUpdate(NzUpdatable* object)
@@ -208,6 +241,8 @@ void NzScene::Update()
 
 void NzScene::UpdateVisible()
 {
+	NzSkinningManager::Skin();
+
 	if (m_impl->update)
 	{
 		for (NzUpdatable* node : m_impl->visibleUpdateList)

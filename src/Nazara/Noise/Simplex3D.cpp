@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Rémi Bèges
+// Copyright (C) 2014 Rémi Bèges
 // This file is part of the "Nazara Engine - Noise module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -12,9 +12,22 @@ NzSimplex3D::NzSimplex3D()
     SkewCoeff3D = 1/3.f;
     UnskewCoeff3D = 1/6.f;
 
-    int grad3Temp[][3] = {{1,1,0},{-1,1,0},{1,-1,0},{-1,-1,0},
-                          {1,0,1},{-1,0,1},{1,0,-1},{-1,0,-1},
-                          {0,1,1},{0,-1,1},{0,1,-1},{0,-1,-1}};
+    float grad3Temp[][3] = {
+		{1.f,1.f,0.f},
+		{-1.f,1.f,0.f},
+		{1.f,-1.f,0.f},
+		{-1.f,-1.f,0.f},
+
+		{1.f,0.f,1.f},
+		{-1.f,0.f,1.f},
+		{1.f,0.f,-1.f},
+		{-1.f,0.f,-1.f},
+
+		{0.f,1.f,1.f},
+		{0.f,-1.f,1.f},
+		{0.f,1.f,-1.f},
+		{0.f,-1.f,-1.f}
+	};
 
     for(int i(0) ; i < 12 ; ++i)
         for(int j(0) ; j < 3 ; ++j)

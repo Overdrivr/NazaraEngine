@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Mathematics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -99,6 +99,8 @@ typedef NzBox<double> NzBoxd;
 typedef NzBox<float> NzBoxf;
 typedef NzBox<int> NzBoxi;
 typedef NzBox<unsigned int> NzBoxui;
+typedef NzBox<nzInt32> NzBoxi32;
+typedef NzBox<nzUInt32> NzBoxui32;
 
 #include <Nazara/Math/Box.inl>
 

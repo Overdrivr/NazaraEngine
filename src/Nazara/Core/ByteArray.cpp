@@ -1,10 +1,10 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Core/ByteArray.hpp>
 #include <Nazara/Core/AbstractHash.hpp>
-#include <Nazara/Math/Basic.hpp>
+#include <Nazara/Math/Algorithm.hpp>
 #include <algorithm>
 #include <cstring>
 #include <limits>
@@ -167,8 +167,6 @@ NzByteArray& NzByteArray::Insert(int pos, const void* buffer, unsigned int size)
 		m_sharedArray->capacity = newSize;
 		m_sharedArray->size = newSize;
 	}
-
-	return *this;
 
 	return *this;
 }
@@ -406,11 +404,14 @@ nzUInt8 NzByteArray::operator[](unsigned int pos) const
 
 NzByteArray& NzByteArray::operator=(const NzByteArray& array)
 {
-	ReleaseArray();
+	if (this != &array)
+	{
+		ReleaseArray();
 
-	m_sharedArray = array.m_sharedArray;
-	if (m_sharedArray != &emptyArray)
-		m_sharedArray->refCount++;
+		m_sharedArray = array.m_sharedArray;
+		if (m_sharedArray != &emptyArray)
+			m_sharedArray->refCount++;
+	}
 
 	return *this;
 }
@@ -464,9 +465,9 @@ void NzByteArray::EnsureOwnership()
 	}
 }
 
-bool NzByteArray::FillHash(NzAbstractHash* hazh) const
+bool NzByteArray::FillHash(NzAbstractHash* hash) const
 {
-	hazh->Append(m_sharedArray->buffer, m_sharedArray->size);
+	hash->Append(m_sharedArray->buffer, m_sharedArray->size);
 
 	return true;
 }

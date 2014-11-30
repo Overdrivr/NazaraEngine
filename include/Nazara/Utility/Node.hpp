@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -92,7 +92,7 @@ class NAZARA_API NzNode
 
 	protected:
 		void AddChild(NzNode* node) const;
-		virtual void Invalidate();
+		virtual void InvalidateNode();
 		virtual void OnParenting(const NzNode* parent);
 		void RemoveChild(NzNode* node) const;
 		void UpdateDerived() const;

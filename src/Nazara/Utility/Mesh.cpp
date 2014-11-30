@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -6,7 +6,7 @@
 #include <Nazara/Core/Enums.hpp>
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Core/PrimitiveList.hpp>
-#include <Nazara/Math/Basic.hpp>
+#include <Nazara/Math/Algorithm.hpp>
 #include <Nazara/Utility/Algorithm.hpp>
 #include <Nazara/Utility/Animation.hpp>
 #include <Nazara/Utility/Buffer.hpp>
@@ -191,7 +191,26 @@ NzSubMesh* NzMesh::BuildSubMesh(const NzPrimitive& primitive, const NzMeshParams
 			NzBufferMapper<NzVertexBuffer> vertexMapper(vertexBuffer.get(), nzBufferAccess_WriteOnly);
 			NzIndexMapper indexMapper(indexBuffer.get(), nzBufferAccess_WriteOnly);
 
-			NzGenerateBox(primitive.box.lengths, primitive.box.subdivision, matrix, static_cast<NzMeshVertex*>(vertexMapper.GetPointer()), indexMapper.begin(), &aabb);
+			NzGenerateBox(primitive.box.lengths, primitive.box.subdivision, matrix, primitive.textureCoords, static_cast<NzMeshVertex*>(vertexMapper.GetPointer()), indexMapper.begin(), &aabb);
+			break;
+		}
+
+		case nzPrimitiveType_Cone:
+		{
+			unsigned int indexCount;
+			unsigned int vertexCount;
+			NzComputeConeIndexVertexCount(primitive.cone.subdivision, &indexCount, &vertexCount);
+
+			indexBuffer.reset(new NzIndexBuffer(vertexCount > std::numeric_limits<nzUInt16>::max(), indexCount, params.storage, nzBufferUsage_Static));
+			indexBuffer->SetPersistent(false);
+
+			vertexBuffer.reset(new NzVertexBuffer(declaration, vertexCount, params.storage, nzBufferUsage_Static));
+			vertexBuffer->SetPersistent(false);
+
+			NzBufferMapper<NzVertexBuffer> vertexMapper(vertexBuffer.get(), nzBufferAccess_WriteOnly);
+			NzIndexMapper indexMapper(indexBuffer.get(), nzBufferAccess_WriteOnly);
+
+			NzGenerateCone(primitive.cone.length, primitive.cone.radius, primitive.cone.subdivision, matrix, primitive.textureCoords, static_cast<NzMeshVertex*>(vertexMapper.GetPointer()), indexMapper.begin(), &aabb);
 			break;
 		}
 
@@ -210,7 +229,7 @@ NzSubMesh* NzMesh::BuildSubMesh(const NzPrimitive& primitive, const NzMeshParams
 			NzBufferMapper<NzVertexBuffer> vertexMapper(vertexBuffer.get(), nzBufferAccess_WriteOnly);
 			NzIndexMapper indexMapper(indexBuffer.get(), nzBufferAccess_WriteOnly);
 
-			NzGeneratePlane(primitive.plane.subdivision, primitive.plane.size, matrix, static_cast<NzMeshVertex*>(vertexMapper.GetPointer()), indexMapper.begin(), &aabb);
+			NzGeneratePlane(primitive.plane.subdivision, primitive.plane.size, matrix, primitive.textureCoords, static_cast<NzMeshVertex*>(vertexMapper.GetPointer()), indexMapper.begin(), &aabb);
 			break;
 		}
 
@@ -233,7 +252,7 @@ NzSubMesh* NzMesh::BuildSubMesh(const NzPrimitive& primitive, const NzMeshParams
 					NzBufferMapper<NzVertexBuffer> vertexMapper(vertexBuffer.get(), nzBufferAccess_WriteOnly);
 					NzIndexMapper indexMapper(indexBuffer.get(), nzBufferAccess_WriteOnly);
 
-					NzGenerateCubicSphere(primitive.sphere.size, primitive.sphere.cubic.subdivision, matrix, static_cast<NzMeshVertex*>(vertexMapper.GetPointer()), indexMapper.begin(), &aabb);
+					NzGenerateCubicSphere(primitive.sphere.size, primitive.sphere.cubic.subdivision, matrix, primitive.textureCoords, static_cast<NzMeshVertex*>(vertexMapper.GetPointer()), indexMapper.begin(), &aabb);
 					break;
 				}
 
@@ -252,7 +271,7 @@ NzSubMesh* NzMesh::BuildSubMesh(const NzPrimitive& primitive, const NzMeshParams
 					NzBufferMapper<NzVertexBuffer> vertexMapper(vertexBuffer.get(), nzBufferAccess_WriteOnly);
 					NzIndexMapper indexMapper(indexBuffer.get(), nzBufferAccess_WriteOnly);
 
-					NzGenerateIcoSphere(primitive.sphere.size, primitive.sphere.ico.recursionLevel, matrix, static_cast<NzMeshVertex*>(vertexMapper.GetPointer()), indexMapper.begin(), &aabb);
+					NzGenerateIcoSphere(primitive.sphere.size, primitive.sphere.ico.recursionLevel, matrix, primitive.textureCoords, static_cast<NzMeshVertex*>(vertexMapper.GetPointer()), indexMapper.begin(), &aabb);
 					break;
 				}
 
@@ -271,7 +290,7 @@ NzSubMesh* NzMesh::BuildSubMesh(const NzPrimitive& primitive, const NzMeshParams
 					NzBufferMapper<NzVertexBuffer> vertexMapper(vertexBuffer.get(), nzBufferAccess_WriteOnly);
 					NzIndexMapper indexMapper(indexBuffer.get(), nzBufferAccess_WriteOnly);
 
-					NzGenerateUvSphere(primitive.sphere.size, primitive.sphere.uv.sliceCount, primitive.sphere.uv.stackCount, matrix, static_cast<NzMeshVertex*>(vertexMapper.GetPointer()), indexMapper.begin(), &aabb);
+					NzGenerateUvSphere(primitive.sphere.size, primitive.sphere.uv.sliceCount, primitive.sphere.uv.stackCount, matrix, primitive.textureCoords, static_cast<NzMeshVertex*>(vertexMapper.GetPointer()), indexMapper.begin(), &aabb);
 					break;
 				}
 			}

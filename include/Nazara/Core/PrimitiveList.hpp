@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -19,6 +19,8 @@ class NAZARA_API NzPrimitiveList
 
 		void AddBox(const NzVector3f& lengths, const NzVector3ui& subdivision = NzVector3ui(0U), const NzMatrix4f& transformMatrix = NzMatrix4f::Identity());
 		void AddBox(const NzVector3f& lengths, const NzVector3ui& subdivision, const NzVector3f& position, const NzQuaternionf& rotation = NzQuaternionf::Identity());
+		void AddCone(float length, float radius, unsigned int subdivision = 4, const NzMatrix4f& transformMatrix = NzMatrix4f::Identity());
+		void AddCone(float length, float radius, unsigned int subdivision, const NzVector3f& position, const NzQuaternionf& rotation = NzQuaternionf::Identity());
 		void AddCubicSphere(float size, unsigned int subdivision = 4, const NzMatrix4f& transformMatrix = NzMatrix4f::Identity());
 		void AddCubicSphere(float size, unsigned int subdivision, const NzVector3f& position, const NzQuaternionf& rotation = NzQuaternionf::Identity());
 		void AddIcoSphere(float size, unsigned int recursionLevel = 3, const NzMatrix4f& transformMatrix = NzMatrix4f::Identity());

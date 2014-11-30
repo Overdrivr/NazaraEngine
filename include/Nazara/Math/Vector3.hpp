@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Rémi Bèges - Jérôme Leclercq
+// Copyright (C) 2014 Rémi Bèges - Jérôme Leclercq
 // This file is part of the "Nazara Engine - Mathematics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -23,6 +23,8 @@ template<typename T> class NzVector3
 		~NzVector3() = default;
 
 		T AbsDotProduct(const NzVector3& vec) const;
+
+		T AngleBetween(const NzVector3& vec) const;
 
 		NzVector3 CrossProduct(const NzVector3& vec) const;
 
@@ -66,9 +68,6 @@ template<typename T> class NzVector3
 
 		operator T*();
 		operator const T*() const;
-
-		T& operator[](unsigned int i);
-		T operator[](unsigned int i) const;
 
 		const NzVector3& operator+() const;
 		NzVector3 operator-() const;
@@ -122,6 +121,8 @@ typedef NzVector3<double> NzVector3d;
 typedef NzVector3<float> NzVector3f;
 typedef NzVector3<int> NzVector3i;
 typedef NzVector3<unsigned int> NzVector3ui;
+typedef NzVector3<nzInt32> NzVector3i32;
+typedef NzVector3<nzUInt32> NzVector3ui32;
 
 #include <Nazara/Math/Vector3.inl>
 

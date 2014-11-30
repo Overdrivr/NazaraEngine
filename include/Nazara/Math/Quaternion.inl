@@ -1,9 +1,9 @@
-// Copyright (C) 2013 Rémi Bèges - Jérôme Leclercq
+// Copyright (C) 2014 Rémi Bèges - Jérôme Leclercq
 // This file is part of the "Nazara Engine - Mathematics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Core/StringStream.hpp>
-#include <Nazara/Math/Basic.hpp>
+#include <Nazara/Math/Algorithm.hpp>
 #include <Nazara/Math/Config.hpp>
 #include <Nazara/Math/EulerAngles.hpp>
 #include <Nazara/Math/Vector3.hpp>
@@ -213,7 +213,7 @@ NzQuaternion<T>& NzQuaternion<T>::Set(T angle, const NzVector3<T>& axis)
 	angle = NzDegreeToRadian(angle);
 	#endif
 
-	angle *= F(0.5);
+	angle /= F(2.0);
 
 	NzVector3<T> normalizedAxis = axis.GetNormal();
 
@@ -337,7 +337,7 @@ NzQuaternion<T> NzQuaternion<T>::operator*(T scale) const
 template<typename T>
 NzQuaternion<T> NzQuaternion<T>::operator/(const NzQuaternion& quat) const
 {
-	return GetConjugate(quat) * (*this);
+	return quat.GetConjugate() * (*this);
 }
 
 template<typename T>
@@ -406,6 +406,12 @@ NzQuaternion<T> NzQuaternion<T>::Lerp(const NzQuaternion& from, const NzQuaterni
 	interpolated.z = NzLerp(from.z, to.z, interpolation);
 
 	return interpolated;
+}
+
+template<typename T>
+NzQuaternion<T> NzQuaternion<T>::Normalize(const NzQuaternion& quat, T* length)
+{
+	return quat.GetNormal(length);
 }
 
 template<typename T>

@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -16,6 +16,12 @@
 	#error OS not handled
 #endif
 
+#if NAZARA_CORE_THREADSAFE && NAZARA_THREADSAFETY_DIRECTORY
+	#include <Nazara/Core/ThreadSafety.hpp>
+#else
+	#include <Nazara/Core/ThreadSafetyOff.hpp>
+#endif
+
 #include <Nazara/Core/Debug.hpp>
 
 namespace
@@ -24,13 +30,15 @@ namespace
 }
 
 NzDirectory::NzDirectory() :
-m_pattern('*')
+m_pattern('*'),
+m_impl(nullptr)
 {
 }
 
 NzDirectory::NzDirectory(const NzString& dirPath) :
 m_dirPath(dirPath),
-m_pattern('*')
+m_pattern('*'),
+m_impl(nullptr)
 {
 }
 
@@ -59,6 +67,13 @@ bool NzDirectory::Exists() const
 		return true; // Le fichier est ouvert, donc il existe
 	else
 		return Exists(m_dirPath);
+}
+
+NzString NzDirectory::GetPath() const
+{
+	NazaraLock(m_mutex);
+
+	return m_dirPath;
 }
 
 NzString NzDirectory::GetPattern() const
@@ -187,7 +202,7 @@ bool NzDirectory::Open()
 	return true;
 }
 
-void NzDirectory::SetDirectory(const NzString& dirPath)
+void NzDirectory::SetPath(const NzString& dirPath)
 {
 	NazaraLock(m_mutex);
 

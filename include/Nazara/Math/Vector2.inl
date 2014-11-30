@@ -1,9 +1,9 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Mathematics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Core/StringStream.hpp>
-#include <Nazara/Math/Basic.hpp>
+#include <Nazara/Math/Algorithm.hpp>
 #include <cstring>
 #include <limits>
 #include <stdexcept>
@@ -52,6 +52,12 @@ template<>
 inline unsigned int NzVector2<unsigned int>::AbsDotProduct(const NzVector2<unsigned int>& vec) const
 {
 	return std::labs(x * vec.x) + std::labs(y * vec.y);
+}
+
+template<typename T>
+T NzVector2<T>::AngleBetween(const NzVector2& vec) const
+{
+	return NzRadians(std::atan2(vec.y, vec.x) - std::atan2(y, x));
 }
 
 template<typename T>
@@ -108,7 +114,7 @@ T NzVector2<T>::GetSquaredLength() const
 template<typename T>
 NzVector2<T>& NzVector2<T>::MakeUnitX()
 {
-	Set(F(1.0), F(0.0));
+	return Set(F(1.0), F(0.0));
 }
 
 template<typename T>
@@ -150,11 +156,13 @@ NzVector2<T>& NzVector2<T>::Minimize(const NzVector2& vec)
 template<typename T>
 NzVector2<T>& NzVector2<T>::Normalize(T* length)
 {
-	T norm = std::sqrt(GetSquaredLength());
-	T invNorm = F(1.0) / length;
-
-	x *= invNorm;
-	y *= invNorm;
+	T norm = GetLength();
+	if (norm > F(0.0))
+	{
+		T invNorm = F(1.0) / norm;
+		x *= invNorm;
+		y *= invNorm;
+	}
 
 	if (length)
 		*length = norm;
@@ -230,40 +238,6 @@ template<typename T>
 NzVector2<T>::operator const T*() const
 {
 	return &x;
-}
-
-template<typename T>
-T& NzVector2<T>::operator[](unsigned int i)
-{
-	#if NAZARA_MATH_SAFE
-	if (i >= 2)
-	{
-		NzStringStream ss;
-		ss << "Index out of range: (" << i << " >= 2)";
-
-		NazaraError(ss);
-		throw std::domain_error(ss.ToString());
-	}
-	#endif
-
-	return *(&x+i);
-}
-
-template<typename T>
-T NzVector2<T>::operator[](unsigned int i) const
-{
-	#if NAZARA_MATH_SAFE
-	if (i >= 2)
-	{
-		NzStringStream ss;
-		ss << "Index out of range: (" << i << " >= 2)";
-
-		NazaraError(ss);
-		throw std::domain_error(ss.ToString());
-	}
-	#endif
-
-	return *(&x+i);
 }
 
 template<typename T>

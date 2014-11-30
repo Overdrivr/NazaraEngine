@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -17,20 +17,26 @@ struct NzRenderStates
 
 	NzRenderStates& operator=(const NzRenderStates& states);
 
+	struct Face
+	{
+		nzRendererComparison stencilCompare;
+		nzStencilOperation stencilFail;
+		nzStencilOperation stencilPass;
+		nzStencilOperation stencilZFail;
+		nzUInt32 stencilMask;
+		unsigned int stencilReference;
+	};
+
+	Face backFace;
+	Face frontFace;
 	nzBlendFunc dstBlend;
 	nzBlendFunc srcBlend;
-	nzFaceCulling faceCulling;
 	nzFaceFilling faceFilling;
+	nzFaceSide faceCulling;
 	nzRendererComparison depthFunc;
-	nzRendererComparison stencilCompare;
-	nzStencilOperation stencilFail;
-	nzStencilOperation stencilPass;
-	nzStencilOperation stencilZFail;
-	nzUInt32 stencilMask;
 	bool parameters[nzRendererParameter_Max+1];
 	float lineWidth;
 	float pointSize;
-	unsigned int stencilReference;
 };
 
 #include <Nazara/Renderer/RenderStates.inl>

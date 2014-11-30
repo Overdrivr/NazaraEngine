@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -33,15 +33,6 @@ enum nzBlendFunc
 	nzBlendFunc_Max = nzBlendFunc_Zero
 };
 
-enum nzFaceCulling
-{
-	nzFaceCulling_Back,
-	nzFaceCulling_Front,
-	nzFaceCulling_FrontAndBack,
-
-	nzFaceCulling_Max = nzFaceCulling_FrontAndBack
-};
-
 enum nzFaceFilling
 {
 	nzFaceFilling_Point,
@@ -49,6 +40,37 @@ enum nzFaceFilling
 	nzFaceFilling_Fill,
 
 	nzFaceFilling_Max = nzFaceFilling_Fill
+};
+
+enum nzFaceSide
+{
+	nzFaceSide_Back,
+	nzFaceSide_Front,
+	nzFaceSide_FrontAndBack,
+
+	nzFaceSide_Max = nzFaceSide_FrontAndBack
+};
+
+enum nzGpuQueryCondition
+{
+	nzGpuQueryCondition_Region_NoWait,
+	nzGpuQueryCondition_Region_Wait,
+	nzGpuQueryCondition_NoWait,
+	nzGpuQueryCondition_Wait,
+
+	nzGpuQueryCondition_Max = nzGpuQueryCondition_Wait
+};
+
+enum nzGpuQueryMode
+{
+	nzGpuQueryMode_AnySamplesPassed,
+	nzGpuQueryMode_AnySamplesPassedConservative,
+	nzGpuQueryMode_PrimitiveGenerated,
+	nzGpuQueryMode_SamplesPassed,
+	nzGpuQueryMode_TimeElapsed,
+	nzGpuQueryMode_TransformFeedbackPrimitivesWritten,
+
+	nzGpuQueryMode_Max = nzGpuQueryMode_TransformFeedbackPrimitivesWritten
 };
 
 enum nzMatrixType
@@ -63,7 +85,15 @@ enum nzMatrixType
 	nzMatrixType_WorldView,
 	nzMatrixType_WorldViewProj,
 
-	nzMatrixType_Max = nzMatrixType_WorldViewProj
+	// Matrice inversées
+	nzMatrixType_InvProjection,
+	nzMatrixType_InvView,
+	nzMatrixType_InvViewProj,
+	nzMatrixType_InvWorld,
+	nzMatrixType_InvWorldView,
+	nzMatrixType_InvWorldViewProj,
+
+	nzMatrixType_Max = nzMatrixType_InvWorldViewProj
 };
 
 enum nzPixelBufferType
@@ -77,6 +107,7 @@ enum nzPixelBufferType
 enum nzRendererCap
 {
 	nzRendererCap_AnisotropicFilter,
+	nzRendererCap_ConditionalRendering,
 	nzRendererCap_FP64,
 	nzRendererCap_HardwareBuffer,
 	nzRendererCap_Instancing,
@@ -92,13 +123,13 @@ enum nzRendererCap
 	nzRendererCap_Max = nzRendererCap_TextureNPOT
 };
 
-enum nzRendererClearFlags
+enum nzRendererBufferFlags
 {
-	nzRendererClear_Color   = 0x1,
-	nzRendererClear_Depth   = 0x2,
-	nzRendererClear_Stencil = 0x4,
+	nzRendererBuffer_Color   = 0x1,
+	nzRendererBuffer_Depth   = 0x2,
+	nzRendererBuffer_Stencil = 0x4,
 
-	nzRendererClear_Max = nzRendererClear_Stencil*2-1
+	nzRendererBuffer_Max = nzRendererBuffer_Stencil*2-1
 };
 
 enum nzRendererComparison
@@ -110,8 +141,9 @@ enum nzRendererComparison
 	nzRendererComparison_Less,
 	nzRendererComparison_LessOrEqual,
 	nzRendererComparison_Never,
+	nzRendererComparison_NotEqual,
 
-	nzRendererComparison_Max = nzRendererComparison_Never
+	nzRendererComparison_Max = nzRendererComparison_NotEqual
 };
 
 enum nzRendererParameter
@@ -153,52 +185,16 @@ enum nzSamplerWrap
 	nzSamplerWrap_Max = nzSamplerWrap_Repeat
 };
 
-enum nzShaderFlags
-{
-	nzShaderFlags_None = 0,
-
-	//nzShaderFlags_Deferred        = 0x1,
-	nzShaderFlags_FlipUVs           = 0x1,
-	nzShaderFlags_Instancing        = 0x2,
-
-	nzShaderFlags_Max = nzShaderFlags_Instancing*2-1
-};
-
-enum nzShaderLanguage
-{
-	nzShaderLanguage_Unknown = -1,
-
-	nzShaderLanguage_Cg,
-	nzShaderLanguage_GLSL,
-
-	nzShaderLanguage_Max = nzShaderLanguage_GLSL
-};
-
-enum nzShaderTarget
-{
-	nzShaderTarget_FullscreenQuad,
-	nzShaderTarget_Model,
-	nzShaderTarget_None,
-	nzShaderTarget_Sprite,
-
-	nzShaderTarget_Max = nzShaderTarget_Sprite
-};
-
 enum nzShaderUniform
 {
 	nzShaderUniform_EyePosition,
+	nzShaderUniform_InvProjMatrix,
 	nzShaderUniform_InvTargetSize,
-	nzShaderUniform_MaterialAlphaMap,
-	nzShaderUniform_MaterialAlphaThreshold,
-	nzShaderUniform_MaterialAmbient,
-	nzShaderUniform_MaterialDiffuse,
-	nzShaderUniform_MaterialDiffuseMap,
-	nzShaderUniform_MaterialEmissiveMap,
-	nzShaderUniform_MaterialHeightMap,
-	nzShaderUniform_MaterialNormalMap,
-	nzShaderUniform_MaterialShininess,
-	nzShaderUniform_MaterialSpecular,
-	nzShaderUniform_MaterialSpecularMap,
+	nzShaderUniform_InvViewMatrix,
+	nzShaderUniform_InvViewProjMatrix,
+	nzShaderUniform_InvWorldMatrix,
+	nzShaderUniform_InvWorldViewMatrix,
+	nzShaderUniform_InvWorldViewProjMatrix,
 	nzShaderUniform_ProjMatrix,
 	nzShaderUniform_SceneAmbient,
 	nzShaderUniform_TargetSize,
@@ -211,21 +207,21 @@ enum nzShaderUniform
 	nzShaderUniform_Max = nzShaderUniform_WorldViewProjMatrix
 };
 
-enum nzShaderType
+enum nzShaderStage
 {
-	nzShaderType_Fragment,
-	nzShaderType_Geometry,
-	nzShaderType_Vertex,
+	nzShaderStage_Fragment,
+	nzShaderStage_Geometry,
+	nzShaderStage_Vertex,
 
-	nzShaderType_Max = nzShaderType_Vertex
+	nzShaderStage_Max = nzShaderStage_Vertex
 };
 
 enum nzStencilOperation
 {
 	nzStencilOperation_Decrement,
-	nzStencilOperation_DecrementToSaturation,
+	nzStencilOperation_DecrementNoClamp,
 	nzStencilOperation_Increment,
-	nzStencilOperation_IncrementToSaturation,
+	nzStencilOperation_IncrementNoClamp,
 	nzStencilOperation_Invert,
 	nzStencilOperation_Keep,
 	nzStencilOperation_Replace,

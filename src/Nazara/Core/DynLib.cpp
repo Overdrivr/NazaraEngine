@@ -1,10 +1,11 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Core/DynLib.hpp>
 #include <Nazara/Core/Config.hpp>
 #include <Nazara/Core/Error.hpp>
+#include <memory>
 
 #if defined(NAZARA_PLATFORM_WINDOWS)
 	#include <Nazara/Core/Win32/DynLibImpl.hpp>
@@ -14,12 +15,24 @@
 	#error No implementation for this platform
 #endif
 
+#if NAZARA_CORE_THREADSAFE && NAZARA_THREADSAFETY_DYNLIB
+	#include <Nazara/Core/ThreadSafety.hpp>
+#else
+	#include <Nazara/Core/ThreadSafetyOff.hpp>
+#endif
+
 #include <Nazara/Core/Debug.hpp>
 
-NzDynLib::NzDynLib(const NzString& libraryPath) :
-m_path(libraryPath),
+NzDynLib::NzDynLib() :
 m_impl(nullptr)
 {
+}
+
+NzDynLib::NzDynLib(NzDynLib&& lib) :
+m_lastError(std::move(lib.m_lastError)),
+m_impl(lib.m_impl)
+{
+	lib.m_impl = nullptr;
 }
 
 NzDynLib::~NzDynLib()
@@ -46,23 +59,28 @@ NzDynLibFunc NzDynLib::GetSymbol(const NzString& symbol) const
 	}
 	#endif
 
-	return m_impl->GetSymbol(symbol);
+	return m_impl->GetSymbol(symbol, &m_lastError);
 }
 
-bool NzDynLib::Load()
+bool NzDynLib::IsLoaded() const
+{
+	return m_impl != nullptr;
+}
+
+bool NzDynLib::Load(const NzString& libraryPath)
 {
 	NazaraLock(m_mutex)
 
 	Unload();
 
-	m_impl = new NzDynLibImpl(this);
-	if (!m_impl->Load(m_path))
+	std::unique_ptr<NzDynLibImpl> impl(new NzDynLibImpl(this));
+	if (!impl->Load(libraryPath, &m_lastError))
 	{
-		delete m_impl;
-		m_impl = nullptr;
-
+		NazaraError("Failed to load library: " + m_lastError);
 		return false;
 	}
+
+	m_impl = impl.release();
 
 	return true;
 }
@@ -79,9 +97,14 @@ void NzDynLib::Unload()
 	}
 }
 
-void NzDynLib::SetLastError(const NzString& error)
+NzDynLib& NzDynLib::operator=(NzDynLib&& lib)
 {
-	NazaraLock(m_mutex)
+	Unload();
 
-	m_lastError = error;
+	m_impl = lib.m_impl;
+	m_lastError = std::move(lib.m_lastError);
+
+	lib.m_impl = nullptr;
+
+	return *this;
 }

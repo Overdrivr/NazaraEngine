@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -14,6 +14,16 @@ void NzPrimitiveList::AddBox(const NzVector3f& lengths, const NzVector3ui& subdi
 void NzPrimitiveList::AddBox(const NzVector3f& lengths, const NzVector3ui& subdivision, const NzVector3f& position, const NzQuaternionf& rotation)
 {
 	m_primitives.push_back(NzPrimitive::Box(lengths, subdivision, position, rotation));
+}
+
+void NzPrimitiveList::AddCone(float length, float radius, unsigned int subdivision, const NzMatrix4f& transformMatrix)
+{
+	m_primitives.push_back(NzPrimitive::Cone(length, radius, subdivision, transformMatrix));
+}
+
+void NzPrimitiveList::AddCone(float length, float radius, unsigned int subdivision, const NzVector3f& position, const NzQuaternionf& rotation)
+{
+	m_primitives.push_back(NzPrimitive::Cone(length, radius, subdivision, position, rotation));
 }
 
 void NzPrimitiveList::AddCubicSphere(float size, unsigned int subdivision, const NzMatrix4f& transformMatrix)

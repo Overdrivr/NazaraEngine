@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -28,8 +28,8 @@ class NzIndexIterator
 
 		NzIndexIterator& operator=(const NzIndexIterator& iterator);
 
-		NzIndexIterator operator+(unsigned int indexCount);
-		NzIndexIterator operator-(unsigned int indexCount);
+		NzIndexIterator operator+(unsigned int indexCount) const;
+		NzIndexIterator operator-(unsigned int indexCount) const;
 
 		NzIndexIterator& operator+=(unsigned int indexCount);
 		NzIndexIterator& operator-=(unsigned int indexCount);

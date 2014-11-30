@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -19,6 +19,15 @@ bool NzResourceListener::OnResourceDestroy(const NzResource* resource, int index
 {
 	NazaraUnused(resource);
 	NazaraUnused(index);
+
+	return true;
+}
+
+bool NzResourceListener::OnResourceModified(const NzResource* resource, int index, unsigned int code)
+{
+	NazaraUnused(resource);
+	NazaraUnused(index);
+	NazaraUnused(code);
 
 	return true;
 }

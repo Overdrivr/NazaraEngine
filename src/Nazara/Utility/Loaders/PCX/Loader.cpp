@@ -1,13 +1,11 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Utility/Loaders/PCX.hpp>
 #include <Nazara/Core/Endianness.hpp>
 #include <Nazara/Core/Error.hpp>
-#include <Nazara/Core/File.hpp>
 #include <Nazara/Core/InputStream.hpp>
-#include <Nazara/Core/MemoryStream.hpp>
 #include <Nazara/Utility/Image.hpp>
 #include <memory>
 #include <Nazara/Utility/Debug.hpp>
@@ -38,7 +36,7 @@ namespace
 		nzUInt8 padding[54];
 	};
 
-	//static_assert(sizeof(pcx_header) == 1024, "PCX header must be 1024 bytes sized");
+	static_assert(sizeof(pcx_header) == (6+48+54)*sizeof(nzUInt8) + 10*sizeof(nzUInt16), "pcx_header struct must be packed");
 
 	bool IsSupported(const NzString& extension)
 	{
@@ -217,7 +215,7 @@ namespace
 				nzUInt8 palette[768];
 
 				/* the palette is contained in the last 769 bytes of the file */
-				unsigned int curPos = stream.GetCursorPos();
+				nzUInt64 curPos = stream.GetCursorPos();
 				stream.SetCursorPos(stream.GetSize()-769);
 				nzUInt8 magic;
 				if (!stream.Read(&magic, 1))
@@ -289,7 +287,7 @@ namespace
 					/* for each color plane */
 					for (int c = 0; c < 3; ++c)
 					{
-						nzUInt8* ptr = &pixels[y * width * 4];
+						nzUInt8* ptr = &pixels[y * width * 3];
 						int bytes = header.bytesPerScanLine;
 
 						/* decode line number y */
@@ -326,7 +324,7 @@ namespace
 			}
 
 			default:
-				NazaraError("Failed to load " + NzString::Number(bitCount) + " bitcount pcx files");
+				NazaraError("Unsupported " + NzString::Number(bitCount) + " bitcount for pcx files");
 				return false;
 		}
 

@@ -1,12 +1,14 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Renderer/OpenGL.hpp>
+#include <Nazara/Core/CallOnExit.hpp>
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Core/Log.hpp>
-#include <Nazara/Math/Basic.hpp>
+#include <Nazara/Math/Algorithm.hpp>
 #include <Nazara/Renderer/Context.hpp>
+#include <Nazara/Renderer/RenderTarget.hpp>
 #include <cstring>
 #include <set>
 #include <sstream>
@@ -61,17 +63,30 @@ namespace
 		#endif
 	}
 
+	enum GarbageResourceType
+	{
+		GarbageResourceType_FrameBuffer,
+		GarbageResourceType_VertexArray
+	};
+
 	struct ContextStates
 	{
+		std::vector<std::pair<GarbageResourceType, GLuint>> garbage; // Les ressources à supprimer dès que possible
 		GLuint buffersBinding[nzBufferType_Max+1] = {0};
 		GLuint currentProgram = 0;
+		GLuint samplers[32] = {0}; // 32 est pour l'instant la plus haute limite (GL_TEXTURE31)
 		GLuint texturesBinding[32] = {0}; // 32 est pour l'instant la plus haute limite (GL_TEXTURE31)
+		NzRecti currentScissorBox = NzRecti(0,0,0,0);
+		NzRecti currentViewport = NzRecti(0,0,0,0);
 		NzRenderStates renderStates; // Toujours synchronisé avec OpenGL
+		const NzRenderTarget* currentTarget = nullptr;
+		bool scissorBoxUpdated = true;
+		bool viewportUpdated = true;
 		unsigned int textureUnit = 0;
 	};
 
 	std::set<NzString> s_openGLextensionSet;
-	std::unordered_map<NzContext*, ContextStates> s_contexts;
+	std::unordered_map<const NzContext*, ContextStates> s_contexts;
 	thread_local ContextStates* s_contextStates = nullptr;
 	NzString s_rendererName;
 	NzString s_vendorName;
@@ -171,7 +186,7 @@ void NzOpenGL::ApplyStates(const NzRenderStates& states)
 	{
 		if (currentRenderStates.faceCulling != states.faceCulling)
 		{
-			glCullFace(FaceCulling[states.faceCulling]);
+			glCullFace(FaceSide[states.faceCulling]);
 			currentRenderStates.faceCulling = states.faceCulling;
 		}
 	}
@@ -185,25 +200,31 @@ void NzOpenGL::ApplyStates(const NzRenderStates& states)
 	// Ici encore, ça ne sert à rien de se soucier des fonctions de stencil sans qu'il soit activé
 	if (states.parameters[nzRendererParameter_StencilTest])
 	{
-		if (currentRenderStates.stencilCompare != states.stencilCompare ||
-		    currentRenderStates.stencilMask != states.stencilMask ||
-		    currentRenderStates.stencilReference != states.stencilReference)
+		for (unsigned int i = 0; i < 2; ++i)
 		{
-			glStencilFunc(RendererComparison[states.stencilCompare], states.stencilReference, states.stencilMask);
-			currentRenderStates.stencilCompare = states.stencilCompare;
-			currentRenderStates.stencilMask = states.stencilMask;
-			currentRenderStates.stencilReference = states.stencilReference;
-		}
+			GLenum face = (i == 0) ? GL_BACK : GL_FRONT;
+			const NzRenderStates::Face& srcStates = (i == 0) ? states.backFace : states.frontFace;
+			NzRenderStates::Face& dstStates = (i == 0) ? currentRenderStates.backFace : currentRenderStates.frontFace;
 
-		// Ici encore, ça ne sert à rien de se soucier des fonctions de stencil sans qu'il soit activé
-		if (currentRenderStates.stencilFail != states.stencilFail ||
-		    currentRenderStates.stencilPass != states.stencilPass ||
-		    currentRenderStates.stencilZFail != states.stencilZFail)
-		{
-			glStencilOp(StencilOperation[states.stencilFail], StencilOperation[states.stencilZFail], StencilOperation[states.stencilPass]);
-			currentRenderStates.stencilFail = states.stencilFail;
-			currentRenderStates.stencilPass = states.stencilPass;
-			currentRenderStates.stencilZFail = states.stencilZFail;
+			if (dstStates.stencilCompare != srcStates.stencilCompare ||
+				dstStates.stencilMask != srcStates.stencilMask ||
+				dstStates.stencilReference != srcStates.stencilReference)
+			{
+				glStencilFuncSeparate(face, RendererComparison[srcStates.stencilCompare], srcStates.stencilReference, srcStates.stencilMask);
+				dstStates.stencilCompare = srcStates.stencilCompare;
+				dstStates.stencilMask = srcStates.stencilMask;
+				dstStates.stencilReference = srcStates.stencilReference;
+			}
+
+			if (dstStates.stencilFail != srcStates.stencilFail ||
+				dstStates.stencilPass != srcStates.stencilPass ||
+				dstStates.stencilZFail != srcStates.stencilZFail)
+			{
+				glStencilOpSeparate(face, StencilOperation[srcStates.stencilFail], StencilOperation[srcStates.stencilZFail], StencilOperation[srcStates.stencilPass]);
+				dstStates.stencilFail = srcStates.stencilFail;
+				dstStates.stencilPass = srcStates.stencilPass;
+				dstStates.stencilZFail = srcStates.stencilZFail;
+			}
 		}
 	}
 
@@ -313,6 +334,68 @@ void NzOpenGL::BindProgram(GLuint id)
 	}
 }
 
+void NzOpenGL::BindSampler(GLuint unit, GLuint id)
+{
+	#ifdef NAZARA_DEBUG
+	if (!glBindSampler)
+	{
+		NazaraError("Sampler are not supported");
+		return;
+	}
+
+	if (!s_contextStates)
+	{
+		NazaraError("No context activated");
+		return;
+	}
+	#endif
+
+	if (s_contextStates->samplers[unit] != id)
+	{
+		glBindSampler(unit, id);
+		s_contextStates->samplers[unit] = id;
+	}
+}
+
+void NzOpenGL::BindScissorBox(const NzRecti& scissorBox)
+{
+	#ifdef NAZARA_DEBUG
+	if (!s_contextStates)
+	{
+		NazaraError("No context activated");
+		return;
+	}
+	#endif
+
+	#if NAZARA_RENDERER_SAFE
+	if (scissorBox.width < 0)
+	{
+		NazaraError("Scissor box width must be positive");
+		return;
+	}
+
+	if (scissorBox.height < 0)
+	{
+		NazaraError("Scissor box height must be positive");
+		return;
+	}
+	#endif
+
+	if (s_contextStates->currentScissorBox != scissorBox)
+	{
+		if (s_contextStates->currentTarget)
+		{
+			unsigned int height = s_contextStates->currentTarget->GetHeight();
+			glScissor(scissorBox.x, height - scissorBox.height - scissorBox.y, scissorBox.width, scissorBox.height);
+			s_contextStates->scissorBoxUpdated = true;
+		}
+		else
+			s_contextStates->scissorBoxUpdated = false; // Sinon on attend d'avoir un target
+
+		s_contextStates->currentScissorBox = scissorBox;
+	}
+}
+
 void NzOpenGL::BindTexture(nzImageType type, GLuint id)
 {
 	#ifdef NAZARA_DEBUG
@@ -351,10 +434,57 @@ void NzOpenGL::BindTexture(unsigned int textureUnit, nzImageType type, GLuint id
 
 void NzOpenGL::BindTextureUnit(unsigned int textureUnit)
 {
+	#ifdef NAZARA_DEBUG
+	if (!s_contextStates)
+	{
+		NazaraError("No context activated");
+		return;
+	}
+	#endif
+
 	if (s_contextStates->textureUnit != textureUnit)
 	{
 		glActiveTexture(GL_TEXTURE0 + textureUnit);
 		s_contextStates->textureUnit = textureUnit;
+	}
+}
+
+void NzOpenGL::BindViewport(const NzRecti& viewport)
+{
+	#ifdef NAZARA_DEBUG
+	if (!s_contextStates)
+	{
+		NazaraError("No context activated");
+		return;
+	}
+	#endif
+
+	#if NAZARA_RENDERER_SAFE
+	if (viewport.width < 0)
+	{
+		NazaraError("Viewport width must be positive");
+		return;
+	}
+
+	if (viewport.height < 0)
+	{
+		NazaraError("Viewport height must be positive");
+		return;
+	}
+	#endif
+
+	if (s_contextStates->currentViewport != viewport)
+	{
+		if (s_contextStates->currentTarget)
+		{
+			unsigned int height = s_contextStates->currentTarget->GetHeight();
+			glViewport(viewport.x, height - viewport.height - viewport.y, viewport.width, viewport.height);
+			s_contextStates->viewportUpdated = true;
+		}
+		else
+			s_contextStates->viewportUpdated = false; // Sinon on attend d'avoir un target
+
+		s_contextStates->currentViewport = viewport;
 	}
 }
 
@@ -373,6 +503,15 @@ void NzOpenGL::DeleteBuffer(nzBufferType type, GLuint id)
 		s_contextStates->buffersBinding[type] = 0;
 }
 
+void NzOpenGL::DeleteFrameBuffer(const NzContext* context, GLuint id)
+{
+	// Si le contexte est actif, ne nous privons pas
+	if (NzContext::GetCurrent() == context)
+		glDeleteFramebuffers(1, &id);
+	else
+		s_contexts[context].garbage.emplace_back(GarbageResourceType_FrameBuffer, id);
+}
+
 void NzOpenGL::DeleteProgram(GLuint id)
 {
 	#ifdef NAZARA_DEBUG
@@ -386,6 +525,31 @@ void NzOpenGL::DeleteProgram(GLuint id)
 	glDeleteProgram(id);
 	if (s_contextStates->currentProgram == id)
 		s_contextStates->currentProgram = 0;
+}
+
+void NzOpenGL::DeleteSampler(GLuint id)
+{
+	#ifdef NAZARA_DEBUG
+	if (!glDeleteSamplers)
+	{
+		NazaraError("Sampler are not supported");
+		return;
+	}
+
+	if (!s_contextStates)
+	{
+		NazaraError("No context activated");
+		return;
+	}
+	#endif
+
+	glDeleteSamplers(1, &id);
+
+	for (GLuint& binding : s_contextStates->samplers)
+	{
+		if (binding == id)
+			binding = 0;
+	}
 }
 
 void NzOpenGL::DeleteTexture(GLuint id)
@@ -405,6 +569,15 @@ void NzOpenGL::DeleteTexture(GLuint id)
 		if (binding == id)
 			binding = 0;
 	}
+}
+
+void NzOpenGL::DeleteVertexArray(const NzContext* context, GLuint id)
+{
+	// Si le contexte est actif, ne nous privons pas
+	if (NzContext::GetCurrent() == context)
+		glDeleteFramebuffers(1, &id);
+	else
+		s_contexts[context].garbage.emplace_back(GarbageResourceType_VertexArray, id);
 }
 
 GLuint NzOpenGL::GetCurrentBuffer(nzBufferType type)
@@ -433,6 +606,32 @@ GLuint NzOpenGL::GetCurrentProgram()
 	return s_contextStates->currentProgram;
 }
 
+NzRecti NzOpenGL::GetCurrentScissorBox()
+{
+	#ifdef NAZARA_DEBUG
+	if (!s_contextStates)
+	{
+		NazaraError("No context activated");
+		return NzRecti();
+	}
+	#endif
+
+	return s_contextStates->currentScissorBox;
+}
+
+const NzRenderTarget* NzOpenGL::GetCurrentTarget()
+{
+	#ifdef NAZARA_DEBUG
+	if (!s_contextStates)
+	{
+		NazaraError("No context activated");
+		return nullptr;
+	}
+	#endif
+
+	return s_contextStates->currentTarget;
+}
+
 GLuint NzOpenGL::GetCurrentTexture()
 {
 	#ifdef NAZARA_DEBUG
@@ -459,6 +658,32 @@ GLuint NzOpenGL::GetCurrentTexture(unsigned int textureUnit)
 	return s_contextStates->texturesBinding[textureUnit];
 }
 
+unsigned int NzOpenGL::GetCurrentTextureUnit()
+{
+	#ifdef NAZARA_DEBUG
+	if (!s_contextStates)
+	{
+		NazaraError("No context activated");
+		return 0;
+	}
+	#endif
+
+	return s_contextStates->textureUnit;
+}
+
+NzRecti NzOpenGL::GetCurrentViewport()
+{
+	#ifdef NAZARA_DEBUG
+	if (!s_contextStates)
+	{
+		NazaraError("No context activated");
+		return NzRecti();
+	}
+	#endif
+
+	return s_contextStates->currentViewport;
+}
+
 NzOpenGLFunc NzOpenGL::GetEntry(const NzString& entryPoint)
 {
 	return LoadEntry(entryPoint.GetConstBuffer(), false);
@@ -472,19 +697,6 @@ unsigned int NzOpenGL::GetGLSLVersion()
 NzString NzOpenGL::GetRendererName()
 {
 	return s_rendererName;
-}
-
-unsigned int NzOpenGL::GetTextureUnit()
-{
-	#ifdef NAZARA_DEBUG
-	if (!s_contextStates)
-	{
-		NazaraError("No context activated");
-		return 0;
-	}
-	#endif
-
-	return s_contextStates->textureUnit;
 }
 
 NzString NzOpenGL::GetVendorName()
@@ -510,6 +722,9 @@ bool NzOpenGL::Initialize()
 
 	s_initialized = true;
 
+	// En cas d'erreur, on libèrera OpenGL
+	NzCallOnExit onExit(NzOpenGL::Uninitialize);
+
 	// Le chargement des fonctions OpenGL nécessite un contexte OpenGL
 	NzContextParameters parameters;
 	parameters.majorVersion = 2;
@@ -521,17 +736,15 @@ bool NzOpenGL::Initialize()
 		Pour cette raison, deux contextes sont créés, le premier sert à récupérer les fonctions permetttant
 		de créer le second avec les bons paramètres.
 
-		Non sérieusement si vous avez une meilleure idée contactez-moi
+		Non sérieusement si vous avez une meilleure idée, contactez-moi
 	*/
 
-	/****************************************Chargement OpenGL****************************************/
+	/****************************Chargement OpenGL****************************/
 
 	NzContext loadContext;
 	if (!loadContext.Create(parameters))
 	{
 		NazaraError("Failed to create load context");
-		Uninitialize();
-
 		return false;
 	}
 
@@ -546,13 +759,11 @@ bool NzOpenGL::Initialize()
 
 	// Récupération de la version d'OpenGL et du GLSL
 	// Ce code se base sur le fait que la carte graphique renverra un contexte de compatibilité avec la plus haute version supportée
-	// Ce qui semble vrai au moins chez ATI/AMD et NVidia, mais si quelqu'un à une meilleure idée ...
+	// Ce qui semble vrai chez AMD, NVidia et Intel, mais j'aimerai une preuve que ça sera toujours le cas...
 	glGetString = reinterpret_cast<PFNGLGETSTRINGPROC>(LoadEntry("glGetString", false));
 	if (!glGetString)
 	{
 		NazaraError("Unable to load OpenGL: failed to load glGetString");
-		Uninitialize();
-
 		return false;
 	}
 
@@ -564,44 +775,40 @@ bool NzOpenGL::Initialize()
 	if (!version)
 	{
 		NazaraError("Unable to retrieve OpenGL version");
-		Uninitialize();
-
 		return false;
 	}
 
 	major = version[0] - '0';
 	minor = version[2] - '0';
 
-	if (major == 0 || major > 9)
+	if (major <= 0 || major > 9)
 	{
 		NazaraError("Unable to retrieve OpenGL major version");
 		return false;
 	}
 
-	if (minor > 9)
+	if (minor > 9) // 0 est une valeur correcte ici (ex: OpenGL 3.0)
 	{
-		NazaraWarning("Unable to retrieve OpenGL minor version (using 0)");
+		NazaraWarning("Unable to retrieve OpenGL minor version (assuming 0)");
 		minor = 0;
 	}
 
-	s_openglVersion = major*100 + minor*10;
+	s_openglVersion = major*100 + minor*10; // Donnera 330 pour OpenGL 3.3, 410 pour OpenGL 4.1, bien plus facile à comparer
 
-	NazaraDebug("OpenGL " + NzString::Number(major) + '.' + NzString::Number(minor) + " detected");
+	NazaraDebug("OpenGL version: " + NzString::Number(major) + '.' + NzString::Number(minor));
 
+	// Le moteur ne fonctionnera pas avec OpenGL 1.x, autant s'arrêter là si c'est le cas
 	if (s_openglVersion < 200)
 	{
 		NazaraError("OpenGL " + NzString::Number(major) + '.' + NzString::Number(minor) + " detected (2.0 required). Please upgrade your drivers or your video card");
-		Uninitialize();
-
 		return false;
 	}
 
+	// Récupération de la version du GLSL, même technique
 	version = glGetString(GL_SHADING_LANGUAGE_VERSION);
 	if (!version)
 	{
 		NazaraError("Unable to retrieve GLSL version");
-		Uninitialize();
-
 		return false;
 	}
 
@@ -614,18 +821,20 @@ bool NzOpenGL::Initialize()
 		return false;
 	}
 
-	if (minor > 9)
+	if (minor > 9) // 0 est une valeur correcte ici (ex: GLSL 4.0)
 	{
 		NazaraWarning("Unable to retrieve GLSL minor version (using 0)");
 		minor = 0;
 	}
 
-	s_glslVersion = major*100 + minor*10;
+	s_glslVersion = major*100 + minor*10; // GLSL 3.3 => 330
+
+	// Possible uniquement dans le cas où le GLSL vient d'une extension d'OpenGL 1
+	// Ce qui est rejeté il y a un moment déjà, mais on doit s'attendre à tout de la part d'un driver...
+	// (Exemple: Un driver OpenGL 2 mais ne supportant que le GLSL 100)
 	if (s_glslVersion < 110)
 	{
 		NazaraError("GLSL version is too low, please upgrade your drivers or your video card");
-		Uninitialize();
-
 		return false;
 	}
 
@@ -636,8 +845,6 @@ bool NzOpenGL::Initialize()
 	if (!loadContext.Create(parameters)) // Destruction implicite du premier contexte
 	{
 		NazaraError("Failed to create load context");
-		Uninitialize();
-
 		return false;
 	}
 
@@ -652,6 +859,7 @@ bool NzOpenGL::Initialize()
 		glBindBuffer = reinterpret_cast<PFNGLBINDBUFFERPROC>(LoadEntry("glBindBuffer"));
 		glBindTexture = reinterpret_cast<PFNGLBINDTEXTUREPROC>(LoadEntry("glBindTexture"));
 		glBlendFunc = reinterpret_cast<PFNGLBLENDFUNCPROC>(LoadEntry("glBlendFunc"));
+		glBlendFuncSeparate = reinterpret_cast<PFNGLBLENDFUNCSEPARATEPROC>(LoadEntry("glBlendFuncSeparate"));
 		glBufferData = reinterpret_cast<PFNGLBUFFERDATAPROC>(LoadEntry("glBufferData"));
 		glBufferSubData = reinterpret_cast<PFNGLBUFFERSUBDATAPROC>(LoadEntry("glBufferSubData"));
 		glClear = reinterpret_cast<PFNGLCLEARPROC>(LoadEntry("glClear"));
@@ -684,6 +892,7 @@ bool NzOpenGL::Initialize()
 		glGenBuffers = reinterpret_cast<PFNGLGENBUFFERSPROC>(LoadEntry("glGenBuffers"));
 		glGenQueries = reinterpret_cast<PFNGLGENQUERIESPROC>(LoadEntry("glGenQueries"));
 		glGenTextures = reinterpret_cast<PFNGLGENTEXTURESPROC>(LoadEntry("glGenTextures"));
+		glGetActiveUniform = reinterpret_cast<PFNGLGETACTIVEUNIFORMPROC>(LoadEntry("glGetActiveUniform"));
 		glGetBooleanv = reinterpret_cast<PFNGLGETBOOLEANVPROC>(LoadEntry("glGetBooleanv"));
 		glGetBufferParameteriv = reinterpret_cast<PFNGLGETBUFFERPARAMETERIVPROC>(LoadEntry("glGetBufferParameteriv"));
 		glGetError = reinterpret_cast<PFNGLGETERRORPROC>(LoadEntry("glGetError"));
@@ -714,7 +923,9 @@ bool NzOpenGL::Initialize()
 		glScissor = reinterpret_cast<PFNGLSCISSORPROC>(LoadEntry("glScissor"));
 		glShaderSource = reinterpret_cast<PFNGLSHADERSOURCEPROC>(LoadEntry("glShaderSource"));
 		glStencilFunc = reinterpret_cast<PFNGLSTENCILFUNCPROC>(LoadEntry("glStencilFunc"));
+		glStencilFuncSeparate = reinterpret_cast<PFNGLSTENCILFUNCSEPARATEPROC>(LoadEntry("glStencilFuncSeparate"));
 		glStencilOp = reinterpret_cast<PFNGLSTENCILOPPROC>(LoadEntry("glStencilOp"));
+		glStencilOpSeparate = reinterpret_cast<PFNGLSTENCILOPSEPARATEPROC>(LoadEntry("glStencilOpSeparate"));
 		glTexImage2D = reinterpret_cast<PFNGLTEXIMAGE2DPROC>(LoadEntry("glTexImage2D"));
 		glTexImage3D = reinterpret_cast<PFNGLTEXIMAGE3DPROC>(LoadEntry("glTexImage3D"));
 		glTexParameterf = reinterpret_cast<PFNGLTEXPARAMETERFPROC>(LoadEntry("glTexParameterf"));
@@ -723,9 +934,14 @@ bool NzOpenGL::Initialize()
 		glTexSubImage3D = reinterpret_cast<PFNGLTEXSUBIMAGE3DPROC>(LoadEntry("glTexSubImage3D"));
 		glUniform1f = reinterpret_cast<PFNGLUNIFORM1FPROC>(LoadEntry("glUniform1f"));
 		glUniform1i = reinterpret_cast<PFNGLUNIFORM1IPROC>(LoadEntry("glUniform1i"));
+		glUniform1fv = reinterpret_cast<PFNGLUNIFORM1FVPROC>(LoadEntry("glUniform1fv"));
+		glUniform1iv = reinterpret_cast<PFNGLUNIFORM1IVPROC>(LoadEntry("glUniform1iv"));
 		glUniform2fv = reinterpret_cast<PFNGLUNIFORM2FVPROC>(LoadEntry("glUniform2fv"));
+		glUniform2iv = reinterpret_cast<PFNGLUNIFORM2IVPROC>(LoadEntry("glUniform2iv"));
 		glUniform3fv = reinterpret_cast<PFNGLUNIFORM3FVPROC>(LoadEntry("glUniform3fv"));
+		glUniform3iv = reinterpret_cast<PFNGLUNIFORM3IVPROC>(LoadEntry("glUniform3iv"));
 		glUniform4fv = reinterpret_cast<PFNGLUNIFORM4FVPROC>(LoadEntry("glUniform4fv"));
+		glUniform4iv = reinterpret_cast<PFNGLUNIFORM4IVPROC>(LoadEntry("glUniform4iv"));
 		glUniformMatrix4fv = reinterpret_cast<PFNGLUNIFORMMATRIX4FVPROC>(LoadEntry("glUniformMatrix4fv"));
 		glUnmapBuffer = reinterpret_cast<PFNGLUNMAPBUFFERPROC>(LoadEntry("glUnmapBuffer"));
 		glUseProgram = reinterpret_cast<PFNGLUSEPROGRAMPROC>(LoadEntry("glUseProgram"));
@@ -736,8 +952,6 @@ bool NzOpenGL::Initialize()
 	catch (const std::exception& e)
 	{
 		NazaraError("Unable to load OpenGL: " + NzString(e.what()));
-		Uninitialize();
-
 		return false;
 	}
 
@@ -751,8 +965,10 @@ bool NzOpenGL::Initialize()
 	glDrawTexture = reinterpret_cast<PFNGLDRAWTEXTURENVPROC>(LoadEntry("glDrawTextureNV", false));
 	glFramebufferTexture = reinterpret_cast<PFNGLFRAMEBUFFERTEXTUREPROC>(LoadEntry("glFramebufferTexture", false));
 	glGetStringi = reinterpret_cast<PFNGLGETSTRINGIPROC>(LoadEntry("glGetStringi", false));
-	glMapBufferRange = reinterpret_cast<PFNGLMAPBUFFERRANGEPROC>(LoadEntry("glMapBufferRange", false));
 	glInvalidateBufferData = reinterpret_cast<PFNGLINVALIDATEBUFFERDATAPROC>(LoadEntry("glInvalidateBufferData", false));
+	glMapBufferRange = reinterpret_cast<PFNGLMAPBUFFERRANGEPROC>(LoadEntry("glMapBufferRange", false));
+	glVertexAttribIPointer = reinterpret_cast<PFNGLVERTEXATTRIBIPOINTERPROC>(LoadEntry("glVertexAttribIPointer", false));
+	glVertexAttribLPointer = reinterpret_cast<PFNGLVERTEXATTRIBLPOINTERPROC>(LoadEntry("glVertexAttribLPointer", false));
 
 	#if defined(NAZARA_PLATFORM_WINDOWS)
 	wglGetExtensionsStringARB = reinterpret_cast<PFNWGLGETEXTENSIONSSTRINGARBPROC>(LoadEntry("wglGetExtensionsStringARB", false));
@@ -788,6 +1004,37 @@ bool NzOpenGL::Initialize()
 
 	// AnisotropicFilter
 	s_openGLextensions[nzOpenGLExtension_AnisotropicFilter] = IsSupported("GL_EXT_texture_filter_anisotropic");
+
+	// ConditionalRender
+	if (s_openglVersion >= 300)
+	{
+		try
+		{
+			glBeginConditionalRender = reinterpret_cast<PFNGLBEGINCONDITIONALRENDERPROC>(LoadEntry("glBeginConditionalRender"));
+			glEndConditionalRender = reinterpret_cast<PFNGLENDCONDITIONALRENDERPROC>(LoadEntry("glEndConditionalRender"));
+
+			s_openGLextensions[nzOpenGLExtension_ConditionalRender] = true;
+		}
+		catch (const std::exception& e)
+		{
+			NazaraWarning("Failed to load Conditional Render: " + NzString(e.what()));
+		}
+	}
+
+	if (!s_openGLextensions[nzOpenGLExtension_ConditionalRender] && IsSupported("GL_NV_conditional_render"))
+	{
+		try
+		{
+			glBeginConditionalRender = reinterpret_cast<PFNGLBEGINCONDITIONALRENDERPROC>(LoadEntry("glBeginConditionalRenderNV"));
+			glEndConditionalRender = reinterpret_cast<PFNGLENDCONDITIONALRENDERPROC>(LoadEntry("glEndConditionalRenderNV"));
+
+			s_openGLextensions[nzOpenGLExtension_ConditionalRender] = true;
+		}
+		catch (const std::exception& e)
+		{
+			NazaraWarning("Failed to load GL_NV_conditional_render: " + NzString(e.what()));
+		}
+	}
 
 	// DebugOutput
 	if (s_openglVersion >= 430 || IsSupported("GL_KHR_debug"))
@@ -825,7 +1072,7 @@ bool NzOpenGL::Initialize()
 	}
 
 	// DrawInstanced
-	if (s_openglVersion >= 330)
+	if (s_openglVersion >= 310)
 	{
 		try
 		{
@@ -836,7 +1083,7 @@ bool NzOpenGL::Initialize()
 		}
 		catch (const std::exception& e)
 		{
-			NazaraWarning("Failed to load GL_ARB_draw_instanced: " + NzString(e.what()));
+			NazaraWarning("Failed to load Draw Instanced: " + NzString(e.what()));
 		}
 	}
 
@@ -861,6 +1108,7 @@ bool NzOpenGL::Initialize()
 		try
 		{
 			glUniform1d = reinterpret_cast<PFNGLUNIFORM1DPROC>(LoadEntry("glUniform1d"));
+			glUniform1dv = reinterpret_cast<PFNGLUNIFORM1DVPROC>(LoadEntry("glUniform1dv"));
 			glUniform2dv = reinterpret_cast<PFNGLUNIFORM2DVPROC>(LoadEntry("glUniform2dv"));
 			glUniform3dv = reinterpret_cast<PFNGLUNIFORM3DVPROC>(LoadEntry("glUniform3dv"));
 			glUniform4dv = reinterpret_cast<PFNGLUNIFORM4DVPROC>(LoadEntry("glUniform4dv"));
@@ -880,6 +1128,7 @@ bool NzOpenGL::Initialize()
 		{
 			glBindFramebuffer = reinterpret_cast<PFNGLBINDFRAMEBUFFERPROC>(LoadEntry("glBindFramebuffer"));
 			glBindRenderbuffer = reinterpret_cast<PFNGLBINDRENDERBUFFERPROC>(LoadEntry("glBindRenderbuffer"));
+			glBlitFramebuffer = reinterpret_cast<PFNGLBLITFRAMEBUFFERPROC>(LoadEntry("glBlitFramebuffer"));
 			glCheckFramebufferStatus = reinterpret_cast<PFNGLCHECKFRAMEBUFFERSTATUSPROC>(LoadEntry("glCheckFramebufferStatus"));
 			glDeleteFramebuffers = reinterpret_cast<PFNGLDELETEFRAMEBUFFERSPROC>(LoadEntry("glDeleteFramebuffers"));
 			glDeleteRenderbuffers = reinterpret_cast<PFNGLDELETERENDERBUFFERSPROC>(LoadEntry("glDeleteRenderbuffers"));
@@ -929,7 +1178,7 @@ bool NzOpenGL::Initialize()
 		}
 		catch (const std::exception& e)
 		{
-			NazaraWarning("Failed to load GL_ARB_instanced_arrays: " + NzString(e.what()));
+			NazaraWarning("Failed to load Instanced Array: " + NzString(e.what()));
 		}
 	}
 
@@ -976,15 +1225,21 @@ bool NzOpenGL::Initialize()
 		{
 			glProgramUniform1f = reinterpret_cast<PFNGLPROGRAMUNIFORM1FPROC>(LoadEntry("glProgramUniform1f"));
 			glProgramUniform1i = reinterpret_cast<PFNGLPROGRAMUNIFORM1IPROC>(LoadEntry("glProgramUniform1i"));
+			glProgramUniform1fv = reinterpret_cast<PFNGLPROGRAMUNIFORM1FVPROC>(LoadEntry("glProgramUniform1fv"));
+			glProgramUniform1iv = reinterpret_cast<PFNGLPROGRAMUNIFORM1IVPROC>(LoadEntry("glProgramUniform1iv"));
 			glProgramUniform2fv = reinterpret_cast<PFNGLPROGRAMUNIFORM2FVPROC>(LoadEntry("glProgramUniform2fv"));
+			glProgramUniform2iv = reinterpret_cast<PFNGLPROGRAMUNIFORM2IVPROC>(LoadEntry("glProgramUniform2iv"));
 			glProgramUniform3fv = reinterpret_cast<PFNGLPROGRAMUNIFORM3FVPROC>(LoadEntry("glProgramUniform3fv"));
+			glProgramUniform3iv = reinterpret_cast<PFNGLPROGRAMUNIFORM3IVPROC>(LoadEntry("glProgramUniform3iv"));
 			glProgramUniform4fv = reinterpret_cast<PFNGLPROGRAMUNIFORM4FVPROC>(LoadEntry("glProgramUniform4fv"));
+			glProgramUniform4iv = reinterpret_cast<PFNGLPROGRAMUNIFORM4IVPROC>(LoadEntry("glProgramUniform4iv"));
 			glProgramUniformMatrix4fv = reinterpret_cast<PFNGLPROGRAMUNIFORMMATRIX4FVPROC>(LoadEntry("glProgramUniformMatrix4fv"));
 
 			// Si ARB_gpu_shader_fp64 est supporté, alors cette extension donne également accès aux fonctions utilisant des double
 			if (s_openGLextensions[nzOpenGLExtension_FP64])
 			{
 				glProgramUniform1d = reinterpret_cast<PFNGLPROGRAMUNIFORM1DPROC>(LoadEntry("glProgramUniform1d"));
+				glProgramUniform1dv = reinterpret_cast<PFNGLPROGRAMUNIFORM2DVPROC>(LoadEntry("glProgramUniform1dv"));
 				glProgramUniform2dv = reinterpret_cast<PFNGLPROGRAMUNIFORM2DVPROC>(LoadEntry("glProgramUniform2dv"));
 				glProgramUniform3dv = reinterpret_cast<PFNGLPROGRAMUNIFORM3DVPROC>(LoadEntry("glProgramUniform3dv"));
 				glProgramUniform4dv = reinterpret_cast<PFNGLPROGRAMUNIFORM4DVPROC>(LoadEntry("glProgramUniform4dv"));
@@ -1046,22 +1301,21 @@ bool NzOpenGL::Initialize()
 	if (!glGenerateMipmap)
 		glGenerateMipmap = reinterpret_cast<PFNGLGENERATEMIPMAPEXTPROC>(LoadEntry("glGenerateMipmapEXT", false));
 
-	/****************************************Initialisation****************************************/
+	/******************************Initialisation*****************************/
 
 	s_contextStates = nullptr;
 	s_rendererName = reinterpret_cast<const char*>(glGetString(GL_RENDERER));
 	s_vendorName = reinterpret_cast<const char*>(glGetString(GL_VENDOR));
 
-	///FIXME: Utiliser le contexte de chargement comme référence ? (Vérifier mode debug)
+	// On initialise les vrais contextes OpenGL
 	if (!NzContext::Initialize())
 	{
 		NazaraError("Failed to initialize contexts");
-		Uninitialize();
-
 		return false;
 	}
 
 	// Le contexte OpenGL n'est plus assuré à partir d'ici
+	onExit.Reset();
 
 	return true;
 }
@@ -1094,6 +1348,19 @@ void NzOpenGL::SetBuffer(nzBufferType type, GLuint id)
 	s_contextStates->buffersBinding[type] = id;
 }
 
+void NzOpenGL::SetScissorBox(const NzRecti& scissorBox)
+{
+	#ifdef NAZARA_DEBUG
+	if (!s_contextStates)
+	{
+		NazaraError("No context activated");
+		return;
+	}
+	#endif
+
+	s_contextStates->currentScissorBox = scissorBox;
+}
+
 void NzOpenGL::SetProgram(GLuint id)
 {
 	#ifdef NAZARA_DEBUG
@@ -1105,6 +1372,41 @@ void NzOpenGL::SetProgram(GLuint id)
 	#endif
 
 	s_contextStates->currentProgram = id;
+}
+
+void NzOpenGL::SetTarget(const NzRenderTarget* renderTarget)
+{
+	#ifdef NAZARA_DEBUG
+	if (!s_contextStates)
+	{
+		NazaraError("No context activated");
+		return;
+	}
+	#endif
+
+	s_contextStates->currentTarget = renderTarget;
+	if (renderTarget)
+	{
+		if (!s_contextStates->scissorBoxUpdated)
+		{
+			const NzRecti& scissorBox = s_contextStates->currentViewport;
+
+			unsigned int height = s_contextStates->currentTarget->GetHeight();
+			glScissor(scissorBox.x, height - scissorBox.height - scissorBox.y, scissorBox.width, scissorBox.height);
+
+			s_contextStates->scissorBoxUpdated = true;
+		}
+
+		if (!s_contextStates->viewportUpdated)
+		{
+			const NzRecti& viewport = s_contextStates->currentViewport;
+
+			unsigned int height = s_contextStates->currentTarget->GetHeight();
+			glViewport(viewport.x, height - viewport.height - viewport.y, viewport.width, viewport.height);
+
+			s_contextStates->viewportUpdated = true;
+		}
+	}
 }
 
 void NzOpenGL::SetTexture(GLuint id)
@@ -1146,6 +1448,19 @@ void NzOpenGL::SetTextureUnit(unsigned int textureUnit)
 	s_contextStates->textureUnit = textureUnit;
 }
 
+void NzOpenGL::SetViewport(const NzRecti& viewport)
+{
+	#ifdef NAZARA_DEBUG
+	if (!s_contextStates)
+	{
+		NazaraError("No context activated");
+		return;
+	}
+	#endif
+
+	s_contextStates->currentViewport = viewport;
+}
+
 bool NzOpenGL::TranslateFormat(nzPixelFormat pixelFormat, Format* format, FormatType type)
 {
 	switch (pixelFormat)
@@ -1184,6 +1499,126 @@ bool NzOpenGL::TranslateFormat(nzPixelFormat pixelFormat, Format* format, Format
 		case nzPixelFormat_LA8:
 			return false;
 
+		case nzPixelFormat_R8:
+			format->dataFormat = GL_RED;
+			format->dataType = GL_UNSIGNED_BYTE;
+			format->internalFormat = GL_R8;
+			return true;
+
+		case nzPixelFormat_R8I:
+			format->dataFormat = GL_RED;
+			format->dataType = GL_BYTE;
+			format->internalFormat = GL_R8I;
+			return true;
+
+		case nzPixelFormat_R8UI:
+			format->dataFormat = GL_RED;
+			format->dataType = GL_UNSIGNED_BYTE;
+			format->internalFormat = GL_R8UI;
+			return true;
+
+		case nzPixelFormat_R16:
+			format->dataFormat = GL_RED;
+			format->dataType = GL_UNSIGNED_SHORT;
+			format->internalFormat = GL_R16;
+			return true;
+
+		case nzPixelFormat_R16F:
+			format->dataFormat = GL_RED;
+			format->dataType = GL_HALF_FLOAT;
+			format->internalFormat = GL_R16F;
+			return true;
+
+		case nzPixelFormat_R16I:
+			format->dataFormat = GL_RED;
+			format->dataType = GL_SHORT;
+			format->internalFormat = GL_R16I;
+			return true;
+
+		case nzPixelFormat_R16UI:
+			format->dataFormat = GL_RED;
+			format->dataType = GL_UNSIGNED_SHORT;
+			format->internalFormat = GL_R16UI;
+			return true;
+
+		case nzPixelFormat_R32F:
+			format->dataFormat = GL_RED;
+			format->dataType = GL_FLOAT;
+			format->internalFormat = GL_R32F;
+			return true;
+
+		case nzPixelFormat_R32I:
+			format->dataFormat = GL_RED;
+			format->dataType = GL_INT;
+			format->internalFormat = GL_R32I;
+			return true;
+
+		case nzPixelFormat_R32UI:
+			format->dataFormat = GL_RED;
+			format->dataType = GL_UNSIGNED_INT;
+			format->internalFormat = GL_R32UI;
+			return true;
+
+		case nzPixelFormat_RG8:
+			format->dataFormat = GL_RG;
+			format->dataType = GL_UNSIGNED_BYTE;
+			format->internalFormat = GL_RG8;
+			return true;
+
+		case nzPixelFormat_RG8I:
+			format->dataFormat = GL_RG;
+			format->dataType = GL_BYTE;
+			format->internalFormat = GL_RG8I;
+			return true;
+
+		case nzPixelFormat_RG8UI:
+			format->dataFormat = GL_RG;
+			format->dataType = GL_UNSIGNED_BYTE;
+			format->internalFormat = GL_RG8UI;
+			return true;
+
+		case nzPixelFormat_RG16:
+			format->dataFormat = GL_RG;
+			format->dataType = GL_UNSIGNED_SHORT;
+			format->internalFormat = GL_RG16;
+			return true;
+
+		case nzPixelFormat_RG16F:
+			format->dataFormat = GL_RG;
+			format->dataType = GL_HALF_FLOAT;
+			format->internalFormat = GL_RG16F;
+			return true;
+
+		case nzPixelFormat_RG16I:
+			format->dataFormat = GL_RG;
+			format->dataType = GL_SHORT;
+			format->internalFormat = GL_RG16I;
+			return true;
+
+		case nzPixelFormat_RG16UI:
+			format->dataFormat = GL_RG;
+			format->dataType = GL_UNSIGNED_SHORT;
+			format->internalFormat = GL_RG16UI;
+			return true;
+
+		case nzPixelFormat_RG32F:
+			format->dataFormat = GL_RG;
+			format->dataType = GL_FLOAT;
+			format->internalFormat = GL_RG32F;
+			return true;
+
+		case nzPixelFormat_RG32I:
+			format->dataFormat = GL_RG;
+			format->dataType = GL_INT;
+			format->internalFormat = GL_RG32I;
+			return true;
+
+		case nzPixelFormat_RG32UI:
+			format->dataFormat = GL_RG;
+			format->dataType = GL_UNSIGNED_INT;
+			format->internalFormat = GL_RG32UI;
+			return true;
+
 		case nzPixelFormat_RGB5A1:
 			format->dataFormat = GL_RGBA;
 			format->dataType = GL_UNSIGNED_SHORT_5_5_5_1;
@@ -1194,6 +1629,42 @@ bool NzOpenGL::TranslateFormat(nzPixelFormat pixelFormat, Format* format, Format
 			format->dataFormat = GL_RGB;
 			format->dataType = GL_UNSIGNED_BYTE;
 			format->internalFormat = GL_RGB8;
+			return true;
+
+		case nzPixelFormat_RGB16F:
+			format->dataFormat = GL_RGB;
+			format->dataType = GL_HALF_FLOAT;
+			format->internalFormat = GL_RGB16F;
+			return true;
+
+		case nzPixelFormat_RGB16I:
+			format->dataFormat = GL_RGB;
+			format->dataType = GL_SHORT;
+			format->internalFormat = GL_RGB16I;
+			return true;
+
+		case nzPixelFormat_RGB16UI:
+			format->dataFormat = GL_RGB;
+			format->dataType = GL_UNSIGNED_SHORT;
+			format->internalFormat = GL_RGB16UI;
+			return true;
+
+		case nzPixelFormat_RGB32F:
+			format->dataFormat = GL_RGB;
+			format->dataType = GL_FLOAT;
+			format->internalFormat = GL_RGB32F;
+			return true;
+
+		case nzPixelFormat_RGB32I:
+			format->dataFormat = GL_RGB;
+			format->dataType = GL_INT;
+			format->internalFormat = GL_RGB32I;
+			return true;
+
+		case nzPixelFormat_RGB32UI:
+			format->dataFormat = GL_RGB;
+			format->dataType = GL_UNSIGNED_INT;
+			format->internalFormat = GL_RGB32UI;
 			return true;
 
 		case nzPixelFormat_RGBA4:
@@ -1208,21 +1679,57 @@ bool NzOpenGL::TranslateFormat(nzPixelFormat pixelFormat, Format* format, Format
 			format->internalFormat = GL_RGBA8;
 			return true;
 
+		case nzPixelFormat_RGBA16F:
+			format->dataFormat = GL_RGBA;
+			format->dataType = GL_HALF_FLOAT;
+			format->internalFormat = GL_RGBA16F;
+			return true;
+
+		case nzPixelFormat_RGBA16I:
+			format->dataFormat = GL_RGBA;
+			format->dataType = GL_SHORT;
+			format->internalFormat = GL_RGBA16I;
+			return true;
+
+		case nzPixelFormat_RGBA16UI:
+			format->dataFormat = GL_RGBA;
+			format->dataType = GL_INT;
+			format->internalFormat = GL_RGBA16UI;
+			return true;
+
+		case nzPixelFormat_RGBA32F:
+			format->dataFormat = GL_RGBA;
+			format->dataType = GL_FLOAT;
+			format->internalFormat = GL_RGBA32F;
+			return true;
+
+		case nzPixelFormat_RGBA32I:
+			format->dataFormat = GL_RGB;
+			format->dataType = GL_INT;
+			format->internalFormat = GL_RGB32I;
+			return true;
+
+		case nzPixelFormat_RGBA32UI:
+			format->dataFormat = GL_RGB;
+			format->dataType = GL_UNSIGNED_INT;
+			format->internalFormat = GL_RGB32UI;
+			return true;
+
 		case nzPixelFormat_Depth16:
 			format->dataFormat = GL_DEPTH_COMPONENT;
-			format->dataType = GL_UNSIGNED_BYTE;
+			format->dataType = GL_UNSIGNED_SHORT;
 			format->internalFormat = GL_DEPTH_COMPONENT16;
 			return true;
 
 		case nzPixelFormat_Depth24:
 			format->dataFormat = GL_DEPTH_COMPONENT;
-			format->dataType = GL_UNSIGNED_BYTE;
+			format->dataType = GL_UNSIGNED_INT;
 			format->internalFormat = GL_DEPTH_COMPONENT24;
 			return true;
 
 		case nzPixelFormat_Depth24Stencil8:
 			format->dataFormat = GL_DEPTH_STENCIL;
-			format->dataType = GL_UNSIGNED_BYTE;
+			format->dataType = GL_UNSIGNED_INT_24_8;
 			format->internalFormat = GL_DEPTH24_STENCIL8;
 			return true;
 
@@ -1305,17 +1812,39 @@ void NzOpenGL::Uninitialize()
 	}
 }
 
-void NzOpenGL::OnContextDestruction(NzContext* context)
+void NzOpenGL::OnContextChanged(const NzContext* newContext)
 {
+	s_contextStates = (newContext) ? &s_contexts[newContext] : nullptr;
+	if (s_contextStates)
+	{
+		// On supprime les éventuelles ressources mortes-vivantes (Qui ne peuvent être libérées que dans notre contexte)
+		for (std::pair<GarbageResourceType, GLuint>& pair : s_contextStates->garbage)
+		{
+			switch (pair.first)
+			{
+				case GarbageResourceType_FrameBuffer:
+					glDeleteFramebuffers(1, &pair.second);
+					break;
+
+				case GarbageResourceType_VertexArray:
+					glDeleteVertexArrays(1, &pair.second);
+					break;
+			}
+		}
+		s_contextStates->garbage.clear();
+	}
+}
+
+void NzOpenGL::OnContextDestruction(const NzContext* context)
+{
+	/*
+	** Il serait possible d'activer le contexte avant sa destruction afin de libérer les éventuelles ressources mortes-vivantes,
+	** mais un driver bien conçu va libérer ces ressources de lui-même.
+	*/
 	s_contexts.erase(context);
 }
 
-void NzOpenGL::OnContextChange(NzContext* newContext)
-{
-	s_contextStates = (newContext) ? &s_contexts[newContext] : nullptr;
-}
-
-GLenum NzOpenGL::Attachment[nzAttachmentPoint_Max+1] =
+GLenum NzOpenGL::Attachment[] =
 {
 	GL_COLOR_ATTACHMENT0,        // nzAttachmentPoint_Color
 	GL_DEPTH_ATTACHMENT,         // nzAttachmentPoint_Depth
@@ -1323,46 +1852,9 @@ GLenum NzOpenGL::Attachment[nzAttachmentPoint_Max+1] =
 	GL_STENCIL_ATTACHMENT        // nzAttachmentPoint_Stencil
 };
 
-static_assert(sizeof(NzOpenGL::Attachment)/sizeof(GLenum) == nzAttachmentPoint_Max+1, "Attachment array is incomplete");
+static_assert(nzAttachmentPoint_Max+1 == 4, "Attachment array is incomplete");
 
-nzUInt8 NzOpenGL::AttributeIndex[nzAttributeUsage_Max+1] =
-{
-	10, // nzAttributeUsage_InstanceData0
-	11, // nzAttributeUsage_InstanceData1
-	12, // nzAttributeUsage_InstanceData2
-	13, // nzAttributeUsage_InstanceData3
-	14, // nzAttributeUsage_InstanceData4
-	15, // nzAttributeUsage_InstanceData5
-	2, // nzAttributeUsage_Normal
-	0, // nzAttributeUsage_Position
-	3, // nzAttributeUsage_Tangent
-	1, // nzAttributeUsage_TexCoord
-	4, // nzAttributeUsage_Userdata0
-	5, // nzAttributeUsage_Userdata1
-	6, // nzAttributeUsage_Userdata2
-	7, // nzAttributeUsage_Userdata3
-	8, // nzAttributeUsage_Userdata4
-	9  // nzAttributeUsage_Userdata5
-};
-
-static_assert(sizeof(NzOpenGL::AttributeIndex)/sizeof(nzUInt8) == nzAttributeUsage_Max+1, "Attribute index array is incomplete");
-
-GLenum NzOpenGL::AttributeType[nzAttributeType_Max+1] =
-{
-	GL_UNSIGNED_BYTE, // nzAttributeType_Color
-	GL_DOUBLE,        // nzAttributeType_Double1
-	GL_DOUBLE,        // nzAttributeType_Double2
-	GL_DOUBLE,        // nzAttributeType_Double3
-	GL_DOUBLE,        // nzAttributeType_Double4
-	GL_FLOAT,         // nzAttributeType_Float1
-	GL_FLOAT,         // nzAttributeType_Float2
-	GL_FLOAT,         // nzAttributeType_Float3
-	GL_FLOAT          // nzAttributeType_Float4
-};
-
-static_assert(sizeof(NzOpenGL::AttributeType)/sizeof(GLenum) == nzAttributeType_Max+1, "Attribute type array is incomplete");
-
-GLenum NzOpenGL::BlendFunc[nzBlendFunc_Max+1] =
+GLenum NzOpenGL::BlendFunc[] =
 {
 	GL_DST_ALPHA,           // nzBlendFunc_DestAlpha
 	GL_DST_COLOR,           // nzBlendFunc_DestColor
@@ -1376,9 +1868,9 @@ GLenum NzOpenGL::BlendFunc[nzBlendFunc_Max+1] =
 	GL_ZERO                 // nzBlendFunc_Zero
 };
 
-static_assert(sizeof(NzOpenGL::BlendFunc)/sizeof(GLenum) == nzBlendFunc_Max+1, "Blend func array is incomplete");
+static_assert(nzBlendFunc_Max+1 == 10, "Blend func array is incomplete");
 
-GLenum NzOpenGL::BufferLock[nzBufferAccess_Max+1] =
+GLenum NzOpenGL::BufferLock[] =
 {
 	GL_WRITE_ONLY, // nzBufferAccess_DiscardAndWrite
 	GL_READ_ONLY,  // nzBufferAccess_ReadOnly
@@ -1386,76 +1878,96 @@ GLenum NzOpenGL::BufferLock[nzBufferAccess_Max+1] =
 	GL_WRITE_ONLY  // nzBufferAccess_WriteOnly
 };
 
-static_assert(sizeof(NzOpenGL::BufferLock)/sizeof(GLenum) == nzBufferAccess_Max+1, "Buffer lock array is incomplete");
+static_assert(nzBufferAccess_Max+1 == 4, "Buffer lock array is incomplete");
 
-GLenum NzOpenGL::BufferLockRange[nzBufferAccess_Max+1] =
+GLenum NzOpenGL::BufferLockRange[] =
 {
-	GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_WRITE_BIT, // nzBufferAccess_DiscardAndWrite
-	GL_MAP_READ_BIT,                                 // nzBufferAccess_ReadOnly
-	GL_MAP_READ_BIT | GL_MAP_WRITE_BIT,              // nzBufferAccess_ReadWrite
-	GL_MAP_WRITE_BIT                                 // nzBufferAccess_WriteOnly
+	// http://www.opengl.org/discussion_boards/showthread.php/170118-VBOs-strangely-slow?p=1198118#post1198118
+	GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_WRITE_BIT, // nzBufferAccess_DiscardAndWrite
+	GL_MAP_READ_BIT,                                                               // nzBufferAccess_ReadOnly
+	GL_MAP_READ_BIT | GL_MAP_WRITE_BIT,                                            // nzBufferAccess_ReadWrite
+	GL_MAP_WRITE_BIT                                                               // nzBufferAccess_WriteOnly
 };
 
-static_assert(sizeof(NzOpenGL::BufferLockRange)/sizeof(GLenum) == nzBufferAccess_Max+1, "Buffer lock range array is incomplete");
+static_assert(nzBufferAccess_Max+1 == 4, "Buffer lock range array is incomplete");
 
-GLenum NzOpenGL::BufferTarget[nzBufferType_Max+1] =
+GLenum NzOpenGL::BufferTarget[] =
 {
 	GL_ELEMENT_ARRAY_BUFFER, // nzBufferType_Index,
 	GL_ARRAY_BUFFER,		 // nzBufferType_Vertex
 };
 
-static_assert(sizeof(NzOpenGL::BufferTarget)/sizeof(GLenum) == nzBufferType_Max+1, "Buffer target array is incomplete");
+static_assert(nzBufferType_Max+1 == 2, "Buffer target array is incomplete");
 
-GLenum NzOpenGL::BufferTargetBinding[nzBufferType_Max+1] =
+GLenum NzOpenGL::BufferTargetBinding[] =
 {
 	GL_ELEMENT_ARRAY_BUFFER_BINDING, // nzBufferType_Index,
 	GL_ARRAY_BUFFER_BINDING,		 // nzBufferType_Vertex
 };
 
-static_assert(sizeof(NzOpenGL::BufferTargetBinding)/sizeof(GLenum) == nzBufferType_Max+1, "Buffer target binding array is incomplete");
+static_assert(nzBufferType_Max+1 == 2, "Buffer target binding array is incomplete");
 
-GLenum NzOpenGL::BufferUsage[nzBufferUsage_Max+1] =
+GLenum NzOpenGL::BufferUsage[] =
 {
-	// J'ai choisi DYNAMIC à la place de STREAM car DYNAMIC semble plus adapté au profil "une mise à jour pour quelques rendus"
-	// Ce qui est je pense le scénario qui arrivera le plus souvent (Prévoir une option pour permettre d'utiliser le STREAM_DRAW ?)
-	// Source: http://www.opengl.org/discussion_boards/ubbthreads.php?ubb=showflat&Number=160839
-	GL_DYNAMIC_DRAW, // nzBufferUsage_Dynamic
-	GL_STATIC_DRAW   // nzBufferUsage_Static
+	// D'après la documentation, GL_STREAM_DRAW semble être plus adapté à notre cas (ratio modification/rendu 1:2-3)
+	// Source: http://www.opengl.org/sdk/docs/man/html/glBufferData.xhtml
+	GL_STREAM_DRAW, // nzBufferUsage_Dynamic
+	GL_STATIC_DRAW  // nzBufferUsage_Static
 };
 
-static_assert(sizeof(NzOpenGL::BufferUsage)/sizeof(GLenum) == nzBufferUsage_Max+1, "Buffer usage array is incomplete");
+static_assert(nzBufferUsage_Max+1 == 2, "Buffer usage array is incomplete");
 
-GLenum NzOpenGL::CubemapFace[6] =
+GLenum NzOpenGL::ComponentType[] =
+{
+	GL_UNSIGNED_BYTE, // nzComponentType_Color
+	GL_DOUBLE,        // nzComponentType_Double1
+	GL_DOUBLE,        // nzComponentType_Double2
+	GL_DOUBLE,        // nzComponentType_Double3
+	GL_DOUBLE,        // nzComponentType_Double4
+	GL_FLOAT,         // nzComponentType_Float1
+	GL_FLOAT,         // nzComponentType_Float2
+	GL_FLOAT,         // nzComponentType_Float3
+	GL_FLOAT,         // nzComponentType_Float4
+	GL_INT,           // nzComponentType_Int1
+	GL_INT,           // nzComponentType_Int2
+	GL_INT,           // nzComponentType_Int3
+	GL_INT,           // nzComponentType_Int4
+	GL_FLOAT          // nzComponentType_Quaternion
+};
+
+static_assert(nzComponentType_Max+1 == 14, "Attribute type array is incomplete");
+
+GLenum NzOpenGL::CubemapFace[] =
 {
 	GL_TEXTURE_CUBE_MAP_POSITIVE_X, // nzCubemapFace_PositiveX
 	GL_TEXTURE_CUBE_MAP_NEGATIVE_X, // nzCubemapFace_NegativeX
-	GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, // nzCubemapFace_PositiveY (Inversion pour les standards OpenGL)
-	GL_TEXTURE_CUBE_MAP_POSITIVE_Y, // nzCubemapFace_NegativeY (Inversion pour les standards OpenGL)
+	GL_TEXTURE_CUBE_MAP_POSITIVE_Y, // nzCubemapFace_PositiveY
+	GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, // nzCubemapFace_NegativeY
 	GL_TEXTURE_CUBE_MAP_POSITIVE_Z, // nzCubemapFace_PositiveZ
 	GL_TEXTURE_CUBE_MAP_NEGATIVE_Z  // nzCubemapFace_NegativeZ
 };
 
-static_assert(sizeof(NzOpenGL::CubemapFace)/sizeof(GLenum) == 6, "Cubemap face array is incomplete");
+static_assert(nzCubemapFace_Max+1 == 6, "Cubemap face array is incomplete");
 
-GLenum NzOpenGL::FaceCulling[nzFaceCulling_Max+1] =
-{
-	GL_BACK,          // nzFaceCulling_Back
-	GL_FRONT,	      // nzFaceCulling_Front
-	GL_FRONT_AND_BACK // nzFaceCulling_FrontAndBack
-};
-
-static_assert(sizeof(NzOpenGL::FaceCulling)/sizeof(GLenum) == nzFaceCulling_Max+1, "Face culling array is incomplete");
-
-GLenum NzOpenGL::FaceFilling[nzFaceFilling_Max+1] =
+GLenum NzOpenGL::FaceFilling[] =
 {
 	GL_POINT, // nzFaceFilling_Point
 	GL_LINE,  // nzFaceFilling_Line
 	GL_FILL   // nzFaceFilling_Fill
 };
 
-static_assert(sizeof(NzOpenGL::FaceFilling)/sizeof(GLenum) == nzFaceFilling_Max+1, "Face filling array is incomplete");
+static_assert(nzFaceFilling_Max+1 == 3, "Face filling array is incomplete");
 
-GLenum NzOpenGL::PrimitiveMode[nzPrimitiveMode_Max+1] =
+GLenum NzOpenGL::FaceSide[] =
+{
+	GL_BACK,          // nzFaceSide_Back
+	GL_FRONT,         // nzFaceSide_Front
+	GL_FRONT_AND_BACK // nzFaceSide_FrontAndBack
+};
+
+static_assert(nzFaceSide_Max+1 == 3, "Face side array is incomplete");
+
+GLenum NzOpenGL::PrimitiveMode[] =
 {
 	GL_LINES,          // nzPrimitiveMode_LineList
 	GL_LINE_STRIP,     // nzPrimitiveMode_LineStrip
@@ -1465,9 +1977,31 @@ GLenum NzOpenGL::PrimitiveMode[nzPrimitiveMode_Max+1] =
 	GL_TRIANGLE_FAN    // nzPrimitiveMode_TriangleFan
 };
 
-static_assert(sizeof(NzOpenGL::PrimitiveMode)/sizeof(GLenum) == nzPrimitiveMode_Max+1, "Primitive mode array is incomplete");
+static_assert(nzPrimitiveMode_Max+1 == 6, "Primitive mode array is incomplete");
 
-GLenum NzOpenGL::RendererComparison[nzRendererComparison_Max+1] =
+GLenum NzOpenGL::QueryCondition[] =
+{
+	GL_QUERY_WAIT,              // nzGpuQueryCondition_NoWait
+	GL_QUERY_BY_REGION_NO_WAIT, // nzGpuQueryCondition_Region_NoWait
+	GL_QUERY_BY_REGION_WAIT,    // nzGpuQueryCondition_Region_Wait
+	GL_QUERY_WAIT               // nzGpuQueryCondition_Wait
+};
+
+static_assert(nzGpuQueryCondition_Max+1 == 4, "Query condition array is incomplete");
+
+GLenum NzOpenGL::QueryMode[] =
+{
+	GL_ANY_SAMPLES_PASSED,                   // nzGpuQueryMode_AnySamplesPassed
+	GL_ANY_SAMPLES_PASSED_CONSERVATIVE,      // nzGpuQueryMode_AnySamplesPassedConservative
+	GL_PRIMITIVES_GENERATED,                 // nzGpuQueryMode_PrimitiveGenerated
+	GL_SAMPLES_PASSED,                       // nzGpuQueryMode_SamplesPassed
+	GL_TIME_ELAPSED,                         // nzGpuQueryMode_TimeElapsed
+	GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN // nzGpuQueryMode_TransformFeedbackPrimitivesWritten
+};
+
+static_assert(nzGpuQueryMode_Max+1 == 6, "Query mode array is incomplete");
+
+GLenum NzOpenGL::RendererComparison[] =
 {
 	GL_ALWAYS,  // nzRendererComparison_Always
 	GL_EQUAL,   // nzRendererComparison_Equal
@@ -1475,12 +2009,13 @@ GLenum NzOpenGL::RendererComparison[nzRendererComparison_Max+1] =
 	GL_GEQUAL,  // nzRendererComparison_GreaterOrEqual
 	GL_LESS,    // nzRendererComparison_Less
 	GL_LEQUAL,  // nzRendererComparison_LessOrEqual
-	GL_NEVER    // nzRendererComparison_Never
+	GL_NEVER,   // nzRendererComparison_Never
+	GL_NOTEQUAL // nzRendererComparison_NotEqual
 };
 
-static_assert(sizeof(NzOpenGL::RendererComparison)/sizeof(GLenum) == nzRendererComparison_Max+1, "Renderer comparison array is incomplete");
+static_assert(nzRendererComparison_Max+1 == 8, "Renderer comparison array is incomplete");
 
-GLenum NzOpenGL::RendererParameter[nzRendererParameter_Max+1] =
+GLenum NzOpenGL::RendererParameter[] =
 {
 	GL_BLEND,        // nzRendererParameter_Blend
 	GL_NONE,         // nzRendererParameter_ColorWrite
@@ -1491,41 +2026,41 @@ GLenum NzOpenGL::RendererParameter[nzRendererParameter_Max+1] =
 	GL_STENCIL_TEST  // nzRendererParameter_StencilTest
 };
 
-static_assert(sizeof(NzOpenGL::RendererParameter)/sizeof(GLenum) == nzRendererParameter_Max+1, "Renderer parameter array is incomplete");
+static_assert(nzRendererParameter_Max+1 == 7, "Renderer parameter array is incomplete");
 
-GLenum NzOpenGL::SamplerWrapMode[nzSamplerWrap_Max+1] =
+GLenum NzOpenGL::SamplerWrapMode[] =
 {
 	GL_CLAMP_TO_EDGE,   // nzTextureWrap_Clamp
 	GL_MIRRORED_REPEAT, // nzSamplerWrap_MirroredRepeat
 	GL_REPEAT           // nzTextureWrap_Repeat
 };
 
-static_assert(sizeof(NzOpenGL::SamplerWrapMode)/sizeof(GLenum) == nzSamplerWrap_Max+1, "Sampler wrap mode array is incomplete");
+static_assert(nzSamplerWrap_Max+1 == 3, "Sampler wrap mode array is incomplete");
 
-GLenum NzOpenGL::ShaderType[nzShaderType_Max+1] =
+GLenum NzOpenGL::ShaderStage[] =
 {
-	GL_FRAGMENT_SHADER,	// nzShaderType_Fragment
-	GL_GEOMETRY_SHADER,	// nzShaderType_Geometry
-	GL_VERTEX_SHADER	// nzShaderType_Vertex
+	GL_FRAGMENT_SHADER,	// nzShaderStage_Fragment
+	GL_GEOMETRY_SHADER,	// nzShaderStage_Geometry
+	GL_VERTEX_SHADER	// nzShaderStage_Vertex
 };
 
-static_assert(sizeof(NzOpenGL::ShaderType)/sizeof(GLenum) == nzShaderType_Max+1, "Shader type array is incomplete");
+static_assert(nzShaderStage_Max+1 == 3, "Shader stage array is incomplete");
 
-GLenum NzOpenGL::StencilOperation[nzStencilOperation_Max+1] =
+GLenum NzOpenGL::StencilOperation[] =
 {
 	GL_DECR,      // nzStencilOperation_Decrement
-	GL_DECR_WRAP, // nzStencilOperation_DecrementToSaturation
+	GL_DECR_WRAP, // nzStencilOperation_DecrementNoClamp
 	GL_INCR,      // nzStencilOperation_Increment
-	GL_INCR_WRAP, // nzStencilOperation_IncrementToSaturation
+	GL_INCR_WRAP, // nzStencilOperation_IncrementNoClamp
 	GL_INVERT,    // nzStencilOperation_Invert
 	GL_KEEP,      // nzStencilOperation_Keep
 	GL_REPLACE,   // nzStencilOperation_Replace
 	GL_ZERO       // nzStencilOperation_Zero
 };
 
-static_assert(sizeof(NzOpenGL::StencilOperation)/sizeof(GLenum) == nzStencilOperation_Max+1, "Stencil operation array is incomplete");
+static_assert(nzStencilOperation_Max+1 == 8, "Stencil operation array is incomplete");
 
-GLenum NzOpenGL::TextureTarget[nzImageType_Max+1] =
+GLenum NzOpenGL::TextureTarget[] =
 {
 	GL_TEXTURE_1D,       // nzImageType_1D
 	GL_TEXTURE_1D_ARRAY, // nzImageType_1D_Array
@@ -1535,9 +2070,9 @@ GLenum NzOpenGL::TextureTarget[nzImageType_Max+1] =
 	GL_TEXTURE_CUBE_MAP  // nzImageType_Cubemap
 };
 
-static_assert(sizeof(NzOpenGL::TextureTarget)/sizeof(GLenum) == nzImageType_Max+1, "Texture target array is incomplete");
+static_assert(nzImageType_Max+1 == 6, "Texture target array is incomplete");
 
-GLenum NzOpenGL::TextureTargetBinding[nzImageType_Max+1] =
+GLenum NzOpenGL::TextureTargetBinding[] =
 {
 	GL_TEXTURE_BINDING_1D,       // nzImageType_1D
 	GL_TEXTURE_BINDING_1D_ARRAY, // nzImageType_1D_Array
@@ -1547,9 +2082,9 @@ GLenum NzOpenGL::TextureTargetBinding[nzImageType_Max+1] =
 	GL_TEXTURE_BINDING_CUBE_MAP  // nzImageType_Cubemap
 };
 
-static_assert(sizeof(NzOpenGL::TextureTargetBinding)/sizeof(GLenum) == nzImageType_Max+1, "Texture target binding array is incomplete");
+static_assert(nzImageType_Max+1 == 6, "Texture target binding array is incomplete");
 
-GLenum NzOpenGL::TextureTargetProxy[nzImageType_Max+1] =
+GLenum NzOpenGL::TextureTargetProxy[] =
 {
 	GL_PROXY_TEXTURE_1D,       // nzImageType_1D
 	GL_PROXY_TEXTURE_1D_ARRAY, // nzImageType_1D_Array
@@ -1559,10 +2094,33 @@ GLenum NzOpenGL::TextureTargetProxy[nzImageType_Max+1] =
 	GL_PROXY_TEXTURE_CUBE_MAP  // nzImageType_Cubemap
 };
 
-static_assert(sizeof(NzOpenGL::TextureTargetProxy)/sizeof(GLenum) == nzImageType_Max+1, "Texture target proxy array is incomplete");
+static_assert(nzImageType_Max+1 == 6, "Texture target proxy array is incomplete");
+
+nzUInt8 NzOpenGL::VertexComponentIndex[] =
+{
+	10, // nzVertexComponent_InstanceData0
+	11, // nzVertexComponent_InstanceData1
+	12, // nzVertexComponent_InstanceData2
+	13, // nzVertexComponent_InstanceData3
+	14, // nzVertexComponent_InstanceData4
+	15, // nzVertexComponent_InstanceData5
+	4,  // nzVertexComponent_Color
+	2,  // nzVertexComponent_Normal
+	0,  // nzVertexComponent_Position
+	3,  // nzVertexComponent_Tangent
+	1,  // nzVertexComponent_TexCoord
+	5,  // nzVertexComponent_Userdata0
+	6,  // nzVertexComponent_Userdata1
+	7,  // nzVertexComponent_Userdata2
+	8,  // nzVertexComponent_Userdata3
+	9   // nzVertexComponent_Userdata4
+};
+
+static_assert(nzVertexComponent_Max+1 == 16, "Attribute index array is incomplete");
 
 PFNGLACTIVETEXTUREPROC            glActiveTexture            = nullptr;
 PFNGLATTACHSHADERPROC             glAttachShader             = nullptr;
+PFNGLBEGINCONDITIONALRENDERPROC   glBeginConditionalRender   = nullptr;
 PFNGLBEGINQUERYPROC               glBeginQuery               = nullptr;
 PFNGLBINDATTRIBLOCATIONPROC       glBindAttribLocation       = nullptr;
 PFNGLBINDBUFFERPROC               glBindBuffer               = nullptr;
@@ -1573,6 +2131,8 @@ PFNGLBINDSAMPLERPROC              glBindSampler              = nullptr;
 PFNGLBINDTEXTUREPROC              glBindTexture              = nullptr;
 PFNGLBINDVERTEXARRAYPROC          glBindVertexArray          = nullptr;
 PFNGLBLENDFUNCPROC                glBlendFunc                = nullptr;
+PFNGLBLENDFUNCSEPARATEPROC        glBlendFuncSeparate        = nullptr;
+PFNGLBLITFRAMEBUFFERPROC          glBlitFramebuffer          = nullptr;
 PFNGLBUFFERDATAPROC               glBufferData               = nullptr;
 PFNGLBUFFERSUBDATAPROC            glBufferSubData            = nullptr;
 PFNGLCLEARPROC                    glClear                    = nullptr;
@@ -1611,6 +2171,7 @@ PFNGLDRAWELEMENTSINSTANCEDPROC    glDrawElementsInstanced    = nullptr;
 PFNGLDRAWTEXTURENVPROC            glDrawTexture              = nullptr;
 PFNGLENABLEPROC                   glEnable                   = nullptr;
 PFNGLENABLEVERTEXATTRIBARRAYPROC  glEnableVertexAttribArray  = nullptr;
+PFNGLENDCONDITIONALRENDERPROC     glEndConditionalRender     = nullptr;
 PFNGLENDQUERYPROC                 glEndQuery                 = nullptr;
 PFNGLFLUSHPROC                    glFlush                    = nullptr;
 PFNGLFRAMEBUFFERRENDERBUFFERPROC  glFramebufferRenderbuffer  = nullptr;
@@ -1627,6 +2188,7 @@ PFNGLGENQUERIESPROC               glGenQueries               = nullptr;
 PFNGLGENSAMPLERSPROC              glGenSamplers              = nullptr;
 PFNGLGENTEXTURESPROC              glGenTextures              = nullptr;
 PFNGLGENVERTEXARRAYSPROC          glGenVertexArrays          = nullptr;
+PFNGLGETACTIVEUNIFORMPROC         glGetActiveUniform         = nullptr;
 PFNGLGETBOOLEANVPROC              glGetBooleanv              = nullptr;
 PFNGLGETBUFFERPARAMETERIVPROC     glGetBufferParameteriv     = nullptr;
 PFNGLGETDEBUGMESSAGELOGPROC       glGetDebugMessageLog       = nullptr;
@@ -1664,12 +2226,18 @@ PFNGLPROGRAMPARAMETERIPROC        glProgramParameteri        = nullptr;
 PFNGLPROGRAMUNIFORM1DPROC         glProgramUniform1d         = nullptr;
 PFNGLPROGRAMUNIFORM1FPROC         glProgramUniform1f         = nullptr;
 PFNGLPROGRAMUNIFORM1IPROC         glProgramUniform1i         = nullptr;
+PFNGLPROGRAMUNIFORM1DVPROC        glProgramUniform1dv        = nullptr;
+PFNGLPROGRAMUNIFORM1FVPROC        glProgramUniform1fv        = nullptr;
+PFNGLPROGRAMUNIFORM1IVPROC        glProgramUniform1iv        = nullptr;
 PFNGLPROGRAMUNIFORM2DVPROC        glProgramUniform2dv        = nullptr;
 PFNGLPROGRAMUNIFORM2FVPROC        glProgramUniform2fv        = nullptr;
+PFNGLPROGRAMUNIFORM2IVPROC        glProgramUniform2iv        = nullptr;
 PFNGLPROGRAMUNIFORM3DVPROC        glProgramUniform3dv        = nullptr;
 PFNGLPROGRAMUNIFORM3FVPROC        glProgramUniform3fv        = nullptr;
+PFNGLPROGRAMUNIFORM3IVPROC        glProgramUniform3iv        = nullptr;
 PFNGLPROGRAMUNIFORM4DVPROC        glProgramUniform4dv        = nullptr;
 PFNGLPROGRAMUNIFORM4FVPROC        glProgramUniform4fv        = nullptr;
+PFNGLPROGRAMUNIFORM4IVPROC        glProgramUniform4iv        = nullptr;
 PFNGLPROGRAMUNIFORMMATRIX4DVPROC  glProgramUniformMatrix4dv  = nullptr;
 PFNGLPROGRAMUNIFORMMATRIX4FVPROC  glProgramUniformMatrix4fv  = nullptr;
 PFNGLREADPIXELSPROC               glReadPixels               = nullptr;
@@ -1679,7 +2247,9 @@ PFNGLSAMPLERPARAMETERIPROC        glSamplerParameteri        = nullptr;
 PFNGLSCISSORPROC                  glScissor                  = nullptr;
 PFNGLSHADERSOURCEPROC             glShaderSource             = nullptr;
 PFNGLSTENCILFUNCPROC              glStencilFunc              = nullptr;
+PFNGLSTENCILFUNCSEPARATEPROC      glStencilFuncSeparate      = nullptr;
 PFNGLSTENCILOPPROC                glStencilOp                = nullptr;
+PFNGLSTENCILOPSEPARATEPROC        glStencilOpSeparate        = nullptr;
 PFNGLTEXIMAGE1DPROC               glTexImage1D               = nullptr;
 PFNGLTEXIMAGE2DPROC               glTexImage2D               = nullptr;
 PFNGLTEXIMAGE3DPROC               glTexImage3D               = nullptr;
@@ -1694,12 +2264,18 @@ PFNGLTEXSUBIMAGE3DPROC            glTexSubImage3D            = nullptr;
 PFNGLUNIFORM1DPROC                glUniform1d                = nullptr;
 PFNGLUNIFORM1FPROC                glUniform1f                = nullptr;
 PFNGLUNIFORM1IPROC                glUniform1i                = nullptr;
+PFNGLUNIFORM1DVPROC               glUniform1dv               = nullptr;
+PFNGLUNIFORM1FVPROC               glUniform1fv               = nullptr;
+PFNGLUNIFORM1IVPROC               glUniform1iv               = nullptr;
 PFNGLUNIFORM2DVPROC               glUniform2dv               = nullptr;
 PFNGLUNIFORM2FVPROC               glUniform2fv               = nullptr;
+PFNGLUNIFORM2IVPROC               glUniform2iv               = nullptr;
 PFNGLUNIFORM3DVPROC               glUniform3dv               = nullptr;
 PFNGLUNIFORM3FVPROC               glUniform3fv               = nullptr;
+PFNGLUNIFORM3IVPROC               glUniform3iv               = nullptr;
 PFNGLUNIFORM4DVPROC               glUniform4dv               = nullptr;
 PFNGLUNIFORM4FVPROC               glUniform4fv               = nullptr;
+PFNGLUNIFORM4IVPROC               glUniform4iv               = nullptr;
 PFNGLUNIFORMMATRIX4DVPROC         glUniformMatrix4dv         = nullptr;
 PFNGLUNIFORMMATRIX4FVPROC         glUniformMatrix4fv         = nullptr;
 PFNGLUNMAPBUFFERPROC              glUnmapBuffer              = nullptr;
@@ -1707,6 +2283,8 @@ PFNGLUSEPROGRAMPROC               glUseProgram               = nullptr;
 PFNGLVERTEXATTRIB4FPROC           glVertexAttrib4f           = nullptr;
 PFNGLVERTEXATTRIBDIVISORPROC      glVertexAttribDivisor      = nullptr;
 PFNGLVERTEXATTRIBPOINTERPROC      glVertexAttribPointer      = nullptr;
+PFNGLVERTEXATTRIBIPOINTERPROC     glVertexAttribIPointer     = nullptr;
+PFNGLVERTEXATTRIBLPOINTERPROC     glVertexAttribLPointer     = nullptr;
 PFNGLVIEWPORTPROC                 glViewport                 = nullptr;
 #if defined(NAZARA_PLATFORM_WINDOWS)
 PFNWGLCHOOSEPIXELFORMATARBPROC    wglChoosePixelFormat       = nullptr;

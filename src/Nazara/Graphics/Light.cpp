@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -6,10 +6,10 @@
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Graphics/AbstractRenderQueue.hpp>
 #include <Nazara/Graphics/Camera.hpp>
-#include <Nazara/Math/Basic.hpp>
+#include <Nazara/Math/Algorithm.hpp>
 #include <Nazara/Math/Sphere.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
-#include <Nazara/Renderer/ShaderProgram.hpp>
+#include <Nazara/Renderer/Shader.hpp>
 #include <cstring>
 #include <Nazara/Graphics/Debug.hpp>
 
@@ -17,11 +17,11 @@
 
 NzLight::NzLight(nzLightType type) :
 m_type(type),
-m_ambientColor((type == nzLightType_Directional) ? NzColor(50, 50, 50) : NzColor::Black),
-m_diffuseColor(NzColor::White),
-m_specularColor(NzColor::White),
+m_color(NzColor::White),
 m_boundingVolumeUpdated(false),
+m_ambientFactor((type == nzLightType_Directional) ? 0.2f : 0.f),
 m_attenuation(0.9f),
+m_diffuseFactor(1.f),
 m_innerAngle(15.f),
 m_outerAngle(45.f),
 m_radius(5.f)
@@ -29,9 +29,19 @@ m_radius(5.f)
 }
 
 NzLight::NzLight(const NzLight& light) :
-NzSceneNode(light)
+NzSceneNode(light),
+m_type(light.m_type),
+m_boundingVolume(light.m_boundingVolume),
+m_color(light.m_color),
+m_boundingVolumeUpdated(light.m_boundingVolumeUpdated),
+m_ambientFactor(light.m_ambientFactor),
+m_attenuation(light.m_attenuation),
+m_diffuseFactor(light.m_diffuseFactor),
+m_innerAngle(light.m_innerAngle),
+m_outerAngle(light.m_outerAngle),
+m_radius(light.m_radius)
 {
-	std::memcpy(this, &light, sizeof(NzLight)); // Aussi simple que ça
+	SetParent(light);
 }
 
 void NzLight::AddToRenderQueue(NzAbstractRenderQueue* renderQueue) const
@@ -39,15 +49,14 @@ void NzLight::AddToRenderQueue(NzAbstractRenderQueue* renderQueue) const
 	renderQueue->AddLight(this);
 }
 
-void NzLight::Enable(const NzShaderProgram* program, unsigned int lightUnit) const
+void NzLight::Enable(const NzShader* shader, const NzLightUniforms& uniforms, int offset) const
 {
 	/*
 	struct Light
 	{
 		int type;
-		vec4 ambient;
-		vec4 diffuse;
-		vec4 specular;
+		vec4 color;
+		vec2 factors;
 
 		vec4 parameters1;
 		vec4 parameters2;
@@ -59,7 +68,7 @@ void NzLight::Enable(const NzShaderProgram* program, unsigned int lightUnit) con
 
 	Point
 	-P1: vec3 position + float attenuation
-	-P2: float invRadius
+	-P2: vec3 NON-USED + float invRadius
 
 	Spot
 	-P1: vec3 position + float attenuation
@@ -67,34 +76,9 @@ void NzLight::Enable(const NzShaderProgram* program, unsigned int lightUnit) con
 	-P3: float cosInnerAngle + float cosOuterAngle
 	*/
 
-	///TODO: Optimiser
-	int typeLocation = program->GetUniformLocation("Lights[0].type");
-	int ambientLocation = program->GetUniformLocation("Lights[0].ambient");
-	int diffuseLocation = program->GetUniformLocation("Lights[0].diffuse");
-	int specularLocation = program->GetUniformLocation("Lights[0].specular");
-	int parameters1Location = program->GetUniformLocation("Lights[0].parameters1");
-	int parameters2Location = program->GetUniformLocation("Lights[0].parameters2");
-	int parameters3Location = program->GetUniformLocation("Lights[0].parameters3");
-
-	if (lightUnit > 0)
-	{
-		int type2Location = program->GetUniformLocation("Lights[1].type");
-		int offset = lightUnit * (type2Location - typeLocation); // type2Location - typeLocation donne la taille de la structure
-
-		// On applique cet offset
-		typeLocation += offset;
-		ambientLocation += offset;
-		diffuseLocation += offset;
-		specularLocation += offset;
-		parameters1Location += offset;
-		parameters2Location += offset;
-		parameters3Location += offset;
-	}
-
-	program->SendInteger(typeLocation, m_type);
-	program->SendColor(ambientLocation, m_ambientColor);
-	program->SendColor(diffuseLocation, m_diffuseColor);
-	program->SendColor(specularLocation, m_specularColor);
+	shader->SendInteger(uniforms.locations.type + offset, m_type);
+	shader->SendColor(uniforms.locations.color + offset, m_color);
+	shader->SendVector(uniforms.locations.factors + offset, NzVector2f(m_ambientFactor, m_diffuseFactor));
 
 	if (!m_derivedUpdated)
 		UpdateDerived();
@@ -102,20 +86,30 @@ void NzLight::Enable(const NzShaderProgram* program, unsigned int lightUnit) con
 	switch (m_type)
 	{
 		case nzLightType_Directional:
-			program->SendVector(parameters1Location, NzVector4f(m_derivedRotation * NzVector3f::Forward()));
+			shader->SendVector(uniforms.locations.parameters1 + offset, NzVector4f(m_derivedRotation * NzVector3f::Forward()));
 			break;
 
 		case nzLightType_Point:
-			program->SendVector(parameters1Location, NzVector4f(m_derivedPosition, m_attenuation));
-			program->SendVector(parameters2Location, NzVector4f(1.f/m_radius, 0.f, 0.f, 0.f));
+			shader->SendVector(uniforms.locations.parameters1 + offset, NzVector4f(m_derivedPosition, m_attenuation));
+			shader->SendVector(uniforms.locations.parameters2 + offset, NzVector4f(0.f, 0.f, 0.f, 1.f/m_radius));
 			break;
 
 		case nzLightType_Spot:
-			program->SendVector(parameters1Location, NzVector4f(m_derivedPosition, m_attenuation));
-			program->SendVector(parameters2Location, NzVector4f(m_derivedRotation * NzVector3f::Forward(), 1.f/m_radius));
-			program->SendVector(parameters3Location, NzVector2f(std::cos(NzDegreeToRadian(m_innerAngle)), std::cos(NzDegreeToRadian(m_outerAngle))));
+			shader->SendVector(uniforms.locations.parameters1 + offset, NzVector4f(m_derivedPosition, m_attenuation));
+			shader->SendVector(uniforms.locations.parameters2 + offset, NzVector4f(m_derivedRotation * NzVector3f::Forward(), 1.f/m_radius));
+			shader->SendVector(uniforms.locations.parameters3 + offset, NzVector2f(std::cos(NzDegreeToRadian(m_innerAngle)), std::cos(NzDegreeToRadian(m_outerAngle))));
 			break;
 	}
+}
+
+float NzLight::GetAmbientFactor() const
+{
+	return m_ambientFactor;
+}
+
+float NzLight::GetAttenuation() const
+{
+	return m_attenuation;
 }
 
 const NzBoundingVolumef& NzLight::GetBoundingVolume() const
@@ -126,19 +120,14 @@ const NzBoundingVolumef& NzLight::GetBoundingVolume() const
 	return m_boundingVolume;
 }
 
-NzColor NzLight::GetAmbientColor() const
+NzColor NzLight::GetColor() const
 {
-	return m_ambientColor;
+	return m_color;
 }
 
-float NzLight::GetAttenuation() const
+float NzLight::GetDiffuseFactor() const
 {
-	return m_attenuation;
-}
-
-NzColor NzLight::GetDiffuseColor() const
-{
-	return m_diffuseColor;
+	return m_diffuseFactor;
 }
 
 float NzLight::GetInnerAngle() const
@@ -166,19 +155,14 @@ nzSceneNodeType NzLight::GetSceneNodeType() const
 	return nzSceneNodeType_Light;
 }
 
-NzColor NzLight::GetSpecularColor() const
-{
-	return m_specularColor;
-}
-
 bool NzLight::IsDrawable() const
 {
 	return true;
 }
 
-void NzLight::SetAmbientColor(const NzColor& ambient)
+void NzLight::SetAmbientFactor(float factor)
 {
-	m_ambientColor = ambient;
+	m_ambientFactor = factor;
 }
 
 void NzLight::SetAttenuation(float attenuation)
@@ -186,14 +170,24 @@ void NzLight::SetAttenuation(float attenuation)
 	m_attenuation = attenuation;
 }
 
-void NzLight::SetDiffuseColor(const NzColor& diffuse)
+void NzLight::SetColor(const NzColor& color)
 {
-	m_diffuseColor = diffuse;
+	m_color = color;
+}
+
+void NzLight::SetDiffuseFactor(float factor)
+{
+	m_diffuseFactor = factor;
 }
 
 void NzLight::SetInnerAngle(float innerAngle)
 {
 	m_innerAngle = innerAngle;
+}
+
+void NzLight::SetLightType(nzLightType type)
+{
+	m_type = type;
 }
 
 void NzLight::SetOuterAngle(float outerAngle)
@@ -212,25 +206,30 @@ void NzLight::SetRadius(float radius)
 	m_boundingVolumeUpdated = false;
 }
 
-void NzLight::SetSpecularColor(const NzColor& specular)
-{
-	m_specularColor = specular;
-}
-
 NzLight& NzLight::operator=(const NzLight& light)
 {
-	std::memcpy(this, &light, sizeof(NzLight));
+	NzSceneNode::operator=(light);
+
+	m_ambientFactor = light.m_ambientFactor;
+	m_attenuation = light.m_attenuation;
+	m_boundingVolume = light.m_boundingVolume;
+	m_boundingVolumeUpdated = light.m_boundingVolumeUpdated;
+	m_color = light.m_color;
+	m_diffuseFactor = light.m_diffuseFactor;
+	m_innerAngle = light.m_innerAngle;
+	m_outerAngle = light.m_outerAngle;
+	m_radius = light.m_radius;
+	m_type = light.m_type;
 
 	return *this;
 }
 
-void NzLight::Disable(const NzShaderProgram* program, unsigned int lightUnit)
+void NzLight::Disable(const NzShader* shader, const NzLightUniforms& uniforms, int offset)
 {
-	///TODO: Optimiser
-	program->SendInteger(program->GetUniformLocation("Lights[" + NzString::Number(lightUnit) + "].type"), -1);
+	shader->SendInteger(uniforms.locations.type + offset, -1);
 }
 
-bool NzLight::FrustumCull(const NzFrustumf& frustum)
+bool NzLight::FrustumCull(const NzFrustumf& frustum) const
 {
 	switch (m_type)
 	{
@@ -245,19 +244,16 @@ bool NzLight::FrustumCull(const NzFrustumf& frustum)
 			return frustum.Contains(NzSpheref(m_derivedPosition, m_radius));
 
 		case nzLightType_Spot:
-			if (!m_boundingVolumeUpdated)
-				UpdateBoundingVolume();
-
-			return frustum.Contains(m_boundingVolume);
+			return NzSceneNode::FrustumCull(frustum);
 	}
 
 	NazaraError("Invalid light type (0x" + NzString::Number(m_type, 16) + ')');
 	return false;
 }
 
-void NzLight::Invalidate()
+void NzLight::InvalidateNode()
 {
-	NzSceneNode::Invalidate();
+	NzSceneNode::InvalidateNode();
 
 	m_boundingVolumeUpdated = false;
 }
@@ -294,12 +290,11 @@ void NzLight::UpdateBoundingVolume() const
 				NzBoxf box(NzVector3f::Zero());
 
 				// On calcule le reste des points
-				float height = m_radius;
-				NzVector3f base(NzVector3f::Forward()*height);
+				NzVector3f base(NzVector3f::Forward()*m_radius);
 
 				// Il nous faut maintenant le rayon du cercle projeté à cette distance
 				// Tangente = Opposé/Adjaçent <=> Opposé = Adjaçent*Tangente
-				float radius = height*std::tan(NzDegreeToRadian(m_outerAngle));
+				float radius = m_radius*std::tan(NzDegreeToRadian(m_outerAngle));
 				NzVector3f lExtend = NzVector3f::Left()*radius;
 				NzVector3f uExtend = NzVector3f::Up()*radius;
 
@@ -328,10 +323,10 @@ void NzLight::UpdateBoundingVolume() const
 			break;
 
 		case nzLightType_Spot:
-			if (!m_transformMatrixUpdated)
-				UpdateTransformMatrix();
+			if (!m_derivedUpdated)
+				UpdateDerived();
 
-			m_boundingVolume.Update(m_transformMatrix);
+			m_boundingVolume.Update(NzMatrix4f::Transform(m_derivedPosition, m_derivedRotation));
 			break;
 	}
 

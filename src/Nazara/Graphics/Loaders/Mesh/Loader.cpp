@@ -1,17 +1,17 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Graphics/Loaders/Mesh.hpp>
+#include <Nazara/Graphics/Material.hpp>
 #include <Nazara/Graphics/Model.hpp>
-#include <Nazara/Renderer/Material.hpp>
 #include <Nazara/Utility/Mesh.hpp>
 #include <memory>
 #include <Nazara/Graphics/Debug.hpp>
 
 namespace
 {
-	nzTernary Check(NzInputStream& stream, const NzModelParameters& parameters)
+	nzTernary CheckStatic(NzInputStream& stream, const NzModelParameters& parameters)
 	{
 		NazaraUnused(stream);
 		NazaraUnused(parameters);
@@ -19,15 +19,21 @@ namespace
 		return nzTernary_Unknown;
 	}
 
-	bool Load(NzModel* model, NzInputStream& stream, const NzModelParameters& parameters)
+	bool LoadStatic(NzModel* model, NzInputStream& stream, const NzModelParameters& parameters)
 	{
 		NazaraUnused(parameters);
 
 		std::unique_ptr<NzMesh> mesh(new NzMesh);
 		mesh->SetPersistent(false);
-		if (!mesh->LoadFromStream(stream))
+		if (!mesh->LoadFromStream(stream, parameters.mesh))
 		{
 			NazaraError("Failed to load model mesh");
+			return false;
+		}
+
+		if (mesh->IsAnimable())
+		{
+			NazaraError("Can't load static mesh into animated model");
 			return false;
 		}
 
@@ -37,20 +43,6 @@ namespace
 		model->Reset();
 		model->SetMesh(meshPtr);
 		mesh.release();
-
-		if (parameters.loadAnimation && meshPtr->IsAnimable())
-		{
-			NzString animationPath = meshPtr->GetAnimation();
-			if (!animationPath.IsEmpty())
-			{
-				std::unique_ptr<NzAnimation> animation(new NzAnimation);
-				animation->SetPersistent(false);
-				if (animation->LoadFromFile(animationPath, parameters.animation) && model->SetAnimation(animation.get()))
-					animation.release();
-				else
-					NazaraWarning("Failed to load animation");
-			}
-		}
 
 		if (parameters.loadMaterials)
 		{
@@ -63,6 +55,7 @@ namespace
 				{
 					std::unique_ptr<NzMaterial> material(new NzMaterial);
 					material->SetPersistent(false);
+
 					if (material->LoadFromFile(mat, parameters.material))
 					{
 						model->SetMaterial(i, material.get());
@@ -80,10 +73,10 @@ namespace
 
 void NzLoaders_Mesh_Register()
 {
-	NzModelLoader::RegisterLoader(NzMeshLoader::IsExtensionSupported, Check, Load);
+	NzModelLoader::RegisterLoader(NzMeshLoader::IsExtensionSupported, CheckStatic, LoadStatic);
 }
 
 void NzLoaders_Mesh_Unregister()
 {
-	NzModelLoader::UnregisterLoader(NzMeshLoader::IsExtensionSupported, Check, Load);
+	NzModelLoader::UnregisterLoader(NzMeshLoader::IsExtensionSupported, CheckStatic, LoadStatic);
 }

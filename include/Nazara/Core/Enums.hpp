@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -36,6 +36,18 @@ enum nzEndianness
 	nzEndianness_Max = nzEndianness_LittleEndian
 };
 
+enum nzErrorFlag
+{
+	nzErrorFlag_None = 0,
+
+	nzErrorFlag_Silent                 = 0x1,
+	nzErrorFlag_SilentDisabled         = 0x2,
+	nzErrorFlag_ThrowException         = 0x4,
+	nzErrorFlag_ThrowExceptionDisabled = 0x8,
+
+	nzErrorFlag_Max = nzErrorFlag_ThrowExceptionDisabled*2-1
+};
+
 enum nzErrorType
 {
 	nzErrorType_AssertFailed,
@@ -59,6 +71,19 @@ enum nzHash
 	nzHash_Whirlpool
 };
 
+enum nzParameterType
+{
+	nzParameterType_Boolean,
+	nzParameterType_Float,
+	nzParameterType_Integer,
+	nzParameterType_None,
+	nzParameterType_Pointer,
+	nzParameterType_String,
+	nzParameterType_Userdata,
+
+	nzParameterType_Max = nzParameterType_Userdata
+};
+
 enum nzPlugin
 {
 	nzPlugin_Assimp,
@@ -68,6 +93,7 @@ enum nzPlugin
 enum nzPrimitiveType
 {
 	nzPrimitiveType_Box,
+	nzPrimitiveType_Cone,
 	nzPrimitiveType_Plane,
 	nzPrimitiveType_Sphere,
 
@@ -101,16 +127,20 @@ enum nzProcessorVendor
 	nzProcessorVendor_Centaur,
 	nzProcessorVendor_Cyrix,
 	nzProcessorVendor_Intel,
-	nzProcessorVendor_Transmeta,
+	nzProcessorVendor_KVM,
+	nzProcessorVendor_HyperV,
 	nzProcessorVendor_NSC,
 	nzProcessorVendor_NexGen,
 	nzProcessorVendor_Rise,
 	nzProcessorVendor_SIS,
+	nzProcessorVendor_Transmeta,
 	nzProcessorVendor_UMC,
 	nzProcessorVendor_VIA,
+	nzProcessorVendor_VMware,
 	nzProcessorVendor_Vortex,
+	nzProcessorVendor_XenHVM,
 
-	nzProcessorVendor_Max = nzProcessorVendor_Vortex
+	nzProcessorVendor_Max = nzProcessorVendor_XenHVM
 };
 
 enum nzSphereType
@@ -124,7 +154,7 @@ enum nzSphereType
 
 enum nzStreamOptionFlags
 {
-	nzStreamOption_None = 0x0,
+	nzStreamOption_None = 0,
 
 	nzStreamOption_Text = 0x1,
 

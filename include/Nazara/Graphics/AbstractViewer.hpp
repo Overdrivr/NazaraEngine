@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -26,11 +26,12 @@ class NAZARA_API NzAbstractViewer
 
 		virtual float GetAspectRatio() const = 0;
 		virtual NzVector3f GetEyePosition() const = 0;
+		virtual NzVector3f GetForward() const = 0;
 		virtual const NzFrustumf& GetFrustum() const = 0;
 		virtual const NzMatrix4f& GetProjectionMatrix() const = 0;
 		virtual const NzRenderTarget* GetTarget() const = 0;
 		virtual const NzMatrix4f& GetViewMatrix() const = 0;
-		virtual const NzRectui& GetViewport() const = 0;
+		virtual const NzRecti& GetViewport() const = 0;
 		virtual float GetZFar() const = 0;
 		virtual float GetZNear() const = 0;
 };

@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Lua scripting module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -9,7 +9,9 @@
 #include <Nazara/Core/Clock.hpp>
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Core/File.hpp>
+#include <Nazara/Core/MemoryHelper.hpp>
 #include <Nazara/Core/MemoryStream.hpp>
+#include <Nazara/Core/StringStream.hpp>
 #include <cstdlib>
 #include <stdexcept>
 #include <unordered_map>
@@ -25,9 +27,9 @@ namespace
 
 	int AtPanic(lua_State* state)
 	{
-		NazaraUnused(state);
+		NzString lastError(lua_tostring(state, -1));
 
-		throw std::runtime_error("Lua panic !");
+		throw std::runtime_error("Lua panic: " + lastError);
 	}
 
 	const char* StreamReader(lua_State* state, void* data, std::size_t* size)
@@ -45,13 +47,15 @@ namespace
 		}
 	}
 
-	int s_comparisons[nzLuaComparison_Max+1] = {
+	int s_comparisons[] = {
 		LUA_OPEQ, // nzLuaComparison_Equality
 		LUA_OPLT, // nzLuaComparison_Less
 		LUA_OPLE  // nzLuaComparison_LessOrEqual
 	};
 
-	int s_operations[nzLuaOperation_Max+1] = {
+	static_assert(sizeof(s_comparisons)/sizeof(int) == nzLuaComparison_Max+1, "Lua comparison array is incomplete");
+
+	int s_operations[] = {
 		LUA_OPADD, // nzLuaOperation_Addition
 		LUA_OPDIV, // nzLuaOperation_Division
 		LUA_OPPOW, // nzLuaOperation_Exponentiation
@@ -61,7 +65,9 @@ namespace
 		LUA_OPSUB  // nzLuaOperation_Substraction
 	};
 
-	int s_types[nzLuaType_Max+1] = {
+	static_assert(sizeof(s_operations)/sizeof(int) == nzLuaOperation_Max+1, "Lua operation array is incomplete");
+
+	int s_types[] = {
 		LUA_TBOOLEAN,       // nzLuaType_Boolean
 		LUA_TFUNCTION,      // nzLuaType_Function
 		LUA_TLIGHTUSERDATA, // nzLuaType_LightUserdata
@@ -73,6 +79,8 @@ namespace
 		LUA_TTHREAD,        // nzLuaType_Thread
 		LUA_TUSERDATA       // nzLuaType_Userdata
 	};
+
+	static_assert(sizeof(s_types)/sizeof(int) == nzLuaType_Max+1, "Lua type array is incomplete");
 }
 
 NzLuaInstance::NzLuaInstance() :
@@ -92,9 +100,49 @@ NzLuaInstance::~NzLuaInstance()
 	lua_close(m_state);
 }
 
+void NzLuaInstance::ArgCheck(bool condition, unsigned int argNum, const char* error)
+{
+	luaL_argcheck(m_state, condition, argNum, error);
+}
+
+void NzLuaInstance::ArgCheck(bool condition, unsigned int argNum, const NzString& error)
+{
+	luaL_argcheck(m_state, condition, argNum, error.GetConstBuffer());
+}
+
+int NzLuaInstance::ArgError(unsigned int argNum, const char* error)
+{
+	return luaL_argerror(m_state, argNum, error);
+}
+
+int NzLuaInstance::ArgError(unsigned int argNum, const NzString& error)
+{
+	return luaL_argerror(m_state, argNum, error.GetConstBuffer());
+}
+
 void NzLuaInstance::CheckAny(int index) const
 {
 	luaL_checkany(m_state, index);
+}
+
+bool NzLuaInstance::CheckBoolean(int index) const
+{
+	if (lua_isnoneornil(m_state, index))
+	{
+		const char* msg = lua_pushfstring(m_state, "%s expected, got %s", lua_typename(m_state, LUA_TBOOLEAN), luaL_typename(m_state, index));
+		luaL_argerror(m_state, index, msg); // Lance une exception
+		return false;
+	}
+
+	return lua_toboolean(m_state, index);
+}
+
+bool NzLuaInstance::CheckBoolean(int index, bool defValue) const
+{
+	if (lua_isnoneornil(m_state, index))
+		return defValue;
+
+	return lua_toboolean(m_state, index);
 }
 
 int NzLuaInstance::CheckInteger(int index) const
@@ -180,7 +228,7 @@ bool NzLuaInstance::Compare(int index1, int index2, nzLuaComparison comparison) 
 	}
 	#endif
 
-	return lua_compare(m_state, index1, index2, s_comparisons[comparison]);
+	return (lua_compare(m_state, index1, index2, s_comparisons[comparison]) == 1);
 }
 
 void NzLuaInstance::Compute(nzLuaOperation operation)
@@ -199,6 +247,75 @@ void NzLuaInstance::Compute(nzLuaOperation operation)
 void NzLuaInstance::Concatenate(int count)
 {
 	lua_concat(m_state, count);
+}
+
+int NzLuaInstance::CreateReference()
+{
+	return luaL_ref(m_state, LUA_REGISTRYINDEX);
+}
+
+void NzLuaInstance::DestroyReference(int ref)
+{
+	luaL_unref(m_state, LUA_REGISTRYINDEX, ref);
+}
+
+NzString NzLuaInstance::DumpStack() const
+{
+	NzStringStream stream;
+	unsigned int stackTop = GetStackTop();
+	stream << stackTop << " entries\n";
+
+	for (unsigned int i = 1; i <= stackTop; ++i)
+	{
+		stream << i << ": ";
+		switch (GetType(i))
+		{
+			case nzLuaType_Boolean:
+				stream << "Boolean(" << ToBoolean(i) << ')';
+				break;
+
+			case nzLuaType_Function:
+				stream << "Function(" << ToPointer(i) << ')';
+				break;
+
+			case nzLuaType_LightUserdata:
+			case nzLuaType_Userdata:
+				stream << "Userdata(" << ToUserdata(i) << ')';
+				break;
+
+			case nzLuaType_Nil:
+				stream << "Nil";
+				break;
+
+			case nzLuaType_None:
+				stream << "None";
+				break;
+
+			case nzLuaType_Number:
+				stream << "Number(" << ToNumber(i) << ')';
+				break;
+
+			case nzLuaType_String:
+				stream << "String(" << ToString(i) << ')';
+				break;
+
+			case nzLuaType_Table:
+				stream << "Table(" << ToPointer(i) << ')';
+				break;
+
+			case nzLuaType_Thread:
+				stream << "Thread(" << ToPointer(i) << ')';
+				break;
+
+			default:
+				stream << "Unknown(" << ToPointer(i) << ')';
+				break;
+		}
+
+		stream << '\n';
+	}
+
+	return stream.ToString();
 }
 
 void NzLuaInstance::Error(const char* message)
@@ -236,10 +353,9 @@ bool NzLuaInstance::ExecuteFromFile(const NzString& filePath)
 		return false;
 	}
 
-	unsigned int length = file.GetSize();
+	unsigned int length = static_cast<unsigned int>(file.GetSize());
 
-	NzString source;
-	source.Resize(length);
+	NzString source(length, '\0');
 
 	if (file.Read(&source[0], length) != length)
 	{
@@ -331,7 +447,7 @@ void NzLuaInstance::GetMetatable(const NzString& tname) const
 
 bool NzLuaInstance::GetMetatable(int index) const
 {
-	return lua_getmetatable(m_state, index);
+	return lua_getmetatable(m_state, index) == 1;
 }
 
 unsigned int NzLuaInstance::GetStackTop() const
@@ -411,34 +527,34 @@ bool NzLuaInstance::IsOfType(int index, nzLuaType type) const
 	switch (type)
 	{
 		case nzLuaType_Boolean:
-			return lua_isboolean(m_state, index);
+			return lua_isboolean(m_state, index) == 1;
 
 		case nzLuaType_Function:
-			return lua_isfunction(m_state, index);
+			return lua_isfunction(m_state, index) == 1;
 
 		case nzLuaType_LightUserdata:
-			return lua_islightuserdata(m_state, index);
+			return lua_islightuserdata(m_state, index) == 1;
 
 		case nzLuaType_Nil:
-			return lua_isnil(m_state, index);
+			return lua_isnil(m_state, index) == 1;
 
 		case nzLuaType_None:
-			return lua_isnone(m_state, index);
+			return lua_isnone(m_state, index) == 1;
 
 		case nzLuaType_Number:
-			return lua_isnumber(m_state, index);
+			return lua_isnumber(m_state, index) == 1;
 
 		case nzLuaType_String:
-			return lua_isstring(m_state, index);
+			return lua_isstring(m_state, index) == 1;
 
 		case nzLuaType_Table:
-			return lua_istable(m_state, index);
+			return lua_istable(m_state, index) == 1;
 
 		case nzLuaType_Thread:
-			return lua_isthread(m_state, index);
+			return lua_isthread(m_state, index) == 1;
 
 		case nzLuaType_Userdata:
-			return lua_isuserdata(m_state, index);
+			return lua_isuserdata(m_state, index) == 1;
 	}
 
 	NazaraError("Lua type unhandled (0x" + NzString::Number(type, 16) + ')');
@@ -473,7 +589,7 @@ void NzLuaInstance::MoveTo(NzLuaInstance* instance, int n)
 
 bool NzLuaInstance::NewMetatable(const char* str)
 {
-	return luaL_newmetatable(m_state, str);
+	return luaL_newmetatable(m_state, str) == 1;
 }
 
 bool NzLuaInstance::NewMetatable(const NzString& str)
@@ -483,12 +599,12 @@ bool NzLuaInstance::NewMetatable(const NzString& str)
 
 bool NzLuaInstance::Next(int index)
 {
-	return lua_next(m_state, index);
+	return lua_next(m_state, index) == 1;
 }
 
 void NzLuaInstance::Pop(unsigned int n)
 {
-	lua_pop(m_state, n);
+	lua_pop(m_state, static_cast<int>(n));
 }
 
 void NzLuaInstance::PushBoolean(bool value)
@@ -504,7 +620,7 @@ void NzLuaInstance::PushCFunction(NzLuaCFunction func, int upvalueCount)
 void NzLuaInstance::PushFunction(NzLuaFunction func)
 {
 	NzLuaFunction* luaFunc = reinterpret_cast<NzLuaFunction*>(lua_newuserdata(m_state, sizeof(NzLuaFunction)));
-	*luaFunc = func;
+	NzPlacementNew<NzLuaFunction>(luaFunc, std::move(func));
 
 	lua_pushcclosure(m_state, ProxyFunc, 1);
 }
@@ -537,6 +653,11 @@ void NzLuaInstance::PushNil()
 void NzLuaInstance::PushNumber(double value)
 {
 	lua_pushnumber(m_state, value);
+}
+
+void NzLuaInstance::PushReference(int ref)
+{
+	lua_rawgeti(m_state, LUA_REGISTRYINDEX, ref);
 }
 
 void NzLuaInstance::PushString(const char* str)
@@ -648,7 +769,7 @@ int NzLuaInstance::ToInteger(int index, bool* succeeded) const
 	int result = lua_tointegerx(m_state, index, &success);
 
 	if (succeeded)
-		*succeeded = success;
+		*succeeded = (success == 1);
 
 	return result;
 }
@@ -659,9 +780,14 @@ double NzLuaInstance::ToNumber(int index, bool* succeeded) const
 	double result = lua_tonumberx(m_state, index, &success);
 
 	if (succeeded)
-		*succeeded = success;
+		*succeeded = (success == 1);
 
 	return result;
+}
+
+const void* NzLuaInstance::ToPointer(int index) const
+{
+	return lua_topointer(m_state, index);
 }
 
 const char* NzLuaInstance::ToString(int index, std::size_t* length) const
@@ -675,7 +801,7 @@ unsigned int NzLuaInstance::ToUnsigned(int index, bool* succeeded) const
 	unsigned int result = lua_tounsignedx(m_state, index, &success);
 
 	if (succeeded)
-		*succeeded = success;
+		*succeeded = (success == 1);
 
 	return result;
 }
@@ -761,8 +887,8 @@ void* NzLuaInstance::MemoryAllocator(void* ud, void* ptr, std::size_t osize, std
 
 int NzLuaInstance::ProxyFunc(lua_State* state)
 {
-	NzLuaFunction* func = static_cast<NzLuaFunction*>(lua_touserdata(state, lua_upvalueindex(1)));
-	return (*func)(*GetInstance(state));
+	NzLuaFunction& func = *static_cast<NzLuaFunction*>(lua_touserdata(state, lua_upvalueindex(1)));
+	return func(*GetInstance(state));
 }
 
 void NzLuaInstance::TimeLimiter(lua_State* state, lua_Debug* debug)

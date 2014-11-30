@@ -1,7 +1,7 @@
 /*
 	Nazara Engine
 
-	Copyright (C) 2013 Jérôme "Lynix" Leclercq (Lynix680@gmail.com)
+	Copyright (C) 2014 Jérôme "Lynix" Leclercq (Lynix680@gmail.com)
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy of
 	this software and associated documentation files (the "Software"), to deal in
@@ -68,6 +68,8 @@
 	#define NAZARA_COMPILER_UNKNOWN
 	#define NAZARA_DEPRECATED(txt)
 	#define NAZARA_FUNCTION __func__ // __func__ est standard depuis le C++11
+
+	/// Cette ligne n'est là que pour prévenir, n'hésitez pas à la commenter si elle vous empêche de compiler
 	#error This compiler is not fully supported
 #endif
 
@@ -75,11 +77,14 @@
 #if defined(_WIN32)
 	#define NAZARA_PLATFORM_WINDOWS
 
+	#define NAZARA_EXPORT __declspec(dllexport)
+	#define NAZARA_IMPORT __declspec(dllimport)
+
 	#if !defined(NAZARA_STATIC)
 		#ifdef NAZARA_BUILD
-			#define NAZARA_API __declspec(dllexport)
+			#define NAZARA_API NAZARA_EXPORT
 		#else
-			#define NAZARA_API __declspec(dllimport)
+			#define NAZARA_API NAZARA_IMPORT
 		#endif
 	#else
 		#define NAZARA_API
@@ -116,8 +121,11 @@
 	#define NAZARA_PLATFORM_LINUX
 	#define NAZARA_PLATFORM_POSIX
 
+	#define NAZARA_EXPORT __attribute__((visibility ("default")))
+	#define NAZARA_IMPORT __attribute__((visibility ("default")))
+
 	#if !defined(NAZARA_STATIC) && defined(NAZARA_COMPILER_GCC)
-		#define NAZARA_API __attribute__((visibility ("default")))
+		#define NAZARA_API NAZARA_EXPORT
 	#else
 		#define NAZARA_API
 	#endif
@@ -145,6 +153,10 @@
 #endif
 
 // Macros supplémentaires
+#define NazaraPrefix(a, prefix) prefix ## a
+#define NazaraPrefixMacro(a, prefix) NazaraPrefix(a, prefix)
+#define NazaraSuffix(a, suffix) a ## suffix
+#define NazaraSuffixMacro(a, suffix) NazaraSuffix(a, suffix)
 #define NazaraStringify(s) #s
 #define NazaraStringifyMacro(s) NazaraStringify(s) // http://gcc.gnu.org/onlinedocs/cpp/Stringification.html#Stringification
 #define NazaraUnused(a) (void) a

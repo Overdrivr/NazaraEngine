@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Audio module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -28,13 +28,15 @@ class NAZARA_API NzSound : public NzSoundEmitter
 		nzSoundStatus GetStatus() const;
 
 		bool IsLooping() const;
+		bool IsPlayable() const;
+		bool IsPlaying() const;
 
 		bool LoadFromFile(const NzString& filePath, const NzSoundBufferParams& params = NzSoundBufferParams());
 		bool LoadFromMemory(const void* data, std::size_t size, const NzSoundBufferParams& params = NzSoundBufferParams());
 		bool LoadFromStream(NzInputStream& stream, const NzSoundBufferParams& params = NzSoundBufferParams());
 
 		void Pause();
-		bool Play();
+		void Play();
 
 		void SetBuffer(const NzSoundBuffer* buffer);
 		void SetPlayingOffset(nzUInt32 offset);

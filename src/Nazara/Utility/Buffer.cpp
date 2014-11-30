@@ -1,9 +1,10 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Utility/Buffer.hpp>
 #include <Nazara/Core/Error.hpp>
+#include <Nazara/Core/ErrorFlags.hpp>
 #include <Nazara/Utility/AbstractBuffer.hpp>
 #include <Nazara/Utility/BufferMapper.hpp>
 #include <Nazara/Utility/Config.hpp>
@@ -32,15 +33,8 @@ NzBuffer::NzBuffer(nzBufferType type, unsigned int size, nzBufferStorage storage
 m_type(type),
 m_impl(nullptr)
 {
+	NzErrorFlags flags(nzErrorFlag_ThrowException, true);
 	Create(size, storage, usage);
-
-	#ifdef NAZARA_DEBUG
-	if (!m_impl)
-	{
-		NazaraError("Failed to create buffer");
-		throw std::runtime_error("Constructor failed");
-	}
-	#endif
 }
 
 NzBuffer::~NzBuffer()

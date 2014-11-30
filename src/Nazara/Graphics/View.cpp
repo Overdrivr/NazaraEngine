@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -60,6 +60,11 @@ NzVector3f NzView::GetEyePosition() const
 	return GetPosition(nzCoordSys_Global);
 }
 
+NzVector3f NzView::GetForward() const
+{
+	return NzNode::GetForward();
+}
+
 const NzFrustumf& NzView::GetFrustum() const
 {
 	if (!m_frustumUpdated)
@@ -94,7 +99,7 @@ const NzMatrix4f& NzView::GetViewMatrix() const
 	return m_viewMatrix;
 }
 
-const NzRectui& NzView::GetViewport() const
+const NzRecti& NzView::GetViewport() const
 {
 	#if NAZARA_GRAPHICS_SAFE
 	if (!m_target)
@@ -144,7 +149,7 @@ void NzView::SetTargetRegion(const NzRectf& region)
 	m_viewportUpdated = false;
 }
 
-void NzView::SetViewport(const NzRectui& viewport)
+void NzView::SetViewport(const NzRecti& viewport)
 {
 	#if NAZARA_GRAPHICS_SAFE
 	if (!m_target)
@@ -198,12 +203,13 @@ void NzView::ApplyView() const
 
 	NzRenderer::SetMatrix(nzMatrixType_Projection, m_projectionMatrix);
 	NzRenderer::SetMatrix(nzMatrixType_View, m_viewMatrix);
+	NzRenderer::SetTarget(m_target);
 	NzRenderer::SetViewport(m_viewport);
 }
 
-void NzView::Invalidate()
+void NzView::InvalidateNode()
 {
-	NzNode::Invalidate();
+	NzNode::InvalidateNode();
 
 	// Le frustum et la view matrix dépendent des paramètres du node, invalidons-les
 	m_frustumUpdated = false;
@@ -271,9 +277,9 @@ void NzView::UpdateViewport() const
 	unsigned int width = m_target->GetWidth();
 	unsigned int height = std::max(m_target->GetHeight(), 1U);
 
-	m_viewport.x = width * m_targetRegion.x;
-	m_viewport.y = height * m_targetRegion.y;
-	m_viewport.width = width * m_targetRegion.width;
-	m_viewport.height = height * m_targetRegion.height;
+	m_viewport.x = static_cast<int>(width * m_targetRegion.x);
+	m_viewport.y = static_cast<int>(height * m_targetRegion.y);
+	m_viewport.width = static_cast<int>(width * m_targetRegion.width);
+	m_viewport.height = static_cast<int>(height * m_targetRegion.height);
 	m_viewportUpdated = true;
 }

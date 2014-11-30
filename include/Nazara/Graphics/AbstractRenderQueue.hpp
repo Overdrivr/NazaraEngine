@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -9,11 +9,15 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Core/NonCopyable.hpp>
+#include <Nazara/Math/Box.hpp>
+#include <Nazara/Math/Matrix4.hpp>
+#include <Nazara/Utility/Enums.hpp>
 
 class NzDrawable;
 class NzLight;
-class NzModel;
+class NzMaterial;
 class NzSprite;
+struct NzMeshData;
 
 class NAZARA_API NzAbstractRenderQueue : NzNonCopyable
 {
@@ -23,7 +27,7 @@ class NAZARA_API NzAbstractRenderQueue : NzNonCopyable
 
 		virtual void AddDrawable(const NzDrawable* drawable) = 0;
 		virtual void AddLight(const NzLight* light) = 0;
-		virtual void AddModel(const NzModel* model) = 0;
+		virtual void AddMesh(const NzMaterial* material, const NzMeshData& meshData, const NzBoxf& meshAABB, const NzMatrix4f& transformMatrix) = 0;
 		virtual void AddSprite(const NzSprite* sprite) = 0;
 
 		virtual void Clear(bool fully) = 0;

@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Lua scripting module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -14,6 +14,7 @@
 #include <Nazara/Core/String.hpp>
 #include <Nazara/Lua/Enums.hpp>
 #include <cstddef>
+#include <functional>
 
 struct lua_Debug;
 struct lua_State;
@@ -21,7 +22,7 @@ struct lua_State;
 class NzLuaInstance;
 
 using NzLuaCFunction = int (*)(lua_State* state);
-using NzLuaFunction = int (*)(NzLuaInstance& instance);
+using NzLuaFunction = std::function<int(NzLuaInstance& instance)>;
 
 class NAZARA_API NzLuaInstance : NzNonCopyable
 {
@@ -29,7 +30,14 @@ class NAZARA_API NzLuaInstance : NzNonCopyable
 		NzLuaInstance();
 		~NzLuaInstance();
 
+		void ArgCheck(bool condition, unsigned int argNum, const char* error);
+		void ArgCheck(bool condition, unsigned int argNum, const NzString& error);
+		int ArgError(unsigned int argNum, const char* error);
+		int ArgError(unsigned int argNum, const NzString& error);
+
 		void CheckAny(int index) const;
+		bool CheckBoolean(int index) const;
+		bool CheckBoolean(int index, bool defValue) const;
 		int CheckInteger(int index) const;
 		int CheckInteger(int index, int defValue) const;
 		double CheckNumber(int index) const;
@@ -48,6 +56,11 @@ class NAZARA_API NzLuaInstance : NzNonCopyable
 		void Compute(nzLuaOperation operation);
 
 		void Concatenate(int count);
+
+		int CreateReference();
+		void DestroyReference(int ref);
+
+		NzString DumpStack() const;
 
 		void Error(const char* message);
 		void Error(const NzString& message);
@@ -101,6 +114,7 @@ class NAZARA_API NzLuaInstance : NzNonCopyable
 		void PushMetatable(const NzString& str);
 		void PushNil();
 		void PushNumber(double value);
+		void PushReference(int ref);
 		void PushString(const char* str);
 		void PushString(const NzString& str);
 		void PushTable(unsigned int sequenceElementCount = 0, unsigned int arrayElementCount = 0);
@@ -125,6 +139,7 @@ class NAZARA_API NzLuaInstance : NzNonCopyable
 		bool ToBoolean(int index) const;
 		int ToInteger(int index, bool* succeeded = nullptr) const;
 		double ToNumber(int index, bool* succeeded = nullptr) const;
+		const void* ToPointer(int index) const;
 		const char* ToString(int index, std::size_t* length = nullptr) const;
 		unsigned int ToUnsigned(int index, bool* succeeded = nullptr) const;
 		void* ToUserdata(int index) const;

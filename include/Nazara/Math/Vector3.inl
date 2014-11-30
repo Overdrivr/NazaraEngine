@@ -1,9 +1,9 @@
-// Copyright (C) 2013 Rémi Bèges - Jérôme Leclercq
+// Copyright (C) 2014 Rémi Bèges - Jérôme Leclercq
 // This file is part of the "Nazara Engine - Mathematics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Core/StringStream.hpp>
-#include <Nazara/Math/Basic.hpp>
+#include <Nazara/Math/Algorithm.hpp>
 #include <cstring>
 #include <limits>
 #include <stdexcept>
@@ -61,6 +61,26 @@ inline unsigned int NzVector3<unsigned int>::AbsDotProduct(const NzVector3<unsig
 }
 
 template<typename T>
+T NzVector3<T>::AngleBetween(const NzVector3& vec) const
+{
+	// sqrt(a) * sqrt(b) = sqrt(a*b)
+    T divisor = std::sqrt(GetSquaredLength() * vec.GetSquaredLength());
+
+    #if NAZARA_MATH_SAFE
+	if (NzNumberEquals(divisor, F(0.0)))
+	{
+		NzString error("Division by zero");
+
+		NazaraError(error);
+		throw std::domain_error(error);
+	}
+	#endif
+
+	T alpha = DotProduct(vec)/divisor;
+	return NzRadians(std::acos(NzClamp(alpha, F(-1.0), F(1.0))));
+}
+
+template<typename T>
 NzVector3<T> NzVector3<T>::CrossProduct(const NzVector3& vec) const
 {
 	return NzVector3(y * vec.z - z * vec.y, z * vec.x - x * vec.z, x * vec.y - y * vec.x);
@@ -75,7 +95,7 @@ T NzVector3<T>::Distance(const NzVector3& vec) const
 template<typename T>
 float NzVector3<T>::Distancef(const NzVector3& vec) const
 {
-	return std::sqrt(static_cast<float>(SquaredDistance()));
+	return std::sqrt(static_cast<float>(SquaredDistance(vec)));
 }
 
 template<typename T>
@@ -211,11 +231,13 @@ template<typename T>
 NzVector3<T>& NzVector3<T>::Normalize(T* length)
 {
 	T norm = GetLength();
-	T invNorm = F(1.0) / norm;
-
-	x *= invNorm;
-	y *= invNorm;
-	z *= invNorm;
+	if (norm > F(0.0))
+	{
+		T invNorm = F(1.0) / norm;
+		x *= invNorm;
+		y *= invNorm;
+		z *= invNorm;
+	}
 
 	if (length)
 		*length = norm;
@@ -304,40 +326,6 @@ template<typename T>
 NzVector3<T>::operator const T*() const
 {
 	return &x;
-}
-
-template<typename T>
-T& NzVector3<T>::operator[](unsigned int i)
-{
-	#if NAZARA_MATH_SAFE
-	if (i >= 3)
-	{
-		NzStringStream ss;
-		ss << "Index out of range: (" << i << " >= 3)";
-
-		NazaraError(ss);
-		throw std::out_of_range(ss.ToString());
-	}
-	#endif
-
-	return *(&x+i);
-}
-
-template<typename T>
-T NzVector3<T>::operator[](unsigned int i) const
-{
-	#if NAZARA_MATH_SAFE
-	if (i >= 3)
-	{
-		NzStringStream ss;
-		ss << "Index out of range: (" << i << " >= 3)";
-
-		NazaraError(ss);
-		throw std::out_of_range(ss.ToString());
-	}
-	#endif
-
-	return *(&x+i);
 }
 
 template<typename T>
@@ -488,8 +476,8 @@ template<typename T>
 bool NzVector3<T>::operator==(const NzVector3& vec) const
 {
 	return NzNumberEquals(x, vec.x) &&
-		   NzNumberEquals(y, vec.y) &&
-		   NzNumberEquals(z, vec.z);
+	       NzNumberEquals(y, vec.y) &&
+	       NzNumberEquals(z, vec.z);
 }
 
 template<typename T>
@@ -503,7 +491,7 @@ bool NzVector3<T>::operator<(const NzVector3& vec) const
 {
 	if (x == vec.x)
 	{
-		if (y < vec.y)
+		if (y == vec.y)
 			return z < vec.z;
 		else
 			return y < vec.y;
@@ -517,7 +505,7 @@ bool NzVector3<T>::operator<=(const NzVector3& vec) const
 {
 	if (x == vec.x)
 	{
-		if (y < vec.y)
+		if (y == vec.y)
 			return z <= vec.z;
 		else
 			return y < vec.y;

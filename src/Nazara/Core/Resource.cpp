@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -6,8 +6,16 @@
 #include <Nazara/Core/Config.hpp>
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Core/ResourceListener.hpp>
+#include <Nazara/Utility/StaticMesh.hpp>
 #include <Nazara/Utility/VertexDeclaration.hpp>
 #include <typeinfo>
+
+#if NAZARA_CORE_THREADSAFE && NAZARA_THREADSAFETY_RESOURCE
+	#include <Nazara/Core/ThreadSafety.hpp>
+#else
+	#include <Nazara/Core/ThreadSafetyOff.hpp>
+#endif
+
 #include <Nazara/Core/Debug.hpp>
 
 NzResource::NzResource(bool persistent) :
@@ -21,7 +29,7 @@ NzResource::~NzResource()
 {
 	m_resourceListenersLocked = true;
 	for (auto& pair : m_resourceListeners)
-		pair.first->OnResourceReleased(this, pair.second);
+		pair.first->OnResourceReleased(this, pair.second.first);
 
 	#if NAZARA_CORE_SAFE
 	if (m_resourceReferenceCount > 0)
@@ -35,7 +43,11 @@ void NzResource::AddResourceListener(NzResourceListener* listener, int index) co
 	NazaraLock(m_mutex)
 
 	if (!m_resourceListenersLocked)
-		m_resourceListeners.insert(std::make_pair(listener, index));
+	{
+		auto pair = m_resourceListeners.insert(std::make_pair(listener, std::make_pair(index, 1U)));
+		if (!pair.second)
+			pair.first->second.second++;
+	}
 }
 
 void NzResource::AddResourceReference() const
@@ -59,7 +71,11 @@ void NzResource::RemoveResourceListener(NzResourceListener* listener) const
 	NazaraLock(m_mutex);
 
 	if (!m_resourceListenersLocked)
-		m_resourceListeners.erase(listener);
+	{
+		ResourceListenerMap::iterator it = m_resourceListeners.find(listener);
+		if (it != m_resourceListeners.end())
+			RemoveResourceListenerIterator(it);
+	}
 }
 
 bool NzResource::RemoveResourceReference() const
@@ -105,8 +121,8 @@ void NzResource::NotifyCreated()
 	auto it = m_resourceListeners.begin();
 	while (it != m_resourceListeners.end())
 	{
-		if (!it->first->OnResourceCreated(this, it->second))
-			m_resourceListeners.erase(it++);
+		if (!it->first->OnResourceCreated(this, it->second.first))
+			RemoveResourceListenerIterator(it++);
 		else
 			++it;
 	}
@@ -123,11 +139,38 @@ void NzResource::NotifyDestroy()
 	auto it = m_resourceListeners.begin();
 	while (it != m_resourceListeners.end())
 	{
-		if (!it->first->OnResourceDestroy(this, it->second))
-			m_resourceListeners.erase(it++);
+		if (!it->first->OnResourceDestroy(this, it->second.first))
+			RemoveResourceListenerIterator(it++);
 		else
 			++it;
 	}
 
 	m_resourceListenersLocked = false;
+}
+
+void NzResource::NotifyModified(unsigned int code)
+{
+	NazaraLock(m_mutex)
+
+	m_resourceListenersLocked = true;
+
+	auto it = m_resourceListeners.begin();
+	while (it != m_resourceListeners.end())
+	{
+		if (!it->first->OnResourceModified(this, it->second.first, code))
+			RemoveResourceListenerIterator(it++);
+		else
+			++it;
+	}
+
+	m_resourceListenersLocked = false;
+}
+
+void NzResource::RemoveResourceListenerIterator(ResourceListenerMap::iterator iterator) const
+{
+	unsigned int& referenceCount = iterator->second.second;
+	if (referenceCount == 1)
+		m_resourceListeners.erase(iterator);
+	else
+		referenceCount--;
 }

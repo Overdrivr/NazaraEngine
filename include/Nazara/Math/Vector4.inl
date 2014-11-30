@@ -1,9 +1,9 @@
-// Copyright (C) 2013 Rémi Bèges - Jérôme Leclercq
+// Copyright (C) 2014 Rémi Bèges - Jérôme Leclercq
 // This file is part of the "Nazara Engine - Mathematics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Core/StringStream.hpp>
-#include <Nazara/Math/Basic.hpp>
+#include <Nazara/Math/Algorithm.hpp>
 #include <cstring>
 #include <stdexcept>
 #include <Nazara/Core/Debug.hpp>
@@ -231,40 +231,6 @@ template<typename T>
 NzVector4<T>::operator const T*() const
 {
 	return &x;
-}
-
-template<typename T>
-T& NzVector4<T>::operator[](unsigned int i)
-{
-	#if NAZARA_MATH_SAFE
-	if (i >= 4)
-	{
-		NzStringStream ss;
-		ss << "Index out of range: (" << i << " >= 4)";
-
-		NazaraError(ss);
-		throw std::domain_error(ss.ToString());
-	}
-	#endif
-
-	return *(&x+i);
-}
-
-template<typename T>
-T NzVector4<T>::operator[](unsigned int i) const
-{
-	#if NAZARA_MATH_SAFE
-	if (i >= 4)
-	{
-		NzStringStream ss;
-		ss << "Index out of range: (" << i << " >= 4)";
-
-		NazaraError(ss);
-		throw std::domain_error(ss.ToString());
-	}
-	#endif
-
-	return *(&x+i);
 }
 
 template<typename T>

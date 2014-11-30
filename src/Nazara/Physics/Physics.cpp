@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Physics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -17,22 +17,24 @@ unsigned int NzPhysics::GetMemoryUsed()
 
 bool NzPhysics::Initialize()
 {
-	if (s_moduleReferenceCounter++ != 0)
+	if (s_moduleReferenceCounter > 0)
+	{
+		s_moduleReferenceCounter++;
 		return true; // Déjà initialisé
+	}
 
 	// Initialisation des dépendances
 	if (!NzCore::Initialize())
 	{
 		NazaraError("Failed to initialize core module");
-		Uninitialize();
-
 		return false;
 	}
+
+	s_moduleReferenceCounter++;
 
 	// Initialisation du module
 
 	NazaraNotice("Initialized: Physics module");
-
 	return true;
 }
 

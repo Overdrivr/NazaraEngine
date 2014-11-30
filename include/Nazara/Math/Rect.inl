@@ -1,9 +1,9 @@
-// Copyright (C) 2013 Jérôme Leclercq
+﻿// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Mathematics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Core/StringStream.hpp>
-#include <Nazara/Math/Basic.hpp>
+#include <Nazara/Math/Algorithm.hpp>
 #include <algorithm>
 #include <cstring>
 #include <Nazara/Core/Debug.hpp>
@@ -112,7 +112,7 @@ NzRect<T>& NzRect<T>::ExtendTo(const NzRect& rect)
 template<typename T>
 NzVector2<T> NzRect<T>::GetCenter() const
 {
-	return GetPosition() + F(0.5)*GetLengths();
+	return GetPosition() + GetLengths() / F(2.0);
 }
 
 template<typename T>
@@ -343,10 +343,24 @@ NzRect<T> NzRect<T>::operator*(const NzVector2<T>& vec) const
 }
 
 template<typename T>
+NzRect<T> NzRect<T>::operator/(T scalar) const
+{
+	return NzRect(x, y, width/scalar, height/scalar);
+}
+
+template<typename T>
+NzRect<T> NzRect<T>::operator/(const NzVector2<T>& vec) const
+{
+	return NzRect(x, y, width/vec.x, height/vec.y);
+}
+
+template<typename T>
 NzRect<T>& NzRect<T>::operator*=(T scalar)
 {
 	width *= scalar;
 	height *= scalar;
+
+	return *this;
 }
 
 template<typename T>
@@ -354,6 +368,26 @@ NzRect<T>& NzRect<T>::operator*=(const NzVector2<T>& vec)
 {
 	width *= vec.x;
 	height *= vec.y;
+
+	return *this;
+}
+
+template<typename T>
+NzRect<T>& NzRect<T>::operator/=(T scalar)
+{
+	width /= scalar;
+	height /= scalar;
+
+	return *this;
+}
+
+template<typename T>
+NzRect<T>& NzRect<T>::operator/=(const NzVector2<T>& vec)
+{
+	width /= vec.x;
+	height /= vec.y;
+
+	return *this;
 }
 
 template<typename T>

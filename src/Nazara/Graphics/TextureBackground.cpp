@@ -1,10 +1,10 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Graphics/TextureBackground.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
-#include <Nazara/Renderer/ShaderProgramManager.hpp>
+#include <Nazara/Renderer/UberShaderLibrary.hpp>
 #include <memory>
 #include <Nazara/Graphics/Debug.hpp>
 
@@ -13,7 +13,11 @@ namespace
 	NzRenderStates BuildRenderStates()
 	{
 		NzRenderStates states;
-		states.parameters[nzRendererParameter_DepthBuffer] = false;
+		states.depthFunc = nzRendererComparison_Equal;
+		states.faceCulling = nzFaceSide_Back;
+		states.parameters[nzRendererParameter_DepthBuffer] = true;
+		states.parameters[nzRendererParameter_DepthWrite] = false;
+		states.parameters[nzRendererParameter_FaceCulling] = true;
 
 		return states;
 	}
@@ -21,14 +25,19 @@ namespace
 
 NzTextureBackground::NzTextureBackground()
 {
-	NzShaderProgramManagerParams params;
-	params.target = nzShaderTarget_FullscreenQuad;
-	params.flags = 0;
-	params.fullscreenQuad.alphaMapping = false;
-	params.fullscreenQuad.alphaTest = false;
-	params.fullscreenQuad.diffuseMapping = true;
+	m_uberShader = NzUberShaderLibrary::Get("Basic");
 
-	m_program = NzShaderProgramManager::Get(params);
+	NzParameterList list;
+	list.SetParameter("DIFFUSE_MAPPING", true);
+	list.SetParameter("TEXTURE_MAPPING", true);
+	list.SetParameter("UNIFORM_VERTEX_DEPTH", true);
+
+	m_uberShaderInstance = m_uberShader->Get(list);
+
+	const NzShader* shader = m_uberShaderInstance->GetShader();
+	m_materialDiffuseUniform = shader->GetUniformLocation("MaterialDiffuse");
+	m_materialDiffuseMapUniform = shader->GetUniformLocation("MaterialDiffuseMap");
+	m_vertexDepthUniform = shader->GetUniformLocation("VertexDepth");
 }
 
 NzTextureBackground::NzTextureBackground(NzTexture* texture) :
@@ -43,12 +52,15 @@ void NzTextureBackground::Draw(const NzScene* scene) const
 
 	static NzRenderStates states(BuildRenderStates());
 
-	m_program->SendColor(m_program->GetUniformLocation(nzShaderUniform_MaterialDiffuse), NzColor::White);
-	m_program->SendInteger(m_program->GetUniformLocation(nzShaderUniform_MaterialDiffuseMap), 0);
-
 	NzRenderer::SetRenderStates(states);
-	NzRenderer::SetShaderProgram(m_program);
 	NzRenderer::SetTexture(0, m_texture);
+
+	m_uberShaderInstance->Activate();
+
+	const NzShader* shader = m_uberShaderInstance->GetShader();
+	shader->SendColor(m_materialDiffuseUniform, NzColor::White);
+	shader->SendFloat(m_vertexDepthUniform, 1.f);
+	shader->SendInteger(m_materialDiffuseMapUniform, 0);
 
 	NzRenderer::DrawFullscreenQuad();
 }

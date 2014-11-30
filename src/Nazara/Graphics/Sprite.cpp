@@ -1,8 +1,9 @@
-// Copyright (C) 2013 Jérôme Leclercq
+// Copyright (C) 2014 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Graphics/Sprite.hpp>
+#include <memory>
 #include <Nazara/Graphics/Debug.hpp>
 
 NzSprite::NzSprite() :
@@ -13,6 +14,30 @@ m_boundingVolumeUpdated(true)
 {
 }
 
+NzSprite::NzSprite(NzTexture* texture) :
+m_boundingVolume(NzBoundingVolumef::Null()),
+m_textureCoords(0.f, 0.f, 1.f, 1.f)
+{
+	if (texture)
+	{
+		m_material = new NzMaterial;
+		m_material->SetPersistent(false);
+		m_material->SetDiffuseMap(texture);
+
+		if (texture->IsValid())
+			m_size.Set(texture->GetWidth(), texture->GetHeight());
+		else
+			m_size.Set(64.f, 64.f);
+
+		m_boundingVolumeUpdated = false;
+	}
+	else
+	{
+		m_size.Set(64.f, 64.f);
+		m_boundingVolumeUpdated = true;
+	}
+}
+
 NzSprite::NzSprite(const NzSprite& sprite) :
 NzSceneNode(sprite),
 m_boundingVolume(sprite.m_boundingVolume),
@@ -21,6 +46,7 @@ m_textureCoords(sprite.m_textureCoords),
 m_size(sprite.m_size),
 m_boundingVolumeUpdated(sprite.m_boundingVolumeUpdated)
 {
+	SetParent(sprite);
 }
 
 NzSprite::NzSprite(NzSprite&& sprite) :
@@ -71,15 +97,33 @@ bool NzSprite::IsDrawable() const
 	return m_material != nullptr;
 }
 
-void NzSprite::SetMaterial(NzMaterial* material)
+void NzSprite::SetMaterial(NzMaterial* material, bool resizeSprite)
 {
 	m_material = material;
+
+	NzTexture* diffuseMap = m_material->GetDiffuseMap();
+	if (resizeSprite && diffuseMap && diffuseMap->IsValid())
+		SetSize(NzVector2f(diffuseMap->GetSize()));
 }
 
 void NzSprite::SetSize(const NzVector2f& size)
 {
 	m_size = size;
 	m_boundingVolume.MakeNull();
+	m_boundingVolumeUpdated = false;
+}
+
+void NzSprite::SetTexture(NzTexture* texture, bool resizeSprite)
+{
+	std::unique_ptr<NzMaterial> material(new NzMaterial);
+	material->SetPersistent(false);
+
+	material->Enable(nzRendererParameter_FaceCulling, false);
+	material->EnableLighting(false);
+	material->SetDiffuseMap(texture);
+
+	SetMaterial(material.get(), resizeSprite);
+	material.release();
 }
 
 void NzSprite::SetTextureCoords(const NzRectf& coords)
@@ -111,17 +155,9 @@ void NzSprite::SetTextureRect(const NzRectui& rect)
 	SetTextureCoords(NzRectf(invWidth*rect.x, invHeight*rect.y, invWidth*rect.width, invHeight*rect.height));
 }
 
-bool NzSprite::FrustumCull(const NzFrustumf& frustum)
+void NzSprite::InvalidateNode()
 {
-	if (!m_boundingVolumeUpdated)
-		UpdateBoundingVolume();
-
-	return frustum.Contains(m_boundingVolume);
-}
-
-void NzSprite::Invalidate()
-{
-	NzSceneNode::Invalidate();
+	NzSceneNode::InvalidateNode();
 
 	m_boundingVolumeUpdated = false;
 }
@@ -137,7 +173,7 @@ void NzSprite::Unregister()
 void NzSprite::UpdateBoundingVolume() const
 {
 	if (m_boundingVolume.IsNull())
-		m_boundingVolume.Set(-m_size.x*0.5f, -m_size.y*0.5f, 0, m_size.x, m_size.y, 0.f);
+		m_boundingVolume.Set(-m_size.x*0.5f, -m_size.y*0.5f, 0.f, m_size.x, m_size.y, 0.f);
 
 	if (!m_transformMatrixUpdated)
 		UpdateTransformMatrix();
