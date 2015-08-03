@@ -8,7 +8,7 @@
 #define NOISEBASE_HPP
 
 #include <Nazara/Prerequesites.hpp>
-
+#include <random>
 
 
 class NAZARA_API NzNoiseBase
@@ -17,20 +17,23 @@ class NAZARA_API NzNoiseBase
         NzNoiseBase(unsigned int seed = 0);
         ~NzNoiseBase() = default;
 
-        void SetNewSeed(unsigned int seed);
+        virtual float Get() = 0;
 
-        void ShufflePermutationTable();
+        float GetScale();
 
-        unsigned int GetUniformRandomValue();
+        void SetSeed(unsigned int seed);
 
-        int fastfloor(float n);
-        int JenkinsHash(int a, int b, int c);
+        void SetScale(float scale);
+
+        void Shuffle();
+
+        void Shuffle(unsigned int amount);
+
     protected:
         unsigned int perm[512];
+        float m_scale;
     private:
-        unsigned int Ua, Uc, Um;
-        unsigned int UcurrentSeed;
-        unsigned int Uprevious, Ulast;
+        std::default_random_engine generator;
 
 };
 

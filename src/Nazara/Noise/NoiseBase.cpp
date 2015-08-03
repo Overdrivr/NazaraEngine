@@ -9,33 +9,27 @@
 
 NzNoiseBase::NzNoiseBase(unsigned int seed)
 {
-    Ua = 16807;
-    Uc = 0;
-    Um = 2147483647;
-    UcurrentSeed = 0;
-    Uprevious = 0;
-
-    SetNewSeed(seed);
-
-    for(int i(0) ; i < 512 ; i++)
-        perm[i] = i & 255;
-
+    SetSeed(seed);
+    generator.min(0);
+    generator.max(255);
 }
 
-void NzNoiseBase::SetNewSeed(unsigned int seed)
+float NzNoiseBase::GetScale()
 {
-    Uprevious = seed;
-    UcurrentSeed = seed;
+    return m_scale;
 }
 
-unsigned int NzNoiseBase::GetUniformRandomValue()
+void NzNoiseBase::SetScale(float scale)
 {
-    Ulast = Ua*Uprevious + Uc%Um;
-    Uprevious = Ulast;
-    return Ulast;
+    m_scale = scale;
 }
 
-void NzNoiseBase::ShufflePermutationTable()
+void NzNoiseBase::SetSeed(unsigned int seed)
+{
+    generator.seed(seed);
+}
+
+void NzNoiseBase::Shuffle()
 {
     int xchanger;
     unsigned int ncase;
@@ -43,34 +37,20 @@ void NzNoiseBase::ShufflePermutationTable()
     for(unsigned int i(0) ; i < 256 ; i++)
         perm[i] = i;
 
-    for(unsigned int j(0) ; j < 20 ; ++j)
-        for (unsigned int i(0); i < 256 ; ++i)
-        {
-            ncase = this->GetUniformRandomValue() & 255;
-            xchanger = perm[i];
-            perm[i] = perm[ncase];
-            perm[ncase] = xchanger;
-        }
+    for (unsigned int i(0); i < 256 ; ++i)
+    {
+        ncase = generator.get();
+        xchanger = perm[i];
+        perm[i] = perm[ncase];
+        perm[ncase] = xchanger;
+    }
 
     for(unsigned int i(256) ; i < 512; ++i)
         perm[i] = perm[i & 255];
 }
 
-int NzNoiseBase::fastfloor(float n)
+void NzNoiseBase::Shuffle(unsigned int amount)
 {
-    return (n >= 0) ? static_cast<int>(n) : static_cast<int>(n-1);
-}
-
-int NzNoiseBase::JenkinsHash(int a, int b, int c)
-{
-    a = a-b;  a = a - c;  a = a^(static_cast<unsigned int>(c) >> 13);
-    b = b-c;  b = b - a;  b = b^(a << 8);
-    c = c-a;  c = c - b;  c = c^(static_cast<unsigned int>(b) >> 13);
-    a = a-b;  a = a - c;  a = a^(static_cast<unsigned int>(c) >> 12);
-    b = b-c;  b = b - a;  b = b^(a << 16);
-    c = c-a;  c = c - b;  c = c^(static_cast<unsigned int>(b) >> 5);
-    a = a-b;  a = a - c;  a = a^(static_cast<unsigned int>(c) >> 3);
-    b = b-c;  b = b - a;  b = b^(a << 10);
-    c = c-a;  c = c - b;  c = c^(static_cast<unsigned int>(b) >> 15);
-    return c;
+    for(unsigned int j(0) ; j < amount ; ++j)
+        Shuffle();
 }
