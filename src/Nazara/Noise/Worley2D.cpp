@@ -5,8 +5,8 @@
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Noise/Config.hpp>
 #include <Nazara/Noise/Worley2D.hpp>
-#include <Nazara/Noise/Debug.hpp>
 #include <iterator>
+#include <Nazara/Noise/Debug.hpp>
 
 NzWorley2D::NzWorley2D(nzWorleyFunction function)
 {
