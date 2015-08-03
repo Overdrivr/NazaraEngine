@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -8,13 +8,16 @@
 #define NAZARA_SKELETALMESH_HPP
 
 #include <Nazara/Prerequesites.hpp>
-#include <Nazara/Utility/Mesh.hpp>
+#include <Nazara/Core/ObjectListenerWrapper.hpp>
+#include <Nazara/Core/ObjectRef.hpp>
 #include <Nazara/Utility/SubMesh.hpp>
 
 class NzSkeletalMesh;
 
-using NzSkeletalMeshConstRef = NzResourceRef<const NzSkeletalMesh>;
-using NzSkeletalMeshRef = NzResourceRef<NzSkeletalMesh>;
+using NzSkeletalMeshConstListener = NzObjectListenerWrapper<const NzSkeletalMesh>;
+using NzSkeletalMeshConstRef = NzObjectRef<const NzSkeletalMesh>;
+using NzSkeletalMeshListener = NzObjectListenerWrapper<NzSkeletalMesh>;
+using NzSkeletalMeshRef = NzObjectRef<NzSkeletalMesh>;
 
 class NAZARA_API NzSkeletalMesh final : public NzSubMesh
 {
@@ -38,10 +41,14 @@ class NAZARA_API NzSkeletalMesh final : public NzSubMesh
 		void SetAABB(const NzBoxf& aabb);
 		void SetIndexBuffer(const NzIndexBuffer* indexBuffer);
 
+		template<typename... Args> static NzSkeletalMeshRef New(Args&&... args);
+
 	private:
 		NzBoxf m_aabb;
 		NzIndexBufferConstRef m_indexBuffer = nullptr;
 		NzVertexBufferRef m_vertexBuffer = nullptr;
 };
+
+#include <Nazara/Utility/SkeletalMesh.inl>
 
 #endif // NAZARA_SKELETALMESH_HPP

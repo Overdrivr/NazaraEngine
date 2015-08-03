@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -19,7 +19,9 @@ class NAZARA_API NzSemaphore : NzNonCopyable
 		~NzSemaphore();
 
 		unsigned int GetCount() const;
+
 		void Post();
+
 		void Wait();
 		bool Wait(nzUInt32 timeout);
 

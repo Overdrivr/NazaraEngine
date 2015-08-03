@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -8,15 +8,18 @@
 #define NAZARA_STATICMESH_HPP
 
 #include <Nazara/Prerequesites.hpp>
-#include <Nazara/Core/ResourceListener.hpp>
+#include <Nazara/Core/ObjectListener.hpp>
+#include <Nazara/Core/ObjectListenerWrapper.hpp>
 #include <Nazara/Utility/SubMesh.hpp>
 
 class NzStaticMesh;
 
-using NzStaticMeshConstRef = NzResourceRef<const NzStaticMesh>;
-using NzStaticMeshRef = NzResourceRef<NzStaticMesh>;
+using NzStaticMeshConstListener = NzObjectListenerWrapper<const NzStaticMesh>;
+using NzStaticMeshConstRef = NzObjectRef<const NzStaticMesh>;
+using NzStaticMeshListener = NzObjectListenerWrapper<NzStaticMesh>;
+using NzStaticMeshRef = NzObjectRef<NzStaticMesh>;
 
-class NAZARA_API NzStaticMesh final : public NzSubMesh, NzResourceListener
+class NAZARA_API NzStaticMesh final : public NzSubMesh
 {
 	public:
 		NzStaticMesh(const NzMesh* parent);
@@ -42,10 +45,14 @@ class NAZARA_API NzStaticMesh final : public NzSubMesh, NzResourceListener
 		void SetAABB(const NzBoxf& aabb);
 		void SetIndexBuffer(const NzIndexBuffer* indexBuffer);
 
+		template<typename... Args> static NzStaticMeshRef New(Args&&... args);
+
 	private:
 		NzBoxf m_aabb;
 		NzIndexBufferConstRef m_indexBuffer = nullptr;
 		NzVertexBufferRef m_vertexBuffer = nullptr;
 };
+
+#include <Nazara/Utility/StaticMesh.inl>
 
 #endif // NAZARA_STATICMESH_HPP

@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -10,13 +10,13 @@
 #include <Nazara/Utility/Algorithm.hpp>
 #include <Nazara/Utility/Animation.hpp>
 #include <Nazara/Utility/Buffer.hpp>
-#include <Nazara/Utility/BufferMapper.hpp>
 #include <Nazara/Utility/Config.hpp>
 #include <Nazara/Utility/IndexMapper.hpp>
 #include <Nazara/Utility/SkeletalMesh.hpp>
 #include <Nazara/Utility/Skeleton.hpp>
 #include <Nazara/Utility/StaticMesh.hpp>
 #include <Nazara/Utility/SubMesh.hpp>
+#include <Nazara/Utility/VertexMapper.hpp>
 #include <cstring>
 #include <limits>
 #include <memory>
@@ -25,13 +25,13 @@
 
 NzMeshParams::NzMeshParams()
 {
-	if (!NzBuffer::IsSupported(storage))
-		storage = nzBufferStorage_Software;
+	if (!NzBuffer::IsStorageSupported(storage))
+		storage = nzDataStorage_Software;
 }
 
 bool NzMeshParams::IsValid() const
 {
-	if (!NzBuffer::IsSupported(storage))
+	if (!NzBuffer::IsStorageSupported(storage))
 	{
 		NazaraError("Storage not supported");
 		return false;
@@ -55,7 +55,7 @@ struct NzMeshImpl
 
 	std::unordered_map<NzString, unsigned int> subMeshMap;
 	std::vector<NzString> materials;
-	std::vector<NzSubMesh*> subMeshes;
+	std::vector<NzSubMeshRef> subMeshes;
 	nzAnimationType animationType;
 	NzBoxf aabb;
 	NzSkeleton skeleton; // Uniquement pour les meshs squelettiques
@@ -90,9 +90,6 @@ void NzMesh::AddSubMesh(NzSubMesh* subMesh)
 		return;
 	}
 	#endif
-
-	subMesh->AddResourceListener(this, m_impl->subMeshes.size());
-	subMesh->AddResourceReference();
 
 	m_impl->aabbUpdated = false; // On invalide l'AABB
 	m_impl->subMeshes.push_back(subMesh);
@@ -135,9 +132,6 @@ void NzMesh::AddSubMesh(const NzString& identifier, NzSubMesh* subMesh)
 
 	int index = m_impl->subMeshes.size();
 
-	subMesh->AddResourceListener(this, index);
-	subMesh->AddResourceReference();
-
 	m_impl->aabbUpdated = false; // On invalide l'AABB
 	m_impl->subMeshes.push_back(subMesh);
 	m_impl->subMeshMap[identifier] = index;
@@ -166,8 +160,8 @@ NzSubMesh* NzMesh::BuildSubMesh(const NzPrimitive& primitive, const NzMeshParams
 	#endif
 
 	NzBoxf aabb;
-	std::unique_ptr<NzIndexBuffer> indexBuffer;
-	std::unique_ptr<NzVertexBuffer> vertexBuffer;
+	NzIndexBufferRef indexBuffer;
+	NzVertexBufferRef vertexBuffer;
 
 	NzMatrix4f matrix(primitive.matrix);
 	matrix.ApplyScale(params.scale);
@@ -182,16 +176,19 @@ NzSubMesh* NzMesh::BuildSubMesh(const NzPrimitive& primitive, const NzMeshParams
 			unsigned int vertexCount;
 			NzComputeBoxIndexVertexCount(primitive.box.subdivision, &indexCount, &vertexCount);
 
-			indexBuffer.reset(new NzIndexBuffer(vertexCount > std::numeric_limits<nzUInt16>::max(), indexCount, params.storage, nzBufferUsage_Static));
-			indexBuffer->SetPersistent(false);
+			indexBuffer = NzIndexBuffer::New(vertexCount > std::numeric_limits<nzUInt16>::max(), indexCount, params.storage, nzBufferUsage_Static);
+			vertexBuffer = NzVertexBuffer::New(declaration, vertexCount, params.storage, nzBufferUsage_Static);
 
-			vertexBuffer.reset(new NzVertexBuffer(declaration, vertexCount, params.storage, nzBufferUsage_Static));
-			vertexBuffer->SetPersistent(false);
+			NzVertexMapper vertexMapper(vertexBuffer, nzBufferAccess_WriteOnly);
 
-			NzBufferMapper<NzVertexBuffer> vertexMapper(vertexBuffer.get(), nzBufferAccess_WriteOnly);
-			NzIndexMapper indexMapper(indexBuffer.get(), nzBufferAccess_WriteOnly);
+			NzVertexPointers pointers;
+			pointers.normalPtr = vertexMapper.GetComponentPtr<NzVector3f>(nzVertexComponent_Normal);
+			pointers.positionPtr = vertexMapper.GetComponentPtr<NzVector3f>(nzVertexComponent_Position);
+			pointers.tangentPtr = vertexMapper.GetComponentPtr<NzVector3f>(nzVertexComponent_Tangent);
+			pointers.uvPtr = vertexMapper.GetComponentPtr<NzVector2f>(nzVertexComponent_TexCoord);
 
-			NzGenerateBox(primitive.box.lengths, primitive.box.subdivision, matrix, primitive.textureCoords, static_cast<NzMeshVertex*>(vertexMapper.GetPointer()), indexMapper.begin(), &aabb);
+			NzIndexMapper indexMapper(indexBuffer, nzBufferAccess_WriteOnly);
+			NzGenerateBox(primitive.box.lengths, primitive.box.subdivision, matrix, primitive.textureCoords, pointers, indexMapper.begin(), &aabb);
 			break;
 		}
 
@@ -201,16 +198,19 @@ NzSubMesh* NzMesh::BuildSubMesh(const NzPrimitive& primitive, const NzMeshParams
 			unsigned int vertexCount;
 			NzComputeConeIndexVertexCount(primitive.cone.subdivision, &indexCount, &vertexCount);
 
-			indexBuffer.reset(new NzIndexBuffer(vertexCount > std::numeric_limits<nzUInt16>::max(), indexCount, params.storage, nzBufferUsage_Static));
-			indexBuffer->SetPersistent(false);
+			indexBuffer = NzIndexBuffer::New(vertexCount > std::numeric_limits<nzUInt16>::max(), indexCount, params.storage, nzBufferUsage_Static);
+			vertexBuffer = NzVertexBuffer::New(declaration, vertexCount, params.storage, nzBufferUsage_Static);
 
-			vertexBuffer.reset(new NzVertexBuffer(declaration, vertexCount, params.storage, nzBufferUsage_Static));
-			vertexBuffer->SetPersistent(false);
+			NzVertexMapper vertexMapper(vertexBuffer, nzBufferAccess_WriteOnly);
 
-			NzBufferMapper<NzVertexBuffer> vertexMapper(vertexBuffer.get(), nzBufferAccess_WriteOnly);
-			NzIndexMapper indexMapper(indexBuffer.get(), nzBufferAccess_WriteOnly);
+			NzVertexPointers pointers;
+			pointers.normalPtr = vertexMapper.GetComponentPtr<NzVector3f>(nzVertexComponent_Normal);
+			pointers.positionPtr = vertexMapper.GetComponentPtr<NzVector3f>(nzVertexComponent_Position);
+			pointers.tangentPtr = vertexMapper.GetComponentPtr<NzVector3f>(nzVertexComponent_Tangent);
+			pointers.uvPtr = vertexMapper.GetComponentPtr<NzVector2f>(nzVertexComponent_TexCoord);
 
-			NzGenerateCone(primitive.cone.length, primitive.cone.radius, primitive.cone.subdivision, matrix, primitive.textureCoords, static_cast<NzMeshVertex*>(vertexMapper.GetPointer()), indexMapper.begin(), &aabb);
+			NzIndexMapper indexMapper(indexBuffer, nzBufferAccess_WriteOnly);
+			NzGenerateCone(primitive.cone.length, primitive.cone.radius, primitive.cone.subdivision, matrix, primitive.textureCoords, pointers, indexMapper.begin(), &aabb);
 			break;
 		}
 
@@ -220,16 +220,19 @@ NzSubMesh* NzMesh::BuildSubMesh(const NzPrimitive& primitive, const NzMeshParams
 			unsigned int vertexCount;
 			NzComputePlaneIndexVertexCount(primitive.plane.subdivision, &indexCount, &vertexCount);
 
-			indexBuffer.reset(new NzIndexBuffer(vertexCount > std::numeric_limits<nzUInt16>::max(), indexCount, params.storage, nzBufferUsage_Static));
-			indexBuffer->SetPersistent(false);
+			indexBuffer = NzIndexBuffer::New(vertexCount > std::numeric_limits<nzUInt16>::max(), indexCount, params.storage, nzBufferUsage_Static);
+			vertexBuffer = NzVertexBuffer::New(declaration, vertexCount, params.storage, nzBufferUsage_Static);
 
-			vertexBuffer.reset(new NzVertexBuffer(declaration, vertexCount, params.storage, nzBufferUsage_Static));
-			vertexBuffer->SetPersistent(false);
+			NzVertexMapper vertexMapper(vertexBuffer, nzBufferAccess_WriteOnly);
 
-			NzBufferMapper<NzVertexBuffer> vertexMapper(vertexBuffer.get(), nzBufferAccess_WriteOnly);
-			NzIndexMapper indexMapper(indexBuffer.get(), nzBufferAccess_WriteOnly);
+			NzVertexPointers pointers;
+			pointers.normalPtr = vertexMapper.GetComponentPtr<NzVector3f>(nzVertexComponent_Normal);
+			pointers.positionPtr = vertexMapper.GetComponentPtr<NzVector3f>(nzVertexComponent_Position);
+			pointers.tangentPtr = vertexMapper.GetComponentPtr<NzVector3f>(nzVertexComponent_Tangent);
+			pointers.uvPtr = vertexMapper.GetComponentPtr<NzVector2f>(nzVertexComponent_TexCoord);
 
-			NzGeneratePlane(primitive.plane.subdivision, primitive.plane.size, matrix, primitive.textureCoords, static_cast<NzMeshVertex*>(vertexMapper.GetPointer()), indexMapper.begin(), &aabb);
+			NzIndexMapper indexMapper(indexBuffer, nzBufferAccess_WriteOnly);
+			NzGeneratePlane(primitive.plane.subdivision, primitive.plane.size, matrix, primitive.textureCoords, pointers, indexMapper.begin(), &aabb);
 			break;
 		}
 
@@ -243,16 +246,19 @@ NzSubMesh* NzMesh::BuildSubMesh(const NzPrimitive& primitive, const NzMeshParams
 					unsigned int vertexCount;
 					NzComputeCubicSphereIndexVertexCount(primitive.sphere.cubic.subdivision, &indexCount, &vertexCount);
 
-					indexBuffer.reset(new NzIndexBuffer(vertexCount > std::numeric_limits<nzUInt16>::max(), indexCount, params.storage, nzBufferUsage_Static));
-					indexBuffer->SetPersistent(false);
+					indexBuffer = NzIndexBuffer::New(vertexCount > std::numeric_limits<nzUInt16>::max(), indexCount, params.storage, nzBufferUsage_Static);
+					vertexBuffer = NzVertexBuffer::New(declaration, vertexCount, params.storage, nzBufferUsage_Static);
 
-					vertexBuffer.reset(new NzVertexBuffer(declaration, vertexCount, params.storage, nzBufferUsage_Static));
-					vertexBuffer->SetPersistent(false);
+					NzVertexMapper vertexMapper(vertexBuffer, nzBufferAccess_ReadWrite);
 
-					NzBufferMapper<NzVertexBuffer> vertexMapper(vertexBuffer.get(), nzBufferAccess_WriteOnly);
-					NzIndexMapper indexMapper(indexBuffer.get(), nzBufferAccess_WriteOnly);
+					NzVertexPointers pointers;
+					pointers.normalPtr = vertexMapper.GetComponentPtr<NzVector3f>(nzVertexComponent_Normal);
+					pointers.positionPtr = vertexMapper.GetComponentPtr<NzVector3f>(nzVertexComponent_Position);
+					pointers.tangentPtr = vertexMapper.GetComponentPtr<NzVector3f>(nzVertexComponent_Tangent);
+					pointers.uvPtr = vertexMapper.GetComponentPtr<NzVector2f>(nzVertexComponent_TexCoord);
 
-					NzGenerateCubicSphere(primitive.sphere.size, primitive.sphere.cubic.subdivision, matrix, primitive.textureCoords, static_cast<NzMeshVertex*>(vertexMapper.GetPointer()), indexMapper.begin(), &aabb);
+					NzIndexMapper indexMapper(indexBuffer, nzBufferAccess_WriteOnly);
+					NzGenerateCubicSphere(primitive.sphere.size, primitive.sphere.cubic.subdivision, matrix, primitive.textureCoords, pointers, indexMapper.begin(), &aabb);
 					break;
 				}
 
@@ -262,16 +268,19 @@ NzSubMesh* NzMesh::BuildSubMesh(const NzPrimitive& primitive, const NzMeshParams
 					unsigned int vertexCount;
 					NzComputeIcoSphereIndexVertexCount(primitive.sphere.ico.recursionLevel, &indexCount, &vertexCount);
 
-					indexBuffer.reset(new NzIndexBuffer(vertexCount > std::numeric_limits<nzUInt16>::max(), indexCount, params.storage, nzBufferUsage_Static));
-					indexBuffer->SetPersistent(false);
+					indexBuffer = NzIndexBuffer::New(vertexCount > std::numeric_limits<nzUInt16>::max(), indexCount, params.storage, nzBufferUsage_Static);
+					vertexBuffer = NzVertexBuffer::New(declaration, vertexCount, params.storage, nzBufferUsage_Static);
 
-					vertexBuffer.reset(new NzVertexBuffer(declaration, vertexCount, params.storage, nzBufferUsage_Static));
-					vertexBuffer->SetPersistent(false);
+					NzVertexMapper vertexMapper(vertexBuffer, nzBufferAccess_WriteOnly);
 
-					NzBufferMapper<NzVertexBuffer> vertexMapper(vertexBuffer.get(), nzBufferAccess_WriteOnly);
-					NzIndexMapper indexMapper(indexBuffer.get(), nzBufferAccess_WriteOnly);
+					NzVertexPointers pointers;
+					pointers.normalPtr = vertexMapper.GetComponentPtr<NzVector3f>(nzVertexComponent_Normal);
+					pointers.positionPtr = vertexMapper.GetComponentPtr<NzVector3f>(nzVertexComponent_Position);
+					pointers.tangentPtr = vertexMapper.GetComponentPtr<NzVector3f>(nzVertexComponent_Tangent);
+					pointers.uvPtr = vertexMapper.GetComponentPtr<NzVector2f>(nzVertexComponent_TexCoord);
 
-					NzGenerateIcoSphere(primitive.sphere.size, primitive.sphere.ico.recursionLevel, matrix, primitive.textureCoords, static_cast<NzMeshVertex*>(vertexMapper.GetPointer()), indexMapper.begin(), &aabb);
+					NzIndexMapper indexMapper(indexBuffer, nzBufferAccess_WriteOnly);
+					NzGenerateIcoSphere(primitive.sphere.size, primitive.sphere.ico.recursionLevel, matrix, primitive.textureCoords, pointers, indexMapper.begin(), &aabb);
 					break;
 				}
 
@@ -281,16 +290,19 @@ NzSubMesh* NzMesh::BuildSubMesh(const NzPrimitive& primitive, const NzMeshParams
 					unsigned int vertexCount;
 					NzComputeUvSphereIndexVertexCount(primitive.sphere.uv.sliceCount, primitive.sphere.uv.stackCount, &indexCount, &vertexCount);
 
-					indexBuffer.reset(new NzIndexBuffer(vertexCount > std::numeric_limits<nzUInt16>::max(), indexCount, params.storage, nzBufferUsage_Static));
-					indexBuffer->SetPersistent(false);
+					indexBuffer = NzIndexBuffer::New(vertexCount > std::numeric_limits<nzUInt16>::max(), indexCount, params.storage, nzBufferUsage_Static);
+					vertexBuffer = NzVertexBuffer::New(declaration, vertexCount, params.storage, nzBufferUsage_Static);
 
-					vertexBuffer.reset(new NzVertexBuffer(declaration, vertexCount, params.storage, nzBufferUsage_Static));
-					vertexBuffer->SetPersistent(false);
+					NzVertexMapper vertexMapper(vertexBuffer, nzBufferAccess_WriteOnly);
 
-					NzBufferMapper<NzVertexBuffer> vertexMapper(vertexBuffer.get(), nzBufferAccess_WriteOnly);
-					NzIndexMapper indexMapper(indexBuffer.get(), nzBufferAccess_WriteOnly);
+					NzVertexPointers pointers;
+					pointers.normalPtr = vertexMapper.GetComponentPtr<NzVector3f>(nzVertexComponent_Normal);
+					pointers.positionPtr = vertexMapper.GetComponentPtr<NzVector3f>(nzVertexComponent_Position);
+					pointers.tangentPtr = vertexMapper.GetComponentPtr<NzVector3f>(nzVertexComponent_Tangent);
+					pointers.uvPtr = vertexMapper.GetComponentPtr<NzVector2f>(nzVertexComponent_TexCoord);
 
-					NzGenerateUvSphere(primitive.sphere.size, primitive.sphere.uv.sliceCount, primitive.sphere.uv.stackCount, matrix, primitive.textureCoords, static_cast<NzMeshVertex*>(vertexMapper.GetPointer()), indexMapper.begin(), &aabb);
+					NzIndexMapper indexMapper(indexBuffer, nzBufferAccess_WriteOnly);
+					NzGenerateUvSphere(primitive.sphere.size, primitive.sphere.uv.sliceCount, primitive.sphere.uv.stackCount, matrix, primitive.textureCoords, pointers, indexMapper.begin(), &aabb);
 					break;
 				}
 			}
@@ -298,24 +310,21 @@ NzSubMesh* NzMesh::BuildSubMesh(const NzPrimitive& primitive, const NzMeshParams
 		}
 	}
 
-	std::unique_ptr<NzStaticMesh> subMesh(new NzStaticMesh(this));
-	if (!subMesh->Create(vertexBuffer.get()))
+	NzStaticMeshRef subMesh = NzStaticMesh::New(this);
+	if (!subMesh->Create(vertexBuffer))
 	{
 		NazaraError("Failed to create StaticMesh");
 		return nullptr;
 	}
-	vertexBuffer.release();
 
 	if (params.optimizeIndexBuffers)
 		indexBuffer->Optimize();
 
-	subMesh->SetIndexBuffer(indexBuffer.get());
-	indexBuffer.release();
-
 	subMesh->SetAABB(aabb);
-	AddSubMesh(subMesh.get());
+	subMesh->SetIndexBuffer(indexBuffer);
 
-	return subMesh.release();
+	AddSubMesh(subMesh);
+	return subMesh;
 }
 
 void NzMesh::BuildSubMeshes(const NzPrimitiveList& list, const NzMeshParams& params)
@@ -370,12 +379,6 @@ void NzMesh::Destroy()
 	if (m_impl)
 	{
 		NotifyDestroy();
-
-		for (NzSubMesh* subMesh : m_impl->subMeshes)
-		{
-			subMesh->RemoveResourceListener(this);
-			subMesh->RemoveResourceReference();
-		}
 
 		delete m_impl;
 		m_impl = nullptr;
@@ -863,12 +866,6 @@ void NzMesh::RemoveSubMesh(const NzString& identifier)
 	// On déplace l'itérateur du début d'une distance de x
 	auto it2 = m_impl->subMeshes.begin();
 	std::advance(it2, index);
-
-	// On libère la ressource
-	NzSubMesh* subMesh = *it2;
-	subMesh->RemoveResourceListener(this);
-	subMesh->RemoveResourceReference();
-
 	m_impl->subMeshes.erase(it2);
 
 	m_impl->aabbUpdated = false; // On invalide l'AABB
@@ -893,12 +890,6 @@ void NzMesh::RemoveSubMesh(unsigned int index)
 	// On déplace l'itérateur du début de x
 	auto it = m_impl->subMeshes.begin();
 	std::advance(it, index);
-
-	// On libère la ressource
-	NzSubMesh* subMesh = *it;
-	subMesh->RemoveResourceListener(this);
-	subMesh->RemoveResourceReference();
-
 	m_impl->subMeshes.erase(it);
 
 	m_impl->aabbUpdated = false; // On invalide l'AABB
@@ -1011,11 +1002,31 @@ void NzMesh::Transform(const NzMatrix4f& matrix)
 	m_impl->aabbUpdated = false;
 }
 
-void NzMesh::OnResourceReleased(const NzResource* resource, int index)
+bool NzMesh::Initialize()
 {
-	NazaraUnused(resource);
+	if (!NzMeshLibrary::Initialize())
+	{
+		NazaraError("Failed to initialise library");
+		return false;
+	}
 
-	RemoveSubMesh(index);
+	if (!NzMeshManager::Initialize())
+	{
+		NazaraError("Failed to initialise manager");
+		return false;
+	}
+
+	return true;
 }
 
+void NzMesh::Uninitialize()
+{
+	NzMeshManager::Uninitialize();
+	NzMeshLibrary::Uninitialize();
+}
+
+NzMeshLibrary::LibraryMap NzMesh::s_library;
 NzMeshLoader::LoaderList NzMesh::s_loaders;
+NzMeshManager::ManagerMap NzMesh::s_managerMap;
+NzMeshManager::ManagerParams NzMesh::s_managerParameters;
+

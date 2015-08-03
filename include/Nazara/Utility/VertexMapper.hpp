@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -18,18 +18,16 @@ class NzSubMesh;
 class NAZARA_API NzVertexMapper
 {
 	public:
-		NzVertexMapper(NzVertexBuffer* vertexBuffer, unsigned int vertexCount);
-		NzVertexMapper(NzSubMesh* subMesh);
+		NzVertexMapper(NzSubMesh* subMesh, nzBufferAccess access = nzBufferAccess_ReadWrite);
+		NzVertexMapper(NzVertexBuffer* vertexBuffer, nzBufferAccess access = nzBufferAccess_ReadWrite);
 		~NzVertexMapper();
 
 		template<typename T> NzSparsePtr<T> GetComponentPtr(nzVertexComponent component);
-		unsigned int GetVertexCount() const;
 
 		void Unmap();
 
 	private:
 		NzBufferMapper<NzVertexBuffer> m_mapper;
-		unsigned int m_vertexCount;
 };
 
 #include <Nazara/Utility/VertexMapper.inl>

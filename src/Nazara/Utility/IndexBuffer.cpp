@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -24,25 +24,15 @@ NzIndexBuffer::NzIndexBuffer(bool largeIndices, NzBuffer* buffer, unsigned int s
 	Reset(largeIndices, buffer, startOffset, endOffset);
 }
 
-NzIndexBuffer::NzIndexBuffer(bool largeIndices, unsigned int length, nzBufferStorage storage, nzBufferUsage usage)
+NzIndexBuffer::NzIndexBuffer(bool largeIndices, unsigned int length, nzUInt32 storage, nzBufferUsage usage)
 {
 	NzErrorFlags(nzErrorFlag_ThrowException, true);
 	Reset(largeIndices, length, storage, usage);
 }
 
 NzIndexBuffer::NzIndexBuffer(const NzIndexBuffer& indexBuffer) :
-NzResource(),
+NzRefCounted(),
 m_buffer(indexBuffer.m_buffer),
-m_largeIndices(indexBuffer.m_largeIndices),
-m_endOffset(indexBuffer.m_endOffset),
-m_indexCount(indexBuffer.m_indexCount),
-m_startOffset(indexBuffer.m_startOffset)
-{
-}
-
-NzIndexBuffer::NzIndexBuffer(NzIndexBuffer&& indexBuffer) noexcept :
-NzResource(),
-m_buffer(std::move(indexBuffer.m_buffer)),
 m_largeIndices(indexBuffer.m_largeIndices),
 m_endOffset(indexBuffer.m_endOffset),
 m_indexCount(indexBuffer.m_indexCount),
@@ -220,7 +210,7 @@ void NzIndexBuffer::Reset(bool largeIndices, NzBuffer* buffer, unsigned int star
 	m_startOffset = startOffset;
 }
 
-void NzIndexBuffer::Reset(bool largeIndices, unsigned int length, nzBufferStorage storage, nzBufferUsage usage)
+void NzIndexBuffer::Reset(bool largeIndices, unsigned int length, nzUInt32 storage, nzBufferUsage usage)
 {
 	unsigned int stride = (largeIndices) ? sizeof(nzUInt32) : sizeof(nzUInt16);
 
@@ -229,8 +219,7 @@ void NzIndexBuffer::Reset(bool largeIndices, unsigned int length, nzBufferStorag
 	m_largeIndices = largeIndices;
 	m_startOffset = 0;
 
-	m_buffer = new NzBuffer(nzBufferType_Index, m_endOffset, storage, usage);
-	m_buffer->SetPersistent(false);
+	m_buffer = NzBuffer::New(nzBufferType_Index, m_endOffset, storage, usage);
 }
 
 void NzIndexBuffer::Reset(const NzIndexBuffer& indexBuffer)
@@ -242,16 +231,7 @@ void NzIndexBuffer::Reset(const NzIndexBuffer& indexBuffer)
 	m_startOffset = indexBuffer.m_startOffset;
 }
 
-void NzIndexBuffer::Reset(NzIndexBuffer&& indexBuffer) noexcept
-{
-	m_buffer = std::move(indexBuffer.m_buffer);
-	m_endOffset = indexBuffer.m_endOffset;
-	m_indexCount = indexBuffer.m_indexCount;
-	m_largeIndices = indexBuffer.m_largeIndices;
-	m_startOffset = indexBuffer.m_startOffset;
-}
-
-bool NzIndexBuffer::SetStorage(nzBufferStorage storage)
+bool NzIndexBuffer::SetStorage(nzUInt32 storage)
 {
 	return m_buffer->SetStorage(storage);
 }
@@ -262,13 +242,6 @@ void NzIndexBuffer::Unmap() const
 }
 
 NzIndexBuffer& NzIndexBuffer::operator=(const NzIndexBuffer& indexBuffer)
-{
-	Reset(indexBuffer);
-
-	return *this;
-}
-
-NzIndexBuffer& NzIndexBuffer::operator=(NzIndexBuffer&& indexBuffer) noexcept
 {
 	Reset(indexBuffer);
 

@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Alexandre Janniaux
+// Copyright (C) 2015 Alexandre Janniaux
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -19,7 +19,7 @@ class NzDynLibImpl : NzNonCopyable
 		NzDynLibImpl(NzDynLib* m_parent);
 		~NzDynLibImpl() = default;
 
-		NzDynLibFunc GetSymbol(const NzString& symbol, NzString& errorMessage) const;
+		NzDynLibFunc GetSymbol(const NzString& symbol, NzString* errorMessage) const;
 		bool Load(const NzString& libraryPath, NzString* errorMessage);
 		void Unload();
 

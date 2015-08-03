@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -10,14 +10,20 @@
 #include <Nazara/Core/Log.hpp>
 #include <Nazara/Core/TaskScheduler.hpp>
 #include <Nazara/Core/Thread.hpp>
+#include <Nazara/Utility/Animation.hpp>
 #include <Nazara/Utility/Buffer.hpp>
 #include <Nazara/Utility/Config.hpp>
+#include <Nazara/Utility/Font.hpp>
+#include <Nazara/Utility/Image.hpp>
+#include <Nazara/Utility/Loaders/FreeType.hpp>
 #include <Nazara/Utility/Loaders/MD2.hpp>
 #include <Nazara/Utility/Loaders/MD5Anim.hpp>
 #include <Nazara/Utility/Loaders/MD5Mesh.hpp>
 #include <Nazara/Utility/Loaders/PCX.hpp>
 #include <Nazara/Utility/Loaders/STB.hpp>
+#include <Nazara/Utility/Mesh.hpp>
 #include <Nazara/Utility/PixelFormat.hpp>
+#include <Nazara/Utility/Skeleton.hpp>
 #include <Nazara/Utility/VertexDeclaration.hpp>
 #include <Nazara/Utility/Window.hpp>
 #include <Nazara/Utility/Debug.hpp>
@@ -42,15 +48,45 @@ bool NzUtility::Initialize()
 	// Initialisation du module
 	NzCallOnExit onExit(NzUtility::Uninitialize);
 
+	if (!NzAnimation::Initialize())
+	{
+		NazaraError("Failed to initialize animations");
+		return false;
+	}
+
 	if (!NzBuffer::Initialize())
 	{
 		NazaraError("Failed to initialize buffers");
 		return false;
 	}
 
+	if (!NzFont::Initialize())
+	{
+		NazaraError("Failed to initialize fonts");
+		return false;
+	}
+
+	if (!NzImage::Initialize())
+	{
+		NazaraError("Failed to initialize images");
+		return false;
+	}
+
+	if (!NzMesh::Initialize())
+	{
+		NazaraError("Failed to initialize meshes");
+		return false;
+	}
+
 	if (!NzPixelFormat::Initialize())
 	{
 		NazaraError("Failed to initialize pixel formats");
+		return false;
+	}
+
+	if (!NzSkeleton::Initialize())
+	{
+		NazaraError("Failed to initialize skeletons");
 		return false;
 	}
 
@@ -70,6 +106,9 @@ bool NzUtility::Initialize()
 	// Il s'agit ici d'une liste LIFO, le dernier loader enregistré possède la priorité
 
 	/// Loaders génériques
+	// Font
+	NzLoaders_FreeType_Register();
+
 	// Image
 	NzLoaders_STB_Register(); // Loader générique (STB)
 
@@ -109,6 +148,7 @@ void NzUtility::Uninitialize()
 	// Libération du module
 	s_moduleReferenceCounter = 0;
 
+	NzLoaders_FreeType_Unregister();
 	NzLoaders_MD2_Unregister();
 	NzLoaders_MD5Anim_Unregister();
 	NzLoaders_MD5Mesh_Unregister();
@@ -117,8 +157,13 @@ void NzUtility::Uninitialize()
 
 	NzWindow::Uninitialize();
 	NzVertexDeclaration::Uninitialize();
+	NzSkeleton::Uninitialize();
 	NzPixelFormat::Uninitialize();
+	NzMesh::Uninitialize();
+	NzImage::Uninitialize();
+	NzFont::Uninitialize();
 	NzBuffer::Uninitialize();
+	NzAnimation::Uninitialize();
 
 	NazaraNotice("Uninitialized: Utility module");
 

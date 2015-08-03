@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -6,7 +6,6 @@
 #include <Nazara/Graphics/AbstractViewer.hpp>
 #include <Nazara/Graphics/Scene.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
-#include <Nazara/Renderer/UberShaderLibrary.hpp>
 #include <memory>
 #include <Nazara/Graphics/Debug.hpp>
 

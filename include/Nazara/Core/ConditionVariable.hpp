@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -8,11 +8,12 @@
 #define NAZARA_CONDITIONVARIABLE_HPP
 
 #include <Nazara/Prerequesites.hpp>
+#include <Nazara/Core/NonCopyable.hpp>
 
 class NzConditionVariableImpl;
 class NzMutex;
 
-class NAZARA_API NzConditionVariable
+class NAZARA_API NzConditionVariable : NzNonCopyable
 {
 	public:
 		NzConditionVariable();

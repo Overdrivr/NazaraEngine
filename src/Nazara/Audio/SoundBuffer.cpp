@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Audio module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -226,4 +226,30 @@ unsigned int NzSoundBuffer::GetOpenALBuffer() const
 	return m_impl->buffer;
 }
 
+bool NzSoundBuffer::Initialize()
+{
+	if (!NzSoundBufferLibrary::Initialize())
+	{
+		NazaraError("Failed to initialise library");
+		return false;
+	}
+
+	if (!NzSoundBufferManager::Initialize())
+	{
+		NazaraError("Failed to initialise manager");
+		return false;
+	}
+
+	return true;
+}
+
+void NzSoundBuffer::Uninitialize()
+{
+	NzSoundBufferManager::Uninitialize();
+	NzSoundBufferLibrary::Uninitialize();
+}
+
+NzSoundBufferLibrary::LibraryMap NzSoundBuffer::s_library;
 NzSoundBufferLoader::LoaderList NzSoundBuffer::s_loaders;
+NzSoundBufferManager::ManagerMap NzSoundBuffer::s_managerMap;
+NzSoundBufferManager::ManagerParams NzSoundBuffer::s_managerParameters;

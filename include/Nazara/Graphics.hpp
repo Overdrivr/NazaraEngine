@@ -1,9 +1,9 @@
-// This file was automatically generated on 11 Jul 2014 at 10:21:52
+// This file was automatically generated on 18 Mar 2015 at 22:24:14
 
 /*
 	Nazara Engine - Graphics module
 
-	Copyright (C) 2014 Jérôme "Lynix" Leclercq (Lynix680@gmail.com)
+	Copyright (C) 2015 Jérôme "Lynix" Leclercq (Lynix680@gmail.com)
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy of
 	this software and associated documentation files (the "Software"), to deal in
@@ -52,18 +52,28 @@
 #include <Nazara/Graphics/ForwardRenderQueue.hpp>
 #include <Nazara/Graphics/ForwardRenderTechnique.hpp>
 #include <Nazara/Graphics/Graphics.hpp>
+#include <Nazara/Graphics/GuillotineTextureAtlas.hpp>
 #include <Nazara/Graphics/Light.hpp>
 #include <Nazara/Graphics/LightManager.hpp>
 #include <Nazara/Graphics/Material.hpp>
 #include <Nazara/Graphics/Model.hpp>
+#include <Nazara/Graphics/ParticleController.hpp>
+#include <Nazara/Graphics/ParticleDeclaration.hpp>
+#include <Nazara/Graphics/ParticleEmitter.hpp>
+#include <Nazara/Graphics/ParticleGenerator.hpp>
+#include <Nazara/Graphics/ParticleMapper.hpp>
+#include <Nazara/Graphics/ParticleRenderer.hpp>
+#include <Nazara/Graphics/ParticleStruct.hpp>
+#include <Nazara/Graphics/ParticleSystem.hpp>
 #include <Nazara/Graphics/RenderTechniques.hpp>
 #include <Nazara/Graphics/Scene.hpp>
-#include <Nazara/Graphics/SceneLayer.hpp>
 #include <Nazara/Graphics/SceneNode.hpp>
 #include <Nazara/Graphics/SceneRoot.hpp>
+#include <Nazara/Graphics/SkeletalModel.hpp>
 #include <Nazara/Graphics/SkinningManager.hpp>
 #include <Nazara/Graphics/SkyboxBackground.hpp>
 #include <Nazara/Graphics/Sprite.hpp>
+#include <Nazara/Graphics/TextSprite.hpp>
 #include <Nazara/Graphics/TextureBackground.hpp>
 #include <Nazara/Graphics/View.hpp>
 

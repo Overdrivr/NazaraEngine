@@ -1,10 +1,10 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Graphics/SkinningManager.hpp>
 #include <Nazara/Core/ErrorFlags.hpp>
-#include <Nazara/Core/ResourceListener.hpp>
+#include <Nazara/Core/ObjectListener.hpp>
 #include <Nazara/Core/TaskScheduler.hpp>
 #include <Nazara/Utility/Algorithm.hpp>
 #include <Nazara/Utility/SkeletalMesh.hpp>
@@ -16,10 +16,10 @@
 
 namespace
 {
-	enum ResourceType
+	enum ObjectType
 	{
-		ResourceType_SkeletalMesh,
-		ResourceType_Skeleton,
+		ObjectType_SkeletalMesh,
+		ObjectType_Skeleton,
 	};
 
     struct BufferData
@@ -35,57 +35,60 @@ namespace
     	NzVertexBuffer* buffer;
     };
 
-	using MeshMap = std::unordered_map<const NzSkeletalMesh*, BufferData>;
-	using SkeletonMap = std::unordered_map<const NzSkeleton*, MeshMap>;
+	using MeshMap = std::unordered_map<const NzSkeletalMesh*, std::pair<NzSkeletalMeshConstListener, BufferData>>;
+	using SkeletonMap = std::unordered_map<const NzSkeleton*, std::pair<NzSkeletonConstListener, MeshMap>>;
 	SkeletonMap s_cache;
 	std::vector<SkinningData> s_skinningQueue;
 
-	class ResourceListener : public NzResourceListener
+	class ObjectListener : public NzObjectListener
 	{
 		public:
-			bool OnResourceDestroy(const NzResource* resource, int index)
+			bool OnObjectDestroy(const NzRefCounted* object, int index) override
 			{
 				switch (index)
 				{
-					case ResourceType_SkeletalMesh:
+					case ObjectType_SkeletalMesh:
 					{
 						for (auto& pair : s_cache)
 						{
-							MeshMap& meshMap = pair.second;
-							meshMap.erase(static_cast<const NzSkeletalMesh*>(resource));
+							MeshMap& meshMap = pair.second.second;
+							meshMap.erase(static_cast<const NzSkeletalMesh*>(object));
 						}
 						break;
 					}
 
-					case ResourceType_Skeleton:
-						s_cache.erase(static_cast<const NzSkeleton*>(resource));
+					case ObjectType_Skeleton:
+						s_cache.erase(static_cast<const NzSkeleton*>(object));
 						break;
 				}
 
 				return false;
 			}
 
-			bool OnResourceModified(const NzResource* resource, int index, unsigned int code)
+			bool OnObjectModified(const NzRefCounted* object, int index, unsigned int code) override
 			{
 				NazaraUnused(code);
 
 				switch (index)
 				{
-					case ResourceType_SkeletalMesh:
+					case ObjectType_SkeletalMesh:
 					{
 						for (auto& pair : s_cache)
 						{
-							MeshMap& meshMap = pair.second;
+							MeshMap& meshMap = pair.second.second;
 							for (auto& pair2 : meshMap)
-								pair2.second.updated = false;
+								pair2.second.second.updated = false;
 						}
 						break;
 					}
 
-					case ResourceType_Skeleton:
+					case ObjectType_Skeleton:
 					{
-						for (auto& pair : s_cache.at(static_cast<const NzSkeleton*>(resource)))
-							pair.second.updated = false;
+						const NzSkeleton* skeleton = static_cast<const NzSkeleton*>(object);
+						for (auto& pair : s_cache.at(skeleton).second)
+							pair.second.second.updated = false;
+
+						break;
 						break;
 					}
 				}
@@ -93,13 +96,13 @@ namespace
 				return true;
 			}
 
-			void OnResourceReleased(const NzResource* resource, int index)
+			void OnObjectReleased(const NzRefCounted* resource, int index) override
 			{
-				OnResourceDestroy(resource, index);
+				OnObjectDestroy(resource, index);
 			}
 	};
 
-	ResourceListener listener;
+	ObjectListener listener;
 
 	void Skin_MonoCPU(const NzSkeletalMesh* mesh, const NzSkeleton* skeleton, NzVertexBuffer* buffer)
 	{
@@ -161,33 +164,26 @@ NzVertexBuffer* NzSkinningManager::GetBuffer(const NzSkeletalMesh* mesh, const N
 
 	SkeletonMap::iterator it = s_cache.find(skeleton);
 	if (it == s_cache.end())
-	{
-		it = s_cache.insert(std::make_pair(skeleton, SkeletonMap::mapped_type())).first;
-		skeleton->AddResourceListener(&listener, ResourceType_Skeleton);
-	}
+		it = s_cache.insert(std::make_pair(skeleton, std::make_pair(NzSkeletonConstListener(&listener, ObjectType_Skeleton, skeleton), MeshMap{}))).first;
 
 	NzVertexBuffer* buffer;
 
-    MeshMap& meshMap = it->second;
+    MeshMap& meshMap = it->second.second;
     MeshMap::iterator it2 = meshMap.find(mesh);
     if (it2 == meshMap.end())
 	{
-		std::unique_ptr<NzVertexBuffer> vertexBuffer(new NzVertexBuffer);
-		vertexBuffer->SetPersistent(false);
-		vertexBuffer->Reset(NzVertexDeclaration::Get(nzVertexLayout_XYZ_Normal_UV_Tangent), mesh->GetVertexCount(), nzBufferStorage_Hardware, nzBufferUsage_Dynamic);
+		NzVertexBufferRef vertexBuffer = NzVertexBuffer::New(NzVertexDeclaration::Get(nzVertexLayout_XYZ_Normal_UV_Tangent), mesh->GetVertexCount(), nzDataStorage_Hardware, nzBufferUsage_Dynamic);
 
-		BufferData data({vertexBuffer.get(), true});
-		meshMap.insert(std::make_pair(mesh, data));
+		BufferData data({vertexBuffer, true});
+		meshMap.insert(std::make_pair(mesh, std::make_pair(NzSkeletalMeshConstListener(&listener, ObjectType_SkeletalMesh, mesh), data)));
 
-		mesh->AddResourceListener(&listener, ResourceType_SkeletalMesh);
+		s_skinningQueue.push_back(SkinningData{mesh, skeleton, vertexBuffer});
 
-		s_skinningQueue.push_back(SkinningData{mesh, skeleton, vertexBuffer.get()});
-
-		buffer = vertexBuffer.release();
+		buffer = vertexBuffer;
 	}
 	else
 	{
-		BufferData& data = it2->second;
+		BufferData& data = it2->second.second;
 		if (!data.updated)
 		{
 			s_skinningQueue.push_back(SkinningData{mesh, skeleton, data.buffer});
@@ -221,13 +217,6 @@ bool NzSkinningManager::Initialize()
 
 void NzSkinningManager::Uninitialize()
 {
-	for (auto& pair : s_cache)
-	{
-		pair.first->RemoveResourceListener(&listener);
-		MeshMap& meshMap = pair.second;
-		for (auto& pair2 : meshMap)
-			pair2.first->RemoveResourceListener(&listener);
-	}
 	s_cache.clear();
 	s_skinningQueue.clear();
 }

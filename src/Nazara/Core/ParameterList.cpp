@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -91,7 +91,7 @@ bool NzParameterList::GetFloatParameter(const NzString& name, float* value) cons
 			return true;
 
 		case nzParameterType_Integer:
-			*value = it->second.value.intVal;
+			*value = static_cast<float>(it->second.value.intVal);
 			return true;
 
 		case nzParameterType_String:
@@ -99,7 +99,7 @@ bool NzParameterList::GetFloatParameter(const NzString& name, float* value) cons
 			double converted;
 			if (it->second.value.stringVal.ToDouble(&converted))
 			{
-				*value = converted;
+				*value = static_cast<float>(converted);
 				return true;
 			}
 
@@ -133,7 +133,7 @@ bool NzParameterList::GetIntegerParameter(const NzString& name, int* value) cons
 			return true;
 
 		case nzParameterType_Float:
-			*value = it->second.value.floatVal;
+			*value = static_cast<int>(it->second.value.floatVal);
 			return true;
 
 		case nzParameterType_Integer:
@@ -147,7 +147,7 @@ bool NzParameterList::GetIntegerParameter(const NzString& name, int* value) cons
 			{
 				if (converted <= std::numeric_limits<int>::max() && converted >= std::numeric_limits<int>::min())
 				{
-					*value = converted;
+					*value = static_cast<int>(converted);
 					return true;
 				}
 			}
@@ -266,8 +266,8 @@ bool NzParameterList::GetUserdataParameter(const NzString& name, void** value) c
 	}
 	else
 	{
-		NazaraError("Parameter value is not an userdata");
-		return nullptr;
+		NazaraError("Parameter value is not a userdata");
+		return false;
 	}
 }
 

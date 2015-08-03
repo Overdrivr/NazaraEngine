@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -11,13 +11,14 @@
 	#include <windows.h>
 #elif defined(NAZARA_PLATFORM_POSIX)
 	#include <cstring>
+	#include <errno.h>
 #endif
 
 #include <Nazara/Core/Debug.hpp>
 
 void NzError::Error(nzErrorType type, const NzString& error)
 {
-	if ((s_flags & nzErrorFlag_Silent) == 0 || (s_flags & nzErrorFlag_SilentDisabled) != 0)
+	if (type == nzErrorType_AssertFailed || (s_flags & nzErrorFlag_Silent) == 0 || (s_flags & nzErrorFlag_SilentDisabled) != 0)
 		NazaraLog->WriteError(type, error);
 
 	s_lastError = error;
@@ -27,16 +28,17 @@ void NzError::Error(nzErrorType type, const NzString& error)
 
 	#if NAZARA_CORE_EXIT_ON_ASSERT_FAILURE
 	if (type == nzErrorType_AssertFailed)
-		std::exit(EXIT_FAILURE);
+		std::abort();
 	#endif
 
-	if (type != nzErrorType_Warning && (s_flags & nzErrorFlag_ThrowException) != 0 && (s_flags & nzErrorFlag_ThrowExceptionDisabled) == 0)
+	if (type == nzErrorType_AssertFailed || (type != nzErrorType_Warning &&
+	    (s_flags & nzErrorFlag_ThrowException) != 0 && (s_flags & nzErrorFlag_ThrowExceptionDisabled) == 0))
 		throw std::runtime_error(error);
 }
 
 void NzError::Error(nzErrorType type, const NzString& error, unsigned int line, const char* file, const char* function)
 {
-	if ((s_flags & nzErrorFlag_Silent) == 0 || (s_flags & nzErrorFlag_SilentDisabled) != 0)
+	if (type == nzErrorType_AssertFailed || (s_flags & nzErrorFlag_Silent) == 0 || (s_flags & nzErrorFlag_SilentDisabled) != 0)
 		NazaraLog->WriteError(type, error, line, file, function);
 
 	s_lastError = error;
@@ -44,13 +46,14 @@ void NzError::Error(nzErrorType type, const NzString& error, unsigned int line, 
 	s_lastErrorFunction = function;
 	s_lastErrorLine = line;
 
-	if (type != nzErrorType_Warning && (s_flags & nzErrorFlag_ThrowException) != 0 && (s_flags & nzErrorFlag_ThrowExceptionDisabled) == 0)
-		throw std::runtime_error(error);
-
 	#if NAZARA_CORE_EXIT_ON_ASSERT_FAILURE
 	if (type == nzErrorType_AssertFailed)
-		std::exit(EXIT_FAILURE);
+		std::abort();
 	#endif
+
+	if (type == nzErrorType_AssertFailed || (type != nzErrorType_Warning &&
+	    (s_flags & nzErrorFlag_ThrowException) != 0 && (s_flags & nzErrorFlag_ThrowExceptionDisabled) == 0))
+		throw std::runtime_error(error);
 }
 
 nzUInt32 NzError::GetFlags()

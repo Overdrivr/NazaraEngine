@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -20,25 +20,16 @@ NzVertexBuffer::NzVertexBuffer(const NzVertexDeclaration* vertexDeclaration, NzB
 	Reset(vertexDeclaration, buffer, startOffset, endOffset);
 }
 
-NzVertexBuffer::NzVertexBuffer(const NzVertexDeclaration* vertexDeclaration, unsigned int length, nzBufferStorage storage, nzBufferUsage usage)
+NzVertexBuffer::NzVertexBuffer(const NzVertexDeclaration* vertexDeclaration, unsigned int length, nzUInt32 storage, nzBufferUsage usage)
 {
 	NzErrorFlags(nzErrorFlag_ThrowException, true);
 	Reset(vertexDeclaration, length, storage, usage);
 }
 
 NzVertexBuffer::NzVertexBuffer(const NzVertexBuffer& vertexBuffer) :
-NzResource(),
+NzRefCounted(),
 m_buffer(vertexBuffer.m_buffer),
 m_vertexDeclaration(vertexBuffer.m_vertexDeclaration),
-m_endOffset(vertexBuffer.m_endOffset),
-m_startOffset(vertexBuffer.m_startOffset),
-m_vertexCount(vertexBuffer.m_vertexCount)
-{
-}
-
-NzVertexBuffer::NzVertexBuffer(NzVertexBuffer&& vertexBuffer) noexcept :
-m_buffer(std::move(vertexBuffer.m_buffer)),
-m_vertexDeclaration(std::move(vertexBuffer.m_vertexDeclaration)),
 m_endOffset(vertexBuffer.m_endOffset),
 m_startOffset(vertexBuffer.m_startOffset),
 m_vertexCount(vertexBuffer.m_vertexCount)
@@ -230,14 +221,13 @@ void NzVertexBuffer::Reset(const NzVertexDeclaration* vertexDeclaration, NzBuffe
 	m_vertexDeclaration = vertexDeclaration;
 }
 
-void NzVertexBuffer::Reset(const NzVertexDeclaration* vertexDeclaration, unsigned int length, nzBufferStorage storage, nzBufferUsage usage)
+void NzVertexBuffer::Reset(const NzVertexDeclaration* vertexDeclaration, unsigned int length, nzUInt32 storage, nzBufferUsage usage)
 {
 	m_endOffset = length * ((vertexDeclaration) ? vertexDeclaration->GetStride() : 1);
 	m_startOffset = 0;
 	m_vertexCount = length;
 
-	m_buffer = new NzBuffer(nzBufferType_Vertex, m_endOffset, storage, usage);
-	m_buffer->SetPersistent(false);
+	m_buffer = NzBuffer::New(nzBufferType_Vertex, m_endOffset, storage, usage);
 	m_vertexDeclaration = vertexDeclaration;
 }
 
@@ -250,16 +240,7 @@ void NzVertexBuffer::Reset(const NzVertexBuffer& vertexBuffer)
 	m_vertexDeclaration = vertexBuffer.m_vertexDeclaration;
 }
 
-void NzVertexBuffer::Reset(NzVertexBuffer&& vertexBuffer) noexcept
-{
-	m_buffer = std::move(vertexBuffer.m_buffer);
-	m_endOffset = vertexBuffer.m_endOffset;
-	m_startOffset = vertexBuffer.m_startOffset;
-	m_vertexCount = vertexBuffer.m_vertexCount;
-	m_vertexDeclaration = std::move(vertexBuffer.m_vertexDeclaration);
-}
-
-bool NzVertexBuffer::SetStorage(nzBufferStorage storage)
+bool NzVertexBuffer::SetStorage(nzUInt32 storage)
 {
 	return m_buffer->SetStorage(storage);
 }
@@ -284,13 +265,6 @@ void NzVertexBuffer::Unmap() const
 }
 
 NzVertexBuffer& NzVertexBuffer::operator=(const NzVertexBuffer& vertexBuffer)
-{
-	Reset(vertexBuffer);
-
-	return *this;
-}
-
-NzVertexBuffer& NzVertexBuffer::operator=(NzVertexBuffer&& vertexBuffer) noexcept
 {
 	Reset(vertexBuffer);
 

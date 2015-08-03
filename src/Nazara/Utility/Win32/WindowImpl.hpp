@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -11,6 +11,7 @@
 
 #include <Nazara/Core/NonCopyable.hpp>
 #include <Nazara/Core/String.hpp>
+#include <Nazara/Core/Thread.hpp>
 #include <Nazara/Math/Vector2.hpp>
 #include <Nazara/Utility/Config.hpp>
 #include <Nazara/Utility/Keyboard.hpp>
@@ -22,7 +23,6 @@
 #if NAZARA_UTILITY_THREADED_WINDOW
 class NzConditionVariable;
 class NzMutex;
-class NzThread;
 #endif
 class NzWindow;
 
@@ -34,7 +34,7 @@ class NzWindowImpl : NzNonCopyable
 		NzWindowImpl(NzWindow* parent);
 		~NzWindowImpl() = default;
 
-		bool Create(NzVideoMode mode, const NzString& title, nzUInt32 style);
+		bool Create(const NzVideoMode& mode, const NzString& title, nzUInt32 style);
 		bool Create(NzWindowHandle handle);
 
 		void Destroy();
@@ -95,7 +95,7 @@ class NzWindowImpl : NzNonCopyable
 		NzVector2i m_position;
 		NzVector2ui m_size;
 		#if NAZARA_UTILITY_THREADED_WINDOW
-		NzThread* m_thread;
+		NzThread m_thread;
 		#endif
 		NzWindow* m_parent;
 		bool m_eventListener;

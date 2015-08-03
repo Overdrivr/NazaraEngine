@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -17,9 +17,16 @@ NzSparsePtr<T>::NzSparsePtr(T* ptr)
 }
 
 template<typename T>
-NzSparsePtr<T>::NzSparsePtr(VoidPtr ptr, unsigned int stride)
+NzSparsePtr<T>::NzSparsePtr(VoidPtr ptr, int stride)
 {
 	Reset(ptr, stride);
+}
+
+template<typename T>
+template<typename U>
+NzSparsePtr<T>::NzSparsePtr(const NzSparsePtr<U>& ptr)
+{
+	Reset(ptr);
 }
 
 template<typename T>
@@ -29,7 +36,7 @@ typename NzSparsePtr<T>::VoidPtr NzSparsePtr<T>::GetPtr() const
 }
 
 template<typename T>
-unsigned int NzSparsePtr<T>::GetStride() const
+int NzSparsePtr<T>::GetStride() const
 {
 	return m_stride;
 }
@@ -49,7 +56,7 @@ void NzSparsePtr<T>::Reset(T* ptr)
 }
 
 template<typename T>
-void NzSparsePtr<T>::Reset(VoidPtr ptr, unsigned int stride)
+void NzSparsePtr<T>::Reset(VoidPtr ptr, int stride)
 {
 	SetPtr(ptr);
 	SetStride(stride);
@@ -63,13 +70,23 @@ void NzSparsePtr<T>::Reset(const NzSparsePtr& ptr)
 }
 
 template<typename T>
+template<typename U>
+void NzSparsePtr<T>::Reset(const NzSparsePtr<U>& ptr)
+{
+	static_assert(std::is_convertible<U*, T*>::value, "Source type pointer cannot be implicitely converted to target type pointer");
+
+	SetPtr(static_cast<T*>(ptr.GetPtr()));
+	SetStride(ptr.GetStride());
+}
+
+template<typename T>
 void NzSparsePtr<T>::SetPtr(VoidPtr ptr)
 {
 	m_ptr = reinterpret_cast<BytePtr>(ptr);
 }
 
 template<typename T>
-void NzSparsePtr<T>::SetStride(unsigned int stride)
+void NzSparsePtr<T>::SetStride(int stride)
 {
 	m_stride = stride;
 }
@@ -93,15 +110,21 @@ T& NzSparsePtr<T>::operator*() const
 }
 
 template<typename T>
-T& NzSparsePtr<T>::operator->() const
+T* NzSparsePtr<T>::operator->() const
 {
-	return *reinterpret_cast<T*>(m_ptr);
+	return reinterpret_cast<T*>(m_ptr);
 }
 
 template<typename T>
-T& NzSparsePtr<T>::operator[](unsigned int index) const
+T& NzSparsePtr<T>::operator[](int index) const
 {
 	return *reinterpret_cast<T*>(m_ptr + index*m_stride);
+}
+
+template<typename T>
+NzSparsePtr<T> NzSparsePtr<T>::operator+(int count) const
+{
+	return NzSparsePtr(m_ptr + count*m_stride, m_stride);
 }
 
 template<typename T>
@@ -111,22 +134,36 @@ NzSparsePtr<T> NzSparsePtr<T>::operator+(unsigned int count) const
 }
 
 template<typename T>
+NzSparsePtr<T> NzSparsePtr<T>::operator-(int count) const
+{
+	return NzSparsePtr(m_ptr - count*m_stride, m_stride);
+}
+
+template<typename T>
 NzSparsePtr<T> NzSparsePtr<T>::operator-(unsigned int count) const
 {
 	return NzSparsePtr(m_ptr - count*m_stride, m_stride);
 }
 
 template<typename T>
-NzSparsePtr<T>& NzSparsePtr<T>::operator+=(unsigned int count)
+std::ptrdiff_t NzSparsePtr<T>::operator-(const NzSparsePtr& ptr) const
+{
+	return (m_ptr - ptr.m_ptr)/m_stride;
+}
+
+template<typename T>
+NzSparsePtr<T>& NzSparsePtr<T>::operator+=(int count)
 {
 	m_ptr += count*m_stride;
+
 	return *this;
 }
 
 template<typename T>
-NzSparsePtr<T>& NzSparsePtr<T>::operator-=(unsigned int count)
+NzSparsePtr<T>& NzSparsePtr<T>::operator-=(int count)
 {
 	m_ptr -= count*m_stride;
+
 	return *this;
 }
 
@@ -134,6 +171,7 @@ template<typename T>
 NzSparsePtr<T>& NzSparsePtr<T>::operator++()
 {
 	m_ptr += m_stride;
+
 	return *this;
 }
 

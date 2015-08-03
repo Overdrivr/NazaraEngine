@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -87,10 +87,10 @@ class NAZARA_API NzString : public NzHashable
 		const char* GetConstBuffer() const;
 		unsigned int GetLength() const;
 		unsigned int GetSize() const;
-		char* GetUtf8Buffer(unsigned int* size = nullptr) const;
-		char16_t* GetUtf16Buffer(unsigned int* size = nullptr) const;
-		char32_t* GetUtf32Buffer(unsigned int* size = nullptr) const;
-		wchar_t* GetWideBuffer(unsigned int* size = nullptr) const;
+		std::string GetUtf8String() const;
+		std::u16string GetUtf16String() const;
+		std::u32string GetUtf32String() const;
+		std::wstring GetWideString() const;
 		NzString GetWord(unsigned int index, nzUInt32 flags = None) const;
 		unsigned int GetWordPosition(unsigned int index, nzUInt32 flags = None) const;
 

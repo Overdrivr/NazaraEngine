@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -114,3 +114,21 @@ bool NzRenderBuffer::IsSupported()
 {
 	return NzOpenGL::IsSupported(nzOpenGLExtension_FrameBufferObject);
 }
+
+bool NzRenderBuffer::Initialize()
+{
+	if (!NzRenderBufferLibrary::Initialize())
+	{
+		NazaraError("Failed to initialise library");
+		return false;
+	}
+
+	return true;
+}
+
+void NzRenderBuffer::Uninitialize()
+{
+	NzRenderBufferLibrary::Uninitialize();
+}
+
+NzRenderBufferLibrary::LibraryMap NzRenderBuffer::s_library;

@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -11,7 +11,7 @@
 #elif defined(NAZARA_PLATFORM_POSIX)
 	#include <Nazara/Core/Posix/ConditionVariableImpl.hpp>
 #else
-	#error Thread condition has no implementation
+	#error Condition variable has no implementation
 #endif
 
 #include <Nazara/Core/Debug.hpp>

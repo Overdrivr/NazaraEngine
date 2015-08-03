@@ -1,10 +1,13 @@
-// Copyright (C) 2014 Alexandre Janniaux
+// Copyright (C) 2015 Alexandre Janniaux
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Core/Posix/DirectoryImpl.hpp>
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Core/Debug.hpp>
+
+#include <errno.h>
+#include <sys/param.h>
 
 NzDirectoryImpl::NzDirectoryImpl(const NzDirectory* parent)
 {
@@ -82,14 +85,12 @@ bool NzDirectoryImpl::Exists(const NzString& dirPath)
 NzString NzDirectoryImpl::GetCurrent()
 {
 	NzString currentPath;
-	char* path = new char[_PC_PATH_MAX];
 
-	if (getcwd(path, _PC_PATH_MAX))
+	char path[MAXPATHLEN];
+	if (getcwd(path, MAXPATHLEN))
 		currentPath = path;
 	else
-		NazaraError("Unable to get current directory: " + NzError::GetLastSystemError());
-
-	delete[] path;
+		NazaraError("Unable to get current directory: " + NzError::GetLastSystemError()); // Bug: initialisation -> if no path for log !
 
 	return currentPath;
 }

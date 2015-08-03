@@ -1,9 +1,10 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Utility/Win32/IconImpl.hpp>
 #include <Nazara/Utility/Image.hpp>
+#include <Nazara/Utility/PixelFormat.hpp>
 #include <Nazara/Utility/Debug.hpp>
 
 bool NzIconImpl::Create(const NzImage& icon)

@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -8,8 +8,9 @@
 #define NAZARA_SUBMESH_HPP
 
 #include <Nazara/Prerequesites.hpp>
-#include <Nazara/Core/Resource.hpp>
-#include <Nazara/Core/ResourceRef.hpp>
+#include <Nazara/Core/ObjectListenerWrapper.hpp>
+#include <Nazara/Core/ObjectRef.hpp>
+#include <Nazara/Core/RefCounted.hpp>
 #include <Nazara/Math/Box.hpp>
 #include <Nazara/Utility/Enums.hpp>
 #include <Nazara/Utility/IndexBuffer.hpp>
@@ -19,10 +20,12 @@
 class NzMesh;
 class NzSubMesh;
 
-using NzSubMeshConstRef = NzResourceRef<const NzSubMesh>;
-using NzSubMeshRef = NzResourceRef<NzSubMesh>;
+using NzSubMeshConstListener = NzObjectListenerWrapper<const NzSubMesh>;
+using NzSubMeshConstRef = NzObjectRef<const NzSubMesh>;
+using NzSubMeshListener = NzObjectListenerWrapper<NzSubMesh>;
+using NzSubMeshRef = NzObjectRef<NzSubMesh>;
 
-class NAZARA_API NzSubMesh : public NzResource
+class NAZARA_API NzSubMesh : public NzRefCounted
 {
 	friend NzMesh;
 

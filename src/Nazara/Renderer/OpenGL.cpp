@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -1463,8 +1463,42 @@ void NzOpenGL::SetViewport(const NzRecti& viewport)
 
 bool NzOpenGL::TranslateFormat(nzPixelFormat pixelFormat, Format* format, FormatType type)
 {
+	// Par défaut
+	format->swizzle[0] = GL_RED;
+	format->swizzle[1] = GL_GREEN;
+	format->swizzle[2] = GL_BLUE;
+	format->swizzle[3] = GL_ALPHA;
+
 	switch (pixelFormat)
 	{
+		case nzPixelFormat_A8:
+			if (type == FormatType_Texture) // Format supporté uniquement par les textures
+			{
+				if (GetVersion() >= 300)
+				{
+					format->dataFormat = GL_RED;
+					format->dataType = GL_UNSIGNED_BYTE;
+					format->internalFormat = GL_R8;
+
+					// Simulation du format
+					format->swizzle[0] = GL_ONE;
+					format->swizzle[1] = GL_ONE;
+					format->swizzle[2] = GL_ONE;
+					format->swizzle[3] = GL_RED;
+				}
+				else
+				{
+					// Le bon vieux format GL_ALPHA
+					format->dataFormat = GL_ALPHA;
+					format->dataType = GL_UNSIGNED_BYTE;
+					format->internalFormat = GL_ALPHA;
+				}
+
+				return true;
+			}
+			else
+				return false;
+
 		case nzPixelFormat_BGR8:
 			format->dataFormat = GL_BGR;
 			format->dataType = GL_UNSIGNED_BYTE;
@@ -1496,8 +1530,58 @@ bool NzOpenGL::TranslateFormat(nzPixelFormat pixelFormat, Format* format, Format
 			return true;
 
 		case nzPixelFormat_L8:
+			if (type == FormatType_Texture) // Format supporté uniquement par les textures
+			{
+				if (GetVersion() >= 300)
+				{
+					format->dataFormat = GL_RED;
+					format->dataType = GL_UNSIGNED_BYTE;
+					format->internalFormat = GL_R8;
+
+					// Simulation du format
+					format->swizzle[0] = GL_RED;
+					format->swizzle[1] = GL_RED;
+					format->swizzle[2] = GL_RED;
+					format->swizzle[3] = GL_ONE;
+				}
+				else
+				{
+					format->dataFormat = 0x1909; // GL_LUMINANCE
+					format->dataType = GL_UNSIGNED_BYTE;
+					format->internalFormat = 0x1909; // GL_LUMINANCE
+				}
+
+				return true;
+			}
+			else
+				return false;
+
 		case nzPixelFormat_LA8:
-			return false;
+			if (type == FormatType_Texture) // Format supporté uniquement par les textures
+			{
+				if (GetVersion() >= 300)
+				{
+					format->dataFormat = GL_RG;
+					format->dataType = GL_UNSIGNED_BYTE;
+					format->internalFormat = GL_RG8;
+
+					// Simulation du format
+					format->swizzle[0] = GL_RED;
+					format->swizzle[1] = GL_RED;
+					format->swizzle[2] = GL_RED;
+					format->swizzle[3] = GL_GREEN;
+				}
+				else
+				{
+					format->dataFormat = 0x190A; // GL_LUMINANCE_ALPHA
+					format->dataType = GL_UNSIGNED_BYTE;
+					format->internalFormat = 0x190A; // GL_LUMINANCE_ALPHA;
+				}
+
+				return true;
+			}
+			else
+				return false;
 
 		case nzPixelFormat_R8:
 			format->dataFormat = GL_RED;
@@ -1951,9 +2035,9 @@ static_assert(nzCubemapFace_Max+1 == 6, "Cubemap face array is incomplete");
 
 GLenum NzOpenGL::FaceFilling[] =
 {
-	GL_POINT, // nzFaceFilling_Point
+	GL_FILL,  // nzFaceFilling_Fill
 	GL_LINE,  // nzFaceFilling_Line
-	GL_FILL   // nzFaceFilling_Fill
+	GL_POINT  // nzFaceFilling_Point
 };
 
 static_assert(nzFaceFilling_Max+1 == 3, "Face filling array is incomplete");

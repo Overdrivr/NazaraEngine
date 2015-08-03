@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -8,6 +8,7 @@
 #define NAZARA_MODEL_HPP
 
 #include <Nazara/Prerequesites.hpp>
+#include <Nazara/Core/Resource.hpp>
 #include <Nazara/Core/ResourceLoader.hpp>
 #include <Nazara/Graphics/Material.hpp>
 #include <Nazara/Graphics/SceneNode.hpp>
@@ -28,7 +29,7 @@ class NzModel;
 
 using NzModelLoader = NzResourceLoader<NzModel, NzModelParameters>;
 
-class NAZARA_API NzModel : public NzSceneNode
+class NAZARA_API NzModel : public NzResource, public NzSceneNode
 {
 	friend NzModelLoader;
 	friend class NzScene;
@@ -36,16 +37,13 @@ class NAZARA_API NzModel : public NzSceneNode
 	public:
 		NzModel();
 		NzModel(const NzModel& model);
-		NzModel(NzModel&& model);
 		virtual ~NzModel();
 
 		void AddToRenderQueue(NzAbstractRenderQueue* renderQueue) const override;
-		void AdvanceAnimation(float elapsedTime);
 
-		void EnableAnimation(bool animation);
+		NzModel* Clone() const;
+		NzModel* Create() const;
 
-		NzAnimation* GetAnimation() const;
-		const NzBoundingVolumef& GetBoundingVolume() const;
 		NzMaterial* GetMaterial(const NzString& subMeshName) const;
 		NzMaterial* GetMaterial(unsigned int matIndex) const;
 		NzMaterial* GetMaterial(unsigned int skinIndex, const NzString& subMeshName) const;
@@ -55,12 +53,7 @@ class NAZARA_API NzModel : public NzSceneNode
 		unsigned int GetSkinCount() const;
 		NzMesh* GetMesh() const;
 		nzSceneNodeType GetSceneNodeType() const override;
-		NzSkeleton* GetSkeleton();
-		const NzSkeleton* GetSkeleton() const;
 
-		bool HasAnimation() const;
-
-		bool IsAnimationEnabled() const;
 		virtual bool IsAnimated() const;
 		bool IsDrawable() const;
 
@@ -83,16 +76,12 @@ class NAZARA_API NzModel : public NzSceneNode
 		void SetSkinCount(unsigned int skinCount);
 
 		NzModel& operator=(const NzModel& node);
-		NzModel& operator=(NzModel&& node);
 
 	protected:
-		void InvalidateNode() override;
-		virtual void UpdateBoundingVolume() const;
+		void MakeBoundingVolume() const override;
 
 		std::vector<NzMaterialRef> m_materials;
-		mutable NzBoundingVolumef m_boundingVolume;
 		NzMeshRef m_mesh;
-		mutable bool m_boundingVolumeUpdated;
 		unsigned int m_matCount;
 		unsigned int m_skin;
 		unsigned int m_skinCount;

@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Mathematics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -6,6 +6,7 @@
 #include <Nazara/Core/String.hpp>
 #include <Nazara/Math/Config.hpp>
 #include <algorithm>
+#include <cstdlib>
 #include <cstring>
 #include <Nazara/Core/Debug.hpp>
 
@@ -31,7 +32,13 @@ constexpr T NzClamp(T value, T min, T max)
 }
 
 template<typename T>
-constexpr T NzDegrees(T degrees)
+constexpr T NzDegreeToRadian(T degrees)
+{
+	return degrees * F(M_PI/180.0);
+}
+
+template<typename T>
+constexpr T NzFromDegrees(T degrees)
 {
 	#if NAZARA_MATH_ANGLE_RADIAN
 	return NzDegreeToRadian(degrees);
@@ -41,9 +48,13 @@ constexpr T NzDegrees(T degrees)
 }
 
 template<typename T>
-constexpr T NzDegreeToRadian(T degrees)
+constexpr T NzFromRadians(T radians)
 {
-	return degrees * F(M_PI/180.0);
+	#if NAZARA_MATH_ANGLE_RADIAN
+	return radians;
+	#else
+	return NzRadianToDegree(radians);
+	#endif
 }
 
 inline unsigned int NzGetNearestPowerOfTwo(unsigned int number)
@@ -51,7 +62,7 @@ inline unsigned int NzGetNearestPowerOfTwo(unsigned int number)
 	///TODO: Marquer comme constexpr en C++14
 	unsigned int x = 1;
 	// Tant que x est plus petit que n, on décale ses bits vers la gauche, ce qui revient à multiplier par deux
-	while(x <= number)
+	while (x < number)
 		x <<= 1;
 
 	return x;
@@ -200,29 +211,20 @@ T NzNormalizeAngle(T angle)
 	#else
 	const T limit = F(180.0);
 	#endif
+	const T twoLimit = limit*F(2.0);
 
-	///TODO: Trouver une solution sans duplication
-	if (angle > F(0.0))
-	{
-		angle += limit;
-		angle -= static_cast<int>(angle / (F(2.0)*limit)) * (F(2.0)*limit);
-		angle -= limit;
-	}
-	else
-	{
-		angle -= limit;
-		angle -= static_cast<int>(angle / (F(2.0)*limit)) * (F(2.0)*limit);
-		angle += limit;
-	}
+	angle = std::fmod(angle + limit, twoLimit);
+	if (angle < F(0.0))
+		angle += twoLimit;
 
-	return angle;
+	return angle - limit;
 }
 
 template<typename T>
 bool NzNumberEquals(T a, T b, T maxDifference)
 {
 	T diff = a - b;
-	if (diff < 0)
+	if (diff < F(0.0))
 		diff = -diff;
 
 	return diff <= maxDifference;
@@ -257,25 +259,15 @@ inline NzString NzNumberToString(long long number, nzUInt8 radix)
 
 	do
 	{
-		str += symbols[number % radix];
+		str.Append(symbols[number % radix]);
 		number /= radix;
 	}
 	while (number > 0);
 
 	if (negative)
-		str += '-';
+		str.Append('-');
 
-	return str.Reversed();
-}
-
-template<typename T>
-T NzRadians(T radians)
-{
-	#if NAZARA_MATH_ANGLE_RADIAN
-	return radians;
-	#else
-	return NzRadianToDegree(radians);
-	#endif
+	return str.Reverse();
 }
 
 template<typename T>
@@ -331,6 +323,26 @@ inline long long NzStringToNumber(NzString str, nzUInt8 radix, bool* ok)
 		*ok = true;
 
 	return (negative) ? -static_cast<long long>(total) : total;
+}
+
+template<typename T>
+constexpr T NzToDegrees(T angle)
+{
+	#if NAZARA_MATH_ANGLE_RADIAN
+	return NzRadianToDegree(angle);
+	#else
+	return angle;
+	#endif
+}
+
+template<typename T>
+constexpr T NzToRadians(T angle)
+{
+	#if NAZARA_MATH_ANGLE_RADIAN
+	return angle;
+	#else
+	return NzDegreeToRadian(angle);
+	#endif
 }
 
 #undef F2

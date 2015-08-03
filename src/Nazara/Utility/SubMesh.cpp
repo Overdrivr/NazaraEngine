@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -13,7 +13,7 @@
 #include <Nazara/Utility/Debug.hpp>
 
 NzSubMesh::NzSubMesh(const NzMesh* parent) :
-NzResource(false), // Un SubMesh n'est pas persistant par défaut
+NzRefCounted(false), // Un SubMesh n'est pas persistant par défaut
 m_primitiveMode(nzPrimitiveMode_TriangleList),
 m_parent(parent),
 m_matIndex(0)
@@ -25,7 +25,7 @@ NzSubMesh::~NzSubMesh() = default;
 void NzSubMesh::GenerateNormals()
 {
 	NzVertexMapper mapper(this);
-	unsigned int vertexCount = mapper.GetVertexCount();
+	unsigned int vertexCount = GetVertexCount();
 
 	NzSparsePtr<NzVector3f> normals = mapper.GetComponentPtr<NzVector3f>(nzVertexComponent_Normal);
 	NzSparsePtr<NzVector3f> positions = mapper.GetComponentPtr<NzVector3f>(nzVertexComponent_Position);
@@ -56,7 +56,7 @@ void NzSubMesh::GenerateNormals()
 void NzSubMesh::GenerateNormalsAndTangents()
 {
 	NzVertexMapper mapper(this);
-	unsigned int vertexCount = mapper.GetVertexCount();
+	unsigned int vertexCount = GetVertexCount();
 
 	NzSparsePtr<NzVector3f> normals = mapper.GetComponentPtr<NzVector3f>(nzVertexComponent_Normal);
 	NzSparsePtr<NzVector3f> positions = mapper.GetComponentPtr<NzVector3f>(nzVertexComponent_Position);

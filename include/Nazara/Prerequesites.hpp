@@ -1,7 +1,7 @@
 /*
 	Nazara Engine
 
-	Copyright (C) 2014 Jérôme "Lynix" Leclercq (Lynix680@gmail.com)
+	Copyright (C) 2015 Jérôme "Lynix" Leclercq (Lynix680@gmail.com)
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy of
 	this software and associated documentation files (the "Software"), to deal in
@@ -143,7 +143,7 @@
 
 // Détection 64 bits
 #if !defined(NAZARA_PLATFORM_x64) && (defined(_WIN64) ||  defined(__amd64__) || defined(__x86_64__) || defined(__ia64__) || defined(__ia64) || \
-    defined(_M_IA64) || defined(__itanium__) || defined(__MINGW64__))
+    defined(_M_IA64) || defined(__itanium__) || defined(__MINGW64__) || defined(_M_AMD64) || defined (_M_X64))
 	#define NAZARA_PLATFORM_x64
 #endif
 

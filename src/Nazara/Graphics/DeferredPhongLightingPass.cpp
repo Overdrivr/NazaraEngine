@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -8,7 +8,6 @@
 #include <Nazara/Graphics/Scene.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
 #include <Nazara/Renderer/RenderTexture.hpp>
-#include <Nazara/Renderer/ShaderLibrary.hpp>
 #include <Nazara/Utility/StaticMesh.hpp>
 #include <memory>
 #include <Nazara/Graphics/Debug.hpp>
@@ -17,6 +16,8 @@ NzDeferredPhongLightingPass::NzDeferredPhongLightingPass() :
 m_lightMeshesDrawing(false)
 {
 	m_directionalLightShader = NzShaderLibrary::Get("DeferredDirectionnalLight");
+	m_directionalLightShaderEyePositionLocation = m_directionalLightShader->GetUniformLocation("EyePosition");
+	m_directionalLightShaderSceneAmbientLocation = m_directionalLightShader->GetUniformLocation("SceneAmbient");
 
 	m_directionalLightUniforms.ubo = false;
 	m_directionalLightUniforms.locations.type = -1; // Type déjà connu
@@ -28,6 +29,8 @@ m_lightMeshesDrawing(false)
 
 	m_pointSpotLightShader = NzShaderLibrary::Get("DeferredPointSpotLight");
 	m_pointSpotLightShaderDiscardLocation = m_pointSpotLightShader->GetUniformLocation("Discard");
+	m_pointSpotLightShaderEyePositionLocation = m_pointSpotLightShader->GetUniformLocation("EyePosition");
+	m_pointSpotLightShaderSceneAmbientLocation = m_pointSpotLightShader->GetUniformLocation("SceneAmbient");
 
 	m_pointSpotLightUniforms.ubo = false;
 	m_pointSpotLightUniforms.locations.type = m_pointSpotLightShader->GetUniformLocation("LightType");
@@ -41,13 +44,11 @@ m_lightMeshesDrawing(false)
 	m_pointSampler.SetFilterMode(nzSamplerFilter_Nearest);
 	m_pointSampler.SetWrapMode(nzSamplerWrap_Clamp);
 
-	m_cone = new NzMesh;
-	m_cone->SetPersistent(false);
+	m_cone = NzMesh::New();
 	m_cone->CreateStatic();
 	m_coneMesh = static_cast<NzStaticMesh*>(m_cone->BuildSubMesh(NzPrimitive::Cone(1.f, 1.f, 16, NzMatrix4f::Rotate(NzEulerAnglesf(90.f, 0.f, 0.f)))));
 
-	m_sphere = new NzMesh;
-	m_sphere->SetPersistent(false);
+	m_sphere = NzMesh::New();
 	m_sphere->CreateStatic();
 	m_sphereMesh = static_cast<NzStaticMesh*>(m_sphere->BuildSubMesh(NzPrimitive::IcoSphere(1.f, 1)));
 }
@@ -96,8 +97,8 @@ bool NzDeferredPhongLightingPass::Process(const NzScene* scene, unsigned int fir
 	{
 		NzRenderer::SetRenderStates(lightStates);
 		NzRenderer::SetShader(m_directionalLightShader);
-		m_directionalLightShader->SendColor(m_directionalLightShader->GetUniformLocation(nzShaderUniform_SceneAmbient), scene->GetAmbientColor());
-		m_directionalLightShader->SendVector(m_directionalLightShader->GetUniformLocation(nzShaderUniform_EyePosition), scene->GetViewer()->GetEyePosition());
+		m_directionalLightShader->SendColor(m_directionalLightShaderSceneAmbientLocation, scene->GetAmbientColor());
+		m_directionalLightShader->SendVector(m_directionalLightShaderEyePositionLocation, scene->GetViewer()->GetEyePosition());
 
 		for (const NzLight* light : m_renderQueue->directionalLights)
 		{
@@ -126,8 +127,8 @@ bool NzDeferredPhongLightingPass::Process(const NzScene* scene, unsigned int fir
 		NzRenderer::SetRenderStates(lightStates);
 
 		NzRenderer::SetShader(m_pointSpotLightShader);
-		m_pointSpotLightShader->SendColor(m_pointSpotLightShader->GetUniformLocation(nzShaderUniform_SceneAmbient), scene->GetAmbientColor());
-		m_pointSpotLightShader->SendVector(m_pointSpotLightShader->GetUniformLocation(nzShaderUniform_EyePosition), scene->GetViewer()->GetEyePosition());
+		m_pointSpotLightShader->SendColor(m_pointSpotLightShaderSceneAmbientLocation, scene->GetAmbientColor());
+		m_pointSpotLightShader->SendVector(m_pointSpotLightShaderEyePositionLocation, scene->GetViewer()->GetEyePosition());
 
 		NzMatrix4f lightMatrix;
 		lightMatrix.MakeIdentity();

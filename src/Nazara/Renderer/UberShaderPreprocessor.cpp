@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -35,10 +35,9 @@ NzUberShaderInstance* NzUberShaderPreprocessor::Get(const NzParameterList& param
 			// Une exception sera lancée à la moindre erreur et celle-ci ne sera pas enregistrée dans le log (car traitée dans le bloc catch)
 			NzErrorFlags errFlags(nzErrorFlag_Silent | nzErrorFlag_ThrowException, true);
 
-			std::unique_ptr<NzShader> shader(new NzShader);
-			shader->SetPersistent(false);
-
+			NzShaderRef shader = NzShader::New();
 			shader->Create();
+
 			for (unsigned int i = 0; i <= nzShaderStage_Max; ++i)
 			{
 				const Shader& shaderStage = m_shaders[i];
@@ -81,24 +80,19 @@ NzUberShaderInstance* NzUberShaderPreprocessor::Get(const NzParameterList& param
 						stage.SetSource(code);
 						stage.Compile();
 
-						shader->AttachStage(static_cast<nzShaderStage>(i), stage);
-
-						shaderStage.cache.emplace(flags, std::move(stage));
+						stageIt = shaderStage.cache.emplace(flags, std::move(stage)).first;
 					}
-					else
-						shader->AttachStage(static_cast<nzShaderStage>(i), stageIt->second);
+
+					shader->AttachStage(static_cast<nzShaderStage>(i), stageIt->second);
 				}
 			}
 
 			shader->Link();
 
 			// On construit l'instant
-			auto pair = m_cache.emplace(flags, shader.get());
-			shader.release();
-
-			return &(pair.first)->second; // On retourne l'objet construit
+			shaderIt = m_cache.emplace(flags, shader.Get()).first;
 		}
-		catch (const std::exception& e)
+		catch (const std::exception&)
 		{
 			NzErrorFlags errFlags(nzErrorFlag_ThrowExceptionDisabled);
 
@@ -106,8 +100,8 @@ NzUberShaderInstance* NzUberShaderPreprocessor::Get(const NzParameterList& param
 			throw;
 		}
 	}
-	else
-		return &shaderIt->second;
+
+	return &shaderIt->second;
 }
 
 void NzUberShaderPreprocessor::SetShader(nzShaderStage stage, const NzString& source, const NzString& shaderFlags, const NzString& requiredFlags)

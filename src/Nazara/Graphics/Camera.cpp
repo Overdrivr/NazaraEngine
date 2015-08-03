@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -80,6 +80,21 @@ const NzFrustumf& NzCamera::GetFrustum() const
 	return m_frustum;
 }
 
+NzVector3f NzCamera::GetGlobalForward() const
+{
+	return NzVector3f::Forward();
+}
+
+NzVector3f NzCamera::GetGlobalRight() const
+{
+	return NzVector3f::Right();
+}
+
+NzVector3f NzCamera::GetGlobalUp() const
+{
+	return NzVector3f::Up();
+}
+
 const NzMatrix4f& NzCamera::GetProjectionMatrix() const
 {
 	if (!m_projectionMatrixUpdated)
@@ -156,6 +171,10 @@ void NzCamera::SetTarget(const NzRenderTarget* renderTarget)
 	m_target = renderTarget;
 	if (m_target)
 		m_target->AddListener(this);
+
+	m_frustumUpdated = false;
+	m_projectionMatrixUpdated = false;
+	m_viewportUpdated = false;
 }
 
 void NzCamera::SetTarget(const NzRenderTarget& renderTarget)

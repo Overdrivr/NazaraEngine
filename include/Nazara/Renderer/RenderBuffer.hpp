@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -9,17 +9,25 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Core/NonCopyable.hpp>
-#include <Nazara/Core/Resource.hpp>
-#include <Nazara/Core/ResourceRef.hpp>
+#include <Nazara/Core/ObjectLibrary.hpp>
+#include <Nazara/Core/ObjectListenerWrapper.hpp>
+#include <Nazara/Core/ObjectRef.hpp>
+#include <Nazara/Core/RefCounted.hpp>
 #include <Nazara/Utility/Enums.hpp>
 
 class NzRenderBuffer;
 
-using NzRenderBufferConstRef = NzResourceRef<const NzRenderBuffer>;
-using NzRenderBufferRef = NzResourceRef<NzRenderBuffer>;
+using NzRenderBufferConstListener = NzObjectListenerWrapper<const NzRenderBuffer>;
+using NzRenderBufferConstRef = NzObjectRef<const NzRenderBuffer>;
+using NzRenderBufferLibrary = NzObjectLibrary<NzRenderBuffer>;
+using NzRenderBufferListener = NzObjectListenerWrapper<NzRenderBuffer>;
+using NzRenderBufferRef = NzObjectRef<NzRenderBuffer>;
 
-class NAZARA_API NzRenderBuffer : public NzResource, NzNonCopyable
+class NAZARA_API NzRenderBuffer : public NzRefCounted, NzNonCopyable
 {
+	friend NzRenderBufferLibrary;
+	friend class NzRenderer;
+
 	public:
 		NzRenderBuffer();
 		~NzRenderBuffer();
@@ -37,12 +45,20 @@ class NAZARA_API NzRenderBuffer : public NzResource, NzNonCopyable
 		bool IsValid() const;
 
 		static bool IsSupported();
+		template<typename... Args> static NzRenderBufferRef New(Args&&... args);
 
 	private:
+		static bool Initialize();
+		static void Uninitialize();
+
 		nzPixelFormat m_pixelFormat;
 		unsigned int m_height;
 		unsigned int m_id;
 		unsigned int m_width;
+
+		static NzRenderBufferLibrary::LibraryMap s_library;
 };
+
+#include <Nazara/Renderer/RenderBuffer.inl>
 
 #endif // NAZARA_RENDERBUFFER_HPP

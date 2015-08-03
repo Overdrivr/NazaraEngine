@@ -1,18 +1,17 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Graphics/DeferredBloomPass.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
-#include <Nazara/Renderer/ShaderLibrary.hpp>
 #include <memory>
 #include <Nazara/Graphics/Debug.hpp>
 
 NzDeferredBloomPass::NzDeferredBloomPass() :
 m_uniformUpdated(false),
-m_brightLuminance(0.8),
-m_brightMiddleGrey(0.5),
-m_brightThreshold(0.8),
+m_brightLuminance(0.8f),
+m_brightMiddleGrey(0.5f),
+m_brightThreshold(0.8f),
 m_blurPassCount(5)
 {
 	m_bilinearSampler.SetAnisotropyLevel(1);
@@ -26,10 +25,7 @@ m_blurPassCount(5)
 	m_gaussianBlurShaderFilterLocation = m_gaussianBlurShader->GetUniformLocation("Filter");
 
 	for (unsigned int i = 0; i < 2; ++i)
-	{
-		m_bloomTextures[i] = new NzTexture;
-		m_bloomTextures[i]->SetPersistent(false);
-	}
+		m_bloomTextures[i] = NzTexture::New();
 }
 
 NzDeferredBloomPass::~NzDeferredBloomPass() = default;

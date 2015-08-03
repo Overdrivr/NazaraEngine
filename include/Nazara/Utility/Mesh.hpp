@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -9,11 +9,14 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Core/InputStream.hpp>
+#include <Nazara/Core/ObjectLibrary.hpp>
+#include <Nazara/Core/ObjectListenerWrapper.hpp>
+#include <Nazara/Core/ObjectRef.hpp>
 #include <Nazara/Core/Primitive.hpp>
+#include <Nazara/Core/RefCounted.hpp>
 #include <Nazara/Core/Resource.hpp>
-#include <Nazara/Core/ResourceListener.hpp>
 #include <Nazara/Core/ResourceLoader.hpp>
-#include <Nazara/Core/ResourceRef.hpp>
+#include <Nazara/Core/ResourceManager.hpp>
 #include <Nazara/Core/String.hpp>
 #include <Nazara/Math/Box.hpp>
 #include <Nazara/Utility/Skeleton.hpp>
@@ -24,11 +27,11 @@ struct NAZARA_API NzMeshParams
 {
 	NzMeshParams(); // Vérifie que le storage par défaut est supporté (software autrement)
 
-	// Si ceci sera le stockage utilisé par les buffers
-	nzBufferStorage storage = nzBufferStorage_Hardware;
-
 	// La mise à l'échelle éventuelle que subira le mesh
 	NzVector3f scale = NzVector3f::Unit();
+
+	// Si ceci sera le stockage utilisé par les buffers
+	nzUInt32 storage = nzDataStorage_Hardware;
 
 	// Charger une version animée du mesh si possible ?
 	bool animated = true;
@@ -45,22 +48,28 @@ struct NAZARA_API NzMeshParams
 	bool IsValid() const;
 };
 
-class NzAnimation;
 class NzMesh;
 class NzPrimitiveList;
 
 typedef NzVertexStruct_XYZ_Normal_UV_Tangent NzMeshVertex;
 typedef NzVertexStruct_XYZ_Normal_UV_Tangent_Skinning NzSkeletalMeshVertex;
 
-using NzMeshConstRef = NzResourceRef<const NzMesh>;
+using NzMeshConstListener = NzObjectListenerWrapper<const NzMesh>;
+using NzMeshConstRef = NzObjectRef<const NzMesh>;
+using NzMeshLibrary = NzObjectLibrary<NzMesh>;
+using NzMeshListener = NzObjectListenerWrapper<NzMesh>;
 using NzMeshLoader = NzResourceLoader<NzMesh, NzMeshParams>;
-using NzMeshRef = NzResourceRef<NzMesh>;
+using NzMeshManager = NzResourceManager<NzMesh, NzMeshParams>;
+using NzMeshRef = NzObjectRef<NzMesh>;
 
 struct NzMeshImpl;
 
-class NAZARA_API NzMesh : public NzResource, NzResourceListener
+class NAZARA_API NzMesh : public NzRefCounted, public NzResource
 {
+	friend NzMeshLibrary;
 	friend NzMeshLoader;
+	friend NzMeshManager;
+	friend class NzUtility;
 
 	public:
 		NzMesh() = default;
@@ -120,12 +129,20 @@ class NAZARA_API NzMesh : public NzResource, NzResourceListener
 
 		void Transform(const NzMatrix4f& matrix);
 
-	private:
-		void OnResourceReleased(const NzResource* resource, int index) override;
+		template<typename... Args> static NzMeshRef New(Args&&... args);
 
+	private:
 		NzMeshImpl* m_impl = nullptr;
 
+		static bool Initialize();
+		static void Uninitialize();
+
+		static NzMeshLibrary::LibraryMap s_library;
 		static NzMeshLoader::LoaderList s_loaders;
+		static NzMeshManager::ManagerMap s_managerMap;
+		static NzMeshManager::ManagerParams s_managerParameters;
 };
+
+#include <Nazara/Utility/Mesh.inl>
 
 #endif // NAZARA_MESH_HPP

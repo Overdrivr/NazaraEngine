@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Audio module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -6,6 +6,7 @@
 #include <Nazara/Audio/Config.hpp>
 #include <Nazara/Audio/Enums.hpp>
 #include <Nazara/Audio/OpenAL.hpp>
+#include <Nazara/Audio/SoundBuffer.hpp>
 #include <Nazara/Audio/Loaders/sndfile.hpp>
 #include <Nazara/Core/CallOnExit.hpp>
 #include <Nazara/Core/Core.hpp>
@@ -103,10 +104,16 @@ bool NzAudio::Initialize()
 	// Initialisation du module
 	NzCallOnExit onExit(NzAudio::Uninitialize);
 
-	// Initialisation d'OpenGL
+	// Initialisation d'OpenAL
 	if (!NzOpenAL::Initialize())
 	{
 		NazaraError("Failed to initialize OpenAL");
+		return false;
+	}
+
+	if (!NzSoundBuffer::Initialize())
+	{
+		NazaraError("Failed to initialize sound buffers");
 		return false;
 	}
 
@@ -227,6 +234,7 @@ void NzAudio::Uninitialize()
 	// Loaders
 	NzLoaders_sndfile_Unregister();
 
+	NzSoundBuffer::Uninitialize();
 	NzOpenAL::Uninitialize();
 
 	NazaraNotice("Uninitialized: Audio module");

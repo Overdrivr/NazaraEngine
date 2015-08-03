@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -21,7 +21,9 @@ class NAZARA_API NzMutex : NzNonCopyable
 		~NzMutex();
 
 		void Lock();
+
 		bool TryLock();
+
 		void Unlock();
 
 	private:

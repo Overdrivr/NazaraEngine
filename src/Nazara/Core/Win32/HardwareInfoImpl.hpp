@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -12,8 +12,9 @@
 class NzHardwareInfoImpl
 {
 	public:
-		static void Cpuid(nzUInt32 code, nzUInt32 result[4]);
+		static void Cpuid(nzUInt32 functionId, nzUInt32 subFunctionId, nzUInt32 registers[4]);
 		static unsigned int GetProcessorCount();
+		static nzUInt64 GetTotalMemory();
 		static bool IsCpuidSupported();
 };
 

@@ -1,9 +1,9 @@
-// This file was automatically generated on 21 Feb 2014 at 18:17:18
+// This file was automatically generated on 18 Mar 2015 at 22:24:15
 
 /*
 	Nazara Engine - Renderer module
 
-	Copyright (C) 2014 Jérôme "Lynix" Leclercq (Lynix680@gmail.com)
+	Copyright (C) 2015 Jérôme "Lynix" Leclercq (Lynix680@gmail.com)
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy of
 	this software and associated documentation files (the "Software"), to deal in
@@ -44,14 +44,12 @@
 #include <Nazara/Renderer/RenderTexture.hpp>
 #include <Nazara/Renderer/RenderWindow.hpp>
 #include <Nazara/Renderer/Shader.hpp>
-#include <Nazara/Renderer/ShaderLibrary.hpp>
 #include <Nazara/Renderer/ShaderStage.hpp>
 #include <Nazara/Renderer/Texture.hpp>
 #include <Nazara/Renderer/TextureSampler.hpp>
 #include <Nazara/Renderer/UberShader.hpp>
 #include <Nazara/Renderer/UberShaderInstance.hpp>
 #include <Nazara/Renderer/UberShaderInstancePreprocessor.hpp>
-#include <Nazara/Renderer/UberShaderLibrary.hpp>
 #include <Nazara/Renderer/UberShaderPreprocessor.hpp>
 
 #endif // NAZARA_GLOBAL_RENDERER_HPP

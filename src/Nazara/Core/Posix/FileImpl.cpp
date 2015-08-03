@@ -1,12 +1,10 @@
-// Copyright (C) 2014 Alexandre Janniaux
+// Copyright (C) 2015 Alexandre Janniaux
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Core/Posix/FileImpl.hpp>
 #include <Nazara/Core/Error.hpp>
-#include <stdio.h>
-#include <unistd.h>
-#include <time.h>
+#include <cstdio>
 #include <Nazara/Core/Debug.hpp>
 
 NzFileImpl::NzFileImpl(const NzFile* parent) :

@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -8,17 +8,23 @@
 #define NAZARA_VERTEXDECLARATION_HPP
 
 #include <Nazara/Prerequesites.hpp>
-#include <Nazara/Core/Resource.hpp>
-#include <Nazara/Core/ResourceRef.hpp>
+#include <Nazara/Core/ObjectLibrary.hpp>
+#include <Nazara/Core/ObjectListenerWrapper.hpp>
+#include <Nazara/Core/ObjectRef.hpp>
+#include <Nazara/Core/RefCounted.hpp>
 #include <Nazara/Utility/Enums.hpp>
 
 class NzVertexDeclaration;
 
-using NzVertexDeclarationConstRef = NzResourceRef<const NzVertexDeclaration>;
-using NzVertexDeclarationRef = NzResourceRef<NzVertexDeclaration>;
+using NzVertexDeclarationConstListener = NzObjectListenerWrapper<const NzVertexDeclaration>;
+using NzVertexDeclarationConstRef = NzObjectRef<const NzVertexDeclaration>;
+using NzVertexDeclarationLibrary = NzObjectLibrary<NzVertexDeclaration>;
+using NzVertexDeclarationListener = NzObjectListenerWrapper<NzVertexDeclaration>;
+using NzVertexDeclarationRef = NzObjectRef<NzVertexDeclaration>;
 
-class NAZARA_API NzVertexDeclaration : public NzResource
+class NAZARA_API NzVertexDeclaration : public NzRefCounted
 {
+	friend NzVertexDeclarationLibrary;
 	friend class NzUtility;
 
 	public:
@@ -38,6 +44,7 @@ class NAZARA_API NzVertexDeclaration : public NzResource
 
 		static NzVertexDeclaration* Get(nzVertexLayout layout);
 		static bool IsTypeSupported(nzComponentType type);
+		template<typename... Args> static NzVertexDeclarationRef New(Args&&... args);
 
 	private:
 		static bool Initialize();
@@ -62,6 +69,9 @@ class NAZARA_API NzVertexDeclaration : public NzResource
 		unsigned int m_stride;
 
 		static NzVertexDeclaration s_declarations[nzVertexLayout_Max+1];
+		static NzVertexDeclarationLibrary::LibraryMap s_library;
 };
+
+#include <Nazara/Utility/VertexDeclaration.hpp>
 
 #endif // NAZARA_VERTEXDECLARATION_HPP

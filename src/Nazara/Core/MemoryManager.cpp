@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
+#include <new>
 #include <stdexcept>
 
 #if defined(NAZARA_PLATFORM_WINDOWS)
@@ -29,11 +30,12 @@ namespace
 		unsigned int magic;
 	};
 
+	bool s_allocationLogging = false;
 	bool s_initialized = false;
-	const unsigned int s_magic = 0x51429EE;
-	const char* s_MLTFileName = "NazaraLeaks.log";
-	const char* s_nextFreeFile = "(Internal error)";
-	unsigned int s_nextFreeLine = 0;
+	const unsigned int s_magic = 0xDEADB33FUL;
+	const char* s_logFileName = "NazaraMemory.log";
+	thread_local const char* s_nextFreeFile = "(Internal error)";
+	thread_local unsigned int s_nextFreeLine = 0;
 
 	Block s_list =
 	{
@@ -83,7 +85,7 @@ void* NzMemoryManager::Allocate(std::size_t size, bool multi, const char* file, 
 		char timeStr[23];
 		TimeInfo(timeStr);
 
-		FILE* log = std::fopen(s_MLTFileName, "a");
+		FILE* log = std::fopen(s_logFileName, "a");
 
 		if (file)
 			std::fprintf(log, "%s Failed to allocate %zu bytes at %s:%u\n", timeStr, size, file, line);
@@ -111,6 +113,21 @@ void* NzMemoryManager::Allocate(std::size_t size, bool multi, const char* file, 
 	s_allocatedSize += size;
 	s_allocationCount++;
 
+	if (s_allocationLogging)
+	{
+		char timeStr[23];
+ 		TimeInfo(timeStr);
+
+		FILE* log = std::fopen(s_logFileName, "a");
+
+		if (file)
+			std::fprintf(log, "%s Allocated %zu bytes at %s:%u\n", timeStr, size, file, line);
+		else
+			std::fprintf(log, "%s Allocated %zu bytes at unknown position\n", timeStr, size);
+
+		std::fclose(log);
+	}
+
 	#if defined(NAZARA_PLATFORM_WINDOWS)
 	LeaveCriticalSection(&s_mutex);
 	#elif defined(NAZARA_PLATFORM_POSIX)
@@ -118,6 +135,11 @@ void* NzMemoryManager::Allocate(std::size_t size, bool multi, const char* file, 
 	#endif
 
 	return reinterpret_cast<nzUInt8*>(ptr) + sizeof(Block);
+}
+
+void NzMemoryManager::EnableAllocationLogging(bool logAllocations)
+{
+	s_allocationLogging = logAllocations;
 }
 
 void NzMemoryManager::Free(void* pointer, bool multi)
@@ -140,7 +162,7 @@ void NzMemoryManager::Free(void* pointer, bool multi)
 		char timeStr[23];
 		TimeInfo(timeStr);
 
-		FILE* log = std::fopen(s_MLTFileName, "a");
+		FILE* log = std::fopen(s_logFileName, "a");
 
 		const char* error = (multi) ? "delete[] after new" : "delete after new[]";
 		if (s_nextFreeFile)
@@ -185,6 +207,11 @@ unsigned int NzMemoryManager::GetAllocationCount()
 	return s_allocationCount;
 }
 
+bool NzMemoryManager::IsAllocationLoggingEnabled()
+{
+	return s_allocationLogging;
+}
+
 void NzMemoryManager::NextFree(const char* file, unsigned int line)
 {
 	s_nextFreeFile = file;
@@ -196,7 +223,7 @@ void NzMemoryManager::Initialize()
 	char timeStr[23];
 	TimeInfo(timeStr);
 
-	FILE* file = std::fopen(s_MLTFileName, "w");
+	FILE* file = std::fopen(s_logFileName, "w");
 	std::fprintf(file, "%s ==============================\n", timeStr);
 	std::fprintf(file, "%s   Nazara Memory Leak Tracker  \n", timeStr);
 	std::fprintf(file, "%s ==============================\n", timeStr);
@@ -209,6 +236,7 @@ void NzMemoryManager::Initialize()
 
 	#ifdef NAZARA_PLATFORM_WINDOWS
 	InitializeCriticalSection(&s_mutex);
+	//#elif defined(NAZARA_PLATFORM_POSIX) is already done in the namespace
 	#endif
 
 	s_initialized = true;
@@ -224,9 +252,11 @@ void NzMemoryManager::Uninitialize()
 {
 	#ifdef NAZARA_PLATFORM_WINDOWS
 	DeleteCriticalSection(&s_mutex);
+	#elif defined(NAZARA_PLATFORM_POSIX)
+	pthread_mutex_destroy(&s_mutex);
 	#endif
 
-	FILE* log = std::fopen(s_MLTFileName, "a");
+	FILE* log = std::fopen(s_logFileName, "a");
 
 	char timeStr[23];
 	TimeInfo(timeStr);

@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -21,12 +21,12 @@
 #include <Nazara/Graphics/Drawable.hpp>
 #include <Nazara/Graphics/Light.hpp>
 #include <Nazara/Graphics/Material.hpp>
+#include <Nazara/Graphics/Scene.hpp>
 #include <Nazara/Graphics/Sprite.hpp>
 #include <Nazara/Renderer/Config.hpp>
 #include <Nazara/Renderer/OpenGL.hpp>
 #include <Nazara/Renderer/Renderer.hpp>
 #include <Nazara/Renderer/Shader.hpp>
-#include <Nazara/Renderer/ShaderLibrary.hpp>
 #include <Nazara/Renderer/ShaderStage.hpp>
 #include <limits>
 #include <memory>
@@ -35,6 +35,34 @@
 
 namespace
 {
+	const nzUInt8 r_fragmentSource_BloomBright[] = {
+		#include <Nazara/Graphics/Resources/DeferredShading/Shaders/BloomBright.frag.h>
+	};
+
+	const nzUInt8 r_fragmentSource_BloomFinal[] = {
+		#include <Nazara/Graphics/Resources/DeferredShading/Shaders/BloomFinal.frag.h>
+	};
+
+	const nzUInt8 r_fragmentSource_DirectionalLight[] = {
+		#include <Nazara/Graphics/Resources/DeferredShading/Shaders/DirectionalLight.frag.h>
+	};
+
+	const nzUInt8 r_fragmentSource_FXAA[] = {
+		#include <Nazara/Graphics/Resources/DeferredShading/Shaders/FXAA.frag.h>
+	};
+
+	const nzUInt8 r_fragmentSource_GBufferClear[] = {
+		#include <Nazara/Graphics/Resources/DeferredShading/Shaders/GBufferClear.frag.h>
+	};
+
+	const nzUInt8 r_fragmentSource_GaussianBlur[] = {
+		#include <Nazara/Graphics/Resources/DeferredShading/Shaders/GaussianBlur.frag.h>
+	};
+
+	const nzUInt8 r_fragmentSource_PointSpotLight[] = {
+		#include <Nazara/Graphics/Resources/DeferredShading/Shaders/PointSpotLight.frag.h>
+	};
+
 	unsigned int RenderPassPriority[] =
 	{
 		6,    // nzRenderPassType_AA
@@ -50,13 +78,11 @@ namespace
 
 	static_assert(sizeof(RenderPassPriority)/sizeof(unsigned int) == nzRenderPassType_Max+1, "Render pass priority array is incomplete");
 
-	inline NzShader* RegisterDeferredShader(const NzString& name, const nzUInt8* fragmentSource, unsigned int fragmentSourceLength, const NzShaderStage& vertexStage, NzString* err)
+	inline NzShaderRef RegisterDeferredShader(const NzString& name, const nzUInt8* fragmentSource, unsigned int fragmentSourceLength, const NzShaderStage& vertexStage, NzString* err)
 	{
 		NzErrorFlags errFlags(nzErrorFlag_Silent | nzErrorFlag_ThrowExceptionDisabled);
 
-		std::unique_ptr<NzShader> shader(new NzShader);
-		shader->SetPersistent(false);
-
+		NzShaderRef shader = NzShader::New();
 		if (!shader->Create())
 		{
 			err->Set("Failed to create shader: " + NzError::GetLastError());
@@ -77,8 +103,8 @@ namespace
 			return nullptr;
 		}
 
-		NzShaderLibrary::Register(name, shader.get());
-		return shader.release();
+		NzShaderLibrary::Register(name, shader);
+		return shader;
 	}
 }
 
@@ -86,20 +112,13 @@ NzDeferredRenderTechnique::NzDeferredRenderTechnique() :
 m_renderQueue(static_cast<NzForwardRenderQueue*>(m_forwardTechnique.GetRenderQueue())),
 m_GBufferSize(0U)
 {
-	m_depthStencilBuffer = new NzRenderBuffer;
-	m_depthStencilBuffer->SetPersistent(false);
+	m_depthStencilBuffer = NzRenderBuffer::New();
 
 	for (unsigned int i = 0; i < 2; ++i)
-	{
-		m_workTextures[i] = new NzTexture;
-		m_workTextures[i]->SetPersistent(false);
-	}
+		m_workTextures[i] = NzTexture::New();
 
 	for (unsigned int i = 0; i < 3; ++i)
-	{
-		m_GBuffer[i] = new NzTexture;
-		m_GBuffer[i]->SetPersistent(false);
-	}
+		m_GBuffer[i] = NzTexture::New();
 
 	try
 	{
@@ -412,34 +431,6 @@ bool NzDeferredRenderTechnique::Resize(const NzVector2ui& dimensions) const
 
 bool NzDeferredRenderTechnique::Initialize()
 {
-	const nzUInt8 fragmentSource_BloomBright[] = {
-		#include <Nazara/Graphics/Resources/DeferredShading/Shaders/BloomBright.frag.h>
-	};
-
-	const nzUInt8 fragmentSource_BloomFinal[] = {
-		#include <Nazara/Graphics/Resources/DeferredShading/Shaders/BloomFinal.frag.h>
-	};
-
-	const nzUInt8 fragmentSource_DirectionalLight[] = {
-		#include <Nazara/Graphics/Resources/DeferredShading/Shaders/DirectionalLight.frag.h>
-	};
-
-	const nzUInt8 fragmentSource_FXAA[] = {
-		#include <Nazara/Graphics/Resources/DeferredShading/Shaders/FXAA.frag.h>
-	};
-
-	const nzUInt8 fragmentSource_GBufferClear[] = {
-		#include <Nazara/Graphics/Resources/DeferredShading/Shaders/GBufferClear.frag.h>
-	};
-
-	const nzUInt8 fragmentSource_GaussianBlur[] = {
-		#include <Nazara/Graphics/Resources/DeferredShading/Shaders/GaussianBlur.frag.h>
-	};
-
-	const nzUInt8 fragmentSource_PointSpotLight[] = {
-		#include <Nazara/Graphics/Resources/DeferredShading/Shaders/PointSpotLight.frag.h>
-	};
-
 	const char vertexSource_Basic[] =
 	"#version 140\n"
 
@@ -497,7 +488,7 @@ bool NzDeferredRenderTechnique::Initialize()
 	NzShader* shader;
 
 	// Shaders critiques (Nécessaires pour le Deferred Shading minimal)
-	shader = RegisterDeferredShader("DeferredGBufferClear", fragmentSource_GBufferClear, sizeof(fragmentSource_GBufferClear), ppVertexStage, &error);
+	shader = RegisterDeferredShader("DeferredGBufferClear", r_fragmentSource_GBufferClear, sizeof(r_fragmentSource_GBufferClear), ppVertexStage, &error);
 	if (!shader)
 	{
 		NazaraError("Failed to register critical shader: " + error);
@@ -505,7 +496,7 @@ bool NzDeferredRenderTechnique::Initialize()
 	}
 
 
-	shader = RegisterDeferredShader("DeferredDirectionnalLight", fragmentSource_DirectionalLight, sizeof(fragmentSource_DirectionalLight), ppVertexStage, &error);
+	shader = RegisterDeferredShader("DeferredDirectionnalLight", r_fragmentSource_DirectionalLight, sizeof(r_fragmentSource_DirectionalLight), ppVertexStage, &error);
 	if (!shader)
 	{
 		NazaraError("Failed to register critical shader: " + error);
@@ -517,7 +508,7 @@ bool NzDeferredRenderTechnique::Initialize()
 	shader->SendInteger(shader->GetUniformLocation("GBuffer2"), 2);
 
 
-	shader = RegisterDeferredShader("DeferredPointSpotLight", fragmentSource_PointSpotLight, sizeof(fragmentSource_PointSpotLight), basicVertexStage, &error);
+	shader = RegisterDeferredShader("DeferredPointSpotLight", r_fragmentSource_PointSpotLight, sizeof(r_fragmentSource_PointSpotLight), basicVertexStage, &error);
 	if (!shader)
 	{
 		NazaraError("Failed to register critical shader: " + error);
@@ -530,7 +521,7 @@ bool NzDeferredRenderTechnique::Initialize()
 
 
 	// Shaders optionnels (S'ils ne sont pas présents, le rendu minimal sera quand même assuré)
-	shader = RegisterDeferredShader("DeferredBloomBright", fragmentSource_BloomBright, sizeof(fragmentSource_BloomBright), ppVertexStage, &error);
+	shader = RegisterDeferredShader("DeferredBloomBright", r_fragmentSource_BloomBright, sizeof(r_fragmentSource_BloomBright), ppVertexStage, &error);
 	if (shader)
 		shader->SendInteger(shader->GetUniformLocation("ColorTexture"), 0);
 	else
@@ -539,7 +530,7 @@ bool NzDeferredRenderTechnique::Initialize()
 	}
 
 
-	shader = RegisterDeferredShader("DeferredBloomFinal", fragmentSource_BloomFinal, sizeof(fragmentSource_BloomFinal), ppVertexStage, &error);
+	shader = RegisterDeferredShader("DeferredBloomFinal", r_fragmentSource_BloomFinal, sizeof(r_fragmentSource_BloomFinal), ppVertexStage, &error);
 	if (shader)
 	{
 		shader->SendInteger(shader->GetUniformLocation("ColorTexture"), 0);
@@ -551,7 +542,7 @@ bool NzDeferredRenderTechnique::Initialize()
 	}
 
 
-	shader = RegisterDeferredShader("DeferredFXAA", fragmentSource_FXAA, sizeof(fragmentSource_FXAA), ppVertexStage, &error);
+	shader = RegisterDeferredShader("DeferredFXAA", r_fragmentSource_FXAA, sizeof(r_fragmentSource_FXAA), ppVertexStage, &error);
 	if (shader)
 		shader->SendInteger(shader->GetUniformLocation("ColorTexture"), 0);
 	else
@@ -560,7 +551,7 @@ bool NzDeferredRenderTechnique::Initialize()
 	}
 
 
-	shader = RegisterDeferredShader("DeferredGaussianBlur", fragmentSource_GaussianBlur, sizeof(fragmentSource_GaussianBlur), ppVertexStage, &error);
+	shader = RegisterDeferredShader("DeferredGaussianBlur", r_fragmentSource_GaussianBlur, sizeof(r_fragmentSource_GaussianBlur), ppVertexStage, &error);
 	if (shader)
 		shader->SendInteger(shader->GetUniformLocation("ColorTexture"), 0);
 	else

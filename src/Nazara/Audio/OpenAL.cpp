@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Audio module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -65,8 +65,9 @@ bool NzOpenAL::Initialize(bool openDevice)
 		return true;
 
 	#if defined(NAZARA_PLATFORM_WINDOWS)
-	// OpenAL Soft est une meilleure implémentation que les redistribuables de Creative
-	///TODO: Détecter le driver software de Creative et basculer sur OpenAL Soft si possible
+	///FIXME: Est-ce qu'OpenAL Soft est une meilleure implémentation que Creative ?
+	/// Si on pouvait se résigner à utiliser OpenAL Soft tout le temps, cela nous permettrait d'utiliser les extensions sonores
+	/// et de donner plus de possibilités techniques au niveau de l'audio.
 	const char* libs[] = {
 		"soft_oal.dll",
 		"wrap_oal.dll",

@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2014 Jérôme Leclercq
+﻿// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Mathematics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -562,9 +562,9 @@ template<typename T>
 bool NzMatrix4<T>::IsIdentity() const
 {
 	return (NzNumberEquals(m11, F(1.0)) && NzNumberEquals(m12, F(0.0)) && NzNumberEquals(m13, F(0.0)) && NzNumberEquals(m14, F(0.0)) &&
-	        NzNumberEquals(m11, F(0.0)) && NzNumberEquals(m12, F(1.0)) && NzNumberEquals(m13, F(0.0)) && NzNumberEquals(m14, F(0.0)) &&
-	        NzNumberEquals(m11, F(0.0)) && NzNumberEquals(m12, F(0.0)) && NzNumberEquals(m13, F(1.0)) && NzNumberEquals(m14, F(0.0)) &&
-	        NzNumberEquals(m11, F(0.0)) && NzNumberEquals(m12, F(0.0)) && NzNumberEquals(m13, F(0.0)) && NzNumberEquals(m14, F(1.0)));
+	        NzNumberEquals(m21, F(0.0)) && NzNumberEquals(m22, F(1.0)) && NzNumberEquals(m23, F(0.0)) && NzNumberEquals(m24, F(0.0)) &&
+	        NzNumberEquals(m31, F(0.0)) && NzNumberEquals(m32, F(0.0)) && NzNumberEquals(m33, F(1.0)) && NzNumberEquals(m34, F(0.0)) &&
+	        NzNumberEquals(m41, F(0.0)) && NzNumberEquals(m42, F(0.0)) && NzNumberEquals(m43, F(0.0)) && NzNumberEquals(m44, F(1.0)));
 }
 
 template<typename T>
@@ -748,7 +748,6 @@ NzMatrix4<T>& NzMatrix4<T>::Set(const T matrix[16])
 template<typename T>
 NzMatrix4<T>& NzMatrix4<T>::Set(const NzMatrix4& matrix)
 {
-	// Le membre isIdentity est copié en même temps que les valeurs
 	std::memcpy(this, &matrix, sizeof(NzMatrix4));
 
 	return *this;

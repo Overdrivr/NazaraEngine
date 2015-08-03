@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2014 Jérôme Leclercq
+﻿// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Mathematics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -50,8 +50,8 @@ NzRect<T>::NzRect(const NzRect<U>& rect)
 template<typename T>
 bool NzRect<T>::Contains(T X, T Y) const
 {
-	return X >= x && X < x+width &&
-	       Y >= y && Y < y+height;
+	return X >= x && X <= x+width &&
+	       Y >= y && Y <= y+height;
 }
 
 template<typename T>
@@ -116,6 +116,28 @@ NzVector2<T> NzRect<T>::GetCenter() const
 }
 
 template<typename T>
+NzVector2<T> NzRect<T>::GetCorner(nzRectCorner corner) const
+{
+	switch (corner)
+	{
+		case nzRectCorner_LeftBottom:
+			return NzVector2<T>(x, y + height);
+
+		case nzRectCorner_LeftTop:
+			return NzVector2<T>(x, y);
+
+		case nzRectCorner_RightBottom:
+			return NzVector2<T>(x + width, y + height);
+
+		case nzRectCorner_RightTop:
+			return NzVector2<T>(x + width, y);
+	}
+
+	NazaraError("Corner not handled (0x" + NzString::Number(corner, 16) + ')');
+	return NzVector2<T>();
+}
+
+template<typename T>
 NzVector2<T> NzRect<T>::GetLengths() const
 {
 	return NzVector2<T>(width, height);
@@ -172,24 +194,24 @@ template<typename T>
 bool NzRect<T>::Intersect(const NzRect& rect, NzRect* intersection) const
 {
 	T left = std::max(x, rect.x);
-	T right = std::min(x+width, rect.x+rect.width);
-	T top = std::max(y, rect.y);
-	T bottom = std::min(y+height, rect.y+rect.height);
-
-	if (left < right && top < bottom)
-	{
-		if (intersection)
-		{
-			intersection->x = left;
-			intersection->y = top;
-			intersection->width = right-left;
-			intersection->height = bottom-top;
-		}
-
-		return true;
-	}
-	else
+	T right = std::min(x + width, rect.x + rect.width);
+	if (left >= right)
 		return false;
+
+	T top = std::max(y, rect.y);
+	T bottom = std::min(y + height, rect.y + rect.height);
+	if (top >= bottom)
+		return false;
+
+	if (intersection)
+	{
+		intersection->x = left;
+		intersection->y = top;
+		intersection->width = right - left;
+		intersection->height = bottom - top;
+	}
+
+	return true;
 }
 
 template<typename T>

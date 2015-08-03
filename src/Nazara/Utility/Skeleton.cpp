@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -16,7 +16,7 @@ struct NzSkeletonImpl
 };
 
 NzSkeleton::NzSkeleton(const NzSkeleton& skeleton) :
-NzResource(),
+NzRefCounted(),
 m_impl(nullptr)
 {
 	operator=(skeleton);
@@ -416,3 +416,21 @@ void NzSkeleton::UpdateJointMap() const
 
 	m_impl->jointMapUpdated = true;
 }
+
+bool NzSkeleton::Initialize()
+{
+	if (!NzSkeletonLibrary::Initialize())
+	{
+		NazaraError("Failed to initialise library");
+		return false;
+	}
+
+	return true;
+}
+
+void NzSkeleton::Uninitialize()
+{
+	NzSkeletonLibrary::Uninitialize();
+}
+
+NzSkeletonLibrary::LibraryMap NzSkeleton::s_library;

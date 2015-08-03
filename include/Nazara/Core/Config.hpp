@@ -1,7 +1,7 @@
 /*
 	Nazara Engine - Core module
 
-	Copyright (C) 2014 Jérôme "Lynix" Leclercq (Lynix680@gmail.com)
+	Copyright (C) 2015 Jérôme "Lynix" Leclercq (Lynix680@gmail.com)
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy of
 	this software and associated documentation files (the "Software"), to deal in
@@ -62,7 +62,7 @@
 #define NAZARA_THREADSAFETY_DYNLIB 1       // NzDynLib
 #define NAZARA_THREADSAFETY_FILE 1         // NzFile
 #define NAZARA_THREADSAFETY_LOG 1          // NzLog
-#define NAZARA_THREADSAFETY_RESOURCE 1     // NzResource
+#define NAZARA_THREADSAFETY_REFCOUNTED 1   // NzRefCounted
 
 // Le nombre de spinlocks à utiliser avec les sections critiques de Windows (0 pour désactiver)
 #define NAZARA_CORE_WINDOWS_CS_SPINLOCKS 4096

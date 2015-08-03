@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Audio module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -11,9 +11,13 @@
 #include <Nazara/Audio/Enums.hpp>
 #include <Nazara/Core/InputStream.hpp>
 #include <Nazara/Core/NonCopyable.hpp>
+#include <Nazara/Core/ObjectRef.hpp>
+#include <Nazara/Core/ObjectLibrary.hpp>
+#include <Nazara/Core/ObjectListenerWrapper.hpp>
+#include <Nazara/Core/RefCounted.hpp>
 #include <Nazara/Core/Resource.hpp>
 #include <Nazara/Core/ResourceLoader.hpp>
-#include <Nazara/Core/ResourceRef.hpp>
+#include <Nazara/Core/ResourceManager.hpp>
 
 struct NzSoundBufferParams
 {
@@ -25,16 +29,23 @@ struct NzSoundBufferParams
 class NzSound;
 class NzSoundBuffer;
 
-using NzSoundBufferConstRef = NzResourceRef<const NzSoundBuffer>;
+using NzSoundBufferConstListener = NzObjectListenerWrapper<const NzSoundBuffer>;
+using NzSoundBufferConstRef = NzObjectRef<const NzSoundBuffer>;
+using NzSoundBufferLibrary = NzObjectLibrary<NzSoundBuffer>;
+using NzSoundBufferListener = NzObjectListenerWrapper<NzSoundBuffer>;
 using NzSoundBufferLoader = NzResourceLoader<NzSoundBuffer, NzSoundBufferParams>;
-using NzSoundBufferRef = NzResourceRef<NzSoundBuffer>;
+using NzSoundBufferManager = NzResourceManager<NzSoundBuffer, NzSoundBufferParams>;
+using NzSoundBufferRef = NzObjectRef<NzSoundBuffer>;
 
 struct NzSoundBufferImpl;
 
-class NAZARA_API NzSoundBuffer : public NzResource, public NzNonCopyable
+class NAZARA_API NzSoundBuffer : public NzRefCounted, public NzResource, NzNonCopyable
 {
 	friend NzSound;
+	friend NzSoundBufferLibrary;
 	friend NzSoundBufferLoader;
+	friend NzSoundBufferManager;
+	friend class NzAudio;
 
 	public:
 		NzSoundBuffer() = default;
@@ -57,13 +68,22 @@ class NAZARA_API NzSoundBuffer : public NzResource, public NzNonCopyable
 		bool LoadFromStream(NzInputStream& stream, const NzSoundBufferParams& params = NzSoundBufferParams());
 
 		static bool IsFormatSupported(nzAudioFormat format);
+		template<typename... Args> static NzSoundBufferRef New(Args&&... args);
 
 	private:
 		unsigned int GetOpenALBuffer() const;
 
+		static bool Initialize();
+		static void Uninitialize();
+
 		NzSoundBufferImpl* m_impl = nullptr;
 
+		static NzSoundBufferLibrary::LibraryMap s_library;
 		static NzSoundBufferLoader::LoaderList s_loaders;
+		static NzSoundBufferManager::ManagerMap s_managerMap;
+		static NzSoundBufferManager::ManagerParams s_managerParameters;
 };
+
+#include <Nazara/Audio/SoundBuffer.inl>
 
 #endif // NAZARA_SOUNDBUFFER_HPP

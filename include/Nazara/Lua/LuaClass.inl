@@ -1,9 +1,8 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Lua scripting module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Core/Error.hpp>
-#include <iostream>
 #include <Nazara/Core/MemoryHelper.hpp>
 #include <Nazara/Lua/Debug.hpp>
 

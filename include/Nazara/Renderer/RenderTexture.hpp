@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Renderer module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -9,18 +9,18 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Core/NonCopyable.hpp>
-#include <Nazara/Core/ResourceListener.hpp>
+#include <Nazara/Core/ObjectListener.hpp>
 #include <Nazara/Renderer/Config.hpp>
 #include <Nazara/Renderer/RenderTarget.hpp>
 #include <Nazara/Renderer/Texture.hpp>
 
-///TODO: Faire fonctionner les RenderTexture indépendamment du contexte (un FBO par classe et par contexte l'utilisant)
+///TODO: Faire fonctionner les RenderTexture indépendamment du contexte (un FBO par instance et par contexte l'utilisant)
 
 class NzRenderBuffer;
 
 struct NzRenderTextureImpl;
 
-class NAZARA_API NzRenderTexture : public NzRenderTarget, NzResourceListener, NzNonCopyable
+class NAZARA_API NzRenderTexture : public NzRenderTarget, NzObjectListener, NzNonCopyable
 {
 	public:
 		NzRenderTexture() = default;
@@ -66,8 +66,9 @@ class NAZARA_API NzRenderTexture : public NzRenderTarget, NzResourceListener, Nz
 		void EnsureTargetUpdated() const override;
 
 	private:
-		bool OnResourceDestroy(const NzResource* resource, int index) override;
+		bool OnObjectDestroy(const NzRefCounted* object, int index) override;
 		void UpdateDrawBuffers() const;
+		void UpdateSize() const;
 		void UpdateTargets() const;
 
 		NzRenderTextureImpl* m_impl = nullptr;

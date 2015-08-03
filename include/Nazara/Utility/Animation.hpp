@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -8,17 +8,22 @@
 #define NAZARA_ANIMATION_HPP
 
 #include <Nazara/Prerequesites.hpp>
+#include <Nazara/Core/ObjectLibrary.hpp>
+#include <Nazara/Core/ObjectListenerWrapper.hpp>
+#include <Nazara/Core/ObjectRef.hpp>
+#include <Nazara/Core/RefCounted.hpp>
 #include <Nazara/Core/Resource.hpp>
 #include <Nazara/Core/ResourceLoader.hpp>
-#include <Nazara/Core/ResourceRef.hpp>
+#include <Nazara/Core/ResourceManager.hpp>
 #include <Nazara/Core/String.hpp>
 #include <Nazara/Utility/Enums.hpp>
 #include <Nazara/Utility/Sequence.hpp>
+#include <limits>
 
 struct NAZARA_API NzAnimationParams
 {
 	// La frame de fin à charger
-	unsigned int endFrame = static_cast<unsigned int>(-1);
+	unsigned int endFrame = std::numeric_limits<unsigned int>::max();
 	// La frame de début à charger
 	unsigned int startFrame = 0;
 
@@ -28,15 +33,22 @@ struct NAZARA_API NzAnimationParams
 class NzAnimation;
 class NzSkeleton;
 
-using NzAnimationConstRef = NzResourceRef<const NzAnimation>;
+using NzAnimationConstListener = NzObjectListenerWrapper<const NzAnimation>;
+using NzAnimationConstRef = NzObjectRef<const NzAnimation>;
+using NzAnimationLibrary = NzObjectLibrary<NzAnimation>;
+using NzAnimationListener = NzObjectListenerWrapper<NzAnimation>;
 using NzAnimationLoader = NzResourceLoader<NzAnimation, NzAnimationParams>;
-using NzAnimationRef = NzResourceRef<NzAnimation>;
+using NzAnimationManager = NzResourceManager<NzAnimation, NzAnimationParams>;
+using NzAnimationRef = NzObjectRef<NzAnimation>;
 
 struct NzAnimationImpl;
 
-class NAZARA_API NzAnimation : public NzResource
+class NAZARA_API NzAnimation : public NzRefCounted, public NzResource
 {
+	friend NzAnimationLibrary;
 	friend NzAnimationLoader;
+	friend NzAnimationManager;
+	friend class NzUtility;
 
 	public:
 		NzAnimation() = default;
@@ -75,10 +87,20 @@ class NAZARA_API NzAnimation : public NzResource
 		void RemoveSequence(const NzString& sequenceName);
 		void RemoveSequence(unsigned int index);
 
+		template<typename... Args> static NzAnimationRef New(Args&&... args);
+
 	private:
+		static bool Initialize();
+		static void Uninitialize();
+
 		NzAnimationImpl* m_impl = nullptr;
 
+		static NzAnimationLibrary::LibraryMap s_library;
 		static NzAnimationLoader::LoaderList s_loaders;
+		static NzAnimationManager::ManagerMap s_managerMap;
+		static NzAnimationManager::ManagerParams s_managerParameters;
 };
+
+#include <Nazara/Utility/Animation.inl>
 
 #endif // NAZARA_ANIMATION_HPP

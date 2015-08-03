@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -22,9 +22,7 @@ namespace
 	{
 		NazaraUnused(parameters);
 
-		std::unique_ptr<NzTexture> texture(new NzTexture);
-		texture->SetPersistent(false);
-
+		NzTextureRef texture = NzTexture::New();
 		if (!texture->LoadFromStream(stream))
 		{
 			NazaraError("Failed to load diffuse map");
@@ -32,9 +30,7 @@ namespace
 		}
 
 		material->Reset();
-		material->SetDiffuseMap(texture.get());
-		texture.release();
-
+		material->SetDiffuseMap(texture);
 		material->SetShader(parameters.shaderName);
 
 		return true;

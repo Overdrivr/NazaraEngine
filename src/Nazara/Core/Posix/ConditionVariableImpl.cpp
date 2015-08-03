@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Alexandre Janniaux
+// Copyright (C) 2015 Alexandre Janniaux
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -35,7 +35,7 @@ bool NzConditionVariableImpl::Wait(NzMutexImpl* mutex, nzUInt32 timeout)
 {
 	// get the current time
 	timeval tv;
-	gettimeofday(&tv, NULL);
+	gettimeofday(&tv, nullptr);
 
 	// construct the time limit (current time + time to wait)
 	timespec ti;

@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Graphics module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -6,7 +6,7 @@
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Core/Log.hpp>
 #include <Nazara/Utility/Config.hpp>
-#include <cstdio>
+#include <cctype>
 #include <memory>
 #include <unordered_map>
 #include <Nazara/Graphics/Debug.hpp>

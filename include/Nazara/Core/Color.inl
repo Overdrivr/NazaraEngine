@@ -1,8 +1,9 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Core/StringStream.hpp>
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <stdexcept>
@@ -187,7 +188,7 @@ inline NzColor NzColor::FromHSV(float hue, float saturation, float value)
 		if (NzNumberEquals(h, 6.f))
 			h = 0; // hue must be < 1
 
-		int i = h;
+		int i = static_cast<unsigned int>(h);
 		float v1 = value * (1.f - s);
 		float v2 = value * (1.f - s * (h - i));
 		float v3 = value * (1.f - s * (1.f - (h - i)));
@@ -275,7 +276,7 @@ inline void NzColor::ToCMYK(const NzColor& color, float* cyan, float* magenta, f
 	float c, m, y;
 	ToCMY(color, &c, &m, &y);
 
-	float k = std::min(std::min(std::min(1.f, c), m), y);
+	float k = std::min({1.f, c, m, y});
 
 	if (NzNumberEquals(k, 1.f))
 	{
@@ -300,8 +301,8 @@ inline void NzColor::ToHSL(const NzColor& color, nzUInt8* hue, nzUInt8* saturati
 	float g = color.g / 255.f;
 	float b = color.b / 255.f;
 
-	float min = std::min(std::min(r, g), b); // Min. value of RGB
-	float max = std::max(std::max(r, g), b); // Max. value of RGB
+	float min = std::min({r, g, b}); // Min. value of RGB
+	float max = std::max({r, g, b}); // Max. value of RGB
 
 	float deltaMax = max - min; //Delta RGB value
 

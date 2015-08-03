@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -511,4 +511,30 @@ void NzAnimation::RemoveSequence(unsigned int index)
 	m_impl->sequences.erase(it);
 }
 
+bool NzAnimation::Initialize()
+{
+	if (!NzAnimationLibrary::Initialize())
+	{
+		NazaraError("Failed to initialise library");
+		return false;
+	}
+
+	if (!NzAnimationManager::Initialize())
+	{
+		NazaraError("Failed to initialise manager");
+		return false;
+	}
+
+	return true;
+}
+
+void NzAnimation::Uninitialize()
+{
+	NzAnimationManager::Uninitialize();
+	NzAnimationLibrary::Uninitialize();
+}
+
+NzAnimationLibrary::LibraryMap NzAnimation::s_library;
 NzAnimationLoader::LoaderList NzAnimation::s_loaders;
+NzAnimationManager::ManagerMap NzAnimation::s_managerMap;
+NzAnimationManager::ManagerParams NzAnimation::s_managerParameters;

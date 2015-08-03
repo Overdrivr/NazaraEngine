@@ -1,8 +1,9 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Utility module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <Nazara/Core/Error.hpp>
+#include <algorithm>
 #include <cstring>
 #include <Nazara/Utility/Debug.hpp>
 
@@ -168,6 +169,9 @@ inline nzUInt8 NzPixelFormat::GetBitsPerPixel(nzPixelFormat format)
 {
 	switch (format)
 	{
+		case nzPixelFormat_A8:
+			return 8;
+
 		case nzPixelFormat_BGR8:
 			return 24;
 
@@ -287,20 +291,14 @@ inline nzUInt8 NzPixelFormat::GetBitsPerPixel(nzPixelFormat format)
 
 inline nzUInt8 NzPixelFormat::GetBytesPerPixel(nzPixelFormat format)
 {
-	nzUInt8 bytesPerPixel = GetBitsPerPixel(format)/8;
-
-	#if NAZARA_UTILITY_SAFE
-	if (bytesPerPixel == 0)
-		NazaraWarning("This format is either invalid or using less than one byte per pixel");
-	#endif
-
-	return bytesPerPixel;
+	return GetBitsPerPixel(format)/8;
 }
 
 inline nzPixelFormatType NzPixelFormat::GetType(nzPixelFormat format)
 {
 	switch (format)
 	{
+		case nzPixelFormat_A8:
 		case nzPixelFormat_BGR8:
 		case nzPixelFormat_BGRA8:
 		case nzPixelFormat_DXT1:
@@ -372,6 +370,7 @@ inline bool NzPixelFormat::HasAlpha(nzPixelFormat format)
 {
 	switch (format)
 	{
+		case nzPixelFormat_A8:
 		case nzPixelFormat_BGRA8:
 		case nzPixelFormat_DXT3:
 		case nzPixelFormat_DXT5:
@@ -444,6 +443,7 @@ inline bool NzPixelFormat::IsCompressed(nzPixelFormat format)
 		case nzPixelFormat_DXT5:
 			return true;
 
+		case nzPixelFormat_A8:
 		case nzPixelFormat_BGR8:
 		case nzPixelFormat_BGRA8:
 		case nzPixelFormat_L8:
@@ -529,6 +529,9 @@ inline NzString NzPixelFormat::ToString(nzPixelFormat format)
 {
 	switch (format)
 	{
+		case nzPixelFormat_A8:
+			return "A8";
+
 		case nzPixelFormat_BGR8:
 			return "BGR8";
 

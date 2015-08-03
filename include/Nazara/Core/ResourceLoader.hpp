@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -8,20 +8,28 @@
 #define NAZARA_RESOURCELOADER_HPP
 
 #include <Nazara/Core/Enums.hpp>
+#include <Nazara/Core/Resource.hpp>
 #include <Nazara/Core/String.hpp>
 #include <list>
 #include <tuple>
+#include <type_traits>
 
 class NzInputStream;
 
 template<typename Type, typename Parameters>
 class NzResourceLoader
 {
+	friend Type;
+
 	public:
 		using ExtensionGetter = bool (*)(const NzString& extension);
 		using FileLoader = bool (*)(Type* resource, const NzString& filePath, const Parameters& parameters);
+		using MemoryLoader = bool (*)(Type* resource, const void* data, std::size_t size, const Parameters& parameters);
 		using StreamChecker = nzTernary (*)(NzInputStream& stream, const Parameters& parameters);
 		using StreamLoader = bool (*)(Type* resource, NzInputStream& stream, const Parameters& parameters);
+
+		NzResourceLoader() = delete;
+		~NzResourceLoader() = delete;
 
 		static bool IsExtensionSupported(const NzString& extension);
 
@@ -29,10 +37,11 @@ class NzResourceLoader
 		static bool LoadFromMemory(Type* resource, const void* data, unsigned int size, const Parameters& parameters = Parameters());
 		static bool LoadFromStream(Type* resource, NzInputStream& stream, const Parameters& parameters = Parameters());
 
-		static void RegisterLoader(ExtensionGetter extensionGetter, StreamChecker checkFunc, StreamLoader streamLoader, FileLoader fileLoader = nullptr);
-		static void UnregisterLoader(ExtensionGetter extensionGetter, StreamChecker checkFunc, StreamLoader streamLoader, FileLoader fileLoader = nullptr);
+		static void RegisterLoader(ExtensionGetter extensionGetter, StreamChecker checkFunc, StreamLoader streamLoader, FileLoader fileLoader = nullptr, MemoryLoader memoryLoader = nullptr);
+		static void UnregisterLoader(ExtensionGetter extensionGetter, StreamChecker checkFunc, StreamLoader streamLoader, FileLoader fileLoader = nullptr, MemoryLoader memoryLoader = nullptr);
 
-		using Loader = std::tuple<ExtensionGetter, StreamChecker, StreamLoader, FileLoader>;
+	private:
+		using Loader = std::tuple<ExtensionGetter, StreamChecker, StreamLoader, FileLoader, MemoryLoader>;
 		using LoaderList = std::list<Loader>;
 };
 

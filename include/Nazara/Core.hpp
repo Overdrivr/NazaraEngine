@@ -1,9 +1,9 @@
-// This file was automatically generated on 11 Jul 2014 at 10:21:52
+// This file was automatically generated on 18 Mar 2015 at 22:24:14
 
 /*
 	Nazara Engine - Core module
 
-	Copyright (C) 2014 Jérôme "Lynix" Leclercq (Lynix680@gmail.com)
+	Copyright (C) 2015 Jérôme "Lynix" Leclercq (Lynix680@gmail.com)
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy of
 	this software and associated documentation files (the "Software"), to deal in
@@ -30,6 +30,7 @@
 #define NAZARA_GLOBAL_CORE_HPP
 
 #include <Nazara/Core/AbstractHash.hpp>
+#include <Nazara/Core/Algorithm.hpp>
 #include <Nazara/Core/ByteArray.hpp>
 #include <Nazara/Core/CallOnExit.hpp>
 #include <Nazara/Core/Clock.hpp>
@@ -46,6 +47,7 @@
 #include <Nazara/Core/File.hpp>
 #include <Nazara/Core/Format.hpp>
 #include <Nazara/Core/Functor.hpp>
+#include <Nazara/Core/GuillotineBinPack.hpp>
 #include <Nazara/Core/HardwareInfo.hpp>
 #include <Nazara/Core/Hash.hpp>
 #include <Nazara/Core/Hashable.hpp>
@@ -60,15 +62,19 @@
 #include <Nazara/Core/MemoryStream.hpp>
 #include <Nazara/Core/Mutex.hpp>
 #include <Nazara/Core/NonCopyable.hpp>
+#include <Nazara/Core/ObjectLibrary.hpp>
+#include <Nazara/Core/ObjectListener.hpp>
+#include <Nazara/Core/ObjectListenerWrapper.hpp>
+#include <Nazara/Core/ObjectRef.hpp>
 #include <Nazara/Core/OffsetOf.hpp>
 #include <Nazara/Core/ParameterList.hpp>
 #include <Nazara/Core/PluginManager.hpp>
 #include <Nazara/Core/Primitive.hpp>
 #include <Nazara/Core/PrimitiveList.hpp>
+#include <Nazara/Core/RefCounted.hpp>
 #include <Nazara/Core/Resource.hpp>
-#include <Nazara/Core/ResourceListener.hpp>
 #include <Nazara/Core/ResourceLoader.hpp>
-#include <Nazara/Core/ResourceRef.hpp>
+#include <Nazara/Core/ResourceManager.hpp>
 #include <Nazara/Core/Semaphore.hpp>
 #include <Nazara/Core/SparsePtr.hpp>
 #include <Nazara/Core/Stream.hpp>
@@ -76,7 +82,6 @@
 #include <Nazara/Core/StringStream.hpp>
 #include <Nazara/Core/TaskScheduler.hpp>
 #include <Nazara/Core/Thread.hpp>
-#include <Nazara/Core/Tuple.hpp>
 #include <Nazara/Core/Unicode.hpp>
 #include <Nazara/Core/Updatable.hpp>
 

@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Lua scripting module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -19,8 +19,15 @@ enum nzLuaComparison
 enum nzLuaOperation
 {
 	nzLuaOperation_Addition,
+	nzLuaOperation_BitwiseAnd,
+	nzLuaOperation_BitwiseLeftShift,
+	nzLuaOperation_BitwiseNot,
+	nzLuaOperation_BitwiseOr,
+	nzLuaOperation_BitwideRightShift,
+	nzLuaOperation_BitwiseXOr,
 	nzLuaOperation_Division,
 	nzLuaOperation_Exponentiation,
+	nzLuaOperation_FloorDivision,
 	nzLuaOperation_Modulo,
 	nzLuaOperation_Multiplication,
 	nzLuaOperation_Negation,

@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Jérôme Leclercq
+// Copyright (C) 2015 Jérôme Leclercq
 // This file is part of the "Nazara Engine - Core module"
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -7,7 +7,7 @@
 #ifndef NAZARA_FUNCTOR_HPP
 #define NAZARA_FUNCTOR_HPP
 
-#include <Nazara/Core/Tuple.hpp>
+#include <Nazara/Core/Algorithm.hpp>
 
 // Inspiré du code de la SFML par Laurent Gomila
 
