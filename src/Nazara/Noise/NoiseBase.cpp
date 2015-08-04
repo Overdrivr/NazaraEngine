@@ -10,8 +10,6 @@
 NzNoiseBase::NzNoiseBase(unsigned int seed)
 {
     SetSeed(seed);
-    generator.min(0);
-    generator.max(255);
 }
 
 float NzNoiseBase::GetScale()
@@ -39,7 +37,7 @@ void NzNoiseBase::Shuffle()
 
     for (unsigned int i(0); i < 256 ; ++i)
     {
-        ncase = generator.get();
+        ncase = generator() & 255;
         xchanger = perm[i];
         perm[i] = perm[ncase];
         perm[ncase] = xchanger;
