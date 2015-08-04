@@ -10,6 +10,7 @@
 NzNoiseBase::NzNoiseBase(unsigned int seed)
 {
     SetSeed(seed);
+	m_scale = 0.01f;
 }
 
 float NzNoiseBase::GetScale()
