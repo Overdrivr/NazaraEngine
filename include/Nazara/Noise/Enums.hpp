@@ -7,13 +7,6 @@
 #ifndef NAZARA_ENUMS_NOISE_HPP
 #define NAZARA_ENUMS_NOISE_HPP
 
-enum nzNoise
-{
-    nzNoise_perlin,
-    nzNoise_simplex,
-    nzNoise_cell
-};
-
 enum nzWorleyFunction
 {
     nzWorleyFunction_F1 = 0,
