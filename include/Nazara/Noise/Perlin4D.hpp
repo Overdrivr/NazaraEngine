@@ -9,18 +9,26 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Noise/NoiseBase.hpp>
-#include <Nazara/Noise/Abstract4DNoise.hpp>
 #include <Nazara/Math/Vector4.hpp>
 
-class NAZARA_API NzPerlin4D : public NzAbstract4DNoise
+class NAZARA_API NzPerlin4D : public NzNoiseBase
 {
     public:
         NzPerlin4D();
         NzPerlin4D(unsigned int seed);
-        float GetValue(float x, float y, float z, float w, float resolution);
         ~NzPerlin4D() = default;
+
+        float Get();
+
+        void Set(float X, float Y, float Z, float W);
+
     protected:
+        float x;
+        float y;
+        float z;
+        float w;
     private:
+        float xc,yc,zc,wc;
         int x0,y0,z0,w0;
         int gi0,gi1,gi2,gi3,gi4,gi5,gi6,gi7,gi8,gi9,gi10,gi11,gi12,gi13,gi14,gi15;
         int ii,jj,kk,ll;

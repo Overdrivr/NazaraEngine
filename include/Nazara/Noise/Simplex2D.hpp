@@ -9,18 +9,24 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Noise/NoiseBase.hpp>
-#include <Nazara/Noise/Abstract2DNoise.hpp>
 #include <Nazara/Math/Vector2.hpp>
 
-class NAZARA_API NzSimplex2D : public NzAbstract2DNoise
+class NAZARA_API NzSimplex2D : public NzNoiseBase
 {
     public:
         NzSimplex2D();
         NzSimplex2D(unsigned int seed);
-        float GetValue(float x, float y, float resolution);
         virtual ~NzSimplex2D() = default;
+
+        float Get();
+
+        void Set(float X, float Y);
+
     protected:
+        float x;
+        float y;
     private:
+        float xc,yc;
         int ii,jj;
         int gi0,gi1,gi2;
         NzVector2i skewedCubeOrigin,off1;

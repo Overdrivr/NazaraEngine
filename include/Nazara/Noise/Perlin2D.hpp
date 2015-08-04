@@ -9,18 +9,24 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Noise/NoiseBase.hpp>
-#include <Nazara/Noise/Abstract2DNoise.hpp>
 #include <Nazara/Math/Vector2.hpp>
 
-class NAZARA_API NzPerlin2D : public NzAbstract2DNoise
+class NAZARA_API NzPerlin2D : public NzNoiseBase
 {
     public:
         NzPerlin2D();
         NzPerlin2D(unsigned int seed);
-        float GetValue(float x, float y, float resolution);
         ~NzPerlin2D() = default;
+
+        float Get();
+
+        void Set(float X, float Y);
+
     protected:
+        float x;
+        float y;
     private:
+        float xc, yc;
         int x0, y0;
         int gi0,gi1,gi2,gi3;
         int ii, jj;

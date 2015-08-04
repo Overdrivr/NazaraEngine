@@ -5,6 +5,7 @@
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Noise/Config.hpp>
 #include <Nazara/Noise/Simplex4D.hpp>
+#include <Nazara/Noise/NoiseTools.hpp>
 #include <Nazara/Noise/Debug.hpp>
 
 NzSimplex4D::NzSimplex4D()
@@ -47,22 +48,22 @@ NzSimplex4D::NzSimplex4D()
 
 NzSimplex4D::NzSimplex4D(unsigned int seed) : NzSimplex4D()
 {
-    this->SetNewSeed(seed);
-    this->ShufflePermutationTable();
+    SetSeed(seed);
+    Shuffle();
 }
 
-float NzSimplex4D::GetValue(float x, float y, float z, float w, float resolution)
+float NzSimplex4D::Get()
 {
-    x *= resolution;
-    y *= resolution;
-    z *= resolution;
-    w *= resolution;
+    xc = x * m_scale;
+    yc = y * m_scale;
+    zc = z * m_scale;
+    wc = w * m_scale;
 
-    sum = (x + y + z + w) * SkewCoeff4D;
-    skewedCubeOrigin.x = fastfloor(x + sum);
-    skewedCubeOrigin.y = fastfloor(y + sum);
-    skewedCubeOrigin.z = fastfloor(z + sum);
-    skewedCubeOrigin.w = fastfloor(w + sum);
+    sum = (xc + yc + zc + wc) * SkewCoeff4D;
+    skewedCubeOrigin.x = fastfloor(xc + sum);
+    skewedCubeOrigin.y = fastfloor(yc + sum);
+    skewedCubeOrigin.z = fastfloor(zc + sum);
+    skewedCubeOrigin.w = fastfloor(wc + sum);
 
     sum = (skewedCubeOrigin.x + skewedCubeOrigin.y + skewedCubeOrigin.z + skewedCubeOrigin.w) * UnskewCoeff4D;
     unskewedCubeOrigin.x = skewedCubeOrigin.x - sum;
@@ -163,4 +164,12 @@ float NzSimplex4D::GetValue(float x, float y, float z, float w, float resolution
         n5 = c5*c5*c5*c5*(gradient4[gi4][0]*d5.x + gradient4[gi4][1]*d5.y + gradient4[gi4][2]*d5.z + gradient4[gi4][3]*d5.w);
 
     return (n1+n2+n3+n4+n5)*27.f;
+}
+
+void NzSimplex4D::Set(float X, float Y, float Z, float W)
+{
+    x = X;
+    y = Y;
+    z = Z;
+    w = W;
 }

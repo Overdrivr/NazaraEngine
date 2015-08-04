@@ -5,6 +5,7 @@
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Noise/Config.hpp>
 #include <Nazara/Noise/Simplex2D.hpp>
+#include <Nazara/Noise/NoiseTools.hpp>
 #include <Nazara/Noise/Debug.hpp>
 
 NzSimplex2D::NzSimplex2D()
@@ -22,25 +23,25 @@ NzSimplex2D::NzSimplex2D()
 
 NzSimplex2D::NzSimplex2D(unsigned int seed) : NzSimplex2D()
 {
-    this->SetNewSeed(seed);
-    this->ShufflePermutationTable();
+    SetSeed(seed);
+    Shuffle();
 }
 
-float NzSimplex2D::GetValue(float x, float y, float resolution)
+float NzSimplex2D::Get()
 {
-    x *= resolution;
-    y *= resolution;
+    xc = x * m_scale;
+    yc = y * m_scale;
 
-    sum = (x + y) * SkewCoeff2D;
-    skewedCubeOrigin.x = fastfloor(x + sum);
-    skewedCubeOrigin.y = fastfloor(y + sum);
+    sum = (xc + yc) * SkewCoeff2D;
+    skewedCubeOrigin.x = fastfloor(xc + sum);
+    skewedCubeOrigin.y = fastfloor(yc + sum);
 
     sum = (skewedCubeOrigin.x + skewedCubeOrigin.y) * UnskewCoeff2D;
     unskewedCubeOrigin.x = skewedCubeOrigin.x - sum;
     unskewedCubeOrigin.y = skewedCubeOrigin.y - sum;
 
-    unskewedDistToOrigin.x = x - unskewedCubeOrigin.x;
-    unskewedDistToOrigin.y = y - unskewedCubeOrigin.y;
+    unskewedDistToOrigin.x = xc - unskewedCubeOrigin.x;
+    unskewedDistToOrigin.y = yc - unskewedCubeOrigin.y;
 
     if(unskewedDistToOrigin.x > unskewedDistToOrigin.y)
     {
@@ -88,4 +89,10 @@ float NzSimplex2D::GetValue(float x, float y, float resolution)
         n3 = c3*c3*c3*c3*(gradient2[gi2][0] * d3.x + gradient2[gi2][1] * d3.y);
 
     return (n1+n2+n3)*70.f;
+}
+
+void NzSimplex2D::Set(float X, float Y)
+{
+    x = X;
+    y = Y;
 }

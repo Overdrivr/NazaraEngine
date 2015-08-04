@@ -5,6 +5,7 @@
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Noise/Config.hpp>
 #include <Nazara/Noise/Perlin3D.hpp>
+#include <Nazara/Noise/NoiseTools.hpp>
 #include <Nazara/Noise/Debug.hpp>
 
 NzPerlin3D::NzPerlin3D()
@@ -23,19 +24,19 @@ NzPerlin3D::NzPerlin3D()
 
 NzPerlin3D::NzPerlin3D(unsigned int seed) : NzPerlin3D()
 {
-    this->SetNewSeed(seed);
-    this->ShufflePermutationTable();
+    SetSeed(seed);
+    Shuffle();
 }
 
-float NzPerlin3D::GetValue(float x, float y, float z, float resolution)
+float NzPerlin3D::Get()
 {
-    x /= resolution;
-    y /= resolution;
-    z /= resolution;
+    xc = x * m_scale;
+    yc = y * m_scale;
+    zc = z * m_scale;
 
-    x0 = fastfloor(x);
-    y0 = fastfloor(y);
-    z0 = fastfloor(z);
+    x0 = fastfloor(xc);
+    y0 = fastfloor(yc);
+    z0 = fastfloor(zc);
 
     ii = x0 & 255;
     jj = y0 & 255;
@@ -51,9 +52,9 @@ float NzPerlin3D::GetValue(float x, float y, float z, float resolution)
     gi6 = perm[ii +     perm[jj + 1 + perm[kk + 1]]] & 15;
     gi7 = perm[ii + 1 + perm[jj + 1 + perm[kk + 1]]] & 15;
 
-    temp.x = x-x0;
-    temp.y = y-y0;
-    temp.z = z-z0;
+    temp.x = xc - x0;
+    temp.y = yc - y0;
+    temp.z = zc - z0;
 
     Cx = temp.x * temp.x * temp.x * (temp.x * (temp.x * 6 - 15) + 10);
     Cy = temp.y * temp.y * temp.y * (temp.y * (temp.y * 6 - 15) + 10);
@@ -61,26 +62,26 @@ float NzPerlin3D::GetValue(float x, float y, float z, float resolution)
 
     s[0] = gradient3[gi0][0]*temp.x + gradient3[gi0][1]*temp.y + gradient3[gi0][2]*temp.z;
 
-    temp.x = x-(x0+1);
+    temp.x = xc - (x0 + 1);
     t[0] = gradient3[gi1][0]*temp.x + gradient3[gi1][1]*temp.y + gradient3[gi1][2]*temp.z;
 
-    temp.y = y-(y0+1);
+    temp.y = yc - (y0 + 1);
     v[0] = gradient3[gi3][0]*temp.x + gradient3[gi3][1]*temp.y + gradient3[gi3][2]*temp.z;
 
-    temp.x = x-x0;
+    temp.x = xc - x0;
     u[0] = gradient3[gi2][0]*temp.x + gradient3[gi2][1]*temp.y + gradient3[gi2][2]*temp.z;
 
-    temp.y = y-y0;
-    temp.z = z-(z0+1);
+    temp.y = yc - y0;
+    temp.z = zc - (z0 + 1);
     s[1] = gradient3[gi4][0]*temp.x + gradient3[gi4][1]*temp.y + gradient3[gi4][2]*temp.z;
 
-    temp.x = x-(x0+1);
+    temp.x = xc - (x0 + 1);
     t[1] = gradient3[gi5][0]*temp.x + gradient3[gi5][1]*temp.y + gradient3[gi5][2]*temp.z;
 
-    temp.y = y-(y0+1);
+    temp.y = yc - (y0 + 1);
     v[1] = gradient3[gi7][0]*temp.x + gradient3[gi7][1]*temp.y + gradient3[gi7][2]*temp.z;
 
-    temp.x = x-x0;
+    temp.x = xc - x0;
     u[1] = gradient3[gi6][0]*temp.x + gradient3[gi6][1]*temp.y + gradient3[gi6][2]*temp.z;
 
     Li1 = s[0] + Cx*(t[0]-s[0]);
@@ -88,8 +89,15 @@ float NzPerlin3D::GetValue(float x, float y, float z, float resolution)
     Li3 = s[1] + Cx*(t[1]-s[1]);
     Li4 = u[1] + Cx*(v[1]-u[1]);
 
-    Li5 = Li1 + Cy*(Li2-Li1);
-    Li6 = Li3 + Cy*(Li4-Li3);
+    Li5 = Li1 + Cy * (Li2-Li1);
+    Li6 = Li3 + Cy * (Li4-Li3);
 
-    return Li5 + Cz*(Li6-Li5);
+    return Li5 + Cz * (Li6-Li5);
+}
+
+void NzPerlin3D::Set(float X, float Y, float Z)
+{
+    x = X;
+    y = Y;
+    z = Z;
 }

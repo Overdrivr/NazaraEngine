@@ -5,6 +5,7 @@
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Noise/Config.hpp>
 #include <Nazara/Noise/Perlin2D.hpp>
+#include <Nazara/Noise/NoiseTools.hpp>
 #include <Nazara/Noise/Debug.hpp>
 
 NzPerlin2D::NzPerlin2D()
@@ -28,17 +29,17 @@ NzPerlin2D::NzPerlin2D()
 
 NzPerlin2D::NzPerlin2D(unsigned int seed) : NzPerlin2D()
 {
-    this->SetNewSeed(seed);
-    this->ShufflePermutationTable();
+    SetSeed(seed);
+    Shuffle();
 }
 
-float NzPerlin2D::GetValue(float x, float y, float resolution)
+float NzPerlin2D::Get()
 {
-    x *= resolution;
-    y *= resolution;
+    xc = x * m_scale;
+    yc = y * m_scale;
 
-    x0 = fastfloor(x);
-    y0 = fastfloor(y);
+    x0 = fastfloor(xc);
+    y0 = fastfloor(yc);
 
     ii = x0 & 255;
     jj = y0 & 255;
@@ -48,25 +49,31 @@ float NzPerlin2D::GetValue(float x, float y, float resolution)
     gi2 = perm[ii +     perm[jj + 1]] & 7;
     gi3 = perm[ii + 1 + perm[jj + 1]] & 7;
 
-    temp.x = x-x0;
-    temp.y = y-y0;
+    temp.x = xc - x0;
+    temp.y = yc - y0;
 
     Cx = temp.x * temp.x * temp.x * (temp.x * (temp.x * 6 - 15) + 10);
     Cy = temp.y * temp.y * temp.y * (temp.y * (temp.y * 6 - 15) + 10);
 
     s = gradient2[gi0][0]*temp.x + gradient2[gi0][1]*temp.y;
 
-    temp.x = x-(x0+1);
+    temp.x = xc - (x0 + 1);
     t = gradient2[gi1][0]*temp.x + gradient2[gi1][1]*temp.y;
 
-    temp.y = y-(y0+1);
+    temp.y = yc - (y0 + 1);
     v = gradient2[gi3][0]*temp.x + gradient2[gi3][1]*temp.y;
 
-    temp.x = x-x0;
+    temp.x = xc - x0;
     u = gradient2[gi2][0]*temp.x + gradient2[gi2][1]*temp.y;
 
     Li1 = s + Cx*(t-s);
     Li2 = u + Cx*(v-u);
 
     return Li1 + Cy*(Li2-Li1);
+}
+
+void NzPerlin2D::Set(float X, float Y)
+{
+    x = X;
+    y = Y;
 }

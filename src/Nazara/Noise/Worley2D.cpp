@@ -5,6 +5,7 @@
 #include <Nazara/Core/Error.hpp>
 #include <Nazara/Noise/Config.hpp>
 #include <Nazara/Noise/Worley2D.hpp>
+#include <Nazara/Noise/NoiseTools.hpp>
 #include <iterator>
 #include <Nazara/Noise/Debug.hpp>
 
@@ -19,20 +20,20 @@ NzWorley2D::NzWorley2D(nzWorleyFunction function)
 
 NzWorley2D::NzWorley2D(unsigned int seed) : NzWorley2D()
 {
-    this->SetNewSeed(seed);
-    this->ShufflePermutationTable();
+    SetSeed(seed);
+    Shuffle();
 }
 
-float NzWorley2D::GetValue(float x, float y, float resolution)
+float NzWorley2D::Get()
 {
-    x *= resolution;
-    y *= resolution;
+    xc = x * m_scale;
+    yc = y * m_scale;
 
-    x0 = fastfloor(x);
-    y0 = fastfloor(y);
+    x0 = fastfloor(xc);
+    y0 = fastfloor(yc);
 
-    fractx = x - static_cast<float>(x0);
-    fracty = y - static_cast<float>(y0);
+    fractx = xc - static_cast<float>(x0);
+    fracty = yc - static_cast<float>(y0);
 
     featurePoints.clear();
     //Dummy points : FIX ME : Remove them
@@ -41,59 +42,59 @@ float NzWorley2D::GetValue(float x, float y, float resolution)
     featurePoints[102.f] = NzVector2f(0.f,0.f);
     featurePoints[103.f] = NzVector2f(0.f,0.f);
 
-    SquareTest(x0,y0,x,y);
+    SquareTest(x0,y0,xc,yc);
 
     it = featurePoints.begin();
     std::advance(it,m_function);
 
     if(fractx < it->first)
-        SquareTest(x0 - 1,y0,x,y);
+        SquareTest(x0 - 1,y0,xc,yc);
 
     it = featurePoints.begin();
     std::advance(it,m_function);
 
     if(1.f - fractx < it->first)
-        SquareTest(x0 + 1,y0,x,y);
+        SquareTest(x0 + 1,y0,xc,yc);
 
     it = featurePoints.begin();
     std::advance(it,m_function);
 
     if(fracty < it->first)
-        SquareTest(x0,y0 - 1,x,y);
+        SquareTest(x0,y0 - 1,xc,yc);
 
     it = featurePoints.begin();
     std::advance(it,m_function);
 
     if(1.f - fracty < it->first)
-        SquareTest(x0,y0 + 1,x,y);
+        SquareTest(x0,y0 + 1,xc,yc);
 
     it = featurePoints.begin();
     std::advance(it,m_function);
 
     if(fractx < it->first &&
        fracty < it->first)
-       SquareTest(x0 - 1, y0 - 1,x,y);
+       SquareTest(x0 - 1, y0 - 1,xc,yc);
 
     it = featurePoints.begin();
     std::advance(it,m_function);
 
     if(1.f - fractx < it->first &&
        fracty < it->first)
-       SquareTest(x0 + 1, y0 - 1,x,y);
+       SquareTest(x0 + 1, y0 - 1,xc,yc);
 
     it = featurePoints.begin();
     std::advance(it,m_function);
 
     if(fractx < it->first &&
        1.f - fracty < it->first)
-       SquareTest(x0 - 1, y0 + 1,x,y);
+       SquareTest(x0 - 1, y0 + 1,xc,yc);
 
     it = featurePoints.begin();
     std::advance(it,m_function);
 
     if(1.f - fractx < it->first &&
        1.f - fracty < it->first)
-       SquareTest(x0 + 1, y0 + 1,x,y);
+       SquareTest(x0 + 1, y0 + 1,xc,yc);
 
     it = featurePoints.begin();
     std::advance(it,m_function);
@@ -135,4 +136,10 @@ void NzWorley2D::SquareTest(int xi, int yi, float x, float y)
         //Insertion dans la liste triée
         featurePoints[featurePoint.Distance(NzVector2f(x,y))] = featurePoint;
     }
+}
+
+void NzWorley2D::Set(float X, float Y)
+{
+    x = X;
+    y = Y;
 }

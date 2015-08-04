@@ -9,18 +9,26 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Noise/NoiseBase.hpp>
-#include <Nazara/Noise/Abstract4DNoise.hpp>
 #include <Nazara/Math/Vector4.hpp>
 
-class NAZARA_API NzSimplex4D : public NzAbstract4DNoise
+class NAZARA_API NzSimplex4D : public NzNoiseBase
 {
     public:
         NzSimplex4D();
         NzSimplex4D(unsigned int seed);
-        float GetValue(float x, float y, float z, float w, float resolution);
         ~NzSimplex4D() = default;
+
+        float Get();
+
+        void Set(float X, float Y, float Z, float W);
+
     protected:
+        float x;
+        float y;
+        float z;
+        float w;
     private:
+        float xc,yc,zc,wc;
         int ii,jj,kk,ll;
         int gi0,gi1,gi2,gi3,gi4;
         NzVector4i skewedCubeOrigin,off1,off2,off3;

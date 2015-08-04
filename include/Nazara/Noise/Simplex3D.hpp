@@ -9,18 +9,25 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Noise/NoiseBase.hpp>
-#include <Nazara/Noise/Abstract3DNoise.hpp>
 #include <Nazara/Math/Vector3.hpp>
 
-class NAZARA_API NzSimplex3D : public NzAbstract3DNoise
+class NAZARA_API NzSimplex3D : public NzNoiseBase
 {
     public:
         NzSimplex3D();
         NzSimplex3D(unsigned int seed);
-        float GetValue(float x, float y, float z, float resolution);
         ~NzSimplex3D() = default;
+
+        float Get();
+
+        void Set(float X, float Y, float Z);
+
     protected:
+        float x;
+        float y;
+        float z;
     private:
+        float xc, yc, zc;
         int ii,jj,kk;
         int gi0,gi1,gi2,gi3;
         NzVector3i skewedCubeOrigin,off1,off2;

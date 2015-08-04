@@ -9,24 +9,27 @@
 
 #include <Nazara/Prerequesites.hpp>
 #include <Nazara/Noise/NoiseBase.hpp>
-#include <Nazara/Noise/Abstract2DNoise.hpp>
 #include <Nazara/Noise/Enums.hpp>
 #include <Nazara/Math/Vector2.hpp>
 #include <random>
 #include <map>
 
-class NAZARA_API NzWorley2D : public NzAbstract2DNoise
+class NAZARA_API NzWorley2D : public NzNoiseBase
 {
     public:
         NzWorley2D(nzWorleyFunction function = nzWorleyFunction_F1);
         NzWorley2D(unsigned int seed);
+        ~NzWorley2D() = default;
 
-        float GetValue(float x, float y, float resolution);
+        float Get();
         //FIX ME : Rajouter fonction pour récupérer l'état complet après un calcul
 
+        void Set(float X, float Y);
         void SetFunction(nzWorleyFunction function);
-        ~NzWorley2D() = default;
+
     protected:
+        float x;
+        float y;
     private:
         void SquareTest(int xi, int yi, float x, float y);
 
@@ -36,6 +39,7 @@ class NAZARA_API NzWorley2D : public NzAbstract2DNoise
         float scale[4];
         nzWorleyFunction m_function;
 
+        float xc, yc;
         int seed;
         int x0, y0;
         int ii, jj;
